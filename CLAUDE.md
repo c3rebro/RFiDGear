@@ -5,7 +5,7 @@ code in this repository.
 
 ## What This Project Is
 
-RFIDGear is a .NET 8 WPF desktop application for MIFARE chip encoding and batch
+RFIDGear is a .NET 10 WPF desktop application for MIFARE chip encoding and batch
 processing, targeting x64/x86 Windows. It supports Elatec TWN4 readers and PC/SC
 compatible readers (via LibLogicalAccess).
 
@@ -37,7 +37,14 @@ by default on purpose: tests, clean checkouts and mutation runs also build the
 extensions and must not write into a real RFiDGear. See
 `RFiDGear.Extensions/DeployToRFiDGear.targets`.
 
-The solution targets `net8.0-windows`. Tests require the
+The host (`RFiDGear`), the test projects, the sample plugin and the sample CLI
+target `net10.0-windows` (the CLI plain `net10.0`). The extension contract
+(`RFiDGear.Contracts`, `RFiDGear.ExtensionSdk`), `CardCheckAssistant` and the
+`CardCheck` library stay on `net8.0` on purpose: a .NET 10 host loads them, and
+extensions that were built earlier keep working. `global.json` pins the SDK to
+10.0.x, because a newer preview SDK on the machine would otherwise be picked
+up. Visual Studio 2022 cannot target `net10.0`; use Visual Studio 2026 or the
+`dotnet` CLI. Tests require the
 `EnableWindowsTargeting` MSBuild property (already set in the test project) for
 non-Windows dev environments. Tests use `StaTestRunner.cs` to run on an STA
 thread — required for any WPF-touching test.

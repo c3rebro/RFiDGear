@@ -159,7 +159,7 @@ All factory-fresh DESFire cards have default keys (all zeros):
 
 ```
 Samples/ElatecDesfireCli/
-├── ElatecDesfireCli.csproj    # Project file (.NET 8, Elatec.NET 0.6.1)
+├── ElatecDesfireCli.csproj    # Project file (.NET 10, Elatec.NET 0.6.1)
 ├── Program.cs                  # Main application code
 ├── README.md                   # Comprehensive documentation
 ├── EXAMPLES.md                 # Configuration examples and scenarios

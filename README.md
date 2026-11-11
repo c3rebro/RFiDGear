@@ -1,6 +1,6 @@
 ![](docs/assets/img/logoRG.png) 
 
-# RFiDGear - .net 8 Mifare encoding tool.
+# RFiDGear - .NET 10 Mifare encoding tool.
 
 Support for batch processing.
 
@@ -11,7 +11,7 @@ Support for batch processing.
 
 Requirements:
 
-* minimum Microsoft Windows 7 32/64bit (or later)
+* Microsoft Windows 10 (version 1607 or later) or Windows 11, 32/64bit, with the .NET 10 Desktop Runtime
 * Elatec Reader TWN4 Multi or
 * Elatec Reader TWN4 Legic 45 or
 * PC/SC compatible Reader
@@ -27,8 +27,8 @@ In case of PCSC Provider: a PCSC compatibile Reader:
 
 The original German help includes a concise hardware and OS checklist:
 
-* A PC that meets at least the Windows 7 (32/64-bit) minimum specifications
-* Microsoft Windows 7 or newer
+* A PC that meets the minimum specifications of Windows 10 (version 1607 or later) or Windows 11 (32/64-bit)
+* Microsoft Windows 10 (version 1607 or later) or Windows 11, with the .NET 10 Desktop Runtime
 * At least one PC/SC-compatible encoder—tested examples include HID/Omnikey 5x21 devices, Sciel SCL3711, and ACR 122U
 * Optional: the LibLogicalAccess provider stack supplied with the installer
 

@@ -35,7 +35,7 @@
     <!-- Running heat in-proc can crash VS when the task bitness differs from MSBuild (see https://github.com/wixtoolset/issues/issues/6699). -->
     <HeatRunAsSeparateProcess Condition=" '$(HeatRunAsSeparateProcess)' == '' ">true</HeatRunAsSeparateProcess>
     <WixToolPath Condition=" '$(WixToolPath)' == '' and Exists('$(ProgramFiles(x86))\\WiX Toolset v3.14\\bin\\') ">$(ProgramFiles(x86))\WiX Toolset v3.14\bin\</WixToolPath>
-    <RFiDGearTargetFramework Condition=" '$(RFiDGearTargetFramework)' == '' ">net8.0-windows</RFiDGearTargetFramework>
+    <RFiDGearTargetFramework Condition=" '$(RFiDGearTargetFramework)' == '' ">net10.0-windows</RFiDGearTargetFramework>
     <RFiDGearReleaseDir Condition=" '$(RFiDGearReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear\bin\x86\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseDir>
     <RFiDGearExePath Condition=" '$(RFiDGearExePath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.exe</RFiDGearExePath>
     <RFiDGearDllPath Condition=" '$(RFiDGearDllPath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.dll</RFiDGearDllPath>
