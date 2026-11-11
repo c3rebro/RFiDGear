@@ -293,7 +293,8 @@ namespace RFiDGear.ViewModel
                 getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english",
                 isOnUiThread: () => owningDispatcher.CheckAccess(),
                 getReaderName: () => CurrentReader,
-                readerGate: _readerGate);
+                readerGate: _readerGate,
+                autoMode: new AutoModeHostImpl(_autoMode, _coordinator));
 
             // The Extensions menu entries were built when MEF composed this view model, before the host existed, and
             // stay disabled until now.

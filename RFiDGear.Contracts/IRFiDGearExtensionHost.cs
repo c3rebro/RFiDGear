@@ -39,10 +39,12 @@ namespace RFiDGear.Contracts
         IReaderHost Reader { get; }
 
         /// <summary>
-        /// Continuous automatic card-processing mode control.
+        /// Continuous automatic card-processing mode control: the mode of the main application's menu item, driven by
+        /// the same state machine.
         /// <para>
-        /// <strong>Note:</strong> <see cref="IAutoModeHost.Start"/> throws <see cref="System.NotSupportedException"/>
-        /// in this release. Full auto-mode wiring is tracked in issue #192.
+        /// <strong>Note:</strong> a host that has no reader loop (the one the HIL tests create) cannot run the mode, and
+        /// <see cref="IAutoModeHost.Start"/> throws <see cref="System.NotSupportedException"/> there. See
+        /// <see cref="IAutoModeHost"/>.
         /// </para>
         /// </summary>
         IAutoModeHost AutoMode { get; }

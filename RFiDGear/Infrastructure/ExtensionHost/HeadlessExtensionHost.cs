@@ -20,7 +20,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private readonly ProjectHostImpl _project;
         private readonly TaskExecHostImpl _execution;
         private readonly ReaderHostImpl _reader;
-        private readonly NullAutoModeHost _autoMode;
+        private readonly IAutoModeHost _autoMode;
         private readonly AppContextImpl _appContext;
         private bool _disposed;
 
@@ -118,6 +118,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// application's own reads should take it too; a scan answers busy while it is held. When omitted a scan only
         /// excludes loads, runs and project edits.
         /// </param>
+        /// <param name="autoMode">
+        /// Optional host of automatic mode, backed by the application's state machine for continuous card processing.
+        /// When omitted, <see cref="IRFiDGearExtensionHost.AutoMode"/> is the stand-in of a host without a reader loop, on
+        /// which <see cref="IAutoModeHost.Start"/> throws <see cref="NotSupportedException"/>.
+        /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
             ITaskExecutionService execService,
@@ -129,7 +134,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             Func<string?>? getConfiguredLanguage = null,
             Func<bool>? isOnUiThread = null,
             Func<string?>? getReaderName = null,
-            ReaderAccessGate? readerGate = null)
+            ReaderAccessGate? readerGate = null,
+            IAutoModeHost? autoMode = null)
         {
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
@@ -145,7 +151,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             _reader = getReaderName != null
                 ? new ReaderHostImpl(getReaderName, coordinator, readerGate)
                 : new ReaderHostImpl(readerName ?? string.Empty, coordinator, readerGate);
-            _autoMode = new NullAutoModeHost();
+            _autoMode = autoMode ?? new NullAutoModeHost();
             _appContext = getConfiguredLanguage != null
                 ? new AppContextImpl(getConfiguredLanguage)
                 : new AppContextImpl();

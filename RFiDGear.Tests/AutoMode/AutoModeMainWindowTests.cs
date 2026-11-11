@@ -31,19 +31,25 @@ namespace RFiDGear.Tests.AutoMode
         private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
         private const string CardA = "0123456789";
 
-        private static GenericChipModel Card(string uid) => new GenericChipModel(uid, CARD_TYPE.EM4102);
+        internal static GenericChipModel Card(string uid) => new GenericChipModel(uid, CARD_TYPE.EM4102);
 
-        private static async Task Within(Task task)
+        internal static async Task Within(Task task)
         {
             var finished = await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(20)));
             Assert.Same(task, finished);
             await task;
         }
 
-        private static DispatcherTimer Clock(MainWindowViewModel viewModel) =>
+        internal static DispatcherTimer Clock(MainWindowViewModel viewModel) =>
             (DispatcherTimer)typeof(MainWindowViewModel).GetField("triggerReadChip", Private)!.GetValue(viewModel)!;
 
-        private static async Task WithViewModel(
+        /// <summary>
+        /// Runs a test on an STA thread with the real view model, a scripted reader that is the application's reader, and
+        /// a scripted execution service whose runs end with success unless the test says otherwise.
+        /// </summary>
+        /// <param name="test">The test.</param>
+        /// <returns>A task that ends when the test has ended and its temporary files are removed.</returns>
+        internal static async Task WithViewModel(
             Func<MainWindowViewModel, ScriptedReadProvider, FakeTaskExecutionService, ExtensionOperationCoordinator, Task> test)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
