@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Windows.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -50,6 +52,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly ObservableCollection<OrderRowViewModel> _orders = new ObservableCollection<OrderRowViewModel>();
         private readonly ObservableCollection<TaskOutcomeRowViewModel> _rows = new ObservableCollection<TaskOutcomeRowViewModel>();
         private readonly LanguageOption[] _languages;
+        private readonly ListCollectionView _ordersView;
+        private readonly OrderGroupingOption[] _groupings;
+        private readonly HashSet<string> _collapsedGroups = new HashSet<string>(StringComparer.Ordinal);
 
         private WorkflowSnapshot _snapshot = new WorkflowSnapshot();
         private long _shownVersion = -1;
@@ -73,6 +78,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private Failure? _notice;
         private OrderRowViewModel? _selectedOrder;
         private LanguageOption _selectedLanguage;
+        private OrderGroupingOption _selectedGrouping;
+        private string _orderSearch = string.Empty;
         private ReaderSnapshot? _hostCard;
         private bool _hostRunning;
         private ExecResult? _shownResult;
@@ -110,6 +117,17 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 new LanguageOption(ReportLanguage.English, Keys.LanguageEnglish, Strings)
             };
             _selectedLanguage = _languages[0];
+
+            _groupings = new[]
+            {
+                new OrderGroupingOption(OrderGrouping.Status, Keys.GuidedOrderStatusLabel, Strings),
+                new OrderGroupingOption(OrderGrouping.Customer, Keys.GuidedCustomerLabel, Strings),
+                new OrderGroupingOption(OrderGrouping.Month, Keys.GuidedGroupMonth, Strings),
+                new OrderGroupingOption(OrderGrouping.None, Keys.GuidedGroupNone, Strings)
+            };
+            _selectedGrouping = _groupings[0];
+            _ordersView = new ListCollectionView(_orders) { Filter = row => ((OrderRowViewModel)row).Matches(_orderSearch) };
+            ApplyGrouping();
             Form = new ProgrammingFormViewModel(Strings, OnFormChanged);
 
             RefreshCommand = new DelegateCommand(Refresh, () => Offers(WorkflowControls.Refresh));
@@ -256,6 +274,89 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Gets the orders, in the order the order system gave them.</summary>
         public ObservableCollection<OrderRowViewModel> Orders => _orders;
 
+        /// <summary>Gets the orders as the list shows them: grouped as chosen, and only those that answer the search.</summary>
+        public ICollectionView OrdersView => _ordersView;
+
+        /// <summary>Gets the ways to group the list.</summary>
+        public IReadOnlyList<OrderGroupingOption> Groupings => _groupings;
+
+        /// <summary>Gets or sets what the list is grouped by; the status at first.</summary>
+        public OrderGroupingOption SelectedGrouping
+        {
+            get => _selectedGrouping;
+            set
+            {
+                if (value != null && SetProperty(ref _selectedGrouping, value))
+                {
+                    ApplyGrouping();
+                }
+            }
+        }
+
+        /// <summary>Gets or sets the words the list is filtered by: an order is shown when each is part of its job, chip, customer or status.</summary>
+        public string OrderSearchText
+        {
+            get => _orderSearch;
+            set
+            {
+                if (SetProperty(ref _orderSearch, value ?? string.Empty))
+                {
+                    _ordersView.Refresh();
+                    if (_selectedOrder != null && !_ordersView.Contains(_selectedOrder))
+                    {
+                        SelectedOrder = null;
+                    }
+
+                    OnPropertyChanged(nameof(OrdersEmptyText));
+                    OnPropertyChanged(nameof(HasOrdersEmptyText));
+                }
+            }
+        }
+
+        /// <summary>Tells whether a group of the list is open. Groups are open until the operator closes them, and stay as they were when the list is read again.</summary>
+        /// <param name="name">The name of the group.</param>
+        /// <returns><c>true</c> if the group shows its orders.</returns>
+        public bool IsGroupExpanded(string? name) => !_collapsedGroups.Contains(GroupKey(name));
+
+        /// <summary>Remembers that the operator opened or closed a group.</summary>
+        /// <param name="name">The name of the group.</param>
+        /// <param name="expanded">Whether it shows its orders now.</param>
+        public void SetGroupExpanded(string? name, bool expanded)
+        {
+            if (expanded)
+            {
+                _collapsedGroups.Remove(GroupKey(name));
+            }
+            else
+            {
+                _collapsedGroups.Add(GroupKey(name));
+            }
+        }
+
+        private string GroupKey(string? name) => _selectedGrouping.Grouping + ":" + name;
+
+        private void ApplyGrouping()
+        {
+            using (_ordersView.DeferRefresh())
+            {
+                _ordersView.GroupDescriptions.Clear();
+                switch (_selectedGrouping.Grouping)
+                {
+                    case OrderGrouping.Status:
+                        _ordersView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(OrderRowViewModel.StatusGroup)));
+                        break;
+                    case OrderGrouping.Customer:
+                        _ordersView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(OrderRowViewModel.CustomerGroup)));
+                        break;
+                    case OrderGrouping.Month:
+                        _ordersView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(OrderRowViewModel.MonthGroup)));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
         /// <summary>Gets or sets the order the operator picked. Setting it is the operator's act and clears an old notice.</summary>
         public OrderRowViewModel? SelectedOrder
         {
@@ -301,6 +402,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             {
                 if (_orders.Count > 0)
                 {
+                    if (_ordersView.IsEmpty)
+                    {
+                        return Strings[Keys.GuidedOrdersNoMatch];
+                    }
+
                     return _orders.Any(order => order.IsStartable) ? string.Empty : Strings[Keys.GuidedOrdersNoneInProgress];
                 }
 
@@ -866,6 +972,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 language.Refresh();
             }
 
+            foreach (var grouping in _groupings)
+            {
+                grouping.Refresh();
+            }
+
             foreach (var row in _rows)
             {
                 row.Refresh();
@@ -984,7 +1095,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     _orders.Add(new OrderRowViewModel(order));
                 }
 
-                _selectedOrder = selectedId == null ? null : _orders.FirstOrDefault(row => row.Id == selectedId);
+                // An order the search hides cannot be selected in the list, so it is not selected here either.
+                _selectedOrder = selectedId == null ? null : _orders.FirstOrDefault(row => row.Id == selectedId && _ordersView.Contains(row));
             }
             finally
             {

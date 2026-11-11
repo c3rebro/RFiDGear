@@ -221,6 +221,137 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal("B", vm.SelectedOrder?.Id);
         });
 
+        private static OrderRecord Dated(string id, string customer, string status, string modified) => new OrderRecord
+        {
+            Id = id,
+            JobNumber = "J" + id,
+            ChipNumber = "1",
+            CustomerName = customer,
+            StatusText = status,
+            DateCreated = "2026-10-01 08:00:00",
+            DateModified = modified,
+        };
+
+        private static string[] GroupNames(GuidedCheckViewModel vm) =>
+            vm.OrdersView.Groups?.Cast<System.Windows.Data.CollectionViewGroup>().Select(group => (string)group.Name).ToArray() ?? Array.Empty<string>();
+
+        [Fact]
+        public Task TheList_IsGroupedByStatus_AtFirst_AndByTheOtherChoicesWhenChosen() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Idle, WithOrders(
+                Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"),
+                Dated("B", "Beta", "Created", "2026-10-20 09:30:00"),
+                Dated("C", "Acme", "InProgress", "2026-11-09 16:45:00"),
+                Dated("D", "Beta", "InProgress", string.Empty)));
+
+            Assert.Equal(new[] { "InProgress", "Created" }, GroupNames(vm));
+
+            vm.SelectedGrouping = vm.Groupings.Single(option => option.Grouping == OrderGrouping.Customer);
+            Assert.Equal(new[] { "Acme", "Beta" }, GroupNames(vm));
+
+            // The month comes from the date of the last change; an order without one has a group of its own.
+            vm.SelectedGrouping = vm.Groupings.Single(option => option.Grouping == OrderGrouping.Month);
+            Assert.Equal(new[] { "2026-11", "2026-10", OrderDates.Dash }, GroupNames(vm));
+
+            vm.SelectedGrouping = vm.Groupings.Single(option => option.Grouping == OrderGrouping.None);
+            Assert.Empty(GroupNames(vm));
+            Assert.Equal(4, vm.OrdersView.Cast<object>().Count());
+        });
+
+        [Fact]
+        public Task TheSearch_KeepsTheOrdersWithEveryWord_SaysWhenNoneIsLeft_AndLeavesTheSelectionToTheList() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Idle, WithOrders(
+                Dated("A", "Acme Corp", "InProgress", "2026-11-03 10:00:00"),
+                Dated("B", "Beta GmbH", "Created", "2026-10-20 09:30:00")));
+
+            vm.OrderSearchText = "acme in";
+            Assert.Equal(new[] { "JA" }, vm.OrdersView.Cast<OrderRowViewModel>().Select(row => row.JobNumber));
+            Assert.False(vm.HasOrdersEmptyText);
+
+            vm.OrderSearchText = "acme created";
+            Assert.Empty(vm.OrdersView.Cast<object>());
+            Assert.True(vm.HasOrdersEmptyText);
+            Assert.Equal(vm.Strings[Keys.GuidedOrdersNoMatch], vm.OrdersEmptyText);
+
+            // The orders themselves are all still there; only the view is narrowed.
+            Assert.Equal(2, vm.Orders.Count);
+
+            vm.OrderSearchText = "  ";
+            Assert.Equal(2, vm.OrdersView.Cast<object>().Count());
+            Assert.Equal(string.Empty, vm.OrdersEmptyText);
+        });
+
+        [Fact]
+        public Task AnOrderTheSearchHides_IsNotSelected_NeitherWhenTheSearchChanges_NorWhenTheListIsReadAgain() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "InProgress", "2026-10-20 09:30:00")));
+            vm.SelectedOrder = vm.Orders[1];
+
+            // The search narrows to the other order: the selected one goes, and with it the possibility to start it.
+            vm.OrderSearchText = "acme";
+            Assert.Null(vm.SelectedOrder);
+            Assert.False(vm.StartOrderCommand.CanExecute(null));
+
+            // Selected while shown, then hidden by a search that a refresh meets.
+            vm.OrderSearchText = string.Empty;
+            vm.SelectedOrder = vm.Orders[1];
+            vm.OrdersView.Filter = row => ((OrderRowViewModel)row).JobNumber == "JA";
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "InProgress", "2026-10-21 09:30:00")));
+
+            Assert.Null(vm.SelectedOrder);
+            Assert.False(vm.StartOrderCommand.CanExecute(null));
+        });
+
+        [Fact]
+        public Task TheSearchWords_MayBeSeparatedByAnyWhitespace() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00")));
+
+            vm.OrderSearchText = "Acme\tInProgress";
+            Assert.Single(vm.OrdersView.Cast<object>());
+
+            vm.OrderSearchText = "Acme\u00A0InProgress";
+            Assert.Single(vm.OrdersView.Cast<object>());
+        });
+
+        [Fact]
+        public Task AClosedGroup_StaysClosed_WhenTheListIsReadAgain_ButOnlyForTheGroupingItWasClosedIn() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00")));
+            Assert.True(vm.IsGroupExpanded("Created"));
+
+            vm.SetGroupExpanded("Created", false);
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00"), Dated("C", "Beta", "Created", "2026-10-21 09:30:00")));
+            Assert.False(vm.IsGroupExpanded("Created"));
+            Assert.True(vm.IsGroupExpanded("InProgress"));
+
+            vm.SelectedGrouping = vm.Groupings.Single(option => option.Grouping == OrderGrouping.Customer);
+            Assert.True(vm.IsGroupExpanded("Created"));
+
+            vm.SelectedGrouping = vm.Groupings.First();
+            vm.SetGroupExpanded("Created", true);
+            Assert.True(vm.IsGroupExpanded("Created"));
+        });
+
+        [Fact]
+        public void TheDates_AreShownAsDates_OrAsTheyCame_AndTheMonthIsTheSameInEveryCulture()
+        {
+            Assert.Equal("2026-11", OrderDates.Month("2026-11-03 10:00:00"));
+            Assert.Equal(string.Empty, OrderDates.Month("not a date"));
+            Assert.Equal(string.Empty, OrderDates.Month(null));
+            Assert.Equal("yesterday", OrderDates.Show("  yesterday "));
+            Assert.Equal(string.Empty, OrderDates.Show(null));
+            Assert.Contains("2026", OrderDates.Show("2026-11-03 10:00:00"));
+            Assert.Equal(OrderDates.Dash, OrderDates.NamedOrDash("  "));
+            Assert.Equal("Acme", OrderDates.NamedOrDash(" Acme "));
+        }
+
         [Fact]
         public Task TheEmptyListText_TellsLoadingFromNoOrdersFromNoneInProgress() => Run(async page =>
         {

@@ -36,6 +36,36 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Gets the status as the order system writes it.</summary>
         public string Status => Order.StatusText;
 
+        /// <summary>Gets the date the order was created, as the operator reads it.</summary>
+        public string Created => OrderDates.Show(Order.DateCreated);
+
+        /// <summary>Gets the date the order was last changed, as the operator reads it.</summary>
+        public string Modified => OrderDates.Show(Order.DateModified);
+
+        /// <summary>Gets the group of the order when the list is grouped by status.</summary>
+        public string StatusGroup => OrderDates.NamedOrDash(Order.StatusText);
+
+        /// <summary>Gets the group of the order when the list is grouped by customer.</summary>
+        public string CustomerGroup => OrderDates.NamedOrDash(Order.CustomerName);
+
+        /// <summary>Gets the group of the order when the list is grouped by the month of the last change (<c>2026-11</c>).</summary>
+        public string MonthGroup => OrderDates.NamedOrDash(OrderDates.Month(Order.DateModified));
+
+        /// <summary>Tells whether the order answers a search: every word is part of the job, chip, customer or status.</summary>
+        /// <param name="search">What the operator typed; blank matches every order.</param>
+        /// <returns><c>true</c> if the order is to be shown.</returns>
+        public bool Matches(string? search)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                return true;
+            }
+
+            var haystack = JobNumber + " " + ChipNumber + " " + Customer + " " + Status;
+            return search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                .All(word => haystack.IndexOf(word, StringComparison.CurrentCultureIgnoreCase) >= 0);
+        }
+
         /// <summary>Gets a value indicating whether the order can be checked: only an order in progress can.</summary>
         public bool IsStartable { get; }
 
