@@ -27,7 +27,7 @@ namespace RFiDGear.HIL.Tests
     /// fails the case.
     /// </para>
     /// </summary>
-    [Collection("HIL")]
+    [Collection("HILSecureKeys")]
     public sealed class SecureKeyWorkflowTests
     {
         private const string OtherKey = "0102030405060708090A0B0C0D0E0F10";
@@ -36,11 +36,11 @@ namespace RFiDGear.HIL.Tests
         private const string TooShort = "010203040506";
         private const string TooLong = "0102030405060708090A0B0C0D0E0F101112131415161718";
 
-        private readonly HilFixture _fixture;
+        private readonly HilSecureKeyFixture _fixture;
 
         /// <summary>Creates the cases with the fixture that holds the reader.</summary>
-        /// <param name="fixture">The fixture that connects to the reader and checks for a DESFire card.</param>
-        public SecureKeyWorkflowTests(HilFixture fixture)
+        /// <param name="fixture">The fixture that connects to the reader and checks for a DESFire card, once the cases were asked for.</param>
+        public SecureKeyWorkflowTests(HilSecureKeyFixture fixture)
         {
             _fixture = fixture;
         }

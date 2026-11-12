@@ -112,9 +112,19 @@ can tell them from your own, and remove them afterwards.
 - 10, saving during a key change. Start a run with a bound key change and use
   File > Save and File > Save as while it runs. Open the saved project as a zip
   archive: `taskdatabase.xml` has `KeyBindings` entries and none of the key
-  digits. Search the profile for the digits of a key you used, for example
-  `findstr /s /i <digits> "%LOCALAPPDATA%\RFiDGear\*"`: there is no match,
-  and there is no `taskdatabase.xml` in that folder.
+  digits. Search the profile for the digits of a key you used, without writing
+  the digits on a command line (other programs can read a command line, and
+  the shell history keeps it). In PowerShell 7.1 or later, the prompt does not
+  show or record them:
+
+  ```powershell
+  $digits = Read-Host 'Key digits' -MaskInput
+  Get-ChildItem -Recurse -File "$env:LOCALAPPDATA\RFiDGear" |
+    Select-String -SimpleMatch $digits
+  Remove-Variable digits
+  ```
+
+  Expected: no match, and no `taskdatabase.xml` in that folder.
 - 11, automatic mode with bound keys. Use a project whose task is bound, switch
   automatic mode on, and put three cards on the reader one after the other.
   Expected: each card is processed once, no window asks for a key, and the log
