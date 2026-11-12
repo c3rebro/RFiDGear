@@ -200,6 +200,32 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void The_scratch_space_a_key_is_put_together_in_is_erased_when_it_is_a_key()
+        {
+            var scratch = new byte[WindowsCredentialKeyProvider.MaxKeyBytes];
+            Array.Fill(scratch, (byte)0xFF);
+
+            using var lease = CredentialBlob.ToLease(Encoding.Unicode.GetBytes("A1B2C3D4E5F6"), scratch);
+
+            Assert.NotNull(lease);
+            Assert.Equal("A1B2C3D4E5F6", Convert.ToHexString(lease!.Key));
+            Assert.All(scratch.Take(6), b => Assert.Equal(0, b));
+        }
+
+        [Fact]
+        public void The_scratch_space_is_erased_when_the_blob_turns_out_not_to_be_a_key_after_some_digits()
+        {
+            var scratch = new byte[WindowsCredentialKeyProvider.MaxKeyBytes];
+            Array.Fill(scratch, (byte)0xFF);
+
+            // The first two bytes of the key are good; the third is not hexadecimal.
+            var lease = CredentialBlob.ToLease(Encoding.Unicode.GetBytes("A1B2GG"), scratch);
+
+            Assert.Null(lease);
+            Assert.All(scratch.Take(3), b => Assert.Equal(0, b));
+        }
+
+        [Fact]
         public async Task The_log_never_shows_a_reference_a_key_or_what_the_vault_said()
         {
             using var logs = CapturedLogs.Install();

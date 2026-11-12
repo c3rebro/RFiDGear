@@ -141,7 +141,9 @@ namespace RFiDGear.Services.SecureKeys
                     return SecureKeyResolution.Failed(FailureOf(read.Error));
                 }
 
-                var lease = blob == null ? null : CredentialBlob.ToLease(blob, MaxKeyBytes);
+                // On the stack: the key never exists as an array that waits for the garbage collector.
+                Span<byte> scratch = stackalloc byte[MaxKeyBytes];
+                var lease = blob == null ? null : CredentialBlob.ToLease(blob, scratch);
 
                 return lease == null
                     ? SecureKeyResolution.Failed(SecureKeyFailureReason.InvalidKey)

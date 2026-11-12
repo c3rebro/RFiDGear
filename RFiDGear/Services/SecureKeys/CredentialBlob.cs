@@ -16,21 +16,22 @@ namespace RFiDGear.Services.SecureKeys
 
         /// <summary>
         /// Turns the blob into a key. Anything that is not an even number of hexadecimal digits in UTF-16 is refused, and so
-        /// is a blob that would make a key longer than <paramref name="maxKeyBytes"/>; what the refused blob contained is
-        /// not reported.
+        /// is a blob that would make a key longer than <paramref name="scratch"/>; what the refused blob contained is not
+        /// reported. The key is put together in <paramref name="scratch"/> and erased there before the method returns, whether
+        /// it is a key or not.
         /// </summary>
         /// <param name="blob">The secret as the vault holds it. The caller erases it.</param>
-        /// <param name="maxKeyBytes">The longest key that is accepted.</param>
+        /// <param name="scratch">Room for the key; its length is the longest key that is accepted.</param>
         /// <returns>A lease over the key, or <c>null</c> when the blob is not a key.</returns>
-        internal static SecureKeyLease? ToLease(byte[] blob, int maxKeyBytes)
+        internal static SecureKeyLease? ToLease(ReadOnlySpan<byte> blob, Span<byte> scratch)
         {
             // Four bytes of blob make one byte of key: two digits of two bytes.
-            if (blob.Length == 0 || blob.Length % 4 != 0 || blob.Length / 4 > maxKeyBytes)
+            if (blob.Length == 0 || blob.Length % 4 != 0 || blob.Length / 4 > scratch.Length)
             {
                 return null;
             }
 
-            var key = new byte[blob.Length / 4];
+            var key = scratch.Slice(0, blob.Length / 4);
 
             try
             {
