@@ -5,6 +5,8 @@ using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using RFiDGear.Contracts;
+using RFiDGear.ExtensionSdk;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.DI.Interfaces;
 using RFiDGear.UI.UIExtensions.Interfaces;
@@ -426,6 +428,11 @@ public sealed class MefHelper : IDisposable
             foreach (var export in container.GetExports<object, IViewModelMetadata>("ViewModel"))
             {
                 _ = export.Metadata.Name;
+            }
+
+            foreach (var export in container.GetExports<ISecureKeyProvider, ISecureKeyProviderMetadata>())
+            {
+                _ = export.Metadata.Id;
             }
 
             return null;
