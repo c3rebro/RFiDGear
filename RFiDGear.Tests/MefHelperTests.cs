@@ -29,8 +29,11 @@ namespace RFiDGear.Tests
             }
         }
 
-        [Fact]
-        public void FindDevelopmentExtensionsPaths_ReturnsExtensionsOutputWhenPresent()
+        // The extension projects name their framework with and without the platform version, and that is the folder name.
+        [Theory]
+        [InlineData("net10.0-windows")]
+        [InlineData("net10.0-windows7.0")]
+        public void FindDevelopmentExtensionsPaths_ReturnsExtensionsOutputWhenPresent(string frameworkFolder)
         {
             var tempRoot = Directory.CreateTempSubdirectory("RFiDGearExtDev").FullName;
             var baseDirectory = Path.Combine(tempRoot, "a", "b", "c", "d", "e");
@@ -40,7 +43,7 @@ namespace RFiDGear.Tests
                 "DesfirePluginSample",
                 "bin",
                 "Debug",
-                "net8.0-windows");
+                frameworkFolder);
 
             try
             {

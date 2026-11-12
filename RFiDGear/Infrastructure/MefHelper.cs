@@ -293,7 +293,9 @@ public sealed class MefHelper : IDisposable
     {
         var baseOutputPath = Path.Combine(projectRoot, "bin", "Debug");
 
-        yield return Path.Combine(baseOutputPath, "net8.0-windows");
+        // The extension projects name their framework with and without the platform version.
+        yield return Path.Combine(baseOutputPath, "net10.0-windows7.0");
+        yield return Path.Combine(baseOutputPath, "net10.0-windows");
         yield return baseOutputPath;
     }
 

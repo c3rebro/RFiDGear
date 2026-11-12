@@ -312,7 +312,7 @@ and no backward compatibility is wanted (the extension has one switch for it):
   the extensions folder to MEF, so a name like `RFiDGear.ExtensionsNative` or
   `RFiDGear.ExtensionSupport` would be loaded as an extension at every
   start-up.
-- Plain `net8.0`: no WPF, no WinUI, no reader SDK, no reference to any
+- Plain `net10.0`: no WPF, no WinUI, no reader SDK, no reference to any
   RFiDGear project, no Windows event log, no console. It never starts a
   process.
 - Serilog and GemBox.Pdf belong to the host. The library compiles against the

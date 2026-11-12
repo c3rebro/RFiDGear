@@ -58,11 +58,11 @@ namespace RFiDGear.Tests.CardCheck
         // ── the project file ────────────────────────────────────────────────
 
         [Fact]
-        public void Project_TargetsPlainNet8_WithoutAnyDesktopFramework()
+        public void Project_TargetsPlainNet10_WithoutAnyDesktopFramework()
         {
             var project = LibraryProject();
 
-            Assert.Equal("net8.0", Assert.Single(project.Descendants("TargetFramework")).Value);
+            Assert.Equal("net10.0", Assert.Single(project.Descendants("TargetFramework")).Value);
             foreach (var desktop in new[] { "UseWPF", "UseWindowsForms", "UseWinUI", "EnableWindowsTargeting", "TargetPlatformVersion" })
             {
                 Assert.Empty(project.Descendants(desktop));
