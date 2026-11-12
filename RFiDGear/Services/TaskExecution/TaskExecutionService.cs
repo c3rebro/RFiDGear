@@ -20,6 +20,7 @@ using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using Serilog;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Services.SecureKeys;
 
 namespace RFiDGear.Services.TaskExecution
 {
@@ -357,6 +358,7 @@ namespace RFiDGear.Services.TaskExecution
         private readonly IDispatcherTimerAdapter triggerReadChip;
         private readonly IDispatcherTimerAdapter taskTimeout;
         private readonly ITaskExecutionLogger logger;
+        private readonly SecureKeyRegistry secureKeys;
         private TaskExecutionRequest activeRequest;
         private int endedByProjectAt = -1;
 
@@ -375,11 +377,31 @@ namespace RFiDGear.Services.TaskExecution
             IDispatcherTimerAdapter triggerReadChip,
             IDispatcherTimerAdapter taskTimeout,
             ITaskExecutionLogger logger = null)
+            : this(readerDeviceProvider, triggerReadChip, taskTimeout, logger, SecureKeyRegistry.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Creates the service with the secure key providers its tasks may use. Without them (the public constructor), a task
+        /// with a key slot bound to a provider fails with <see cref="ERROR.KeyUnavailable"/>.
+        /// </summary>
+        /// <param name="readerDeviceProvider">Gives the reader.</param>
+        /// <param name="triggerReadChip">The timer that reads the card.</param>
+        /// <param name="taskTimeout">The watchdog of a task.</param>
+        /// <param name="logger">The logger; may be <c>null</c>.</param>
+        /// <param name="secureKeys">The secure key providers; may be <c>null</c> for none.</param>
+        internal TaskExecutionService(
+            IReaderDeviceProvider readerDeviceProvider,
+            IDispatcherTimerAdapter triggerReadChip,
+            IDispatcherTimerAdapter taskTimeout,
+            ITaskExecutionLogger logger,
+            SecureKeyRegistry secureKeys)
         {
             this.readerDeviceProvider = readerDeviceProvider;
             this.triggerReadChip = triggerReadChip;
             this.taskTimeout = taskTimeout;
             this.logger = logger ?? new NullTaskExecutionLogger();
+            this.secureKeys = secureKeys ?? SecureKeyRegistry.Empty;
         }
 
         public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted;
@@ -425,7 +447,7 @@ namespace RFiDGear.Services.TaskExecution
                 {
                     result.TerminalStatus = await ExecuteStageWithTimeout(
                         "TaskLoop",
-                        () => RunTaskLoopAsync(request, result, descriptors, null, null, runId, cancellationToken),
+                        () => RunTaskLoopAsync(request, result, descriptors, null, null, runId, null, cancellationToken),
                         request.Timeouts?.TaskLoopTimeout,
                         cancellationToken,
                         runId,
@@ -456,6 +478,9 @@ namespace RFiDGear.Services.TaskExecution
 
                         request.ChipHydrated?.Invoke(hydrationResult.FoundChip);
 
+                        // The card this run's own read found, for the providers that derive a key from it.
+                        var cardUid = RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.PrimaryUidOf(hydrationResult.FoundChip);
+
                         _ = await ExecuteStageWithTimeout(
                             "SelectionSync",
                             () => Task.FromResult(SynchronizeSelection(request, hydrationResult.Chip)),
@@ -465,7 +490,7 @@ namespace RFiDGear.Services.TaskExecution
 
                         result.TerminalStatus = await ExecuteStageWithTimeout(
                             "TaskLoop",
-                            () => RunTaskLoopAsync(request, result, descriptors, hydrationResult.Chip, device, runId, cancellationToken),
+                            () => RunTaskLoopAsync(request, result, descriptors, hydrationResult.Chip, device, runId, cardUid, cancellationToken),
                             request.Timeouts?.TaskLoopTimeout,
                             cancellationToken,
                             runId,
@@ -669,7 +694,7 @@ namespace RFiDGear.Services.TaskExecution
             return new SelectionSyncResult(hydratedChip, selectionChanged);
         }
 
-        private async Task<TaskLoopTerminalStatus> RunTaskLoopAsync(TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device, string runId, CancellationToken cancellationToken)
+        private async Task<TaskLoopTerminalStatus> RunTaskLoopAsync(TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device, string runId, string cardUid, CancellationToken cancellationToken)
         {
             endedByProjectAt = -1;
 
@@ -736,6 +761,24 @@ namespace RFiDGear.Services.TaskExecution
                     }
 
                     request.UpdateSelectedSetupViewModel?.Invoke(request.SelectedSetupViewModel);
+
+                    // The keys a task asks for are asked with this: the run, the task, and the card the run found. It
+                    // flows into the awaited command and nowhere else, and it holds no key. The watchdog does not run
+                    // while a provider is being asked; the registry has a time limit of its own.
+                    var taskIndexText = taskModel?.CurrentTaskIndex ?? taskPosition.ToString(CultureInfo.InvariantCulture);
+                    using var keyScope = KeyResolutionScope.Open(new KeyResolutionContext(
+                        secureKeys,
+                        runId,
+                        taskIndexText,
+                        cardUid,
+                        interactive: false,
+                        resolutionStarted: () => taskTimeout.Stop(),
+                        resolutionFinished: () =>
+                        {
+                            taskTimeout.Stop();
+                            taskTimeout.Start();
+                            taskTimeout.IsEnabled = true;
+                        }));
 
                     try
                     {

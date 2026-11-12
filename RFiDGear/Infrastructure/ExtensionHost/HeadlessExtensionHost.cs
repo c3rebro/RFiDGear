@@ -3,6 +3,7 @@ using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
 
 using System;
@@ -42,7 +43,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ITaskExecutionService execService = new TaskExecutionService(
                 new ReaderDeviceProvider(),
                 timerReadChip,
-                timerTimeout);
+                timerTimeout,
+                null,
+                SecureKeyRegistry.FromApplicationExtensions());
 
             _execution = new TaskExecHostImpl(execService, _project, coordinator);
             _reader = new ReaderHostImpl(readerName, coordinator);

@@ -38,6 +38,23 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets the text of the exception thrown by <see cref="ThrowMethod"/>.</summary>
         public string ThrowText { get; set; } = "The reader failed.";
 
+        /// <summary>Gets or sets the card the reader finds when the chip is read; <c>null</c> for none.</summary>
+        public GenericChipModel? Card { get; set; }
+
+        /// <inheritdoc />
+        public override bool IsConnected => Card != null || base.IsConnected;
+
+        /// <inheritdoc />
+        public override Task<ERROR> ReadChipPublic()
+        {
+            if (Card != null)
+            {
+                GenericChip = Card;
+            }
+
+            return base.ReadChipPublic();
+        }
+
         /// <summary>Gets the calls of one method.</summary>
         /// <param name="method">The reader method.</param>
         /// <returns>The calls, in order.</returns>

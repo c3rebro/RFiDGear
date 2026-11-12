@@ -33,9 +33,11 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
 **Secure key providers:**
 
 A provider hands out card keys that a project names by a reference instead of
-containing them. Status: the contract and the host's registry exist; the task
-execution that asks providers for keys follows in a later step of the same
-feature (issue 234), so no provider is called yet.
+containing them. Status: DESFire tasks ask providers for the keys of their
+bound slots, all of them before the card is touched, each once per task run. A
+slot is bound by an entry in the project file; the editor for it, the MIFARE
+Classic tasks and a provider built into RFiDGear follow in later steps of the
+same feature (issue 234).
 
 - The id is stored in project files, so it never changes. It has 1 to 64 of
   `a-z`, `0-9`, `.`, `_` and `-`. A provider with another id is ignored with

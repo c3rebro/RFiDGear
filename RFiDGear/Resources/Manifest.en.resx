@@ -1864,6 +1864,12 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusInvalidApplicationId" xml:space="preserve">
     <value>{0}: The application id is not valid; nothing was read.</value>
   </data>
+  <data name="textBoxStatusKeyUnavailable" xml:space="preserve">
+    <value>{0}: The key for {1} is not available; nothing was sent to the card.</value>
+  </data>
+  <data name="ENUM.ERROR.KeyUnavailable" xml:space="preserve">
+    <value>Key unavailable</value>
+  </data>
   <data name="textBoxStatusFileSettingsUnsupportedFileType" xml:space="preserve">
     <value>{0}: Only standard and backup data files can be checked; value and record files are not supported yet. Nothing was read.</value>
   </data>

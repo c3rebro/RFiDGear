@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Threading;
+using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
 
@@ -59,7 +60,12 @@ namespace RFiDGear.Services
 
             var triggerReadChipAdapter = new DispatcherTimerAdapter(triggerReadChip);
             var taskTimeoutAdapter = new DispatcherTimerAdapter(taskTimeout);
-            var taskExecutionService = new TaskExecutionService(new ReaderDeviceProvider(), triggerReadChipAdapter, taskTimeoutAdapter);
+            // The providers are created once, here, on the user-interface thread. A command that no run started (a button of
+            // a task dialog) asks them with the default context, and a person is there to be asked.
+            var secureKeys = SecureKeyRegistry.FromApplicationExtensions();
+            KeyResolutionScope.SetDefault(new KeyResolutionContext(secureKeys, null, string.Empty, null, interactive: true));
+
+            var taskExecutionService = new TaskExecutionService(new ReaderDeviceProvider(), triggerReadChipAdapter, taskTimeoutAdapter, null, secureKeys);
 
             if (executionCompletedHandler != null)
             {

@@ -55,6 +55,30 @@ namespace RFiDGear.Services.SecureKeys
                 .ToList();
 
         /// <summary>
+        /// Builds the registry from the extensions of this installation, composing them first if that has not happened.
+        /// Whatever goes wrong is logged and gives a registry without providers: a project that names one then fails its
+        /// task with a clear reason, and nothing else is affected. Call it on the user-interface thread.
+        /// </summary>
+        /// <returns>The registry.</returns>
+        internal static SecureKeyRegistry FromApplicationExtensions()
+        {
+            try
+            {
+                MefHelper.Instance.EnsureCompose();
+
+                return FromContainer(MefHelper.Instance.Container, Array.Empty<SecureKeyProviderRegistration>());
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<SecureKeyRegistry>().Error(
+                    "The secure key providers of the extensions could not be set up ({ExceptionType}); continuing without them",
+                    e.GetType().FullName);
+
+                return Empty;
+            }
+        }
+
+        /// <summary>
         /// Builds the registry from the providers that MEF found in the container. A container that fails the query is
         /// logged, and the registry then holds the built-in providers only. Call it on the user-interface thread.
         /// </summary>

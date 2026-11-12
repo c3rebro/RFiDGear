@@ -11,6 +11,7 @@ The provider layer now returns a small, normalized set of error codes to make do
 - `ProtocolConstraint`: the requested operation violated protocol constraints (e.g., resource already exists, limits exceeded).
 - `TransportError`: communication problems such as unavailable readers or timeouts.
 - `Unknown`: unexpected state or unclassified errors that do not map to the categories above.
+- `KeyUnavailable` (set by a task command, not by a reader): a key slot is bound to a secure key provider and the key could not be obtained. The command made no card call and used no other key.
 
 When you add or update provider logic, choose the most specific code that matches the condition so that calling layers can react accurately (e.g., prompting for different credentials versus retrying the connection).
 

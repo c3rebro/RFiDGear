@@ -152,7 +152,11 @@ retry logic. This prevents partial-state corruption when a card is removed
 mid-operation.
 
 Normalized error codes used across the stack: `AuthFailure`, `PermissionDenied`,
-`ProtocolConstraint`, `TransportError`, `Unknown`.
+`ProtocolConstraint`, `TransportError`, `Unknown`. A task command adds
+`KeyUnavailable`: a key slot is bound to a secure key provider and the key
+could not be obtained, so the command made no card call. The execution service
+does not route it like `AuthFailure`: a vault outage must not start the
+fallback branches that a project wrote for a card that refused a key.
 
 ### Settings & Persistence
 
@@ -217,6 +221,19 @@ provider does wrong into a failed answer, logs only the type of a provider's
 exception (never its message), and disposes a key that arrives late. A
 resolved key lives only in a `SecureKeyLease` on the stack of the card
 operation: never put one in a property or a static, and never log it.
+
+A task stores which slots are bound as `KeyBindings` (one entry per slot:
+slot id, provider id, opaque reference; `SecureKeySlots` has the ids). The
+embedded key of a bound slot is not written to the project, and a bound slot
+never uses its embedded key, even when its binding is broken. A DESFire command
+asks for all its keys first (`AcquireKeysAsync`, which uses `KeyAcquisition`):
+an embedded key is read from the property, the key of a bound slot comes from
+its provider through the ambient `KeyResolutionScope`, which the execution
+service opens for each task attempt (a button of a task dialog finds the
+default of the application). Whatever fails ends the command with
+`ERROR.KeyUnavailable` and no card call. In a new command, do not read the key
+properties on the way to the card; acquire the keys first, and do not log,
+store or return the `AcquiredKeys`.
 
 An extension that needs more than the contract (services, a database driver,
 a PDF engine) keeps that code in a support library named

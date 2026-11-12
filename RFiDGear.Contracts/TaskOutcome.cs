@@ -21,8 +21,9 @@ namespace RFiDGear.Contracts
     /// </param>
     /// <param name="NormalizedErrorCode">
     /// String representation of the task's normalized error level as recorded when the task was reached
-    /// (e.g. <c>NoError</c>, <c>AuthFailure</c>), or <c>Empty</c> for a task that was never reached.
-    /// Never contains key material or payload data.
+    /// (e.g. <c>NoError</c>, <c>AuthFailure</c>, or <c>KeyUnavailable</c> when a key slot is bound to a secure key
+    /// provider and the key could not be obtained, so the task made no card call), or <c>Empty</c> for a task that was
+    /// never reached. Never contains key material or payload data.
     /// </param>
     /// <param name="SkipReason">
     /// Why the task did not run, or <c>null</c> when it ran. One of the fixed tokens in <see cref="TaskSkipReasons"/>.

@@ -1,4 +1,6 @@
+using RFiDGear.Infrastructure;
 using RFiDGear.ViewModel;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -66,6 +68,7 @@ namespace RFiDGear.Tests
             "textBoxStatusCompareFail",
             "statusHeaderReaderIsInitializing",
             "menuItemExtensionsHeader",
+            "textBoxStatusKeyUnavailable",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.
@@ -99,6 +102,20 @@ namespace RFiDGear.Tests
             var german = Placeholders(Manifest.GetString(key, new CultureInfo("de")));
 
             Assert.Equal(english, german);
+        }
+
+        public static IEnumerable<object[]> EveryErrorCode() =>
+            Enum.GetNames(typeof(ERROR))
+                .Where(name => name != "AuthenticationError") // the obsolete alias is mapped to AuthFailure
+                .Select(name => new object[] { name });
+
+        [Theory]
+        [MemberData(nameof(EveryErrorCode))]
+        public void EveryErrorCode_HasAnEntryInBothLanguages_SoTheConditionListIsNeverBlank(string name)
+        {
+            // The list of conditions in a task is built from the enum, unfiltered; a missing resource is a blank entry.
+            Assert.False(string.IsNullOrWhiteSpace(Manifest.GetString("ENUM.ERROR." + name, new CultureInfo("en"))), name + " (en)");
+            Assert.False(string.IsNullOrWhiteSpace(Manifest.GetString("ENUM.ERROR." + name, new CultureInfo("de"))), name + " (de)");
         }
 
         private static string[] Placeholders(string? text) =>
