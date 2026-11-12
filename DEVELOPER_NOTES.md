@@ -42,6 +42,17 @@ Every box in which a card key is typed is wrapped by `KeySlotEditor` (`Views/Key
 - A new key box needs the wrapper and a slot id. `KeySlotEditorViewTests` lists the slots of every tab and fails when a key has no editor.
 - `x:Static` cannot reach a constant of an internal class: such a value is set in the code-behind.
 
+## Moving the keys of an existing project into the Credential Manager
+File > "Move keys of a project to the Credential Manager..." takes a project whose tasks have their keys typed in, stores each key in the Credential Manager and saves a new project that names the keys instead. The project it starts from is only read, and a file is never overwritten.
+
+- `KeyMigration` is the engine, `KeyMigrationFlow` the dialogs (behind `IKeyMigrationDialogs`, so the flow is tested with a person that answers as told). The files of a run go through `IKeyMigrationProjects`; the real one, `DatabaseKeyMigrationProjects`, has a `ProjectManager` with a temporary folder of its own, because creating a `DatabaseReaderWriter` deletes `*.tmp`, `taskdatabase.xml` and `*.rfprj` in the root of its `ProjectManager` and must not do that to the profile of the running application.
+- The steps: read the project; collect the typed keys of every task through `IKeyMigrationHost` (`EmbeddedKeySlots` lists the slots the task would write to the project, so a copy that the task only keeps for its own convenience is not moved); store each different key once under a random reference (`migrated/<16 hex digits>`; a slot with the same key shares the credential; a reference that is taken is never overwritten) and read it back; bind the slots in memory; write the new project; read it again.
+- The new project has to pass the check: no key in its text (as written, and as pairs separated by a space), every slot bound to the reference of the run, no key typed into a bound slot, and every reference gives the key of its slot. If a step fails, or the person cancels, the credentials the run stored are removed and the new project is deleted. A run never removes a credential it did not store.
+- A typed value that is not a key of the length its slot needs (the setters of a task accept anything) is not moved. It is reported and stays in the new project as it was typed.
+- Deleting the old project is a second, separate question. `DeleteOriginalAsync` reads the new project once more and fetches every key it refers to before it deletes anything, because the person may have changed the Credential Manager since; it deletes nothing for a failed run or when both reports name the same file.
+- `KeyMigrationReport` has task numbers, slot ids, references, counts and paths, and no key; it is what the person sees and what the logs may hold. The logs of the run have the type of an exception and never its message.
+- A project is now written straight into its archive. An earlier version wrote `taskdatabase.xml` into `%LocalAppData%\RFiDGear\` first and zipped that copy; it held every typed key in plain text. A `DatabaseReaderWriter` removes that file from the folder when it is created.
+
 ## Trying an extension in RFiDGear while you develop it
 RFiDGear reads its extensions from `%ProgramData%\RFiDGear\Extensions` once, at start-up. After a build, the extension and the support libraries it needs (`RFiDGear.ExtensionLibraries.*`) can be copied there for you, so you only restart RFiDGear.
 

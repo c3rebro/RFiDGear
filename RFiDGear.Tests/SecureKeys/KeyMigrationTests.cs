@@ -232,6 +232,22 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Fact]
+        public Task A_name_that_is_no_path_is_refused_as_a_failure_and_nothing_is_stored()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+
+                var badSource = await NewMigration().MoveAsync("source\0.rfPrj", Target("migrated"));
+                var badTarget = await NewMigration().MoveAsync(source, "migrated\0.rfPrj");
+
+                Assert.Equal(KeyMigrationFailure.SourceUnreadable, badSource.Failure);
+                Assert.Equal(KeyMigrationFailure.TargetNotWritten, badTarget.Failure);
+                Assert.Empty(_store.Writes);
+            });
+        }
+
         // ── Failing: whatever step fails, the vault and the folder are as they were ──
 
         [Fact]
@@ -266,6 +282,24 @@ namespace RFiDGear.Tests.SecureKeys
                 Assert.Equal(2, _store.Writes.Count);
                 Assert.Equal(2, _store.Deletes.Count);
                 AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task A_credential_that_cannot_be_taken_back_is_counted_in_the_log_without_naming_it()
+        {
+            return Sta(async () =>
+            {
+                using var logs = CapturedLogs.Install();
+                var source = WriteProject("source", NewClassicTask());
+                var flaky = new FlakyStore(_store) { FailWriteNumber = 2, DeleteError = CredentialErrors.AccessDenied };
+
+                var report = await NewMigration(store: flaky).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.KeyStoreRefused, report.Failure);
+                var warning = Assert.Single(logs.From(nameof(KeyMigration)), logEvent => logEvent.RenderMessage().Contains("could not be removed", StringComparison.Ordinal));
+                Assert.Contains("1", warning.RenderMessage(), StringComparison.Ordinal);
+                Assert.DoesNotContain(WindowsCredentialKeyProvider.TargetPrefix, warning.RenderMessage(), StringComparison.Ordinal);
             });
         }
 
@@ -445,6 +479,23 @@ namespace RFiDGear.Tests.SecureKeys
                 Assert.False(await migration.DeleteOriginalAsync(oneFile));
                 Assert.True(File.Exists(source));
                 Assert.True(File.Exists(report.TargetPath));
+            });
+        }
+
+        [Fact]
+        public Task A_check_that_throws_keeps_the_old_project()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+                Assert.True(report.Succeeded, report.ToString());
+                var throwing = new ThrowingReads(_projects);
+
+                var deleted = await NewMigration(throwing).DeleteOriginalAsync(report);
+
+                Assert.False(deleted);
+                Assert.True(File.Exists(source));
             });
         }
 
@@ -779,6 +830,25 @@ namespace RFiDGear.Tests.SecureKeys
             }
         }
 
+        /// <summary>Projects that cannot be read: the reader throws what it was not expected to.</summary>
+        private sealed class ThrowingReads : IKeyMigrationProjects
+        {
+            private readonly IKeyMigrationProjects _inner;
+
+            public ThrowingReads(IKeyMigrationProjects inner)
+            {
+                _inner = inner;
+            }
+
+            public string TargetPathOf(string path) => _inner.TargetPathOf(path);
+
+            public Task<ChipTaskHandlerModel?> ReadAsync(string path, CancellationToken cancellationToken) => throw new InvalidDataException("not a project");
+
+            public string? Write(ChipTaskHandlerModel model, string path) => _inner.Write(model, path);
+
+            public string? ReadProjectText(string path) => _inner.ReadProjectText(path);
+        }
+
         /// <summary>A vault that fails, or lies, or notes what happened, on request. Everything else is the fake.</summary>
         private sealed class FlakyStore : ICredentialStore
         {
@@ -791,6 +861,8 @@ namespace RFiDGear.Tests.SecureKeys
             }
 
             public int FailWriteNumber { get; init; }
+
+            public int DeleteError { get; init; }
 
             public bool CorruptReads { get; init; }
 
@@ -826,7 +898,7 @@ namespace RFiDGear.Tests.SecureKeys
                 return error;
             }
 
-            public int Delete(string targetName) => _inner.Delete(targetName);
+            public int Delete(string targetName) => DeleteError != 0 ? DeleteError : _inner.Delete(targetName);
         }
     }
 }

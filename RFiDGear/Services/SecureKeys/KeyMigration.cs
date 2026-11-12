@@ -125,8 +125,17 @@ namespace RFiDGear.Services.SecureKeys
             ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
             ArgumentException.ThrowIfNullOrWhiteSpace(targetPath);
 
-            var source = Path.GetFullPath(sourcePath);
-            var target = Path.GetFullPath(_projects.TargetPathOf(targetPath));
+            // A name that is no path at all: said as a failure, not thrown at the person.
+            if (!TryFullPath(() => sourcePath, out var source))
+            {
+                return Refused(sourcePath, KeyMigrationFailure.SourceUnreadable);
+            }
+
+            if (!TryFullPath(() => _projects.TargetPathOf(targetPath), out var target))
+            {
+                return Refused(source, KeyMigrationFailure.TargetNotWritten);
+            }
+
             var stored = new List<string>();
             var keys = new Dictionary<string, DistinctKey>(StringComparer.OrdinalIgnoreCase);
             string? written = null;
@@ -276,24 +285,44 @@ namespace RFiDGear.Services.SecureKeys
                 return false;
             }
 
-            if (!await StillGivesTheKeysAsync(report, cancellationToken).ConfigureAwait(true))
-            {
-                return false;
-            }
-
             try
             {
+                if (!await StillGivesTheKeysAsync(report, cancellationToken).ConfigureAwait(true))
+                {
+                    return false;
+                }
+
                 File.Delete(report.SourcePath);
 
                 return true;
             }
-            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            catch (Exception e)
             {
-                Log.ForContext<KeyMigration>().Warning("The original project could not be deleted ({ExceptionType})", e.GetType().FullName);
+                // Whatever goes wrong, the original stays: it is the one copy of the keys that is known to work.
+                Log.ForContext<KeyMigration>().Warning("The original project was not deleted ({ExceptionType})", e.GetType().FullName);
 
                 return false;
             }
         }
+
+        private static bool TryFullPath(Func<string> path, out string fullPath)
+        {
+            try
+            {
+                fullPath = Path.GetFullPath(path());
+
+                return true;
+            }
+            catch (Exception e) when (e is ArgumentException || e is NotSupportedException || e is IOException)
+            {
+                fullPath = string.Empty;
+
+                return false;
+            }
+        }
+
+        private static KeyMigrationReport Refused(string source, KeyMigrationFailure failure) =>
+            new KeyMigrationReport(source, string.Empty, failure, 0, 0, 0, Array.Empty<MovedKey>(), Array.Empty<UnmovedKey>());
 
         private static string RandomReference() => "migrated/" + Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
 
@@ -465,9 +494,22 @@ namespace RFiDGear.Services.SecureKeys
 
         private void Rollback(List<string> stored, string? written)
         {
+            var notRemoved = 0;
+
             foreach (var reference in stored)
             {
-                _ = _keyStore.Remove(reference);
+                var error = _keyStore.Remove(reference);
+
+                if (error != 0 && error != CredentialErrors.NotFound)
+                {
+                    notRemoved++;
+                }
+            }
+
+            if (notRemoved > 0)
+            {
+                // A credential of this run stays in the vault; the references are not secret, but not worth a log line each.
+                Log.ForContext<KeyMigration>().Warning("{Count} credentials that a failed migration stored could not be removed", notRemoved);
             }
 
             stored.Clear();
