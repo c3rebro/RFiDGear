@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace RFiDGear.Tests
 {
     /// <summary>A reader that serves the file settings it is told to, and counts how often it was asked.</summary>
-    internal sealed class FakeFileSettingsProvider : FakeAppSettingsProvider
+    internal class FakeFileSettingsProvider : FakeAppSettingsProvider
     {
         /// <summary>Gets or sets the settings a successful read returns.</summary>
         public DESFireFileSettings? FileSettings { get; set; }
