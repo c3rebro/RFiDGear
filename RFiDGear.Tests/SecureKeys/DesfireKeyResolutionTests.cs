@@ -461,6 +461,42 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public async Task A_run_cancelled_while_the_provider_is_still_busy_does_not_wait_for_it()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var cancel = new CancellationTokenSource();
+                var asked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var busy = new ScriptedSecureKeyProvider(async (_, token) =>
+                {
+                    asked.TrySetResult(true);
+                    await Task.Delay(Timeout.Infinite, token);
+
+                    return SecureKeyResolution.Failed(SecureKeyFailureReason.Timeout);
+                });
+
+                // The deadline of the registry is far away: only the cancellation of the run can end the wait in time.
+                var registry = SecureKeyRegistry.Create(
+                    new[] { new SecureKeyProviderRegistration(Provider, "Busy vault", busy) },
+                    Array.Empty<Lazy<ISecureKeyProvider, RFiDGear.ExtensionSdk.ISecureKeyProviderMetadata>>(),
+                    timeout: TimeSpan.FromMinutes(1));
+                KeyResolutionScope.SetDefault(new KeyResolutionContext(registry, "run-1", "0", null, interactive: false, cancellationToken: cancel.Token));
+                var task = NewTask(TaskType_MifareDesfireTask.ReadData);
+                task.KeyBindings = new[] { Bind(SecureKeySlots.DesfireRead) };
+
+                var running = RunAsync(task);
+                await asked.Task;
+                cancel.Cancel();
+                var finished = await Task.WhenAny(running, Task.Delay(TimeSpan.FromSeconds(10)));
+
+                Assert.Same(running, finished);
+                var run = await running;
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+            });
+        }
+
+        [Fact]
         public async Task A_run_hands_its_cancellation_to_the_providers()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
