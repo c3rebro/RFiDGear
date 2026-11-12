@@ -283,6 +283,30 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public async Task The_classic_list_is_copied_going_in_and_coming_out_and_cleaned_of_gaps()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = new MifareClassicSetupViewModel();
+                var given = new[] { Binding(SecureKeySlots.ClassicACurrent), null! };
+
+                task.KeyBindings = given;
+                given[0].Reference = "changed.after.setting";
+                var firstRead = task.KeyBindings;
+                firstRead[0].Reference = "changed.after.reading";
+                firstRead[0] = Binding(SecureKeySlots.ClassicBCurrent);
+
+                var binding = Assert.Single(task.KeyBindings);
+                Assert.Equal(Reference, binding.Reference);
+                Assert.Equal(SecureKeySlots.ClassicACurrent, binding.Slot);
+
+                task.KeyBindings = null!;
+                Assert.Empty(task.KeyBindings);
+                Assert.False(task.ShouldSerializeKeyBindings());
+            });
+        }
+
+        [Fact]
         public async Task Setting_nothing_or_a_list_with_gaps_gives_an_empty_or_clean_list()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
