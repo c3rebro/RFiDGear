@@ -259,6 +259,77 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal(Xml, manager.NormalizeLegacyProjectXml(Xml));
         }
 
+        [Fact]
+        public void The_old_error_name_is_left_alone_in_text_that_only_looks_like_an_element()
+        {
+            var manager = new ProjectManager(Path.Combine(Path.GetTempPath(), "rfidgear-norm-" + Guid.NewGuid().ToString("N")));
+            const string Looks = "<ErrorLevel>AuthenticationError</ErrorLevel>";
+            var xml =
+                "<?xml version=\"1.0\"?><Project>" +
+                "<SelectedTaskDescription><![CDATA[Example " + Looks + "]]></SelectedTaskDescription>" +
+                "<!-- " + Looks + " --><?pi " + Looks + " ?>" +
+                Looks +
+                "<SelectedTaskDescription><![CDATA[again " + Looks + "]]></SelectedTaskDescription>" +
+                Looks +
+                "</Project>";
+
+            var normalized = manager.NormalizeLegacyProjectXml(xml);
+
+            Assert.Equal(
+                xml.Replace("</SelectedTaskDescription>" + Looks, "</SelectedTaskDescription><ErrorLevel>AuthFailure</ErrorLevel>")
+                   .Replace("--><?pi " + Looks + " ?>" + Looks, "--><?pi " + Looks + " ?><ErrorLevel>AuthFailure</ErrorLevel>"),
+                normalized);
+        }
+
+        [Fact]
+        public void A_literal_that_is_never_closed_is_left_alone_to_the_end()
+        {
+            var manager = new ProjectManager(Path.Combine(Path.GetTempPath(), "rfidgear-norm-" + Guid.NewGuid().ToString("N")));
+            const string Xml = "<ErrorLevel>AuthenticationError</ErrorLevel><![CDATA[<ErrorLevel>AuthenticationError</ErrorLevel>";
+
+            var normalized = manager.NormalizeLegacyProjectXml(Xml);
+
+            Assert.Equal("<ErrorLevel>AuthFailure</ErrorLevel><![CDATA[<ErrorLevel>AuthenticationError</ErrorLevel>", normalized);
+        }
+
+        [Fact]
+        public async Task The_copy_of_a_bound_application_key_is_not_written_after_the_task_changes_to_a_key_change()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var key = DesfireSlots[SecureKeySlots.DesfireAppCurrent].Key;
+                var task = new MifareDesfireSetupViewModel { SelectedTaskType = TaskType_MifareDesfireTask.ReadData };
+                task.DesfireAppKeyCurrent = key;
+                task.KeyBindings = new[] { Binding(SecureKeySlots.DesfireAppCurrent) };
+
+                // The task becomes a change of key 1 of application 1: the old-key inputs appear, and the old key, which
+                // was only a copy of the application key until now, stays what it was.
+                task.SelectedTaskType = TaskType_MifareDesfireTask.ApplicationKeyChangeover;
+                task.AppNumberCurrent = "1";
+                task.SelectedDesfireAppKeyNumberCurrent = "1";
+                Assert.True(task.ShowAppKeyOldInputs);
+                Assert.Equal(key, task.DesfireAppKeyCurrentOld);
+
+                AssertNoKey(Serialize(task), key);
+            });
+        }
+
+        [Fact]
+        public async Task An_old_key_of_its_own_is_written_next_to_a_bound_application_key()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = NewDesfireTask();
+                task.KeyBindings = new[] { Binding(SecureKeySlots.DesfireAppCurrent) };
+                Assert.True(task.ShowAppKeyOldInputs);
+
+                var xml = Serialize(task);
+
+                AssertNoKey(xml, DesfireSlots[SecureKeySlots.DesfireAppCurrent].Key);
+                AssertHasKey(xml, DesfireSlots[SecureKeySlots.DesfireAppOld].Key);
+            });
+        }
+
         // ── The list ──
 
         [Fact]

@@ -1186,13 +1186,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <summary>
         /// Tells the serializer not to write the embedded old application key of a bound slot. While the old-key inputs are
-        /// not shown, the old key is only a copy of the application key (see <c>UpdateOldAppKeyDefaults</c>), so it is not
-        /// written either when the application key is bound: the copy would put the key back into the file.
+        /// not shown, the old key is only a copy of the application key (see <c>UpdateOldAppKeyDefaults</c>), and it stays
+        /// a copy when the inputs appear later (a task changes to a key change). So it is not written when the application
+        /// key is bound and the old key is hidden, or is still equal to the key it was copied from: the copy would put the
+        /// key back into the file. An old key that someone typed differently is a key of its own and is written.
         /// </summary>
         /// <returns><see langword="true"/> when neither the old key's slot nor the key it mirrors is bound.</returns>
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool ShouldSerializeDesfireAppKeyCurrentOld() =>
-            !IsKeyBound(SecureKeySlots.DesfireAppOld) && (ShowAppKeyOldInputs || !IsKeyBound(SecureKeySlots.DesfireAppCurrent));
+            !IsKeyBound(SecureKeySlots.DesfireAppOld) && !IsMirrorOfBoundApplicationKey();
+
+        private bool IsMirrorOfBoundApplicationKey()
+        {
+            if (!IsKeyBound(SecureKeySlots.DesfireAppCurrent))
+            {
+                return false;
+            }
+
+            return !ShowAppKeyOldInputs
+                || (!string.IsNullOrEmpty(DesfireAppKeyCurrent)
+                    && string.Equals(DesfireAppKeyCurrentOld, DesfireAppKeyCurrent, StringComparison.Ordinal));
+        }
 
         /// <summary>Tells the serializer not to write the embedded new application key of a bound slot.</summary>
         /// <returns><see langword="true"/> when the slot is not bound.</returns>
