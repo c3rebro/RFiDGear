@@ -24,3 +24,6 @@ using System.Windows;
 )]
 
 [assembly: InternalsVisibleTo("RFiDGear.Tests")]
+
+// The secure-key hardware cases store their test keys with the same code the application uses (WindowsCredentialKeyProvider).
+[assembly: InternalsVisibleTo("RFiDGear.HIL.Tests")]

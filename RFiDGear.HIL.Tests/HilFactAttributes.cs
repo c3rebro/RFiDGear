@@ -22,6 +22,24 @@ namespace RFiDGear.HIL.Tests
         }
     }
 
+    /// <summary>
+    /// A test (with data) that changes the keys of the test application on the card and puts credentials into the Windows
+    /// Credential Manager for a moment. It runs only when <c>hil.settings.json</c> sets <c>secureKeys</c>, whatever the other
+    /// settings say.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class HilSecureKeyTheoryAttribute : TheoryAttribute
+    {
+        /// <summary>Creates the attribute; the test is skipped unless the secure-key cases were asked for.</summary>
+        public HilSecureKeyTheoryAttribute()
+        {
+            if (!HilSettings.Current.SecureKeysRequested)
+            {
+                Skip = HilSettings.Current.SecureKeysSkipReason();
+            }
+        }
+    }
+
     /// <summary>A test that asks the person at the reader to move cards, and so also needs the setting <c>interactive</c>.</summary>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class HilInteractiveFactAttribute : FactAttribute

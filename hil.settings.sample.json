@@ -11,5 +11,11 @@
   // true: also run the 3 cases that ask you to put cards on the reader and to take them off again
   // (message boxes that stay on top). Has no effect while readerScan is false.
   // Run-HilTests.bat -Interactive turns this on for one run, whatever it says here.
-  "interactive": false
+  "interactive": false,
+
+  // true: also run the secure-key cases (see RFiDGear.HIL.Tests/SECURE-KEYS.md). They change the keys of the
+  // test application 0x5F5F01 on the card and put credentials, whose names start with RFiDGear/key/hil/,
+  // into the Windows Credential Manager of this user for a moment. Use a card you can spare.
+  // Does not depend on readerScan. Off unless you switch it on here.
+  "secureKeys": false
 }

@@ -54,6 +54,62 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal((readerScan, interactive), (settings.ReaderScan, settings.Interactive));
         }
 
+        [Theory]
+        [InlineData("{}", false)]
+        [InlineData("{ \"secureKeys\": true }", true)]
+        [InlineData("{ \"SECUREKEYS\": true, \"readerScan\": false }", true)]
+        [InlineData("{ \"secureKeys\": false, \"readerScan\": true, \"interactive\": true }", false)]
+        public void TheSecureKeyCases_AreAskedForBySecureKeysAlone_AndNeedNeitherOfTheOtherSettings(string json, bool expected)
+        {
+            var settings = HilSettings.Parse(json, Source);
+
+            Assert.Null(settings.Problem);
+            Assert.Equal(expected, settings.SecureKeys);
+            Assert.Equal(expected, settings.SecureKeysRequested);
+        }
+
+        [Fact]
+        public void TheSecureKeyCases_AreNotSwitchedOnByTheOtherSettings_OrByTheSwitchOfTheRunner()
+        {
+            var settings = HilSettings.Parse("{ \"readerScan\": true, \"interactive\": true }", Source);
+            Assert.False(settings.SecureKeysRequested);
+
+            File.WriteAllText(Path.Combine(_root, HilSettings.FileName), "{ \"readerScan\": true }");
+            Assert.False(HilSettings.Load(_root, "1").SecureKeysRequested);
+
+            // The switch of the runner turns the questions on and leaves what the file says about the keys as it is.
+            File.WriteAllText(Path.Combine(_root, HilSettings.FileName), "{ \"readerScan\": true, \"secureKeys\": true }");
+            Assert.True(HilSettings.Load(_root, "1").SecureKeysRequested);
+            Assert.True(HilSettings.Load(_root).SecureKeysRequested);
+        }
+
+        [Fact]
+        public void AFileWithAMistake_NeverSwitchesTheSecureKeyCasesOn_AndTheSkippedCaseSaysWhatIsWrong()
+        {
+            var broken = HilSettings.Parse("{ \"secureKeys\": true, \"secureKey\": true }", Source);
+
+            Assert.NotNull(broken.Problem);
+            Assert.False(broken.SecureKeys);
+            Assert.False(broken.SecureKeysRequested);
+            Assert.Contains("secureKey", broken.SecureKeysSkipReason(), StringComparison.Ordinal);
+            Assert.Contains(Source, broken.SecureKeysSkipReason(), StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void TheSkippedSecureKeyCases_NameTheFileTheSettingAndWhatTheyChange()
+        {
+            var off = HilSettings.Parse("{ \"readerScan\": true }", Source);
+            var noFile = HilSettings.Load(_root);
+
+            var reason = off.SecureKeysSkipReason();
+            Assert.Contains("secureKeys", reason, StringComparison.Ordinal);
+            Assert.Contains(Source, reason, StringComparison.Ordinal);
+            Assert.Contains("Credential Manager", reason, StringComparison.Ordinal);
+            Assert.Contains("keys of the test application", reason, StringComparison.Ordinal);
+
+            Assert.Contains(HilSettings.SampleFileName, noFile.SecureKeysSkipReason(), StringComparison.Ordinal);
+        }
+
         [Fact]
         public void TheCasesThatMoveCards_NeedTheReaderScanTestsToo()
         {
@@ -65,6 +121,9 @@ namespace RFiDGear.Tests.Reader
 
         [Theory]
         [InlineData("{ \"readerScan\": true, \"interactive\": true, \"reader_scan\": true }", "reader_scan")]
+        [InlineData("{ \"secureKeys\": true, \"oops\": 1 }", "oops")]
+        [InlineData("{ \"secureKeys\": \"yes\" }", "must be true or false")]
+        [InlineData("{ \"secureKeys\": true, \"SecureKeys\": true }", "set twice")]
         [InlineData("{ \"readerScan\": true, \"interactive\": \"yes\" }", "must be true or false")]
         [InlineData("{ \"readerScan\": \"yes\", \"interactive\": true }", "must be true or false")]
         [InlineData("{ \"readerScan\": 1, \"interactive\": true }", "must be true or false")]
@@ -83,8 +142,10 @@ namespace RFiDGear.Tests.Reader
             Assert.Contains(expectedInTheProblem, settings.Problem, StringComparison.Ordinal);
             Assert.False(settings.ReaderScan);
             Assert.False(settings.Interactive);
+            Assert.False(settings.SecureKeys);
             Assert.False(settings.HardwareRequested);
             Assert.False(settings.InteractiveRequested);
+            Assert.False(settings.SecureKeysRequested);
         }
 
         [Theory]
@@ -140,6 +201,19 @@ namespace RFiDGear.Tests.Reader
 
             Assert.Equal("RFIDGEAR_HIL_INTERACTIVE", HilSettings.RunnerInteractiveVariable);
             Assert.Contains("$env:" + HilSettings.RunnerInteractiveVariable, File.ReadAllText(script!), StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void TheRunnerKnowsEverySettingOfTheTests()
+        {
+            // The runner reads the file with its own parser and rejects a name it does not know: a setting that only the
+            // tests knew would make the runner refuse a file that the tests accept.
+            var script = FindFile("Run-HilTests.ps1");
+            Assert.NotNull(script);
+            var text = File.ReadAllText(script!);
+
+            Assert.Contains("foreach ($key in 'readerScan', 'interactive', 'secureKeys')", text, StringComparison.Ordinal);
+            Assert.Contains("$name -ne 'securekeys'", text, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -207,6 +281,10 @@ namespace RFiDGear.Tests.Reader
             Assert.Null(settings.Problem);
             Assert.True(settings.ReaderScan);
             Assert.False(settings.Interactive);
+
+            // The cases that change keys are never on in the sample that a new checkout starts from.
+            Assert.False(settings.SecureKeys);
+            Assert.Contains("\"secureKeys\"", File.ReadAllText(sample!), StringComparison.Ordinal);
         }
 
         // The sample and the runner are in the folder of the solution, above the build folder of the tests.
