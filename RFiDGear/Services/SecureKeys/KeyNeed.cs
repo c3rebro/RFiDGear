@@ -1,6 +1,5 @@
 #nullable enable
 using RFiDGear.Contracts;
-using RFiDGear.Infrastructure;
 
 namespace RFiDGear.Services.SecureKeys
 {
@@ -9,9 +8,18 @@ namespace RFiDGear.Services.SecureKeys
     /// command lists everything it needs up front, so a missing key stops it before the first card call.
     /// </summary>
     /// <param name="Slot">The slot id; see <see cref="SecureKeySlots"/>.</param>
-    /// <param name="KeyType">The type of the key. It fixes how long the key must be.</param>
+    /// <param name="Algorithm">The algorithm of the key. It fixes how long the key must be.</param>
     /// <param name="Usage">What the key does in the operation.</param>
-    /// <param name="ApplicationId">The DESFire application the key belongs to (0 for the card itself), or <c>null</c>.</param>
+    /// <param name="ApplicationId">The DESFire application the key belongs to (0 for the card itself), or <c>null</c> when it has none, as a MIFARE Classic key.</param>
     /// <param name="KeyNumber">The number of the key within its application, or <c>null</c>.</param>
-    internal readonly record struct KeyNeed(string Slot, DESFireKeyType KeyType, SecureKeyUsage Usage, uint? ApplicationId, int? KeyNumber);
+    internal readonly record struct KeyNeed(string Slot, SecureKeyAlgorithm Algorithm, SecureKeyUsage Usage, uint? ApplicationId, int? KeyNumber)
+    {
+        /// <summary>Gets how many hexadecimal digits a key of this algorithm has: 12 for a MIFARE Classic key, 48 for 3K3DES, 32 otherwise.</summary>
+        internal int HexLength => Algorithm switch
+        {
+            SecureKeyAlgorithm.Classic6Byte => 12,
+            SecureKeyAlgorithm.TripleDes3K => 48,
+            _ => 32,
+        };
+    }
 }

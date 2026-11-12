@@ -1256,7 +1256,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         };
 
         private static KeyNeed Need(string slot, DESFireKeyType keyType, SecureKeyUsage usage, int applicationId, int keyNumber) =>
-            new KeyNeed(slot, keyType, usage, applicationId < 0 ? (uint?)null : (uint)applicationId, keyNumber < 0 ? (int?)null : keyNumber);
+            new KeyNeed(slot, KeyAcquisition.AlgorithmOf(keyType), usage, applicationId < 0 ? (uint?)null : (uint)applicationId, keyNumber < 0 ? (int?)null : keyNumber);
 
         /// <summary>
         /// Returns whether a command may go on with the key of a slot. A key from a provider was checked when it was
