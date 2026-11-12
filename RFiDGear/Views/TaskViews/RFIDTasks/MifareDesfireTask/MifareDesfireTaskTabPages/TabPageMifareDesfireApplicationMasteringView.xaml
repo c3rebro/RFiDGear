@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:ctl="clr-namespace:RFiDGear.View"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:access="clr-namespace:RFiDGear.Infrastructure.AccessControl"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -68,42 +69,46 @@
                             </ToolTip>
                         </Label.ToolTip>
                     </Label>
-                    <TextBox
+                    <ctl:KeySlotEditor
                         Grid.Row="0"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="8,8,8,8"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
-                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                        Text="{Binding DesfireAppKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.ToolTip>
-                            <ToolTip>
-                                <StackPanel>
-                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireAppKeyPolicy'}" />
-                                </StackPanel>
-                            </ToolTip>
-                        </TextBox.ToolTip>
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyTarget}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyTarget}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        Host="{Binding}"
+                        SlotId="desfire.app.new">
+                        <TextBox
+                            Height="26"
+                            Margin="8,8,8,8"
+                            VerticalAlignment="Stretch"
+                            HorizontalAlignment="Stretch"
+                            VerticalContentAlignment="Center"
+                            HorizontalContentAlignment="Left"
+                            MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeTarget, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireAppKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <TextBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireAppKeyPolicy'}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyTarget}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyTarget}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </ctl:KeySlotEditor>
                     <TextBox
                         Grid.Row="1"
                         Grid.Column="1"
@@ -357,42 +362,46 @@
                             </ToolTip>
                         </Label.ToolTip>
                     </Label>
-                    <TextBox
+                    <ctl:KeySlotEditor
                         Grid.Row="1"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="8,0,8,8"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyCurrentInputs, Converter={StaticResource BoolToVisConv}}"
-                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                        Text="{Binding DesfireAppKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.ToolTip>
-                            <ToolTip>
-                                <StackPanel>
-                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireCurrentAppKey'}" />
-                                </StackPanel>
-                            </ToolTip>
-                        </TextBox.ToolTip>
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        Host="{Binding}"
+                        SlotId="desfire.app.current">
+                        <TextBox
+                            Height="26"
+                            Margin="8,0,8,8"
+                            VerticalAlignment="Stretch"
+                            HorizontalAlignment="Stretch"
+                            VerticalContentAlignment="Center"
+                            HorizontalContentAlignment="Left"
+                            MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireAppKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <TextBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireCurrentAppKey'}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </ctl:KeySlotEditor>
                     <Label
                         Grid.Row="2"
                         Grid.Column="0"
@@ -403,42 +412,46 @@
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyOldInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireOldAppKey'}" />
-                    <TextBox
+                    <ctl:KeySlotEditor
                         Grid.Row="2"
                         Grid.Column="1"
-                        Margin="8,0,8,8"
-                        Height="26"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyOldInputs, Converter={StaticResource BoolToVisConv}}"
-                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                        Text="{Binding DesfireAppKeyCurrentOld, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
-                        <TextBox.ToolTip>
-                            <ToolTip>
-                                <StackPanel>
-                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireOldAppKey'}" />
-                                </StackPanel>
-                            </ToolTip>
-                        </TextBox.ToolTip>
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrentOld}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrentOld}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        Host="{Binding}"
+                        SlotId="desfire.app.old">
+                        <TextBox
+                            Margin="8,0,8,8"
+                            Height="26"
+                            VerticalAlignment="Stretch"
+                            HorizontalAlignment="Stretch"
+                            VerticalContentAlignment="Center"
+                            HorizontalContentAlignment="Left"
+                            MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireAppKeyCurrentOld, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
+                            <TextBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireOldAppKey'}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrentOld}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrentOld}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </ctl:KeySlotEditor>
                     <Label
                         Grid.Row="3"
                         Grid.Column="0"

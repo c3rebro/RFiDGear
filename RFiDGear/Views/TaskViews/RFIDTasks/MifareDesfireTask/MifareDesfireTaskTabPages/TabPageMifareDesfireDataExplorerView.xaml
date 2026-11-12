@@ -5,7 +5,8 @@
     
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty"
-    xmlns:dal="clr-namespace:RFiDGear.Infrastructure">
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:ctl="clr-namespace:RFiDGear.View">
 
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
@@ -412,34 +413,38 @@
                             Command="{Binding ReadDataCommand}"
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupReadData'}" />
                     </Grid>
-                    <TextBox
+                    <ctl:KeySlotEditor
                         Grid.Row="0"
                         Grid.Column="1"
                         Grid.ColumnSpan="4"
-                        Margin="8,8,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        MaxLength="{Binding SelectedDesfireReadKeyEncryptionType, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                        Text="{Binding DesfireReadKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox" >
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidDesfireReadKeyCurrent}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidDesfireReadKeyCurrent}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        Host="{Binding}"
+                        SlotId="desfire.read">
+                        <TextBox
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            MaxLength="{Binding SelectedDesfireReadKeyEncryptionType, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireReadKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox" >
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireReadKeyCurrent}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireReadKeyCurrent}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </ctl:KeySlotEditor>
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
@@ -476,34 +481,38 @@
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentDesfireDataExplorerWriteKeyType'}" />
-                    <TextBox
+                    <ctl:KeySlotEditor
                         Grid.Row="2"
                         Grid.Column="1"
                         Grid.ColumnSpan="4"
-                        Margin="8,0,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        MaxLength="{Binding SelectedDesfireWriteKeyEncryptionType, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                        Text="{Binding DesfireWriteKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox" >
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidDesfireWriteKeyCurrent}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidDesfireWriteKeyCurrent}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        Host="{Binding}"
+                        SlotId="desfire.write">
+                        <TextBox
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            MaxLength="{Binding SelectedDesfireWriteKeyEncryptionType, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireWriteKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox" >
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireWriteKeyCurrent}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireWriteKeyCurrent}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </ctl:KeySlotEditor>
                     <ComboBox
                         Grid.Row="1"
                         Grid.Column="1"

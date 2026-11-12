@@ -208,7 +208,7 @@
             Margin="0,0,0,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
-            <TabControl Margin="8,8,8,8" SelectedIndex="{Binding SelectedTabIndex}">
+            <TabControl Margin="8,8,8,8" IsEnabled="{Binding AreInputsEnabled}" SelectedIndex="{Binding SelectedTabIndex}">
                 <TabItem MinWidth="50" Visibility="{Binding IsDesfirePICCAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
                     <TabItem.Header>
                         <TextBlock
