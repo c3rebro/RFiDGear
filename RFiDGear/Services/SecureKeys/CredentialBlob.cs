@@ -56,12 +56,15 @@ namespace RFiDGear.Services.SecureKeys
             }
         }
 
-        /// <summary>Makes the blob of a key. The caller erases it after use.</summary>
+        /// <summary>
+        /// Makes the blob of a key. The array is on the pinned object heap, so the garbage collector never moves it and the
+        /// caller's erasure reaches the only copy there is. The caller erases it after use.
+        /// </summary>
         /// <param name="key">The key.</param>
         /// <returns>The upper-case hexadecimal digits of the key as UTF-16 text.</returns>
         internal static byte[] FromKey(ReadOnlySpan<byte> key)
         {
-            var blob = new byte[key.Length * 4];
+            var blob = GC.AllocateArray<byte>(key.Length * 4, pinned: true);
 
             for (var i = 0; i < key.Length; i++)
             {

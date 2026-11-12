@@ -12,8 +12,9 @@ namespace RFiDGear.Services.SecureKeys
     /// The provider that is part of RFiDGear: it reads a key from the Windows Credential Manager. A reference is the name of
     /// the credential below a fixed prefix, so a project can never name a credential of another application, whatever the
     /// reference says. The credential holds the hexadecimal digits of the key as UTF-16 text (see
-    /// <see cref="CredentialBlob"/>); <c>cmdkey /generic:RFiDGear/key/&lt;reference&gt; /user:RFiDGear /pass:&lt;digits&gt;</c>
-    /// stores one.
+    /// <see cref="CredentialBlob"/>); <c>cmdkey /generic:RFiDGear/key/&lt;reference&gt; /user:RFiDGear /pass</c> stores one and
+    /// asks for the digits at a prompt. The digits do not belong on the command line (<c>/pass:&lt;digits&gt;</c>): other
+    /// programs can read a command line, and shell histories and process logs keep it.
     /// <para>
     /// What this protects against is a key that ends up in a project file, a backup or an e-mail. It does not protect against
     /// a program that runs as the same user: the Credential Manager gives the secret to every process of that user.

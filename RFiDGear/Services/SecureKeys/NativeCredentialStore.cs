@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -18,7 +19,9 @@ namespace RFiDGear.Services.SecureKeys
         // What the Credential Manager shows as the user name of the entry.
         private const string StoredUserName = "RFiDGear";
 
+        // The layout of CREDENTIALW. It is only ever copied to and from the vault, never compared, so IEquatable would be dead code.
         [StructLayout(LayoutKind.Sequential)]
+        [SuppressMessage("Major Code Smell", "S3898:Value types should implement IEquatable<T>", Justification = "Interop layout of CREDENTIALW; it is never compared.")]
         private struct Credential
         {
             public uint Flags;
@@ -59,7 +62,10 @@ namespace RFiDGear.Services.SecureKeys
             {
                 var credential = Marshal.PtrToStructure<Credential>(buffer);
                 var size = (int)credential.CredentialBlobSize;
-                var blob = new byte[size];
+
+                // On the pinned object heap, like the lease: the garbage collector never moves it, so the caller's erasure
+                // reaches the only copy there is.
+                var blob = GC.AllocateArray<byte>(size, pinned: true);
 
                 if (size > 0 && credential.CredentialBlob != IntPtr.Zero)
                 {

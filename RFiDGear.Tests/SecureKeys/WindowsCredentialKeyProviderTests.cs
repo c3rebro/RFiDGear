@@ -4,6 +4,7 @@ using RFiDGear.Services.SecureKeys;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -272,6 +273,15 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void The_blob_made_for_a_stored_key_is_on_the_pinned_heap_so_that_erasing_it_reaches_the_only_copy()
+        {
+            var blob = CredentialBlob.FromKey(new byte[] { 0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6 });
+
+            // An array on the pinned object heap is generation 2 from the first moment; one on the ordinary heap is generation 0.
+            Assert.Equal(GC.MaxGeneration, GC.GetGeneration(blob));
+        }
+
+        [Fact]
         public void The_blob_handed_to_the_vault_for_a_stored_key_is_erased_afterwards()
         {
             var store = new FakeCredentialStore();
@@ -405,6 +415,22 @@ namespace RFiDGear.Tests.SecureKeys
                 using var answer = await provider.ResolveAsync(RequestFor(reference), CancellationToken.None);
                 Assert.True(answer.IsResolved, $"the real vault answered {answer.FailureReason}");
                 Assert.Equal(key, Assert.IsType<SecureKeyLease>(answer.Key).Key.ToArray());
+
+                // The copy of the secret that the store hands out is on the pinned heap (generation 2 from the start).
+                var read = new NativeCredentialStore().Read(Prefix + reference);
+
+                try
+                {
+                    Assert.Equal(0, read.Error);
+                    Assert.Equal(GC.MaxGeneration, GC.GetGeneration(read.Blob!));
+                }
+                finally
+                {
+                    if (read.Blob != null)
+                    {
+                        CryptographicOperations.ZeroMemory(read.Blob);
+                    }
+                }
             }
             finally
             {
@@ -425,6 +451,9 @@ namespace RFiDGear.Tests.SecureKeys
 
             try
             {
+                // A dummy value on the command line, only to pin the format that the tool stores. A real key does not belong
+                // there (the documentation says to use the prompt of the tool), but the prompt reads from the console and
+                // cannot be driven by a test: with redirected input it stores an empty password.
                 Assert.Equal(0, RunCmdkey($"/generic:{target} /user:RFiDGear /pass:A1B2C3D4E5F6"));
 
                 using var answer = await provider.ResolveAsync(RequestFor(reference), CancellationToken.None);
@@ -443,9 +472,13 @@ namespace RFiDGear.Tests.SecureKeys
             {
                 CreateNoWindow = true,
                 UseShellExecute = false,
+                RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             })!;
+
+            // Nothing to answer: closing the input keeps the tool from waiting for it.
+            process.StandardInput.Close();
             process.StandardOutput.ReadToEnd();
             process.StandardError.ReadToEnd();
             process.WaitForExit();
