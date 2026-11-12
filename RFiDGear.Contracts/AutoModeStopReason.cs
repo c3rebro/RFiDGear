@@ -32,16 +32,20 @@ namespace RFiDGear.Contracts
         /// A run ended with a fault or a cancellation, or the automatic processing failed in a way that left the state
         /// of the card unknown. It does not matter who started the run: a run by hand, or one that an extension started
         /// with <c>ITaskExecHost.ExecuteAllAsync</c>, counts too while the mode is on. A run of the mode itself was
-        /// reported through <see cref="IAutoModeHost.AutoModeRunCompleted"/> first (the other runs are not reported there:
-        /// an extension gets the result of its own run from <c>ExecuteAllAsync</c>). The card is not processed again
-        /// unless it is taken away and put back.
+        /// reported through <see cref="IAutoModeHost.AutoModeRunCompleted"/> first (the other runs are not reported there,
+        /// so do not wait for that event when the reason is <see cref="RunAborted"/>: an extension gets the result of its
+        /// own run from <c>ExecuteAllAsync</c>). The card is not processed again unless it is taken away and put back.
         /// </summary>
         RunAborted = 4,
 
         /// <summary>
         /// A run timed out or the per-task watchdog gave it up (see <see cref="ExecutionFailureReason.TimedOut"/>): the
-        /// state of the card is unknown. The run was reported through <see cref="IAutoModeHost.AutoModeRunCompleted"/>
-        /// first. The card is not processed again unless it is taken away and put back.
+        /// state of the card is unknown. It does not matter who started the run: a run by hand, or one that an extension
+        /// started with <c>ITaskExecHost.ExecuteAllAsync</c>, counts too while the mode is on. A run of the mode itself
+        /// was reported through <see cref="IAutoModeHost.AutoModeRunCompleted"/> first; the other runs are not reported
+        /// there, so do not wait for that event when the reason is <see cref="RunTimedOut"/> (an extension gets the result
+        /// of its own run from <c>ExecuteAllAsync</c>). The card is not processed again unless it is taken away and put
+        /// back.
         /// </summary>
         RunTimedOut = 5,
     }

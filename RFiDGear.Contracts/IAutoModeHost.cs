@@ -100,7 +100,10 @@ namespace RFiDGear.Contracts
         /// Turns continuous automatic mode off. If it is off already, nothing happens and no event is raised.
         /// <para>
         /// It never throws and never waits. It does not interrupt a run that has started: a card operation is not
-        /// stopped in the middle of a step. That run ends and is reported, and nothing is started after it. A card whose
+        /// stopped in the middle of a step. That run ends and is reported, and nothing is started after it. For a run the
+        /// mode started itself, <see cref="AutoModeRunCompleted"/> follows the <see cref="AutoModeStateChanged"/> of this
+        /// stop; a run by hand, or one an extension started with <c>ExecuteAllAsync</c>, is not reported through that
+        /// event (its caller gets its result), so do not wait for the event in that case. A card whose
         /// run has not started yet is not run either: the main application may make such a run wait (up to 20 seconds)
         /// for a reader scan of an extension to end, and a stop in that time withdraws it, so it does not start when the
         /// scan ends. The card that has been run is remembered, so starting the mode again does not process it a second
@@ -155,10 +158,18 @@ namespace RFiDGear.Contracts
         /// <para>
         /// Ordering: after <see cref="ITaskExecHost.IsRunning"/> has returned to <c>false</c> (and
         /// <see cref="ITaskExecHost.IsRunningChanged"/> has been raised for it), before the next card is looked at, and
-        /// before <see cref="AutoModeStateChanged"/> if this run makes the mode stop. When the handler runs, the mode has
-        /// not been stopped yet, so <see cref="IsAutoModeEnabled"/> still reads <c>true</c>; if the run makes it stop, that
-        /// follows at once on the same thread, and <see cref="AutoModeStateChanged"/> and <see cref="LastStopReason"/>
-        /// tell it then.
+        /// before <see cref="AutoModeStateChanged"/> if this run makes the mode stop. When this run makes the mode stop,
+        /// the mode has not been stopped yet when the handler runs, so <see cref="IsAutoModeEnabled"/> still reads
+        /// <c>true</c>; the stop follows at once on the same thread, and <see cref="AutoModeStateChanged"/> and
+        /// <see cref="LastStopReason"/> tell it then.
+        /// </para>
+        /// <para>
+        /// A stop that came <em>while the run was in progress</em> (<see cref="Stop"/>, the menu toggle, a change of the
+        /// reader) is different: a run that has started is never interrupted, so the mode is off already, and
+        /// <see cref="AutoModeStateChanged"/> has already been raised, when the handler runs. The result of that run still
+        /// follows when it ends. Do not stop collecting results when the mode turns off: a run may still be in progress
+        /// (<see cref="ITaskExecHost.IsRunning"/>), and its result is raised on the UI thread shortly after
+        /// <see cref="ITaskExecHost.IsRunningChanged"/> reports that it has ended.
         /// </para>
         /// <para>
         /// Threading: raised synchronously on the UI thread, never marshalled, one subscriber after another. The next
