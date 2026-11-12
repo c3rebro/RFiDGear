@@ -33,6 +33,7 @@ using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Services.SecureKeys;
+using RFiDGear.Contracts;
 
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
@@ -1078,6 +1079,49 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         #endregion
 
+        #region Key acquisition
+
+        // Every command that touches the card asks for the keys it hands to the reader first, here, and goes on only with
+        // what comes back. A slot with a key binding gets its key from the provider and never from the property; a slot
+        // without one passes the property on as it always did, whatever it holds, and the reader decides. A command asks for
+        // every key its reader call carries, all or none: a reader may try key B after key A, or use the MAD keys only for
+        // some cards, and which one it does is not for the task to guess. So a bound key B that cannot be obtained stops the
+        // command, and the reader is never left to go on with key A alone. This region is the only place that reads the key
+        // properties on the way to the card.
+
+        private Task<AcquiredKeys> AcquireKeysAsync(params KeyNeed[] needs) =>
+            KeyAcquisition.AcquireAsync(needs, KeyBindings, SecureKeySlots.Classic, EmbeddedKeyOf, KeyResolutionScope.Current);
+
+        private string EmbeddedKeyOf(string slotId) => slotId switch
+        {
+            SecureKeySlots.ClassicACurrent => ClassicKeyAKeyCurrent,
+            SecureKeySlots.ClassicBCurrent => ClassicKeyBKeyCurrent,
+            SecureKeySlots.ClassicATarget => ClassicKeyAKeyTarget,
+            SecureKeySlots.ClassicBTarget => ClassicKeyBKeyTarget,
+            SecureKeySlots.ClassicMadACurrent => ClassicMADKeyAKeyCurrent,
+            SecureKeySlots.ClassicMadBCurrent => ClassicMADKeyBKeyCurrent,
+            SecureKeySlots.ClassicMadATarget => ClassicMADKeyAKeyTarget,
+            SecureKeySlots.ClassicMadBTarget => ClassicMADKeyBKeyTarget,
+            _ => throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a MIFARE Classic task."),
+        };
+
+        // A Classic key belongs to no application and has no number. Which sector it is used for is not told to a provider:
+        // a MAD operation uses one key for several sectors, so a single sector would be wrong for most of the calls.
+        private static KeyNeed Need(string slot, SecureKeyUsage usage = SecureKeyUsage.Authenticate) =>
+            new KeyNeed(slot, SecureKeyAlgorithm.Classic6Byte, usage, null, null);
+
+        /// <summary>
+        /// Says that the keys could not be obtained: the task ends with <see cref="ERROR.KeyUnavailable"/> and the line names
+        /// the slot, never the reference or the provider's own words. The command has made no card call.
+        /// </summary>
+        private void ReportKeyUnavailable(AcquiredKeys keys)
+        {
+            StatusText += string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("textBoxStatusKeyUnavailable"), DateTime.Now, keys.Failure?.Slot ?? string.Empty) + "\n";
+            CurrentTaskErrorLevel = ERROR.KeyUnavailable;
+        }
+
+        #endregion
+
         /// <summary>
         ///
         /// </summary>
@@ -1777,10 +1821,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (await device.ReadMifareClassicSingleSector(
+                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
+
+                    if (keys.Failed)
+                    {
+                        ReportKeyUnavailable(keys);
+                    }
+                    else if (await device.ReadMifareClassicSingleSector(
                         selectedClassicSectorCurrentAsInt,
-                        ClassicKeyAKeyCurrent,
-                        ClassicKeyBKeyCurrent) == ERROR.NoError)
+                        keys.Hex(SecureKeySlots.ClassicACurrent),
+                        keys.Hex(SecureKeySlots.ClassicBCurrent)) == ERROR.NoError)
                     {
                         StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
@@ -1850,10 +1900,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (!useMAD)
                     {
-                        if (await device.ReadMifareClassicSingleSector(
+                        var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
+
+                        if (keys.Failed)
+                        {
+                            ReportKeyUnavailable(keys);
+                        }
+                        else if (await device.ReadMifareClassicSingleSector(
                             selectedClassicSectorCurrentAsInt,
-                            ClassicKeyAKeyCurrent,
-                            ClassicKeyBKeyCurrent) == ERROR.NoError)
+                            keys.Hex(SecureKeySlots.ClassicACurrent),
+                            keys.Hex(SecureKeySlots.ClassicBCurrent)) == ERROR.NoError)
                         {
 
                             childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
@@ -1903,8 +1959,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
                         ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-                        if (await device.ReadMifareClassicWithMAD(appNumberAsInt,
-                            ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt,
+                        var madKeys = await AcquireKeysAsync(
+                            Need(SecureKeySlots.ClassicACurrent),
+                            Need(SecureKeySlots.ClassicBCurrent),
+                            Need(SecureKeySlots.ClassicMadACurrent),
+                            Need(SecureKeySlots.ClassicMadBCurrent));
+
+                        if (madKeys.Failed)
+                        {
+                            ReportKeyUnavailable(madKeys);
+                        }
+                        else if (await device.ReadMifareClassicWithMAD(appNumberAsInt,
+                            madKeys.Hex(SecureKeySlots.ClassicACurrent), madKeys.Hex(SecureKeySlots.ClassicBCurrent),
+                            madKeys.Hex(SecureKeySlots.ClassicMadACurrent), madKeys.Hex(SecureKeySlots.ClassicMadBCurrent), fileSizeAsInt,
                             madGPB, UseMAD, useMADAuth) == ERROR.NoError)
                         {
                             ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
@@ -1975,23 +2042,32 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
                         childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 
-                        await device.ReadChipPublic();
+                        var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
 
-                        if (await device.WriteMifareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
-                                                                ClassicKeyAKeyCurrent,
-                                                                ClassicKeyBKeyCurrent,
-                                                                childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
+                        if (keys.Failed)
                         {
-                            StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
-                                                                    DateTime.Now,
-                                                                    childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-                                                                    CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
-                            CurrentTaskErrorLevel = ERROR.NoError;
+                            ReportKeyUnavailable(keys);
                         }
                         else
                         {
-                            StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                            CurrentTaskErrorLevel = ERROR.AuthFailure;
+                            await device.ReadChipPublic();
+
+                            if (await device.WriteMifareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
+                                                                    keys.Hex(SecureKeySlots.ClassicACurrent),
+                                                                    keys.Hex(SecureKeySlots.ClassicBCurrent),
+                                                                    childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
+                            {
+                                StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
+                                                                        DateTime.Now,
+                                                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
+                                                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
+                                CurrentTaskErrorLevel = ERROR.NoError;
+                            }
+                            else
+                            {
+                                StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
+                                CurrentTaskErrorLevel = ERROR.AuthFailure;
+                            }
                         }
                     }
                     else
@@ -2006,11 +2082,25 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
                     ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-                    if (await device.WriteMifareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
-                                                        ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
-                                                        ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
-                                                        ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent,
-                                                        ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
+                    var keys = await AcquireKeysAsync(
+                        Need(SecureKeySlots.ClassicACurrent),
+                        Need(SecureKeySlots.ClassicBCurrent),
+                        Need(SecureKeySlots.ClassicATarget, SecureKeyUsage.ChangeKeyNew),
+                        Need(SecureKeySlots.ClassicBTarget, SecureKeyUsage.ChangeKeyNew),
+                        Need(SecureKeySlots.ClassicMadACurrent),
+                        Need(SecureKeySlots.ClassicMadBCurrent),
+                        Need(SecureKeySlots.ClassicMadATarget, SecureKeyUsage.ChangeKeyNew),
+                        Need(SecureKeySlots.ClassicMadBTarget, SecureKeyUsage.ChangeKeyNew));
+
+                    if (keys.Failed)
+                    {
+                        ReportKeyUnavailable(keys);
+                    }
+                    else if (await device.WriteMifareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
+                                                        keys.Hex(SecureKeySlots.ClassicACurrent), keys.Hex(SecureKeySlots.ClassicBCurrent),
+                                                        keys.Hex(SecureKeySlots.ClassicATarget), keys.Hex(SecureKeySlots.ClassicBTarget),
+                                                        keys.Hex(SecureKeySlots.ClassicMadACurrent), keys.Hex(SecureKeySlots.ClassicMadBCurrent),
+                                                        keys.Hex(SecureKeySlots.ClassicMadATarget), keys.Hex(SecureKeySlots.ClassicMadBTarget),
                                                         ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
                                                         madGPB, ChildNodeViewModelTemp.SectorModel.SAB, UseMadAuth, UseMAD) == ERROR.NoError)
                     {
