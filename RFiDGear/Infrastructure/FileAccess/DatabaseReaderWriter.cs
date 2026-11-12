@@ -338,7 +338,11 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// </summary>
         /// <param name="targetPath">The file to create or replace.</param>
         /// <param name="writeTo">Writes the complete new content to the path it is given.</param>
-        private void WriteFileAtomically(string targetPath, Action<string> writeTo)
+        /// <param name="replaceExisting">
+        /// <c>false</c> creates the file only: the move that puts it in place fails when a file exists, also when that file
+        /// appeared after the caller looked, and the file that exists is left as it is.
+        /// </param>
+        private void WriteFileAtomically(string targetPath, Action<string> writeTo, bool replaceExisting = true)
         {
             var fullTargetPath = Path.GetFullPath(targetPath);
             // Both names are unique to this operation, so no file that happens to lie next to the target is touched.
@@ -350,7 +354,7 @@ namespace RFiDGear.Infrastructure.FileAccess
             {
                 writeTo(temporaryPath);
 
-                if (File.Exists(fullTargetPath))
+                if (replaceExisting && File.Exists(fullTargetPath))
                 {
                     File.Replace(temporaryPath, fullTargetPath, backupPath, true);
                     TryDeleteFile(backupPath);
@@ -411,13 +415,17 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// </summary>
         /// <param name="objModel">The project to write.</param>
         /// <param name="_path">Target path as chosen by the user or caller.</param>
+        /// <param name="replaceExisting">
+        /// <c>false</c> writes a new file only: a file that exists at the target, also one that appeared while the
+        /// project was written, is kept and an <see cref="IOException"/> is thrown.
+        /// </param>
         /// <returns>
         /// The path that was actually written, which differs from <paramref name="_path"/> when an extension
         /// was appended, or <c>null</c> when the project could not be serialized (the failure is logged).
         /// </returns>
         /// <exception cref="IOException">The file could not be written.</exception>
         /// <exception cref="UnauthorizedAccessException">The location is not writable.</exception>
-        public string WriteDatabase(ChipTaskHandlerModel objModel, string _path = "")
+        public string WriteDatabase(ChipTaskHandlerModel objModel, string _path = "", bool replaceExisting = true)
         {
             try
             {
@@ -430,7 +438,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
                 if (saveAsXml)
                 {
-                    WriteFileAtomically(_path, temporaryPath => SerializeToFile(serializer, objModel, temporaryPath));
+                    WriteFileAtomically(_path, temporaryPath => SerializeToFile(serializer, objModel, temporaryPath), replaceExisting);
                     return _path;
                 }
 
@@ -452,7 +460,7 @@ namespace RFiDGear.Infrastructure.FileAccess
                             serializer.Serialize(writer, objModel);
                         }
                     }
-                });
+                }, replaceExisting);
 
                 return archivePath;
             }

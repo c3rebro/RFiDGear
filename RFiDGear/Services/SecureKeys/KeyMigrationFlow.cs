@@ -142,7 +142,29 @@ namespace RFiDGear.Services.SecureKeys
                 _ => Format("messageKeyMigrationUnexpected"),
             };
 
-            return Format("messageKeyMigrationFailed", reason);
+            // "Nothing is left" is said only when it is true: a credential or a file that could not be removed is named instead.
+            var outcome = report.LeftBehind
+                ? Format("messageKeyMigrationNotUndone", LeftBehindLines(report))
+                : _text("messageKeyMigrationUndone");
+
+            return Format("messageKeyMigrationFailed", reason, outcome);
+        }
+
+        private static string LeftBehindLines(KeyMigrationReport report)
+        {
+            var lines = new StringBuilder();
+
+            foreach (var reference in report.UnremovedReferences)
+            {
+                lines.AppendLine().Append("- ").Append(WindowsCredentialKeyProvider.TargetPrefix).Append(reference);
+            }
+
+            if (report.UndeletedTarget.Length > 0)
+            {
+                lines.AppendLine().Append("- ").Append(report.UndeletedTarget);
+            }
+
+            return lines.ToString();
         }
 
         // Tasks, slots and references: nothing in it is a key.

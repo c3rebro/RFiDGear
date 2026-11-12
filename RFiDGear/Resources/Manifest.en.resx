@@ -2018,7 +2018,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>The project holds no typed key that could be moved. Nothing was changed and no new project was saved.</value>
   </data>
   <data name="messageKeyMigrationFailed" xml:space="preserve">
-    <value>The keys were not moved: {0}&#10;&#10;Nothing was changed. The original project is intact, no new project was saved and the Credential Manager holds nothing from this attempt.</value>
+    <value>The keys were not moved: {0}&#10;&#10;{1}</value>
   </data>
   <data name="messageKeyMigrationSameFile" xml:space="preserve">
     <value>the new project has to be another file than the old one.</value>
@@ -2027,7 +2027,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>a file with that name exists already. A migration never overwrites a file.</value>
   </data>
   <data name="messageKeyMigrationSourceUnreadable" xml:space="preserve">
-    <value>the project could not be read.</value>
+    <value>the project could not be read, or it was made by a newer version of RFiDGear.</value>
   </data>
   <data name="messageKeyMigrationKeyStoreRefused" xml:space="preserve">
     <value>the Credential Manager refused to store a key (error {0}).</value>
@@ -2058,5 +2058,11 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageKeyMigrationNotDeleted" xml:space="preserve">
     <value>The original project was not deleted: the new project or one of its keys could not be checked again, or the file could not be removed. The original stays as it is.</value>
+  </data>
+  <data name="messageKeyMigrationUndone" xml:space="preserve">
+    <value>Nothing was changed. The original project is intact, no new project was saved and the Credential Manager holds nothing from this attempt.</value>
+  </data>
+  <data name="messageKeyMigrationNotUndone" xml:space="preserve">
+    <value>The original project is intact, but not everything that this attempt created could be removed again. Please remove it by hand:{0}</value>
   </data>
 </root>

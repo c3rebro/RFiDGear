@@ -107,6 +107,8 @@ namespace RFiDGear.Tests
             "messageKeyMigrationAskDelete",
             "messageKeyMigrationDeleted",
             "messageKeyMigrationNotDeleted",
+            "messageKeyMigrationUndone",
+            "messageKeyMigrationNotUndone",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.

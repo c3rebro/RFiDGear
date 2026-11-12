@@ -2040,7 +2040,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Das Projekt enthält keinen eingetippten Schlüssel, der verschoben werden könnte. Es wurde nichts verändert und kein neues Projekt gespeichert.</value>
   </data>
   <data name="messageKeyMigrationFailed" xml:space="preserve">
-    <value>Die Schlüssel wurden nicht verschoben: {0}&#10;&#10;Es wurde nichts verändert. Das ursprüngliche Projekt ist unversehrt, es wurde kein neues Projekt gespeichert, und die Anmeldeinformationsverwaltung enthält nichts aus diesem Versuch.</value>
+    <value>Die Schlüssel wurden nicht verschoben: {0}&#10;&#10;{1}</value>
   </data>
   <data name="messageKeyMigrationSameFile" xml:space="preserve">
     <value>das neue Projekt muss eine andere Datei sein als das alte.</value>
@@ -2049,7 +2049,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>eine Datei mit diesem Namen gibt es schon. Eine Migration überschreibt nie eine Datei.</value>
   </data>
   <data name="messageKeyMigrationSourceUnreadable" xml:space="preserve">
-    <value>das Projekt konnte nicht gelesen werden.</value>
+    <value>das Projekt konnte nicht gelesen werden, oder es stammt von einer neueren Version von RFiDGear.</value>
   </data>
   <data name="messageKeyMigrationKeyStoreRefused" xml:space="preserve">
     <value>die Anmeldeinformationsverwaltung hat einen Schlüssel nicht angenommen (Fehler {0}).</value>
@@ -2080,5 +2080,11 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageKeyMigrationNotDeleted" xml:space="preserve">
     <value>Das ursprüngliche Projekt wurde nicht gelöscht: Das neue Projekt oder einer seiner Schlüssel ließ sich nicht noch einmal prüfen, oder die Datei ließ sich nicht entfernen. Das Original bleibt, wie es ist.</value>
+  </data>
+  <data name="messageKeyMigrationUndone" xml:space="preserve">
+    <value>Es wurde nichts verändert. Das ursprüngliche Projekt ist unversehrt, es wurde kein neues Projekt gespeichert, und die Anmeldeinformationsverwaltung enthält nichts aus diesem Versuch.</value>
+  </data>
+  <data name="messageKeyMigrationNotUndone" xml:space="preserve">
+    <value>Das ursprüngliche Projekt ist unversehrt, aber nicht alles, was dieser Versuch angelegt hat, ließ sich wieder entfernen. Bitte von Hand entfernen:{0}</value>
   </data>
 </root>

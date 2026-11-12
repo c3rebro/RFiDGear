@@ -344,7 +344,7 @@ namespace RFiDGear.Tests.SecureKeys
             {
                 var source = WriteProject("source", NewClassicTask());
                 var before = File.ReadAllBytes(source);
-                var projects = new ProjectsDouble(_projects) { OnText = text => text + KeyOf[SecureKeySlots.ClassicACurrent].ToLowerInvariant() };
+                var projects = new ProjectsDouble(_projects) { OnText = (_, text) => text + KeyOf[SecureKeySlots.ClassicACurrent].ToLowerInvariant() };
 
                 var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
 
@@ -362,7 +362,7 @@ namespace RFiDGear.Tests.SecureKeys
                 var before = File.ReadAllBytes(source);
 
                 // The text is looked at first when the new project is checked; the vault is empty by the time it is asked.
-                var projects = new ProjectsDouble(_projects) { OnText = text => { _store.Blobs.Clear(); return text; } };
+                var projects = new ProjectsDouble(_projects) { OnText = (_, text) => { _store.Blobs.Clear(); return text; } };
 
                 var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
 
@@ -499,6 +499,203 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        // ── Review of #321: what can change between the check and the act ──
+
+        [Fact]
+        public Task A_project_of_a_newer_version_is_refused_like_the_application_refuses_it()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProjectOfVersion("source", "99.0.0", NewClassicTask());
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.SourceUnreadable, report.Failure);
+                Assert.False(File.Exists(Target("migrated")));
+                Assert.Empty(_store.Writes);
+            });
+        }
+
+        [Fact]
+        public Task A_file_that_appears_while_the_new_project_is_written_is_kept()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var projects = new ProjectsDouble(_projects)
+                {
+                    OnWrite = (model, path) =>
+                    {
+                        // Someone creates the file after the migration looked and before the project is put in place.
+                        File.WriteAllText(path, "someone else's file");
+
+                        return _projects.Write(model, path);
+                    },
+                };
+
+                var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.TargetNotWritten, report.Failure);
+                Assert.Equal("someone else's file", File.ReadAllText(Target("migrated")));
+                Assert.False(report.LeftBehind);
+                Assert.Empty(_store.Blobs);
+            });
+        }
+
+        [Fact]
+        public Task A_project_that_is_saved_while_it_is_read_is_not_migrated()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var projects = new ProjectsDouble(_projects) { AfterRead = path => File.AppendAllText(path, "saved meanwhile") };
+
+                var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.SourceUnreadable, report.Failure);
+                Assert.Empty(_store.Writes);
+                Assert.False(File.Exists(Target("migrated")));
+            });
+        }
+
+        [Fact]
+        public Task The_old_project_is_kept_when_it_was_saved_after_the_migration()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var migration = NewMigration();
+                var report = await migration.MoveAsync(source, Target("migrated"));
+                Assert.True(report.Succeeded, report.ToString());
+
+                // The project is saved again, with more in it: the new project holds the older state.
+                WriteProject("source", NewClassicTask(), NewClassicTask());
+
+                Assert.False(await migration.DeleteOriginalAsync(report));
+                Assert.True(File.Exists(source));
+            });
+        }
+
+        [Fact]
+        public Task The_old_project_is_kept_when_it_is_saved_while_the_new_one_is_being_checked()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+                Assert.True(report.Succeeded, report.ToString());
+
+                // The check reads the new project last; a save lands right then, after the first look at the old one.
+                var projects = new ProjectsDouble(_projects)
+                {
+                    AfterRead = path =>
+                    {
+                        if (string.Equals(path, report.TargetPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            File.AppendAllText(source, "saved meanwhile");
+                        }
+                    },
+                };
+
+                Assert.False(await NewMigration(projects).DeleteOriginalAsync(report));
+                Assert.True(File.Exists(source));
+            });
+        }
+
+        [Fact]
+        public Task The_old_project_is_kept_when_a_credential_now_holds_another_key_of_the_same_length()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var migration = NewMigration();
+                var report = await migration.MoveAsync(source, Target("migrated"));
+                Assert.True(report.Succeeded, report.ToString());
+
+                // Same length, valid digits, not the key: only a comparison of the key itself notices.
+                var first = report.Moved[0];
+                _store.Blobs[WindowsCredentialKeyProvider.TargetPrefix + first.Reference] = Encoding.Unicode.GetBytes("ABABABABABAB");
+
+                Assert.False(await migration.DeleteOriginalAsync(report));
+                Assert.True(File.Exists(source));
+            });
+        }
+
+        [Fact]
+        public Task The_old_project_is_kept_when_the_new_project_now_names_another_provider()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var migration = NewMigration();
+                var report = await migration.MoveAsync(source, Target("migrated"));
+                Assert.True(report.Succeeded, report.ToString());
+
+                // The reference stays and resolves in the Credential Manager, but a run would ask another provider for it.
+                var migrated = await _projects.ReadAsync(report.TargetPath, CancellationToken.None);
+                var first = report.Moved[0];
+                ((IKeyMigrationHost)migrated!.TaskCollection[first.Task - 1]).BindKeySlot(first.Slot, "other.provider", first.Reference);
+                new DatabaseReaderWriter(new ProjectManager(Path.Combine(_folder, "appdata"))).WriteDatabase(migrated, report.TargetPath);
+
+                Assert.False(await migration.DeleteOriginalAsync(report));
+                Assert.True(File.Exists(source));
+            });
+        }
+
+        [Fact]
+        public Task A_failed_run_that_cannot_undo_everything_names_what_is_left()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var flaky = new FlakyStore(_store) { FailWriteNumber = 2, DeleteError = CredentialErrors.AccessDenied };
+                var dialogs = new DialogsDouble { Source = source, Target = Target("migrated") };
+
+                await NewFlow(dialogs, flaky).RunAsync();
+
+                // The first key was stored and could not be removed again: it is in the vault, and the message names it.
+                var stored = Assert.Single(_store.Blobs.Keys);
+                var (text, isError) = Assert.Single(dialogs.Informed);
+                Assert.True(isError);
+                Assert.Contains(stored, text, StringComparison.Ordinal);
+                Assert.DoesNotContain(Text("messageKeyMigrationUndone"), text, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public Task A_new_project_that_cannot_be_deleted_after_a_failure_is_named()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                FileStream? hold = null;
+                var projects = new ProjectsDouble(_projects)
+                {
+                    // The check fails (a key in the text) while something has the new file open: it cannot be deleted.
+                    OnText = (path, text) =>
+                    {
+                        hold = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+
+                        return text + KeyOf[SecureKeySlots.ClassicACurrent];
+                    },
+                };
+
+                try
+                {
+                    var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
+
+                    Assert.Equal(KeyMigrationFailure.VerificationFailed, report.Failure);
+                    Assert.Equal(Target("migrated"), report.UndeletedTarget);
+                    Assert.True(report.LeftBehind);
+                    Assert.Empty(_store.Blobs);
+                }
+                finally
+                {
+                    hold?.Dispose();
+                }
+            });
+        }
+
         // ── The dialogs ──
 
         [Fact]
@@ -631,7 +828,8 @@ namespace RFiDGear.Tests.SecureKeys
         // The texts of the application, so that the placeholders of the messages are checked too.
         private static string Text(string key) => Manifest.GetString(key, CultureInfo.GetCultureInfo("en"))!;
 
-        private KeyMigrationFlow NewFlow(IKeyMigrationDialogs dialogs) => new KeyMigrationFlow(NewMigration(), dialogs, Text);
+        private KeyMigrationFlow NewFlow(IKeyMigrationDialogs dialogs, ICredentialStore? store = null) =>
+            new KeyMigrationFlow(NewMigration(store: store), dialogs, Text);
 
         private static Task Sta(Func<Task> test) => StaTestRunner.RunOnStaThreadAsync(test);
 
@@ -640,9 +838,17 @@ namespace RFiDGear.Tests.SecureKeys
         private KeyMigration NewMigration(IKeyMigrationProjects? projects = null, ICredentialStore? store = null, Func<string>? references = null) =>
             new KeyMigration(projects ?? _projects, new WindowsCredentialKeyProvider(store ?? _store), references);
 
-        private string WriteProject(string name, params object[] tasks)
+        private string WriteProject(string name, params object[] tasks) => WriteProjectOfVersion(name, null, tasks);
+
+        // A project as an application of another version wrote it: the manifest names that version.
+        private string WriteProjectOfVersion(string name, string? manifestVersion, params object[] tasks)
         {
             var model = new ChipTaskHandlerModel();
+
+            if (manifestVersion != null)
+            {
+                model.ManifestVersion = manifestVersion;
+            }
 
             foreach (var task in tasks)
             {
@@ -818,11 +1024,21 @@ namespace RFiDGear.Tests.SecureKeys
 
             public Func<ChipTaskHandlerModel, string, string?>? OnWrite { get; init; }
 
-            public Func<string, string>? OnText { get; init; }
+            public Func<string, string, string>? OnText { get; init; }
+
+            public Action<string>? AfterRead { get; init; }
 
             public string TargetPathOf(string path) => _inner.TargetPathOf(path);
 
-            public Task<ChipTaskHandlerModel?> ReadAsync(string path, CancellationToken cancellationToken) => _inner.ReadAsync(path, cancellationToken);
+            public async Task<ChipTaskHandlerModel?> ReadAsync(string path, CancellationToken cancellationToken)
+            {
+                var model = await _inner.ReadAsync(path, cancellationToken).ConfigureAwait(true);
+                AfterRead?.Invoke(path);
+
+                return model;
+            }
+
+            public string? Fingerprint(string path) => _inner.Fingerprint(path);
 
             public string? Write(ChipTaskHandlerModel model, string path) => OnWrite != null ? OnWrite(model, path) : _inner.Write(model, path);
 
@@ -830,7 +1046,7 @@ namespace RFiDGear.Tests.SecureKeys
             {
                 var text = _inner.ReadProjectText(path);
 
-                return text != null && OnText != null ? OnText(text) : text;
+                return text != null && OnText != null ? OnText(path, text) : text;
             }
         }
 
@@ -852,6 +1068,8 @@ namespace RFiDGear.Tests.SecureKeys
 
                 throw new InvalidDataException("not a project: " + path);
             }
+
+            public string? Fingerprint(string path) => _inner.Fingerprint(path);
 
             public string? Write(ChipTaskHandlerModel model, string path) => _inner.Write(model, path);
 

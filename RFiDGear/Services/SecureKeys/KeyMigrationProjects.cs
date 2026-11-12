@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using RFiDGear.Infrastructure.FileAccess;
@@ -23,10 +24,18 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>Reads a project without changing anything that the application holds.</summary>
         /// <param name="path">The project file.</param>
         /// <param name="cancellationToken">Cancelled when the person gives up.</param>
-        /// <returns>The project, or <c>null</c> when it cannot be read.</returns>
+        /// <returns>
+        /// The project, or <c>null</c> when it cannot be read or when a newer version of the application made it: it would
+        /// be written again without the parts this version does not know.
+        /// </returns>
         Task<ChipTaskHandlerModel?> ReadAsync(string path, CancellationToken cancellationToken);
 
-        /// <summary>Writes a project to a new file.</summary>
+        /// <summary>Identifies the content of a file, so that a file which was replaced since can be told from the one that was read.</summary>
+        /// <param name="path">The file.</param>
+        /// <returns>The hash of the content as hexadecimal digits, or <c>null</c> when the file cannot be read.</returns>
+        string? Fingerprint(string path);
+
+        /// <summary>Writes a project to a new file. A file that exists, also one that appears while the project is written, is kept.</summary>
         /// <param name="model">The project.</param>
         /// <param name="path">The file.</param>
         /// <returns>The file that was written, or <c>null</c> when the project could not be written.</returns>
@@ -65,11 +74,27 @@ namespace RFiDGear.Services.SecureKeys
 
             var (result, model) = await _readerWriter.ReadProjectAsync(path).ConfigureAwait(true);
 
-            return result.Success ? model : null;
+            // The way the application opens a project: one from a newer version is refused, not read as far as it is understood.
+            return result.Success && result.IsSupportedVersion ? model : null;
         }
 
         /// <inheritdoc />
-        public string? Write(ChipTaskHandlerModel model, string path) => _readerWriter.WriteDatabase(model, path);
+        public string? Fingerprint(string path)
+        {
+            try
+            {
+                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+                return Convert.ToHexString(SHA256.HashData(stream));
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                return null;
+            }
+        }
+
+        /// <inheritdoc />
+        public string? Write(ChipTaskHandlerModel model, string path) => _readerWriter.WriteDatabase(model, path, replaceExisting: false);
 
         /// <inheritdoc />
         public string? ReadProjectText(string path)

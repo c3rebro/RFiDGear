@@ -59,6 +59,44 @@ namespace RFiDGear.Tests
             }
         }
 
+        [Theory]
+        [InlineData("project.rfPrj")]
+        [InlineData("project.xml")]
+        public void WriteProject_WithoutReplacing_KeepsAFileThatExistsAndLeavesNoStagingFiles(string name)
+        {
+            using (var folder = new TemporaryFolder())
+            {
+                var readerWriter = new DatabaseReaderWriter(new ProjectManager(folder.Combine("appdata")));
+                var target = folder.Combine(name);
+                File.WriteAllText(target, "old content");
+
+                Assert.ThrowsAny<IOException>(() => readerWriter.WriteDatabase(new ChipTaskHandlerModel(), target, replaceExisting: false));
+
+                Assert.Equal("old content", File.ReadAllText(target));
+                Assert.Equal(new[] { target }, folder.Files());
+            }
+        }
+
+        [Fact]
+        public void WriteProject_WithoutReplacing_StillCreatesANewFile()
+        {
+            using (var folder = new TemporaryFolder())
+            {
+                var readerWriter = new DatabaseReaderWriter(new ProjectManager(folder.Combine("appdata")));
+                var target = folder.Combine("project.rfPrj");
+
+                var written = readerWriter.WriteDatabase(new ChipTaskHandlerModel(), target, replaceExisting: false);
+
+                Assert.Equal(target, written);
+                using (var archive = ZipFile.OpenRead(target))
+                {
+                    Assert.Contains(archive.Entries, entry => entry.Name == "taskdatabase.xml");
+                }
+
+                Assert.Equal(new[] { target }, folder.Files());
+            }
+        }
+
         [Fact]
         public void WriteProject_LeavesNoCopyOfTheProjectInTheApplicationDataFolder()
         {

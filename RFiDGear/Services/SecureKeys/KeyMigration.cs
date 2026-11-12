@@ -84,6 +84,24 @@ namespace RFiDGear.Services.SecureKeys
 
         /// <summary>Gets whether the project holds no typed key that could be moved; nothing was written then.</summary>
         internal bool NothingToMove => Failure == KeyMigrationFailure.None && Moved.Count == 0;
+
+        /// <summary>
+        /// Gets the hash of the file the keys were taken from, as the migration read it. It is not secret and no key can be
+        /// told from it. Deleting the original is refused for a file that has another hash by then.
+        /// </summary>
+        public string SourceFingerprint { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Gets the references of credentials that a failed migration stored and could not remove again. The credential
+        /// names start with <see cref="WindowsCredentialKeyProvider.TargetPrefix"/>.
+        /// </summary>
+        public IReadOnlyList<string> UnremovedReferences { get; init; } = Array.Empty<string>();
+
+        /// <summary>Gets the new project that a failed migration could not delete again; empty when there is none.</summary>
+        public string UndeletedTarget { get; init; } = string.Empty;
+
+        /// <summary>Gets whether a failed migration left something behind that the person has to remove.</summary>
+        internal bool LeftBehind => UnremovedReferences.Count > 0 || UndeletedTarget.Length > 0;
     }
 
     /// <summary>
@@ -144,9 +162,13 @@ namespace RFiDGear.Services.SecureKeys
 
             KeyMigrationReport Fail(KeyMigrationFailure failure, int detail = 0)
             {
-                Rollback(stored, written);
+                var (unremoved, undeleted) = Rollback(stored, written);
 
-                return new KeyMigrationReport(source, string.Empty, failure, detail, tasks, 0, Array.Empty<MovedKey>(), notMoved);
+                return new KeyMigrationReport(source, string.Empty, failure, detail, tasks, 0, Array.Empty<MovedKey>(), notMoved)
+                {
+                    UnremovedReferences = unremoved,
+                    UndeletedTarget = undeleted,
+                };
             }
 
             if (string.Equals(source, target, StringComparison.OrdinalIgnoreCase))
@@ -163,9 +185,12 @@ namespace RFiDGear.Services.SecureKeys
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // The file is hashed before and after it is read: a project that is saved meanwhile is not migrated half and half,
+                // and the hash is what the delete step compares with later.
+                var fingerprint = _projects.Fingerprint(source);
                 var model = await _projects.ReadAsync(source, cancellationToken).ConfigureAwait(true);
 
-                if (model == null)
+                if (model == null || fingerprint == null || fingerprint != _projects.Fingerprint(source))
                 {
                     return Fail(KeyMigrationFailure.SourceUnreadable);
                 }
@@ -243,7 +268,10 @@ namespace RFiDGear.Services.SecureKeys
                 var moved = plan.Select(step => new MovedKey(step.Task, step.Slot, step.Key.Reference!)).ToList();
                 Log.ForContext<KeyMigration>().Information("Moved {Slots} typed keys ({Different} different) of a project into the key store", moved.Count, keys.Count);
 
-                return new KeyMigrationReport(source, written, KeyMigrationFailure.None, 0, tasks, keys.Count, moved, notMoved);
+                return new KeyMigrationReport(source, written, KeyMigrationFailure.None, 0, tasks, keys.Count, moved, notMoved)
+                {
+                    SourceFingerprint = fingerprint,
+                };
             }
             catch (OperationCanceledException)
             {
@@ -278,6 +306,7 @@ namespace RFiDGear.Services.SecureKeys
             ArgumentNullException.ThrowIfNull(report);
 
             if (!report.Succeeded
+                || report.SourceFingerprint.Length == 0
                 || string.Equals(report.SourcePath, report.TargetPath, StringComparison.OrdinalIgnoreCase)
                 || !File.Exists(report.TargetPath)
                 || !File.Exists(report.SourcePath))
@@ -287,7 +316,20 @@ namespace RFiDGear.Services.SecureKeys
 
             try
             {
+                // Only the file that was read is deleted. If the project was saved or replaced since, the new project holds an
+                // older state of it, and the file is the only place with the newer one.
+                if (_projects.Fingerprint(report.SourcePath) != report.SourceFingerprint)
+                {
+                    return false;
+                }
+
                 if (!await StillGivesTheKeysAsync(report, cancellationToken).ConfigureAwait(true))
+                {
+                    return false;
+                }
+
+                // The last look, as close to the deletion as it goes: the checks above take a while.
+                if (_projects.Fingerprint(report.SourcePath) != report.SourceFingerprint)
                 {
                     return false;
                 }
@@ -398,19 +440,17 @@ namespace RFiDGear.Services.SecureKeys
             return null;
         }
 
-        // Whether the reference gives the key that is expected: the key itself, or only its length when the key is not at hand.
-        private async Task<bool> GivesBackAsync(string reference, string slot, byte[]? expected, CancellationToken cancellationToken, int length = 0)
+        // Whether the reference gives exactly the key that is expected.
+        private async Task<bool> GivesBackAsync(string reference, string slot, byte[] expected, CancellationToken cancellationToken)
         {
-            using var answer = await _keyStore.ResolveAsync(RequestFor(reference, slot, expected?.Length ?? length), cancellationToken).ConfigureAwait(true);
+            using var answer = await _keyStore.ResolveAsync(RequestFor(reference, slot, expected.Length), cancellationToken).ConfigureAwait(true);
 
             if (!answer.IsResolved || answer.Key is not SecureKeyLease lease)
             {
                 return false;
             }
 
-            return expected == null
-                ? lease.Length == length
-                : lease.Length == expected.Length && CryptographicOperations.FixedTimeEquals(lease.Key, expected);
+            return lease.Length == expected.Length && CryptographicOperations.FixedTimeEquals(lease.Key, expected);
         }
 
         // The new project is read again as another program would: no key is left in its text, every slot is bound as intended
@@ -463,38 +503,65 @@ namespace RFiDGear.Services.SecureKeys
             text.Contains(hex, StringComparison.OrdinalIgnoreCase)
             || text.Contains(string.Join(" ", Enumerable.Range(0, hex.Length / 2).Select(i => hex.Substring(i * 2, 2))), StringComparison.OrdinalIgnoreCase);
 
+        // Before the original goes: the new project binds every moved slot to the Credential Manager, and each reference gives
+        // exactly the key that the original holds for the slot. The original is read again for that, because a credential may
+        // have been replaced by another key (of the same length) since the migration.
         private async Task<bool> StillGivesTheKeysAsync(KeyMigrationReport report, CancellationToken cancellationToken)
         {
-            var reloaded = await _projects.ReadAsync(report.TargetPath, cancellationToken).ConfigureAwait(true);
+            var original = await _projects.ReadAsync(report.SourcePath, cancellationToken).ConfigureAwait(true);
+            var migrated = await _projects.ReadAsync(report.TargetPath, cancellationToken).ConfigureAwait(true);
 
-            if (reloaded == null)
+            if (original == null || migrated == null)
             {
                 return false;
             }
 
             foreach (var moved in report.Moved)
             {
-                if (moved.Task > reloaded.TaskCollection.Count || reloaded.TaskCollection[moved.Task - 1] is not IKeyMigrationHost host)
+                if (moved.Task > original.TaskCollection.Count
+                    || moved.Task > migrated.TaskCollection.Count
+                    || original.TaskCollection[moved.Task - 1] is not IKeyMigrationHost originalHost
+                    || migrated.TaskCollection[moved.Task - 1] is not IKeyMigrationHost migratedHost)
                 {
                     return false;
                 }
 
-                var binding = host.GetKeyBinding(moved.Slot);
+                var binding = migratedHost.GetKeyBinding(moved.Slot);
+                var hex = originalHost.GetEmbeddedKey(moved.Slot);
 
                 if (binding == null
+                    || binding.ProviderId != WindowsCredentialKeyProvider.ProviderId
                     || binding.Reference != moved.Reference
-                    || !await GivesBackAsync(moved.Reference, moved.Slot, null, cancellationToken, host.ExpectedKeyHexLength(moved.Slot) / 2).ConfigureAwait(true))
+                    || !IsKey(hex, originalHost.ExpectedKeyHexLength(moved.Slot)))
                 {
                     return false;
+                }
+
+                var expected = GC.AllocateArray<byte>(hex.Length / 2, pinned: true);
+
+                try
+                {
+                    Convert.FromHexString(hex, expected, out _, out _);
+
+                    if (!await GivesBackAsync(moved.Reference, moved.Slot, expected, cancellationToken).ConfigureAwait(true))
+                    {
+                        return false;
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(expected);
                 }
             }
 
             return true;
         }
 
-        private void Rollback(List<string> stored, string? written)
+        // Undoes what a failed run did. What could not be undone is returned, so that the report can say so: the person has to
+        // remove it by hand, and must not be told that nothing is left.
+        private (IReadOnlyList<string> UnremovedReferences, string UndeletedTarget) Rollback(List<string> stored, string? written)
         {
-            var notRemoved = 0;
+            var notRemoved = new List<string>();
 
             foreach (var reference in stored)
             {
@@ -502,30 +569,34 @@ namespace RFiDGear.Services.SecureKeys
 
                 if (error != 0 && error != CredentialErrors.NotFound)
                 {
-                    notRemoved++;
+                    notRemoved.Add(reference);
                 }
             }
 
-            if (notRemoved > 0)
+            if (notRemoved.Count > 0)
             {
                 // A credential of this run stays in the vault; the references are not secret, but not worth a log line each.
-                Log.ForContext<KeyMigration>().Warning("{Count} credentials that a failed migration stored could not be removed", notRemoved);
+                Log.ForContext<KeyMigration>().Warning("{Count} credentials that a failed migration stored could not be removed", notRemoved.Count);
             }
 
             stored.Clear();
 
             if (written == null)
             {
-                return;
+                return (notRemoved, string.Empty);
             }
 
             try
             {
                 File.Delete(written);
+
+                return (notRemoved, string.Empty);
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
                 Log.ForContext<KeyMigration>().Warning("The new project could not be deleted after a failure ({ExceptionType})", e.GetType().FullName);
+
+                return (notRemoved, written);
             }
         }
 
