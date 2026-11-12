@@ -1967,4 +1967,52 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusFileSettingNameChange" xml:space="preserve">
     <value>Recht zum Ändern der Zugriffsrechte</value>
   </data>
+  <data name="buttonContentKeySlotUseReference" xml:space="preserve">
+    <value>Referenz verwenden...</value>
+  </data>
+  <data name="buttonContentKeySlotUseKey" xml:space="preserve">
+    <value>Schlüssel verwenden</value>
+  </data>
+  <data name="toolTipKeySlotMode" xml:space="preserve">
+    <value>Woher dieser Schlüssel kommt: ein Schlüssel, der hier eingegeben und im Projekt gespeichert wird, oder eine Referenz auf einen Schlüssel in einem Schlüsselspeicher, der beim Ausführen der Aufgabe abgefragt wird. Bei einer Referenz speichert das Projekt nur die Referenz.</value>
+  </data>
+  <data name="toolTipKeySlotReference" xml:space="preserve">
+    <value>Der Name des Schlüssels im Schlüsselspeicher. Das Projekt speichert diesen Namen, nie den Schlüssel.</value>
+  </data>
+  <data name="toolTipKeySlotProvider" xml:space="preserve">
+    <value>Der Schlüsselspeicher, auf den die Referenz zeigt.</value>
+  </data>
+  <data name="buttonContentKeySlotStoreKey" xml:space="preserve">
+    <value>Schlüssel speichern...</value>
+  </data>
+  <data name="toolTipKeySlotStoreKey" xml:space="preserve">
+    <value>Speichert einen Schlüssel unter dieser Referenz in der Windows-Anmeldeinformationsverwaltung. Der Schlüssel wird verdeckt eingegeben und nie wieder angezeigt.</value>
+  </data>
+  <data name="captionKeySlot" xml:space="preserve">
+    <value>Sicherer Schlüssel</value>
+  </data>
+  <data name="messageKeySlotReplaceKey" xml:space="preserve">
+    <value>Der in dieser Aufgabe eingegebene Schlüssel wird daraus entfernt und durch eine Referenz ersetzt. Er ist nirgends sonst gespeichert. Fortfahren?</value>
+  </data>
+  <data name="windowTitleKeySlotStoreKey" xml:space="preserve">
+    <value>Schlüssel speichern</value>
+  </data>
+  <data name="labelKeySlotStoreKeyPrompt" xml:space="preserve">
+    <value>Schlüssel als {0} Hexadezimalziffern (0-9, A-F), ohne Leerzeichen:</value>
+  </data>
+  <data name="buttonContentKeySlotStoreKeyOk" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="buttonContentKeySlotStoreKeyCancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="messageKeySlotKeyStored" xml:space="preserve">
+    <value>Der Schlüssel wurde unter der Referenz gespeichert.</value>
+  </data>
+  <data name="messageKeySlotKeyNotStored" xml:space="preserve">
+    <value>Der Schlüssel konnte nicht gespeichert werden (Fehler {0}).</value>
+  </data>
+  <data name="messageKeySlotKeyInvalid" xml:space="preserve">
+    <value>Erforderlich ist ein Schlüssel aus {0} Hexadezimalziffern (0-9, A-F) ohne Leerzeichen. Es wurde nichts gespeichert.</value>
+  </data>
 </root>

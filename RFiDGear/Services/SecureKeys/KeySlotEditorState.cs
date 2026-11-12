@@ -123,9 +123,12 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>Gets whether the reference is one that a provider could be asked for; empty is not.</summary>
         public bool IsReferenceValid => SecureKeySyntax.IsValidReference(Reference);
 
-        /// <summary>Gets whether a key can be stored under the reference: the Credential Manager is the provider, and the reference is valid.</summary>
-        public bool CanStoreKey =>
-            IsReferenceMode && IsReferenceValid && string.Equals(ProviderId, WindowsCredentialKeyProvider.ProviderId, StringComparison.Ordinal);
+        /// <summary>Gets whether the provider of the binding is one a key can be stored in from here: the Credential Manager is.</summary>
+        public bool ProviderOffersStoreKey =>
+            IsReferenceMode && string.Equals(ProviderId, WindowsCredentialKeyProvider.ProviderId, StringComparison.Ordinal);
+
+        /// <summary>Gets whether a key can be stored under the reference: the provider takes keys, and the reference is valid.</summary>
+        public bool CanStoreKey => ProviderOffersStoreKey && IsReferenceValid;
 
         /// <summary>Gets the command that switches between the key in the task and a reference.</summary>
         public ICommand ToggleModeCommand { get; }
