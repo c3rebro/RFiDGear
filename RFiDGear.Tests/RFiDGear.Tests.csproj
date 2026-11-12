@@ -24,6 +24,18 @@
     <Compile Include="..\RFiDGear.HIL.Tests\ReaderScenarios.cs" Link="Reader\HilScenarios\ReaderScenarios.cs" />
     <!-- The settings file of the hardware tests: its parsing and lookup are tested here (Reader/HilSettingsTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\HilSettings.cs" Link="Reader\HilScenarios\HilSettings.cs" />
+    <!-- The tasks and the vault of the secure-key hardware cases, checked here against a scripted reader and a dictionary
+         as the vault (SecureKeys/HilSecureKeyScenarioSelfCheckTests). -->
+    <Compile Include="..\RFiDGear.HIL.Tests\HilConstants.cs" Link="Reader\HilScenarios\HilConstants.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\HilSecureKeyTasks.cs" Link="Reader\HilScenarios\HilSecureKeyTasks.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\HilVault.cs" Link="Reader\HilScenarios\HilVault.cs" />
+    <!-- The gate in front of the reader of the secure-key cases (SecureKeys/HilSecureKeyFixtureTests). It needs the fixture
+         it wraps, and what that one needs. -->
+    <Compile Include="..\RFiDGear.HIL.Tests\HilSecureKeyFixture.cs" Link="Reader\HilScenarios\HilSecureKeyFixture.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\HilFixture.cs" Link="Reader\HilScenarios\HilFixture.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\HilTaskBuilder.cs" Link="Reader\HilScenarios\HilTaskBuilder.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\HilFileSettings.cs" Link="Reader\HilScenarios\HilFileSettings.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\StaTestRunner.cs" Link="Reader\HilScenarios\HilStaTestRunner.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Extensions\DesfirePluginSample\RFiDGear.Extensions.DesfirePluginSample.csproj" />

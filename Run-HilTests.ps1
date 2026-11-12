@@ -11,9 +11,12 @@
     DESFire card. The reader-scan tests (ReaderScanTests) need a reader and a
     card on it, and they run only when hil.settings.json (next to this script)
     asks for them: "readerScan" for the four cases that need no help,
-    "interactive" for the three that ask you to move cards (message boxes). If
-    the file is missing, this script creates it from hil.settings.sample.json.
-    See RFiDGear.HIL.Tests\README.md.
+    "interactive" for the three that ask you to move cards (message boxes).
+    The secure-key cases (SecureKeyWorkflowTests) run only with "secureKeys":
+    they change the keys of the test application on the card and put
+    credentials into the Windows Credential Manager for a moment. If the file
+    is missing, this script creates it from hil.settings.sample.json.
+    See RFiDGear.HIL.Tests\README.md and SECURE-KEYS.md.
 
     Prerequisites
     -------------
@@ -185,6 +188,7 @@ if (-not (Test-Path $SettingsFile)) {
 
 $readerScan      = $false
 $fileInteractive     = $false
+$secureKeys      = $false
 $settingsProblem = $null
 try {
     # The sample is shown only in a dry run, which creates nothing; a file that could not be created is no setting at all.
@@ -198,20 +202,25 @@ try {
     $settings     = $settingsText | ConvertFrom-Json
     foreach ($property in $settings.PSObject.Properties) {
         $name = $property.Name.ToLowerInvariant()
-        if ($name -ne 'readerscan' -and $name -ne 'interactive') {
-            throw "unknown setting `"$($property.Name)`"; the settings are `"readerScan`" and `"interactive`""
+        if ($name -ne 'readerscan' -and $name -ne 'interactive' -and $name -ne 'securekeys') {
+            throw "unknown setting `"$($property.Name)`"; the settings are `"readerScan`", `"interactive`" and `"secureKeys`""
         }
         if ($property.Value -isnot [bool]) { throw "`"$($property.Name)`" must be true or false" }
-        if ($name -eq 'readerscan') { $readerScan = $property.Value } else { $fileInteractive = $property.Value }
+        switch ($name) {
+            'readerscan' { $readerScan = $property.Value }
+            'interactive' { $fileInteractive = $property.Value }
+            default { $secureKeys = $property.Value }
+        }
     }
     # ConvertFrom-Json keeps the last of two equal keys; the tests treat a setting that is set twice as a mistake.
-    foreach ($key in 'readerScan', 'interactive') {
+    foreach ($key in 'readerScan', 'interactive', 'secureKeys') {
         if ([regex]::Matches($settingsText, '(?i)"' + $key + '"\s*:').Count -gt 1) { throw "`"$key`" is set twice" }
     }
 } catch {
     $settingsProblem = ($_.Exception.Message -split '\r?\n')[0]
     $readerScan  = $false
     $fileInteractive = $false
+    $secureKeys  = $false
 }
 
 # -Interactive turns the questions on for this run, whatever the file says; the reader-scan tests must still be on there.
@@ -243,6 +252,13 @@ if ($settingsProblem) {
     Write-Line '  * Set "interactive": true in hil.settings.json, or start with -Interactive, to'
     Write-Line "    also run the 3 cases that ask you to move cards."
 }
+if (-not $settingsProblem -and $secureKeys) {
+    Write-Line '  * Secure keys: the cases in SECURE-KEYS.md change the keys of the test application' -ForegroundColor Yellow
+    Write-Line '    0x5F5F01 on the card (and set them back) and put credentials named' -ForegroundColor Yellow
+    Write-Line '    RFiDGear/key/hil/... into the Windows Credential Manager of this user for a moment.' -ForegroundColor Yellow
+    Write-Line '    Use a card you can spare. A run that is interrupted can leave the application on the' -ForegroundColor Yellow
+    Write-Line '    card or a credential in the vault: SECURE-KEYS.md says how to clean up.' -ForegroundColor Yellow
+}
 Write-Host ""
 Write-Host "  If no reader or card is detected the tests skip automatically."
 Write-Host ""
@@ -260,10 +276,10 @@ Write-Host "Project    : $ProjectFile" -ForegroundColor DarkGray
 Write-Host "Config     : $Configuration" -ForegroundColor DarkGray
 Write-Line ("Settings   : {0}{1}" -f $SettingsFile, $settingsNote) -ForegroundColor DarkGray
 if ($settingsProblem) {
-    Write-Line "             readerScan = ?, interactive = ?  (this script could not read the file)" -ForegroundColor DarkGray
+    Write-Line "             readerScan = ?, interactive = ?, secureKeys = ?  (this script could not read the file)" -ForegroundColor DarkGray
 } else {
     $forThisRun = if ($interactiveRun -and -not $fileInteractive) { '  (on for this run: -Interactive)' } else { '' }
-    Write-Line ("             readerScan = {0}, interactive = {1}{2}" -f $readerScan, $fileInteractive, $forThisRun) -ForegroundColor DarkGray
+    Write-Line ("             readerScan = {0}, interactive = {1}, secureKeys = {2}{3}" -f $readerScan, $fileInteractive, $secureKeys, $forThisRun) -ForegroundColor DarkGray
 }
 Write-Host "Results    : $TrxFile" -ForegroundColor DarkGray
 Write-Host ""

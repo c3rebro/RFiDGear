@@ -5,20 +5,22 @@ title: RFiDGear hardware tests
 These tests run against a real reader and real cards. They are not part of
 the normal test run (`RFiDGear.Tests`) and not part of CI. The solution
 compiles them. The reader-scan tests open a reader only if the settings file
-asks for it; the older DESFire workflow tests do not wait to be asked (see the
-end).
+asks for it, and so do the secure-key cases (they change keys on the card, see
+`SECURE-KEYS.md`); the older DESFire workflow tests do not wait to be asked (see
+the end).
 
 **The settings file:**
 
 `hil.settings.json` sits in the folder of the solution, next to
 `Run-HilTests.bat`. It is not in git. The tests look for it in the folder of
 the test assembly and in every folder above it, so it is found from the build
-folder, from Visual Studio and from `dotnet test`. It has two settings:
+folder, from Visual Studio and from `dotnet test`. It has three settings:
 
 ```json
 {
   "readerScan": true,
-  "interactive": false
+  "interactive": false,
+  "secureKeys": false
 }
 ```
 
@@ -26,6 +28,11 @@ folder, from Visual Studio and from `dotnet test`. It has two settings:
   the four cases that need no help.
 - `interactive`: also run the three cases that ask you to move cards. It has no
   effect while `readerScan` is false.
+- `secureKeys`: also run the secure-key cases (`SecureKeyWorkflowTests`). They
+  change the key of the test application `0x5F5F01` on the card and put test
+  credentials into the Windows Credential Manager for a moment. It does not
+  depend on `readerScan`. `SECURE-KEYS.md` has the cases, the checklist for the
+  ones that need a person, and how to clean up after an interrupted run.
 - The file may hold `//` comment lines and trailing commas. A setting that is
   left out is off. A file that cannot be read, with a setting that does not
   exist, one that is not `true` or `false` or one that is set twice, asks for
