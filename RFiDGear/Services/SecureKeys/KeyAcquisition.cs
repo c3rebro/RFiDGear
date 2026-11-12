@@ -83,12 +83,6 @@ namespace RFiDGear.Services.SecureKeys
                         return Fail(context, need.Slot, binding.ProviderId, NoKeyContext);
                     }
 
-                    // A run that was cancelled asks for no more keys.
-                    if (context.CancellationToken.IsCancellationRequested)
-                    {
-                        return Fail(context, need.Slot, binding.ProviderId, SecureKeyFailureReason.Cancelled.ToString());
-                    }
-
                     if (!started)
                     {
                         started = true;
@@ -100,12 +94,6 @@ namespace RFiDGear.Services.SecureKeys
                     if (key == null)
                     {
                         return Fail(context, need.Slot, binding.ProviderId, cause);
-                    }
-
-                    // The run was cancelled while the provider answered: the command must go on to no card call.
-                    if (context.CancellationToken.IsCancellationRequested)
-                    {
-                        return Fail(context, need.Slot, binding.ProviderId, SecureKeyFailureReason.Cancelled.ToString());
                     }
 
                     hex[need.Slot] = key;
@@ -138,7 +126,9 @@ namespace RFiDGear.Services.SecureKeys
                 Interactive = context.Interactive,
             };
 
-            // The continuation goes back to where the command runs: it writes properties that the screen is bound to.
+            // The run's token decides here and nowhere else: the registry answers Cancelled before it asks a provider, stops
+            // waiting for one that is busy, and disposes a key that arrives after the run was cancelled. The continuation goes
+            // back to where the command runs: it writes properties that the screen is bound to.
             using var answer = await context.Registry.ResolveAsync(binding.ProviderId, request, context.CancellationToken);
 
             if (!answer.IsResolved)
