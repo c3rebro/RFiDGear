@@ -15,6 +15,16 @@ The provider layer now returns a small, normalized set of error codes to make do
 
 When you add or update provider logic, choose the most specific code that matches the condition so that calling layers can react accurately (e.g., prompting for different credentials versus retrying the connection).
 
+## The Windows Credential Manager as a secure key provider
+RFiDGear brings one secure key provider of its own, `windows-credential-manager` (`WindowsCredentialKeyProvider`). A task slot that is bound to it holds a reference instead of a key, and the key is read from the Credential Manager when the task runs.
+
+- The id is stored in project files and never changes. Extensions cannot take it over.
+- A reference is the name of a generic credential below the fixed prefix `RFiDGear/key/`. Whatever a project says, the name that reaches the vault starts with that prefix, so a project cannot read the credential of another application.
+- The credential holds the hexadecimal digits of the key as UTF-16 text, which is how `cmdkey` stores a password: 12 digits for a MIFARE Classic key, 32 for a DES or AES key, 48 for a 3K3DES key. Without a tool of ours, a key is stored with `cmdkey /generic:RFiDGear/key/<reference> /user:RFiDGear /pass`, which asks for the digits at a prompt. Do not write them on the command line (`/pass:<digits>`): other programs can read a command line, and shell histories and process logs keep it. The prompt reads from the console, so a test cannot drive it; a test stores a dummy value with `/pass:<digits>` to pin the format that the tool writes, and reads it back.
+- What it protects against is a key that ends up in a project file, a backup or an e-mail. It does not protect against a program that runs as the same user: the Credential Manager gives the secret to every process of that user.
+- The conversion from the stored text to the key works on the bytes and never makes a string, because a string cannot be erased. The copies of the secret that the vault hands out are erased, and the arrays that hold one are on the pinned object heap, so the garbage collector never leaves an old copy behind.
+- `ICredentialStore` is the seam in front of the vault. The tests use a dictionary; one test uses the real vault with a name of its own and removes it.
+
 ## Trying an extension in RFiDGear while you develop it
 RFiDGear reads its extensions from `%ProgramData%\RFiDGear\Extensions` once, at start-up. After a build, the extension and the support libraries it needs (`RFiDGear.ExtensionLibraries.*`) can be copied there for you, so you only restart RFiDGear.
 

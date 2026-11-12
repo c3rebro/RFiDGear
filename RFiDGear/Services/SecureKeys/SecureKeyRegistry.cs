@@ -55,18 +55,41 @@ namespace RFiDGear.Services.SecureKeys
                 .ToList();
 
         /// <summary>
-        /// Builds the registry from the extensions of this installation, composing them first if that has not happened.
-        /// Whatever goes wrong is logged and gives a registry without providers: a project that names one then fails its
-        /// task with a clear reason, and nothing else is affected. Call it on the user-interface thread.
+        /// Gets the providers that are part of RFiDGear: the Windows Credential Manager. Their ids are reserved; no extension
+        /// can take one over.
+        /// </summary>
+        /// <returns>The registrations.</returns>
+        internal static IReadOnlyList<SecureKeyProviderRegistration> BuiltInProviders() =>
+            new[] { WindowsCredentialKeyProvider.Registration() };
+
+        /// <summary>
+        /// Builds the registry from the built-in providers and the extensions of this installation, composing the extensions
+        /// first if that has not happened. Whatever goes wrong with the extensions is logged and leaves the built-in providers:
+        /// a project that names an extension's provider then fails its task with a clear reason, and nothing else is
+        /// affected. Call it on the user-interface thread.
         /// </summary>
         /// <returns>The registry.</returns>
-        internal static SecureKeyRegistry FromApplicationExtensions()
-        {
-            try
+        internal static SecureKeyRegistry FromApplicationExtensions() =>
+            FromComposition(() =>
             {
                 MefHelper.Instance.EnsureCompose();
 
-                return FromContainer(MefHelper.Instance.Container, Array.Empty<SecureKeyProviderRegistration>());
+                return MefHelper.Instance.Container;
+            });
+
+        /// <summary>
+        /// Builds the registry from the built-in providers and the container that <paramref name="compose"/> gives. When it
+        /// throws, the registry holds the built-in providers only. Internal so that a test can make composing fail.
+        /// </summary>
+        /// <param name="compose">Composes the extensions and returns the container.</param>
+        /// <returns>The registry.</returns>
+        internal static SecureKeyRegistry FromComposition(Func<CompositionContainer?> compose)
+        {
+            var builtIns = BuiltInProviders();
+
+            try
+            {
+                return FromContainer(compose(), builtIns);
             }
             catch (Exception e)
             {
@@ -74,7 +97,7 @@ namespace RFiDGear.Services.SecureKeys
                     "The secure key providers of the extensions could not be set up ({ExceptionType}); continuing without them",
                     e.GetType().FullName);
 
-                return Empty;
+                return FromContainer(null, builtIns);
             }
         }
 
