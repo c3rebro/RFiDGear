@@ -295,8 +295,9 @@ namespace RFiDGear.Services.SecureKeys
 
         /// <summary>
         /// Deletes the project that the keys were moved out of. It checks first, again, that the new project can be read and that
-        /// every key it refers to is there, because the person may have changed the key store since. Nothing is deleted
-        /// unless the migration succeeded and the new project and the original are different files.
+        /// every reference of it gives exactly the key that the original holds, because the person may have changed the key
+        /// store since. Nothing is deleted unless the migration succeeded, the new project and the original are different
+        /// files, and the original is still the file that was read.
         /// </summary>
         /// <param name="report">The report of a successful migration.</param>
         /// <param name="cancellationToken">Cancelled when the person gives up.</param>
@@ -316,19 +317,14 @@ namespace RFiDGear.Services.SecureKeys
 
             try
             {
-                // Only the file that was read is deleted. If the project was saved or replaced since, the new project holds an
-                // older state of it, and the file is the only place with the newer one.
-                if (_projects.Fingerprint(report.SourcePath) != report.SourceFingerprint)
-                {
-                    return false;
-                }
-
                 if (!await StillGivesTheKeysAsync(report, cancellationToken).ConfigureAwait(true))
                 {
                     return false;
                 }
 
-                // The last look, as close to the deletion as it goes: the checks above take a while.
+                // Only the file that was read is deleted. If the project was saved or replaced since, the new project holds an
+                // older state of it, and the file is the only place with the newer one. This is the last look, as close to the
+                // deletion as it goes: the check above takes a while, and a save may land in it.
                 if (_projects.Fingerprint(report.SourcePath) != report.SourceFingerprint)
                 {
                     return false;
