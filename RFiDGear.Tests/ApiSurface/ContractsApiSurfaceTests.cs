@@ -45,6 +45,25 @@ namespace RFiDGear.Tests.ApiSurface
         }
 
         [Fact]
+        public void Snapshot_ListsTheSecureKeyContract_ThatProvidersAreCompiledAgainst()
+        {
+            var expected = ApiSurfaceGuard.ReadBaseline(BaselineFileName);
+
+            foreach (var declaration in new[]
+            {
+                "public interface RFiDGear.Contracts.ISecureKeyProvider",
+                "public abstract class RFiDGear.Contracts.ResolvedSecureKey",
+                "public sealed class RFiDGear.Contracts.SecureKeyLease",
+                "public sealed class RFiDGear.Contracts.SecureKeyRequest",
+                "public sealed class RFiDGear.Contracts.SecureKeyResolution",
+                "public enum RFiDGear.Contracts.SecureKeyFailureReason",
+            })
+            {
+                Assert.Contains(expected, line => line.StartsWith(declaration, StringComparison.Ordinal));
+            }
+        }
+
+        [Fact]
         public void ContractsAssembly_DependsOnlyOnTheFramework()
         {
             // An extension author must be able to reference the contract without the application. A reference to any
@@ -114,6 +133,16 @@ namespace RFiDGear.Tests.ApiSurface
 
             Assert.Contains(expected, line => line.Contains("[MetadataAttribute]", StringComparison.Ordinal)
                 && line.Contains("UiExtensionAttribute", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Snapshot_RecordsTheProviderAttributeAndItsMetadataView()
+        {
+            var expected = ApiSurfaceGuard.ReadBaseline(BaselineFileName);
+
+            Assert.Contains(expected, line => line.Contains("[MetadataAttribute]", StringComparison.Ordinal)
+                && line.Contains("RFiDGear.ExtensionSdk.SecureKeyProviderAttribute", StringComparison.Ordinal));
+            Assert.Contains(expected, line => line.StartsWith("public interface RFiDGear.ExtensionSdk.ISecureKeyProviderMetadata", StringComparison.Ordinal));
         }
 
         [Fact]

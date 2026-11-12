@@ -86,6 +86,9 @@ public interface RFiDGear.Contracts.IReaderHost
     public event System.EventHandler ReaderStateChanged
     public System.Threading.Tasks.Task<ReaderSnapshot> ScanAsync(System.Threading.CancellationToken ct = default)
 
+public interface RFiDGear.Contracts.ISecureKeyProvider
+    public System.Threading.Tasks.ValueTask<SecureKeyResolution> ResolveAsync(SecureKeyRequest request, System.Threading.CancellationToken cancellationToken)
+
 public interface RFiDGear.Contracts.ITaskExecHost
     public bool IsRunning { get; }
     public event System.EventHandler<ExecResult> ExecutionCompleted
@@ -125,6 +128,69 @@ public sealed class RFiDGear.Contracts.ReaderSnapshot : System.IEquatable<Reader
     public override bool Equals(object? obj)
     public override int GetHashCode()
     public override string ToString()
+
+public abstract class RFiDGear.Contracts.ResolvedSecureKey : System.IDisposable
+    protected ctor()
+    protected abstract void Dispose(bool disposing)
+    public void Dispose()
+
+public enum RFiDGear.Contracts.SecureKeyAlgorithm : int
+    Des = 0
+    TripleDes2K = 1
+    TripleDes3K = 2
+    Aes128 = 3
+    Classic6Byte = 4
+
+public enum RFiDGear.Contracts.SecureKeyFailureReason : int
+    NotFound = 1
+    NotAuthorized = 2
+    ProviderUnavailable = 3
+    Timeout = 4
+    Cancelled = 5
+    InvalidKey = 6
+    Unsupported = 7
+
+public sealed class RFiDGear.Contracts.SecureKeyLease : ResolvedSecureKey
+    public ctor(System.ReadOnlySpan<byte> key)
+    public System.ReadOnlySpan<byte> Key { get; }
+    public int Length { get; }
+    protected override void Dispose(bool disposing)
+    public string ToHexString()
+    public override string ToString()
+
+public sealed class RFiDGear.Contracts.SecureKeyRequest
+    public ctor()
+    public SecureKeyAlgorithm Algorithm { get; init; }
+    public string? CardUid { get; init; }
+    public bool Interactive { get; init; }
+    public string Reference { get; init; }
+    public string? RunId { get; init; }
+    public SecureKeyScope Scope { get; init; }
+    public string SlotId { get; init; }
+    public string TaskIndex { get; init; }
+    public SecureKeyUsage Usage { get; init; }
+    public override string ToString()
+
+public sealed class RFiDGear.Contracts.SecureKeyResolution : System.IDisposable
+    public SecureKeyFailureReason? FailureReason { get; }
+    public bool IsResolved { get; }
+    public ResolvedSecureKey? Key { get; }
+    public void Dispose()
+    public static SecureKeyResolution Failed(SecureKeyFailureReason reason)
+    public static SecureKeyResolution Resolved(ResolvedSecureKey key)
+    public override string ToString()
+
+public sealed class RFiDGear.Contracts.SecureKeyScope
+    public ctor()
+    public uint? ApplicationId { get; init; }
+    public int? KeyNumber { get; init; }
+    public static SecureKeyScope None { get; }
+    public override string ToString()
+
+public enum RFiDGear.Contracts.SecureKeyUsage : int
+    Authenticate = 0
+    ChangeKeyCurrent = 1
+    ChangeKeyNew = 2
 
 public record RFiDGear.Contracts.TaskOutcome : System.IEquatable<TaskOutcome>
     public ctor(int Position, string ProjectTaskIndex, string TaskTypeName, bool? IsSuccess, string NormalizedErrorCode, string? SkipReason = null)
