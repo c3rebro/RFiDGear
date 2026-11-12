@@ -291,7 +291,11 @@ namespace RFiDGear.Infrastructure.FileAccess
             Convert.ToInt64(string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", appVersion.Major, appVersion.Minor, appVersion.Build), CultureInfo.InvariantCulture);
 
         /// <summary>
-        /// Normalizes legacy XML values in a project payload to the currently supported ones.
+        /// Normalizes legacy XML values in a project payload to the currently supported ones. The old name of the error
+        /// code <c>AuthFailure</c> (<c>AuthenticationError</c>) is only replaced as the whole value of the two elements that
+        /// hold an error code, not anywhere in the text: a provider id, a key reference, a description or a path may
+        /// contain it and must not change. Text that only looks like such an element, inside a CDATA section, a comment or
+        /// a processing instruction, is not an element and is left alone as well.
         /// </summary>
         /// <param name="projectXml">The raw project XML.</param>
         /// <returns>The normalized project XML.</returns>
@@ -302,7 +306,81 @@ namespace RFiDGear.Infrastructure.FileAccess
                 return projectXml ?? string.Empty;
             }
 
-            return projectXml.Replace("AuthenticationError", "AuthFailure", StringComparison.Ordinal);
+            var result = new StringBuilder(projectXml.Length);
+            var position = 0;
+
+            while (position < projectXml.Length)
+            {
+                var literalStart = FindNextLiteralText(projectXml, position, out var literalEnd);
+
+                // Markup up to the next literal is normalized; the literal itself is copied as it is.
+                result.Append(NormalizeErrorCodeElements(projectXml.Substring(position, literalStart - position)));
+                result.Append(projectXml, literalStart, literalEnd - literalStart);
+                position = literalEnd;
+            }
+
+            return result.ToString();
+        }
+
+        // The elements of a project that store an error code by name: the condition of a task, and a checkpoint.
+        private static readonly string[] LegacyErrorCodeElements = { "SelectedExecuteConditionErrorLevel", "ErrorLevel" };
+
+        // Where text may contain something that looks like markup without being any: the opening and closing marks.
+        private static readonly (string Open, string Close)[] LiteralTextMarks =
+        {
+            ("<![CDATA[", "]]>"),
+            ("<!--", "-->"),
+            ("<?", "?>"),
+        };
+
+        private static string NormalizeErrorCodeElements(string markup)
+        {
+            foreach (var element in LegacyErrorCodeElements)
+            {
+                markup = markup.Replace(
+                    $"<{element}>AuthenticationError</{element}>",
+                    $"<{element}>AuthFailure</{element}>",
+                    StringComparison.Ordinal);
+            }
+
+            return markup;
+        }
+
+        /// <summary>
+        /// Finds the next CDATA section, comment or processing instruction at or after <paramref name="from"/>.
+        /// </summary>
+        /// <returns>
+        /// Where it starts; <paramref name="end"/> is where it ends (the end of the text for one that is never closed). When
+        /// there is none, both are the length of the text.
+        /// </returns>
+        private static int FindNextLiteralText(string xml, int from, out int end)
+        {
+            var start = xml.Length;
+            var openLength = 0;
+            var close = string.Empty;
+
+            foreach (var (open, closing) in LiteralTextMarks)
+            {
+                var found = xml.IndexOf(open, from, StringComparison.Ordinal);
+
+                if (found >= 0 && found < start)
+                {
+                    start = found;
+                    openLength = open.Length;
+                    close = closing;
+                }
+            }
+
+            if (start == xml.Length)
+            {
+                end = xml.Length;
+                return start;
+            }
+
+            var closeAt = xml.IndexOf(close, start + openLength, StringComparison.Ordinal);
+            end = closeAt < 0 ? xml.Length : closeAt + close.Length;
+
+            return start;
         }
 
         private SettingsLoadResult CreateSettingsLoadResult(Version appVersion, string resolvedPath, DefaultSpecification specification)

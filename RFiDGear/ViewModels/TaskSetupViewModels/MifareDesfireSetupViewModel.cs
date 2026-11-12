@@ -35,6 +35,7 @@ using RFiDGear.UI.UIExtensions;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
 using Elatec.NET;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
@@ -1129,6 +1130,100 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3400:Methods should not return constants", Justification = "XmlSerializer ShouldSerialize pattern: the legacy flag is read but never written.")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S2325:Methods and properties that don't access instance data should be static", Justification = "XmlSerializer finds the ShouldSerialize pattern on the instance.")]
         public bool ShouldSerializeIsAppSettingsExactMatch() => false;
+
+        #region Key bindings
+
+        private KeyBindingEntry[] keyBindings = Array.Empty<KeyBindingEntry>();
+
+        /// <summary>
+        /// Gets or sets the key slots of this task whose key comes from a secure key provider instead of from the project.
+        /// A slot that has an entry here never uses its embedded key. The list is replaced as a whole and both accessors
+        /// copy it: the dialog that edits a task copies every public property by reference, and a shared list would let a
+        /// cancelled edit change the task.
+        /// </summary>
+        public KeyBindingEntry[] KeyBindings
+        {
+            get => KeyBindingList.Copy(keyBindings);
+            set
+            {
+                keyBindings = KeyBindingList.Copy(value);
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>Tells the serializer to write <see cref="KeyBindings"/> only when there are any, so that a task without bindings is saved as before.</summary>
+        /// <returns><see langword="true"/> when the task has at least one key binding.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeKeyBindings() => keyBindings.Length > 0;
+
+        /// <summary>Returns whether a slot has a key binding, usable or not; see <see cref="SecureKeySlots"/> for the slot ids.</summary>
+        /// <param name="slotId">The slot id.</param>
+        /// <returns><see langword="true"/> when the slot has an entry in <see cref="KeyBindings"/>.</returns>
+        public bool IsKeyBound(string slotId) => KeyBindingList.IsBound(keyBindings, slotId);
+
+        /// <summary>Returns a copy of the binding of a slot.</summary>
+        /// <param name="slotId">The slot id.</param>
+        /// <returns>The binding, or <see langword="null"/> when the slot has none.</returns>
+        public KeyBindingEntry GetKeyBinding(string slotId) => KeyBindingList.Find(keyBindings, slotId)?.Clone();
+
+        // The embedded key of a slot that is bound is not written, so a project that was moved to a provider does not
+        // keep the old key beside the reference. The properties stay readable and writable, to load older projects.
+
+        /// <summary>Tells the serializer not to write the embedded PICC master key of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeDesfireMasterKeyCurrent() => !IsKeyBound(SecureKeySlots.DesfirePiccCurrent);
+
+        /// <summary>Tells the serializer not to write the embedded new PICC master key of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeDesfireMasterKeyTarget() => !IsKeyBound(SecureKeySlots.DesfirePiccNew);
+
+        /// <summary>Tells the serializer not to write the embedded application key of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeDesfireAppKeyCurrent() => !IsKeyBound(SecureKeySlots.DesfireAppCurrent);
+
+        /// <summary>
+        /// Tells the serializer not to write the embedded old application key of a bound slot. While the old-key inputs are
+        /// not shown, the old key is only a copy of the application key (see <c>UpdateOldAppKeyDefaults</c>), and it stays
+        /// a copy when the inputs appear later (a task changes to a key change). So it is not written when the application
+        /// key is bound and the old key is hidden, or is still equal to the key it was copied from: the copy would put the
+        /// key back into the file. An old key that someone typed differently is a key of its own and is written.
+        /// </summary>
+        /// <returns><see langword="true"/> when neither the old key's slot nor the key it mirrors is bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeDesfireAppKeyCurrentOld() =>
+            !IsKeyBound(SecureKeySlots.DesfireAppOld) && !IsMirrorOfBoundApplicationKey();
+
+        private bool IsMirrorOfBoundApplicationKey()
+        {
+            if (!IsKeyBound(SecureKeySlots.DesfireAppCurrent))
+            {
+                return false;
+            }
+
+            return !ShowAppKeyOldInputs
+                || (!string.IsNullOrEmpty(DesfireAppKeyCurrent)
+                    && string.Equals(DesfireAppKeyCurrentOld, DesfireAppKeyCurrent, StringComparison.Ordinal));
+        }
+
+        /// <summary>Tells the serializer not to write the embedded new application key of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeDesfireAppKeyTarget() => !IsKeyBound(SecureKeySlots.DesfireAppNew);
+
+        /// <summary>Tells the serializer not to write the embedded read key of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeDesfireReadKeyCurrent() => !IsKeyBound(SecureKeySlots.DesfireRead);
+
+        /// <summary>Tells the serializer not to write the embedded write key of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeDesfireWriteKeyCurrent() => !IsKeyBound(SecureKeySlots.DesfireWrite);
+
+        #endregion
 
         /// <summary>Gets or sets whether all ticked flags must be set; bound to a radio button.</summary>
         [XmlIgnore]
