@@ -176,9 +176,10 @@ only these, never `RFiDGear.exe`:
   the project, execution, reader and culture services). It has no MEF
   dependency.
 - `RFiDGear.ExtensionSdk` is the MEF-facing ABI: `[UiExtension]`,
-  `HostPlacement`, `IUIExtension`, `IUIExtensionDetails`. It is versioned on
-  its own (see its README). `RFiDGear.exe` forwards the old locations of
-  these types so already-built extensions keep working.
+  `HostPlacement`, `IUIExtension`, `IUIExtensionDetails`,
+  `[SecureKeyProvider]`. It is versioned on its own (see its README).
+  `RFiDGear.exe` forwards the old locations of the UI types so already-built
+  extensions keep working.
 
 Both public surfaces are frozen by approved snapshots under
 `RFiDGear.Tests/ApiSurface/`; a change fails the test and is accepted by
@@ -202,6 +203,16 @@ probes each DLL (parts, export metadata, imports) before adding it to the
 container, logs a failure with Serilog and skips that file. If the extensions
 that passed still break the export queries, it rebuilds the container from the
 host alone. `MefHelper.LastLoadResults` records the outcome per file.
+
+A secure key provider (`ISecureKeyProvider` in `RFiDGear.Contracts`, exported
+with `[SecureKeyProvider]` from the SDK) hands out card keys that a project
+names by reference instead of containing them. `SecureKeyRegistry`
+(`Services/SecureKeys`) is the only way to call one: it creates the providers
+once, runs each call on a worker thread under a time limit, turns anything a
+provider does wrong into a failed answer, logs only the type of a provider's
+exception (never its message), and disposes a key that arrives late. A
+resolved key lives only in a `SecureKeyLease` on the stack of the card
+operation: never put one in a property or a static, and never log it.
 
 An extension that needs more than the contract (services, a database driver,
 a PDF engine) keeps that code in a support library named

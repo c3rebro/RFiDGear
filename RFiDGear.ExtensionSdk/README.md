@@ -23,6 +23,44 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
   host)` runs on the UI thread each time the user opens the extension and
   returns a new control for its window. The host disposes that content, and a
   different `IDisposable` data context, once when the window closes.
+- `SecureKeyProviderAttribute` (`RFiDGear.ExtensionSdk`):
+  `[SecureKeyProvider("id", "Display name")]` exports an `ISecureKeyProvider`
+  (from `RFiDGear.Contracts`) with the id a project stores and the name the
+  user sees.
+- `ISecureKeyProviderMetadata` (`RFiDGear.ExtensionSdk`): the metadata view the
+  host imports as `Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>`.
+
+**Secure key providers:**
+
+A provider hands out card keys that a project names by a reference instead of
+containing them. Status: the contract and the host's registry exist; the task
+execution that asks providers for keys follows in a later step of the same
+feature (issue 234), so no provider is called yet.
+
+- The id is stored in project files, so it never changes. It has 1 to 64 of
+  `a-z`, `0-9`, `.`, `_` and `-`. A provider with another id is ignored with
+  a log entry. If two extensions use one id, neither is used, and the ids of
+  providers built into RFiDGear cannot be taken over.
+- One instance is created per provider when the host builds its registry, on
+  the user-interface thread: the constructor must be quick and must not show
+  anything or wait. The host then calls it from worker threads, possibly
+  several at once, never with a synchronization context. Be thread-safe.
+- Answer with a new `SecureKeyLease` for every call. The host owns it and
+  disposes it; it is pinned memory that is zeroed on dispose. Do not keep
+  copies. `ToHexString()` makes a string that nobody can zero.
+- The same request gives the same key within one run (`RunId`). Rotate keys
+  between runs, never in the middle of one.
+- Failure is an answer: `SecureKeyResolution.Failed(reason)`. A provider that
+  throws counts as `ProviderUnavailable`. The host logs only the type of the
+  exception and the id of the provider, never the message, because the
+  messages of vault libraries are not under anyone's control. Write your own
+  diagnostics, and keep keys out of them.
+- Honour the cancellation token. The host stops waiting after 10 seconds (5
+  minutes for an `Interactive` request) and disposes a key that arrives late.
+  A request with `Interactive = false` must not show a prompt.
+- Trust: an extension runs inside RFiDGear with the rights of the user and can
+  read whatever the application can. A provider is not a security boundary.
+  Install only providers you trust.
 
 **Rules:**
 
