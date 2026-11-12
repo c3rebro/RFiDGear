@@ -36,5 +36,48 @@ namespace RFiDGear.Services.SecureKeys
         /// <param name="slotId">The slot.</param>
         /// <returns><c>true</c> when the slot has an entry.</returns>
         internal static bool IsBound(IEnumerable<KeyBindingEntry> entries, string slotId) => Find(entries, slotId) != null;
+
+        /// <summary>
+        /// Makes a list in which a slot has the given binding and no other: an entry for the slot is replaced in its place,
+        /// others (a duplicate that a damaged project may hold) are dropped, and a slot without an entry gets one at the end.
+        /// The result is a copy; so is the entry that goes into it.
+        /// </summary>
+        /// <param name="entries">The entries of a task.</param>
+        /// <param name="entry">The binding of the slot.</param>
+        /// <returns>The new list.</returns>
+        internal static KeyBindingEntry[] With(IEnumerable<KeyBindingEntry> entries, KeyBindingEntry entry)
+        {
+            ArgumentNullException.ThrowIfNull(entry);
+
+            var result = new List<KeyBindingEntry>();
+            var placed = false;
+
+            foreach (var existing in Copy(entries))
+            {
+                if (!string.Equals(existing.Slot, entry.Slot, StringComparison.Ordinal))
+                {
+                    result.Add(existing);
+                }
+                else if (!placed)
+                {
+                    result.Add(entry.Clone());
+                    placed = true;
+                }
+            }
+
+            if (!placed)
+            {
+                result.Add(entry.Clone());
+            }
+
+            return result.ToArray();
+        }
+
+        /// <summary>Makes a copy of a list without the entries of a slot.</summary>
+        /// <param name="entries">The entries of a task.</param>
+        /// <param name="slotId">The slot.</param>
+        /// <returns>The new list.</returns>
+        internal static KeyBindingEntry[] Without(IEnumerable<KeyBindingEntry> entries, string slotId) =>
+            Copy(entries).Where(entry => !string.Equals(entry.Slot, slotId, StringComparison.Ordinal)).ToArray();
     }
 }

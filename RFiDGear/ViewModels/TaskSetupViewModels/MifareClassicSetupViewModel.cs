@@ -40,7 +40,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     /// <summary>
     /// Description of MifareClassicSetupViewModel.
     /// </summary>
-    public class MifareClassicSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
+    public class MifareClassicSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, IKeySlotHost
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -1089,8 +1089,43 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         // command, and the reader is never left to go on with key A alone. This region is the only place that reads the key
         // properties on the way to the card.
 
-        private Task<AcquiredKeys> AcquireKeysAsync(params KeyNeed[] needs) =>
-            KeyAcquisition.AcquireAsync(needs, KeyBindings, SecureKeySlots.Classic, EmbeddedKeyOf, KeyResolutionScope.Current);
+        private async Task<AcquiredKeys> AcquireKeysAsync(params KeyNeed[] needs)
+        {
+            // While a provider answers the dialog does not take input: what a person changes in the meantime would no longer
+            // be what the keys were asked for.
+            SetFetchingKeys(true);
+
+            try
+            {
+                return await KeyAcquisition.AcquireAsync(needs, KeyBindings, SecureKeySlots.Classic, EmbeddedKeyOf, KeyResolutionScope.Current);
+            }
+            finally
+            {
+                SetFetchingKeys(false);
+            }
+        }
+
+        private bool isFetchingKeys;
+
+        /// <summary>Gets whether the keys of a command are being obtained from their providers; the dialog is locked meanwhile.</summary>
+        [XmlIgnore]
+        public bool IsFetchingKeys => isFetchingKeys;
+
+        /// <summary>Gets whether the inputs of the dialog take input: they do not while the keys of a command are being obtained.</summary>
+        [XmlIgnore]
+        public bool AreInputsEnabled => !isFetchingKeys;
+
+        private void SetFetchingKeys(bool fetching)
+        {
+            if (isFetchingKeys == fetching)
+            {
+                return;
+            }
+
+            isFetchingKeys = fetching;
+            OnPropertyChanged(nameof(IsFetchingKeys));
+            OnPropertyChanged(nameof(AreInputsEnabled));
+        }
 
         private string EmbeddedKeyOf(string slotId) => slotId switch
         {
@@ -1118,6 +1153,82 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             StatusText += string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("textBoxStatusKeyUnavailable"), DateTime.Now, keys.Failure?.Slot ?? string.Empty) + "\n";
             CurrentTaskErrorLevel = ERROR.KeyUnavailable;
+        }
+
+        #endregion
+
+        #region Key slot editing
+
+        // What the key slot editors of the dialog ask of the task (see IKeySlotHost). IsKeyBound and GetKeyBinding are above.
+
+        /// <inheritdoc />
+        public bool HasEmbeddedKey(string slotId) => !string.IsNullOrEmpty(EmbeddedKeyOf(slotId));
+
+        /// <inheritdoc />
+        public int ExpectedKeyHexLength(string slotId)
+        {
+            if (!SecureKeySlots.Classic.Contains(slotId))
+            {
+                throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a MIFARE Classic task.");
+            }
+
+            // 6 bytes, whatever the slot.
+            return 12;
+        }
+
+        /// <inheritdoc />
+        public void BindKeySlot(string slotId, string providerId, string reference)
+        {
+            ArgumentNullException.ThrowIfNull(providerId);
+            ArgumentNullException.ThrowIfNull(reference);
+
+            if (!SecureKeySlots.Classic.Contains(slotId))
+            {
+                throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a MIFARE Classic task.");
+            }
+
+            // The binding first and the key second: a slot has one or the other, and a failure in between leaves the binding.
+            KeyBindings = KeyBindingList.With(keyBindings, new KeyBindingEntry { Slot = slotId, ProviderId = providerId, Reference = reference });
+            SetEmbeddedKey(slotId, string.Empty);
+        }
+
+        /// <inheritdoc />
+        public void UnbindKeySlot(string slotId)
+        {
+            KeyBindings = KeyBindingList.Without(keyBindings, slotId);
+        }
+
+        private void SetEmbeddedKey(string slotId, string value)
+        {
+            switch (slotId)
+            {
+                case SecureKeySlots.ClassicACurrent:
+                    ClassicKeyAKeyCurrent = value;
+                    break;
+                case SecureKeySlots.ClassicBCurrent:
+                    ClassicKeyBKeyCurrent = value;
+                    break;
+                case SecureKeySlots.ClassicATarget:
+                    ClassicKeyAKeyTarget = value;
+                    break;
+                case SecureKeySlots.ClassicBTarget:
+                    ClassicKeyBKeyTarget = value;
+                    break;
+                case SecureKeySlots.ClassicMadACurrent:
+                    ClassicMADKeyAKeyCurrent = value;
+                    break;
+                case SecureKeySlots.ClassicMadBCurrent:
+                    ClassicMADKeyBKeyCurrent = value;
+                    break;
+                case SecureKeySlots.ClassicMadATarget:
+                    ClassicMADKeyAKeyTarget = value;
+                    break;
+                case SecureKeySlots.ClassicMadBTarget:
+                    ClassicMADKeyBKeyTarget = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a MIFARE Classic task.");
+            }
         }
 
         #endregion
