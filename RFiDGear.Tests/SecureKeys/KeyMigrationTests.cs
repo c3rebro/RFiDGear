@@ -8,7 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Globalization;
 using System.Linq;
+using System.Resources;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -422,7 +424,138 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        // ── The dialogs ──
+
+        [Fact]
+        public Task Nothing_happens_until_the_person_has_agreed_and_chosen_both_files()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+
+                var declined = new DialogsDouble { Go = false, Source = source, Target = Target("migrated") };
+                await NewFlow(declined).RunAsync();
+                Assert.Equal(new[] { "confirm" }, declined.Calls);
+
+                var noSource = new DialogsDouble { Source = null, Target = Target("migrated") };
+                await NewFlow(noSource).RunAsync();
+                Assert.Equal(new[] { "confirm", "source" }, noSource.Calls);
+
+                var noTarget = new DialogsDouble { Source = source, Target = null };
+                await NewFlow(noTarget).RunAsync();
+                Assert.Equal(new[] { "confirm", "source", "target" }, noTarget.Calls);
+
+                Assert.Empty(_store.Writes);
+                Assert.False(File.Exists(Target("migrated")));
+            });
+        }
+
+        [Fact]
+        public Task A_successful_migration_is_reported_without_a_key_and_the_old_project_stays_unless_the_person_says_so()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var dialogs = new DialogsDouble { Source = source, Target = Target("migrated"), Delete = false };
+
+                await NewFlow(dialogs).RunAsync();
+
+                Assert.Equal(new[] { "confirm", "source", "target", "working", "inform", "askDelete" }, dialogs.Calls);
+                Assert.Equal(Path.Combine(_folder, "source.secured.rfPrj"), dialogs.SuggestedTarget);
+                var (done, isError) = Assert.Single(dialogs.Informed);
+                Assert.False(isError);
+                Assert.Contains(Target("migrated"), done, StringComparison.Ordinal);
+                Assert.Contains("8 key slots", done, StringComparison.Ordinal);
+                Assert.Contains("classic.a.current", done, StringComparison.Ordinal);
+                Assert.Contains(source, dialogs.DeleteQuestion, StringComparison.Ordinal);
+                AssertHoldsNoKey(done);
+                Assert.True(File.Exists(source));
+                Assert.Equal(0, dialogs.OpenWork);
+            });
+        }
+
+        [Fact]
+        public Task The_old_project_is_deleted_when_the_person_says_so()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var dialogs = new DialogsDouble { Source = source, Target = Target("migrated"), Delete = true };
+
+                await NewFlow(dialogs).RunAsync();
+
+                Assert.False(File.Exists(source));
+                Assert.True(File.Exists(Target("migrated")));
+                var (last, isError) = dialogs.Informed.Last();
+                Assert.False(isError);
+                Assert.Equal(Text("messageKeyMigrationDeleted"), last);
+                Assert.Equal(0, dialogs.OpenWork);
+            });
+        }
+
+        [Fact]
+        public Task A_long_report_lists_the_first_slots_only()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask(), NewClassicTask());
+                var dialogs = new DialogsDouble { Source = source, Target = Target("migrated") };
+
+                await NewFlow(dialogs).RunAsync();
+
+                var done = dialogs.Informed.First().Text;
+                Assert.Contains("16 key slots", done, StringComparison.Ordinal);
+                Assert.Equal(12, done.Split('\n').Count(line => line.Contains("classic.", StringComparison.Ordinal)));
+                Assert.Contains("...", done, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public Task A_failure_is_told_as_one_and_nothing_is_offered_to_delete()
+        {
+            return Sta(async () =>
+            {
+                _store.WriteError = CredentialErrors.AccessDenied;
+                var source = WriteProject("source", NewClassicTask());
+                var dialogs = new DialogsDouble { Source = source, Target = Target("migrated"), Delete = true };
+
+                await NewFlow(dialogs).RunAsync();
+
+                var (text, isError) = Assert.Single(dialogs.Informed);
+                Assert.True(isError);
+                Assert.Contains($"(error {CredentialErrors.AccessDenied})", text, StringComparison.Ordinal);
+                Assert.DoesNotContain("askDelete", dialogs.Calls);
+                Assert.True(File.Exists(source));
+                Assert.Equal(0, dialogs.OpenWork);
+            });
+        }
+
+        [Fact]
+        public Task A_project_without_typed_keys_is_told_so_and_nothing_is_offered_to_delete()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source");
+                var dialogs = new DialogsDouble { Source = source, Target = Target("migrated"), Delete = true };
+
+                await NewFlow(dialogs).RunAsync();
+
+                var (text, isError) = Assert.Single(dialogs.Informed);
+                Assert.False(isError);
+                Assert.Equal(Text("messageKeyMigrationNothing"), text);
+                Assert.DoesNotContain("askDelete", dialogs.Calls);
+                Assert.False(File.Exists(Target("migrated")));
+            });
+        }
+
         // ── Helpers ──
+
+        private static readonly ResourceManager Manifest = new ResourceManager("RFiDGear.Resources.Manifest", typeof(KeyMigration).Assembly);
+
+        // The texts of the application, so that the placeholders of the messages are checked too.
+        private static string Text(string key) => Manifest.GetString(key, CultureInfo.GetCultureInfo("en"))!;
+
+        private KeyMigrationFlow NewFlow(IKeyMigrationDialogs dialogs) => new KeyMigrationFlow(NewMigration(), dialogs, Text);
 
         private static Task Sta(Func<Task> test) => StaTestRunner.RunOnStaThreadAsync(test);
 
@@ -507,6 +640,91 @@ namespace RFiDGear.Tests.SecureKeys
             }
 
             return task;
+        }
+
+        /// <summary>A person who answers as told, and notes what was asked.</summary>
+        private sealed class DialogsDouble : IKeyMigrationDialogs
+        {
+            public bool Go { get; init; } = true;
+
+            public string? Source { get; init; }
+
+            public string? Target { get; init; }
+
+            public bool Delete { get; init; }
+
+            public List<string> Calls { get; } = new List<string>();
+
+            public List<(string Text, bool IsError)> Informed { get; } = new List<(string, bool)>();
+
+            public string? SuggestedTarget { get; private set; }
+
+            public string? DeleteQuestion { get; private set; }
+
+            public int OpenWork { get; private set; }
+
+            public bool Confirm(string text)
+            {
+                Calls.Add("confirm");
+
+                return Go;
+            }
+
+            public string? ChooseSource()
+            {
+                Calls.Add("source");
+
+                return Source;
+            }
+
+            public string? ChooseTarget(string suggestedPath)
+            {
+                Calls.Add("target");
+                SuggestedTarget = suggestedPath;
+
+                return Target;
+            }
+
+            public void Inform(string text, bool isError)
+            {
+                Calls.Add("inform");
+                Informed.Add((text, isError));
+            }
+
+            public bool AskDeleteOriginal(string text)
+            {
+                Calls.Add("askDelete");
+                DeleteQuestion = text;
+
+                return Delete;
+            }
+
+            public IDisposable Working()
+            {
+                Calls.Add("working");
+                OpenWork++;
+
+                return new Scope(this);
+            }
+
+            private sealed class Scope : IDisposable
+            {
+                private DialogsDouble? _owner;
+
+                public Scope(DialogsDouble owner)
+                {
+                    _owner = owner;
+                }
+
+                public void Dispose()
+                {
+                    if (_owner != null)
+                    {
+                        _owner.OpenWork--;
+                        _owner = null;
+                    }
+                }
+            }
         }
 
         /// <summary>The real projects, except for what a test changes.</summary>

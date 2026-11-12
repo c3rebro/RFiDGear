@@ -1993,4 +1993,70 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageKeySlotKeyInvalid" xml:space="preserve">
     <value>A key of {0} hexadecimal digits (0-9, A-F) without spaces is needed. Nothing was stored.</value>
   </data>
+  <data name="menuItemMigrateProjectKeys" xml:space="preserve">
+    <value>Move keys of a project to the Credential Manager...</value>
+  </data>
+  <data name="captionKeyMigration" xml:space="preserve">
+    <value>Move keys of a project</value>
+  </data>
+  <data name="windowCaptionKeyMigrationSource" xml:space="preserve">
+    <value>Project whose keys are to be moved</value>
+  </data>
+  <data name="windowCaptionKeyMigrationTarget" xml:space="preserve">
+    <value>Save the new project as</value>
+  </data>
+  <data name="messageKeyMigrationIntro" xml:space="preserve">
+    <value>The card keys that are typed into the tasks of a project are moved into the Windows Credential Manager, and the project is saved as a new file that refers to them. The project you choose is not changed.&#10;&#10;The keys stay in the Credential Manager of this Windows user. The new project does not run on another computer or for another user until the keys are stored there too, and versions of RFiDGear that do not know references cannot run it.&#10;&#10;Continue?</value>
+  </data>
+  <data name="messageKeyMigrationDone" xml:space="preserve">
+    <value>{0} key slots were moved ({1} different keys are stored in the Credential Manager). The new project:&#10;{2}&#10;&#10;The original project was not changed.</value>
+  </data>
+  <data name="messageKeyMigrationNotMoved" xml:space="preserve">
+    <value>{0} typed values are not keys of the length their slot needs. They were not moved and stay in the new project as typed.</value>
+  </data>
+  <data name="messageKeyMigrationNothing" xml:space="preserve">
+    <value>The project holds no typed key that could be moved. Nothing was changed and no new project was saved.</value>
+  </data>
+  <data name="messageKeyMigrationFailed" xml:space="preserve">
+    <value>The keys were not moved: {0}&#10;&#10;Nothing was changed. The original project is intact, no new project was saved and the Credential Manager holds nothing from this attempt.</value>
+  </data>
+  <data name="messageKeyMigrationSameFile" xml:space="preserve">
+    <value>the new project has to be another file than the old one.</value>
+  </data>
+  <data name="messageKeyMigrationTargetExists" xml:space="preserve">
+    <value>a file with that name exists already. A migration never overwrites a file.</value>
+  </data>
+  <data name="messageKeyMigrationSourceUnreadable" xml:space="preserve">
+    <value>the project could not be read.</value>
+  </data>
+  <data name="messageKeyMigrationKeyStoreRefused" xml:space="preserve">
+    <value>the Credential Manager refused to store a key (error {0}).</value>
+  </data>
+  <data name="messageKeyMigrationKeyStoreUnavailable" xml:space="preserve">
+    <value>the Credential Manager did not store a key.</value>
+  </data>
+  <data name="messageKeyMigrationReadBackDiffers" xml:space="preserve">
+    <value>a stored key did not come back the way it went in.</value>
+  </data>
+  <data name="messageKeyMigrationTargetNotWritten" xml:space="preserve">
+    <value>the new project could not be written.</value>
+  </data>
+  <data name="messageKeyMigrationVerificationFailed" xml:space="preserve">
+    <value>the new project did not pass the check afterwards.</value>
+  </data>
+  <data name="messageKeyMigrationCancelled" xml:space="preserve">
+    <value>the run was cancelled.</value>
+  </data>
+  <data name="messageKeyMigrationUnexpected" xml:space="preserve">
+    <value>something unexpected went wrong. The log has the type of the error.</value>
+  </data>
+  <data name="messageKeyMigrationAskDelete" xml:space="preserve">
+    <value>Delete the original project?&#10;{0}&#10;&#10;Before it is deleted, the new project is read once more and every key it refers to is fetched from the Credential Manager. Choose No to keep it.</value>
+  </data>
+  <data name="messageKeyMigrationDeleted" xml:space="preserve">
+    <value>The original project was deleted.</value>
+  </data>
+  <data name="messageKeyMigrationNotDeleted" xml:space="preserve">
+    <value>The original project was not deleted: the new project or one of its keys could not be checked again, or the file could not be removed. The original stays as it is.</value>
+  </data>
 </root>
