@@ -69,6 +69,41 @@ namespace RFiDGear.Tests
             });
         }
 
+        /// <summary>
+        /// Shows <typeparamref name="TView"/> bound to a view model of any kind and lets <paramref name="inspect"/> look at
+        /// it, and change the view model, awaiting what it needs to. The view model is created here, on the thread of the
+        /// window: the setup view models make controls and cannot be created anywhere else.
+        /// </summary>
+        /// <typeparam name="TView">The tab to show.</typeparam>
+        /// <typeparam name="TViewModel">The view model.</typeparam>
+        /// <param name="create">Creates and sets up the view model.</param>
+        /// <param name="inspect">What to check, given the tab and the view model.</param>
+        /// <returns>A task that completes when the check has run and the window is closed.</returns>
+        internal static async Task InspectAsync<TView, TViewModel>(Func<TViewModel> create, Func<TView, TViewModel, Task> inspect)
+            where TView : FrameworkElement, new()
+            where TViewModel : class
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = create();
+                var view = new TView { DataContext = viewModel };
+                var window = new Window { Content = view, Width = 1100, Height = 800, ShowActivated = false, ShowInTaskbar = false };
+                try
+                {
+                    window.Show();
+                    window.UpdateLayout();
+                    await Flush();
+                    window.UpdateLayout();
+
+                    await inspect(view, viewModel);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            });
+        }
+
         /// <summary>Lets everything already queued on the dispatcher run.</summary>
         /// <returns>A task that completes when the dispatcher is idle for a moment.</returns>
         internal static async Task Flush() => await Dispatcher.Yield(DispatcherPriority.Background);
