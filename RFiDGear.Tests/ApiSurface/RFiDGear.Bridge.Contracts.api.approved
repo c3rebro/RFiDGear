@@ -119,7 +119,7 @@ public static class RFiDGear.Bridge.BridgeProtocol
     public const string PipeNamePrefix = "RFiDGear.Bridge."
     public const string Product = "RFiDGear"
     public const int RequestIdHistory = 1024
-    public const string RequestIdPattern = "^[A-Za-z0-9._:-]{1,64}$"
+    public const string RequestIdPattern = "^[A-Za-z0-9._:-]{1,64}\\z"
     public const int ResultHistory = 64
     public static bool IsValidRequestId(string? requestId)
     public static string PipeNameFor(string userSid)

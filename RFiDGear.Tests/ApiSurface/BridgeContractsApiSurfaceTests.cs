@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Text.Json.Serialization;
 
 using RFiDGear.Bridge;
@@ -93,6 +94,35 @@ namespace RFiDGear.Tests.ApiSurface
         {
             Assert.Equal(new Version(1, 0, 0, 0), Bridge.GetName().Version);
             Assert.Equal(1, BridgeProtocol.Major);
+        }
+
+        [Fact]
+        public void BridgeAssembly_IsAnyCpu_WhateverPlatformTheInstallersBuildWith()
+        {
+            // The installers build the solution with Platform=x64 and Platform=x86, and the SDK would stamp the assembly with
+            // that bitness. A client of the other bitness takes the copy from the install folder and could not load it.
+            // The built assembly here is of the platform of the test run, so the project file is what has to be pinned.
+            Bridge.ManifestModule.GetPEKind(out var kind, out var machine);
+            Assert.Equal(PortableExecutableKinds.ILOnly, kind);
+            Assert.Equal(ImageFileMachine.I386, machine);
+
+            var project = FindUpwards("RFiDGear.Bridge.Contracts", "RFiDGear.Bridge.Contracts.csproj");
+            Assert.NotNull(project);
+            Assert.Contains("<PlatformTarget>AnyCPU</PlatformTarget>", System.IO.File.ReadAllText(project!), StringComparison.Ordinal);
+        }
+
+        private static string? FindUpwards(string folder, string file)
+        {
+            for (var directory = new System.IO.DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+            {
+                var candidate = System.IO.Path.Combine(directory.FullName, folder, file);
+                if (System.IO.File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
         }
 
         [Fact]

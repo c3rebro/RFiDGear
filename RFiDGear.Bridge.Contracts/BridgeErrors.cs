@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace RFiDGear.Bridge
@@ -8,6 +9,7 @@ namespace RFiDGear.Bridge
     /// (-32768 to -32000), and are carried in <c>error.code</c>. The structured part is in <c>error.data</c>
     /// (<see cref="BridgeErrorData"/>). An error never carries the text of an exception.
     /// </summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class BridgeErrorCodes
     {
         /// <summary>Another method was called before <c>hello</c>.</summary>
@@ -60,6 +62,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The short names of the errors, carried in <see cref="BridgeErrorData.Kind"/>; they match <see cref="BridgeErrorCodes"/> one to one.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class BridgeErrorKinds
     {
         /// <summary>See <see cref="BridgeErrorCodes.HandshakeRequired"/>.</summary>

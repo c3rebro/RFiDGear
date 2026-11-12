@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace RFiDGear.Bridge
@@ -8,6 +9,7 @@ namespace RFiDGear.Bridge
     /// the minor version is informational, because the capability list in <c>hello</c> says what the host can do. A major
     /// version changes for a removal, a rename, a change of type or a change of meaning; every addition is a minor change.
     /// </summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class BridgeProtocol
     {
         /// <summary>The name that RFiDGear answers in <c>hello</c>; a client uses it to check it reached the right server.</summary>
@@ -50,7 +52,7 @@ namespace RFiDGear.Bridge
         public const int MaxWaitMs = 30000;
 
         /// <summary>The characters a request id may have; it is logged, so the alphabet is small.</summary>
-        public const string RequestIdPattern = "^[A-Za-z0-9._:-]{1,64}$";
+        public const string RequestIdPattern = @"^[A-Za-z0-9._:-]{1,64}\z";
 
         private static readonly Regex RequestIdExpression = new Regex(RequestIdPattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
 

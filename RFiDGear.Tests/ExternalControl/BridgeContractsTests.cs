@@ -273,6 +273,9 @@ namespace RFiDGear.Tests.ExternalControl
         [InlineData(null, false)]
         [InlineData("has space", false)]
         [InlineData("line\nbreak", false)]
+        [InlineData("r-1\n", false)]
+        [InlineData("r-1\r\n", false)]
+        [InlineData("\nr-1", false)]
         [InlineData("slash/ok?", false)]
         public void ARequestId_IsAcceptedOnlyInTheSmallAlphabet(string? requestId, bool expected)
         {
@@ -284,6 +287,9 @@ namespace RFiDGear.Tests.ExternalControl
         {
             Assert.True(BridgeProtocol.IsValidRequestId(new string('a', BridgeProtocol.MaxRequestIdLength)));
             Assert.False(BridgeProtocol.IsValidRequestId(new string('a', BridgeProtocol.MaxRequestIdLength + 1)));
+
+            // A line break after the 64th character must not slip through either: "$" would allow it, "\z" does not.
+            Assert.False(BridgeProtocol.IsValidRequestId(new string('a', BridgeProtocol.MaxRequestIdLength) + "\n"));
             Assert.Equal(64, BridgeProtocol.MaxRequestIdLength);
         }
 

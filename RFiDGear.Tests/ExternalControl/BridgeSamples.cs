@@ -62,8 +62,8 @@ namespace RFiDGear.Tests.ExternalControl
             ["HelloResponse"] = new HelloResponse
             {
                 Product = BridgeProtocol.Product,
-                AppVersion = "2.0.10.0",
-                ContractsVersion = "1.0.0.0",
+                AppVersion = "2.0.10",
+                ContractsVersion = "1.0.0",
                 InstanceId = "9f8e7d6c5b4a39281706f5e4d3c2b1a0",
                 Protocol = new ProtocolVersionDto { Major = 1, Minor = 0 },
                 SessionId = "s1",

@@ -1,12 +1,26 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RFiDGear.Bridge
 {
+    /// <summary>
+    /// Why the constants of the protocol are public constants. The static analysis rule against public constants (S2339) warns
+    /// that a constant is compiled into every assembly that uses it, so that a changed value does not reach a consumer that
+    /// is not rebuilt. For these constants that is the point: they are the names and values of the wire protocol, a value never
+    /// changes within a protocol major version, and a client that was built against one must keep speaking it. A number of them
+    /// are also arguments of attributes, which only accept constants.
+    /// </summary>
+    internal static class WireConstants
+    {
+        /// <summary>The justification text of the suppression.</summary>
+        internal const string Justification = "The names and values of the wire protocol are compiled into clients on purpose: they never change within a major version, and attribute arguments need constants.";
+    }
     /// <summary>
     /// The capabilities of version 1 of the protocol. A client decides what it may call from the list that the host
     /// answers in <c>hello</c>, never from the application version. Later versions add names; none is removed or re-meant
     /// within a major version.
     /// </summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class BridgeCapabilities
     {
         /// <summary>The handshake itself: protocol negotiation and the capability list. Always present.</summary>
@@ -65,6 +79,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The names of the methods a client calls, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class BridgeMethods
     {
         /// <summary>The handshake; the first call on every connection.</summary>
@@ -90,6 +105,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The names of the notifications the host sends, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class BridgeEvents
     {
         /// <summary>A run started over the bridge was admitted.</summary>
@@ -123,6 +139,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The values of <see cref="RunResultDto.Status"/>: how a run ended, as one word.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class RunStatuses
     {
         /// <summary>Every task ran as intended.</summary>
@@ -142,6 +159,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The values of <see cref="RunResultDto.FailureReason"/>: why a run did not end the normal way.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class FailureReasons
     {
         /// <summary>The run did not fail.</summary>
@@ -164,6 +182,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The values of the state of a run in <see cref="StartRunResponse.State"/> and the lookups.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class RunStates
     {
         /// <summary>The run was admitted and is in flight.</summary>
@@ -180,6 +199,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The values of <see cref="ReaderDto.State"/>.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class ReaderStates
     {
         /// <summary>No reader is connected.</summary>
@@ -199,6 +219,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The values of <see cref="ActiveRunDto.Source"/>: who started the run that is going on.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class RunSources
     {
         /// <summary>A client over this bridge.</summary>
@@ -215,6 +236,7 @@ namespace RFiDGear.Bridge
     }
 
     /// <summary>The values of <see cref="ShuttingDownEvent.Reason"/>.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
     public static class ShutdownReasons
     {
         /// <summary>The user closed the window.</summary>

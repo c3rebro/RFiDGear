@@ -5,6 +5,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU;x64;x86</Platforms>
+    <!-- The solution builds with Platform=x64 or x86 for the installers, and the SDK would then stamp this assembly as 64-bit
+         or 32-bit. A client of the other bitness takes the copy from the install folder and could not load it. It holds no
+         native code, so it is AnyCPU whatever the platform of the build. -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AssemblyName>RFiDGear.Bridge.Contracts</AssemblyName>
     <RootNamespace>RFiDGear.Bridge</RootNamespace>
     <!-- The protocol is versioned on its own: bump the major only for a breaking change of the wire protocol, never with
