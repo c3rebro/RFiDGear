@@ -150,22 +150,34 @@ namespace RFiDGear.Tests.KeySlots
         }
 
         [Fact]
-        public async Task Formatting_with_an_empty_app_key_touches_nothing()
+        public async Task Formatting_does_not_need_the_app_key()
         {
+            // The command authenticates and formats with the master key; the application key is not part of it.
             var run = await RunAsync(TaskType_MifareDesfireTask.FormatDesfireCard, vm => vm.DesfireAppKeyCurrent = string.Empty);
+
+            Assert.Equal(ExpectedCalls[TaskType_MifareDesfireTask.FormatDesfireCard], run.Calls);
+        }
+
+        [Fact]
+        public async Task Formatting_with_an_empty_master_key_touches_nothing()
+        {
+            var run = await RunAsync(TaskType_MifareDesfireTask.FormatDesfireCard, vm => vm.DesfireMasterKeyCurrent = string.Empty);
 
             Assert.Equal(string.Empty, run.Calls);
             Assert.Equal(ERROR.Empty, run.Error);
         }
 
         [Fact]
-        public async Task Formatting_checks_the_app_key_but_authenticates_with_the_master_key()
+        public async Task Formatting_checks_the_master_key_against_its_own_key_type()
         {
-            // A defect, pinned as it is: the command validates the application key and then uses the master key, so
-            // an empty master key reaches the reader. The commit that fixes it changes this test.
-            var run = await RunAsync(TaskType_MifareDesfireTask.FormatDesfireCard, vm => vm.DesfireMasterKeyCurrent = string.Empty);
+            // A 3K3DES key has 48 hex digits; the 32 digits of the test key are too short for it, whatever the type of
+            // the application key is.
+            var run = await RunAsync(
+                TaskType_MifareDesfireTask.FormatDesfireCard,
+                vm => vm.SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_3K3DES);
 
-            Assert.Equal("AuthToMifareDesfireApplication[<empty>] | GetMiFareDESFireChipAppIDs[<empty>] | FormatDesfireCard[<empty>]", run.Calls);
+            Assert.Equal(string.Empty, run.Calls);
+            Assert.Equal(ERROR.Empty, run.Error);
         }
 
         private sealed record Run(string Calls, ERROR Error);

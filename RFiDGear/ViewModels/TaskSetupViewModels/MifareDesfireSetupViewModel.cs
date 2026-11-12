@@ -3788,7 +3788,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
+                    // Formatting authenticates and formats with the master key, so that is the key to validate.
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
                         var result = await device.AuthToMifareDesfireApplication(
                                 DesfireMasterKeyCurrent,
@@ -3953,12 +3954,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
+                    if (CustomConverter.TryFormatMifareDesfireKey(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent, out var formattedMasterKey) == KEY_ERROR.NO_ERROR)
                     {
                         var currentKeySettings = BuildSelectedKeySettings(0);
 
                         var result = await device.AuthToMifareDesfireApplication(
-                            CustomConverter.DesfireKeyToCheck,
+                            formattedMasterKey,
                             SelectedDesfireMasterKeyEncryptionTypeCurrent,
                             0);
 

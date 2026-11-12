@@ -53,3 +53,7 @@ RFiDGear/.claude/settings.local.json
 
 # Signing certificates never go into the repository.
 *.pfx
+
+# A project holds card keys in plain text, so a real one must never be committed. The one fixture is synthetic.
+*.rfPrj
+!/RFiDGear.Tests/Fixtures/minimal.rfPrj

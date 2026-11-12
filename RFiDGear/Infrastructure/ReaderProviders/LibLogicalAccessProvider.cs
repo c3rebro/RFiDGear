@@ -815,12 +815,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         // property access returns a fresh copy. Mutations through that copy are silently lost, so
         // the key passed to cmd.authenticate() would always be a default-constructed DES/8-byte key.
         // Build a standalone DESFireKey instead and pass it directly to authenticate().
+        // The key text is the validated form of this very key. An invalid key throws (the callers answer with an error
+        // code): it is never replaced by whatever an earlier validation left behind.
         private static DESFireKey MakeDesfireKey(LibLogicalAccess.Card.DESFireKeyType keyType, string keyHex)
         {
+            var formatted = CustomConverter.FormatMifareDesfireKeyOrThrow(keyHex, (DESFireKeyType)(int)keyType);
+
             var key = new DESFireKey();
             key.setKeyType(keyType);
-            CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(keyHex, (DESFireKeyType)(int)keyType);
-            key.fromString(CustomConverter.DesfireKeyToCheck);
+            key.fromString(formatted);
             return key;
         }
 
@@ -1829,10 +1832,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             try
             {
-                DESFireKey masterApplicationKey = new DESFireKey();
-                masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent, _keyTypeCurrent);
-                masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
+                var masterApplicationKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent, _applicationMasterKeyCurrent);
 
                 readerUnit.disconnectFromReader();
 
