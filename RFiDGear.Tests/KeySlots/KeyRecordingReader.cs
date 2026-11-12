@@ -168,8 +168,15 @@ namespace RFiDGear.Tests.KeySlots
 
         /// <inheritdoc />
         public override Task<ERROR> DeleteMifareDesfireApplication(
-            string _applicationMasterKey, DESFireKeyType _keyType, uint _appID, DesfireDeleteAuthMethod _authMethod = DesfireDeleteAuthMethod.PiccMasterKey) =>
-            Task.FromResult(Record(nameof(DeleteMifareDesfireApplication), _applicationMasterKey));
+            string _applicationMasterKey, DESFireKeyType _keyType, uint _appID, DesfireDeleteAuthMethod _authMethod = DesfireDeleteAuthMethod.PiccMasterKey)
+        {
+            LastDeleteAuthMethod = _authMethod;
+
+            return Task.FromResult(Record(nameof(DeleteMifareDesfireApplication), _applicationMasterKey));
+        }
+
+        /// <summary>Gets the method the last application delete was told to authenticate with; <c>null</c> before one.</summary>
+        public DesfireDeleteAuthMethod? LastDeleteAuthMethod { get; private set; }
 
         /// <inheritdoc />
         public override Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0) =>

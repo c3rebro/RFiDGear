@@ -778,7 +778,8 @@ namespace RFiDGear.Services.TaskExecution
                             taskTimeout.Stop();
                             taskTimeout.Start();
                             taskTimeout.IsEnabled = true;
-                        }));
+                        },
+                        cancellationToken: cancellationToken));
 
                     try
                     {

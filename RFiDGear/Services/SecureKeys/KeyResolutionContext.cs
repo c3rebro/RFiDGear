@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Threading;
 
 namespace RFiDGear.Services.SecureKeys
 {
@@ -18,6 +19,10 @@ namespace RFiDGear.Services.SecureKeys
         /// <param name="interactive">Whether a provider may ask a person.</param>
         /// <param name="resolutionStarted">Called before the first provider is asked; may be <c>null</c>.</param>
         /// <param name="resolutionFinished">Called when the last provider has answered; may be <c>null</c>.</param>
+        /// <param name="cancellationToken">
+        /// The cancellation of the run. A cancelled run stops asking, and a command whose run was cancelled while a provider
+        /// answered goes on to no card call.
+        /// </param>
         internal KeyResolutionContext(
             SecureKeyRegistry registry,
             string? runId,
@@ -25,7 +30,8 @@ namespace RFiDGear.Services.SecureKeys
             string? cardUid,
             bool interactive,
             Action? resolutionStarted = null,
-            Action? resolutionFinished = null)
+            Action? resolutionFinished = null,
+            CancellationToken cancellationToken = default)
         {
             Registry = registry ?? throw new ArgumentNullException(nameof(registry));
             RunId = runId;
@@ -34,7 +40,11 @@ namespace RFiDGear.Services.SecureKeys
             Interactive = interactive;
             ResolutionStarted = resolutionStarted;
             ResolutionFinished = resolutionFinished;
+            CancellationToken = cancellationToken;
         }
+
+        /// <summary>Gets the cancellation of the run; <c>default</c> (never cancelled) for a command that no run started.</summary>
+        internal CancellationToken CancellationToken { get; }
 
         /// <summary>Gets the providers.</summary>
         internal SecureKeyRegistry Registry { get; }

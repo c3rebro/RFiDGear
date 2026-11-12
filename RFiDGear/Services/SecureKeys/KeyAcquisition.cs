@@ -83,6 +83,12 @@ namespace RFiDGear.Services.SecureKeys
                         return Fail(context, need.Slot, binding.ProviderId, NoKeyContext);
                     }
 
+                    // A run that was cancelled asks for no more keys.
+                    if (context.CancellationToken.IsCancellationRequested)
+                    {
+                        return Fail(context, need.Slot, binding.ProviderId, SecureKeyFailureReason.Cancelled.ToString());
+                    }
+
                     if (!started)
                     {
                         started = true;
@@ -94,6 +100,12 @@ namespace RFiDGear.Services.SecureKeys
                     if (key == null)
                     {
                         return Fail(context, need.Slot, binding.ProviderId, cause);
+                    }
+
+                    // The run was cancelled while the provider answered: the command must go on to no card call.
+                    if (context.CancellationToken.IsCancellationRequested)
+                    {
+                        return Fail(context, need.Slot, binding.ProviderId, SecureKeyFailureReason.Cancelled.ToString());
                     }
 
                     hex[need.Slot] = key;
@@ -127,7 +139,7 @@ namespace RFiDGear.Services.SecureKeys
             };
 
             // The continuation goes back to where the command runs: it writes properties that the screen is bound to.
-            using var answer = await context.Registry.ResolveAsync(binding.ProviderId, request, CancellationToken.None);
+            using var answer = await context.Registry.ResolveAsync(binding.ProviderId, request, context.CancellationToken);
 
             if (!answer.IsResolved)
             {
@@ -145,7 +157,15 @@ namespace RFiDGear.Services.SecureKeys
                 return (null, SecureKeyFailureReason.InvalidKey.ToString());
             }
 
-            return (lease.ToHexString(), string.Empty);
+            // A provider may hand over a lease that is disposed already; it has no key to give, whatever its length says.
+            try
+            {
+                return (lease.ToHexString(), string.Empty);
+            }
+            catch (ObjectDisposedException)
+            {
+                return (null, SecureKeyFailureReason.InvalidKey.ToString());
+            }
         }
 
         private static AcquiredKeys Fail(KeyResolutionContext? context, string slot, string providerId, string cause)

@@ -327,25 +327,214 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
-        public async Task The_branches_that_continue_after_a_failed_step_use_the_keys_of_the_vault_too()
+        public async Task A_format_that_goes_on_after_a_failed_listing_uses_the_key_of_the_vault_too()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                new Vault().Install();
+                var format = NewTask(TaskType_MifareDesfireTask.FormatDesfireCard);
+                BindAll(format);
+
+                var formatted = await RunAsync(format, new KeyRecordingReader { FailMethod = "GetMiFareDESFireChipAppIDs", FailWith = ERROR.TransportError });
+
+                Assert.Equal("AuthToMifareDesfireApplication[MasterCurrent] | GetMiFareDESFireChipAppIDs[MasterCurrent] | FormatDesfireCard[MasterCurrent]", formatted.Calls);
+            });
+        }
+
+        [Fact]
+        public async Task A_bound_key_that_does_not_authenticate_to_the_application_is_not_tried_on_another_one()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                new Vault().Install();
+                var delete = NewTask(TaskType_MifareDesfireTask.DeleteFile);
+                BindAll(delete);
+
+                // The embedded key would go on and try to delete in the other application. The key of a provider was asked
+                // for this application only.
+                var deleted = await RunAsync(delete, new KeyRecordingReader { FailMethod = "AuthToMifareDesfireApplication", FailWith = ERROR.AuthFailure });
+
+                Assert.Equal("AuthToMifareDesfireApplication[AppCurrent]", deleted.Calls);
+                Assert.Equal(ERROR.AuthFailure, deleted.Error);
+            });
+        }
+
+        [Fact]
+        public async Task An_embedded_key_that_does_not_authenticate_still_goes_on_to_the_other_application_as_before()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var delete = NewTask(TaskType_MifareDesfireTask.DeleteFile);
+
+                var deleted = await RunAsync(delete, new KeyRecordingReader { FailMethod = "AuthToMifareDesfireApplication", FailWith = ERROR.AuthFailure });
+
+                Assert.Equal("AuthToMifareDesfireApplication[embedded:AppCurrent] | DeleteMifareDesfireFile[embedded:AppCurrent]", deleted.Calls);
+            });
+        }
+
+        [Fact]
+        public async Task The_scope_a_provider_is_told_is_where_the_card_operation_really_authenticates()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 var vault = new Vault();
                 vault.Install();
 
-                // Format goes on to format when the directory cannot be listed.
-                var format = NewTask(TaskType_MifareDesfireTask.FormatDesfireCard);
-                BindAll(format);
-                var formatted = await RunAsync(format, new KeyRecordingReader { FailMethod = "GetMiFareDESFireChipAppIDs", FailWith = ERROR.TransportError });
-
-                // Delete file goes on to delete when the authentication fails.
+                // Key number 3 is chosen for the checks. Creating or deleting a file authenticates with key 0 of the
+                // application in both readers, and the directory is read at card level.
+                var create = NewTask(TaskType_MifareDesfireTask.CreateFile);
+                create.SelectedDesfireAppKeyNumberCurrent = "3";
+                create.KeyBindings = new[] { Bind(SecureKeySlots.DesfireAppCurrent) };
                 var delete = NewTask(TaskType_MifareDesfireTask.DeleteFile);
-                BindAll(delete);
-                var deleted = await RunAsync(delete, new KeyRecordingReader { FailMethod = "AuthToMifareDesfireApplication", FailWith = ERROR.AuthFailure });
+                delete.SelectedDesfireAppKeyNumberCurrent = "3";
+                delete.KeyBindings = new[] { Bind(SecureKeySlots.DesfireAppCurrent) };
+                var exists = NewTask(TaskType_MifareDesfireTask.AppExistCheck);
+                exists.SelectedDesfireAppKeyNumberCurrent = "3";
+                exists.KeyBindings = new[] { Bind(SecureKeySlots.DesfireAppCurrent) };
+                var deleteReader = new KeyRecordingReader();
 
-                Assert.Equal("AuthToMifareDesfireApplication[MasterCurrent] | GetMiFareDESFireChipAppIDs[MasterCurrent] | FormatDesfireCard[MasterCurrent]", formatted.Calls);
-                Assert.Equal("AuthToMifareDesfireApplication[AppCurrent] | DeleteMifareDesfireFile[AppCurrent]", deleted.Calls);
+                await RunAsync(create);
+                await RunAsync(delete, deleteReader);
+                await RunAsync(exists);
+
+                Assert.Equal(
+                    new (uint?, int?)[] { (1, 0), (1, 0), (0, 0) },
+                    vault.Requests.Select(request => (request.Scope.ApplicationId, request.Scope.KeyNumber)));
+
+                // And the preliminary authentication of the delete uses that key number too, for a bound key.
+                Assert.Equal(0, deleteReader.LastAuthKeyNumber);
+            });
+        }
+
+        [Fact]
+        public async Task An_embedded_key_keeps_the_key_number_it_always_had_for_the_preliminary_authentication()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var delete = NewTask(TaskType_MifareDesfireTask.DeleteFile);
+                delete.SelectedDesfireAppKeyNumberCurrent = "3";
+                var reader = new KeyRecordingReader();
+
+                await RunAsync(delete, reader);
+
+                Assert.Equal(3, reader.LastAuthKeyNumber);
+            });
+        }
+
+        [Fact]
+        public async Task A_cancelled_run_asks_for_no_key_and_the_command_makes_no_card_call()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var cancel = new CancellationTokenSource();
+                cancel.Cancel();
+                var vault = new Vault();
+                vault.Install(cancellationToken: cancel.Token);
+                var task = NewTask(TaskType_MifareDesfireTask.ReadData);
+                task.KeyBindings = new[] { Bind(SecureKeySlots.DesfireRead) };
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+                Assert.Empty(vault.Requests);
+            });
+        }
+
+        [Fact]
+        public async Task A_run_cancelled_while_the_provider_answers_goes_on_to_no_card_call()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var cancel = new CancellationTokenSource();
+                var vault = new Vault { OnRequest = _ => cancel.Cancel() };
+                vault.Install(cancellationToken: cancel.Token);
+                var task = NewTask(TaskType_MifareDesfireTask.ReadData);
+                task.KeyBindings = new[] { Bind(SecureKeySlots.DesfireRead) };
+
+                var run = await RunAsync(task);
+
+                Assert.Single(vault.Requests);
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+            });
+        }
+
+        [Fact]
+        public async Task A_run_hands_its_cancellation_to_the_providers()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var cancel = new CancellationTokenSource();
+                var seen = CancellationToken.None;
+                var vault = new Vault { OnRequest = _ => seen = KeyResolutionScope.Current!.CancellationToken };
+                var task = NewTask(TaskType_MifareDesfireTask.ReadData);
+                task.KeyBindings = new[] { Bind(SecureKeySlots.DesfireRead) };
+
+                using (ReaderDeviceScope.Use(new KeyRecordingReader()))
+                {
+                    await ExecuteAsync(task, new TaskExecutionService(new ReaderDeviceProvider(), new NullDispatcherTimerAdapter(), new NullDispatcherTimerAdapter(), null, vault.Registry()), cancel.Token);
+                }
+
+                Assert.Equal(cancel.Token, seen);
+                Assert.True(seen.CanBeCanceled);
+            });
+        }
+
+        [Fact]
+        public async Task A_lease_the_provider_already_disposed_is_an_unusable_key_and_not_an_exception()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var vault = new Vault { ReturnDisposedLease = true };
+                vault.Install();
+                var task = NewTask(TaskType_MifareDesfireTask.ReadData);
+                task.KeyBindings = new[] { Bind(SecureKeySlots.DesfireRead) };
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+            });
+        }
+
+        [Fact]
+        public async Task The_dialog_changing_while_a_provider_answers_cannot_change_which_keys_the_command_uses()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = NewTask(TaskType_MifareDesfireTask.ApplicationKeyChangeover);
+                BindAll(task);
+
+                // Key number 1 shows the old-key inputs. It is chosen after the command decided that it needs none, and
+                // the command goes on with the keys it asked for.
+                var vault = new Vault { OnRequest = _ => task.SelectedDesfireAppKeyNumberCurrent = "1" };
+                vault.Install();
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(
+                    "AuthToMifareDesfireApplication[AppCurrent] | ChangeMifareDesfireKeyAsync[AppCurrent,AppTarget,AppCurrent] | VerifyMifareDesfireKeyChange[AppTarget]",
+                    run.Calls);
+            });
+        }
+
+        [Fact]
+        public async Task The_delete_method_the_reader_is_told_is_the_one_the_key_was_asked_for()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = NewTask(TaskType_MifareDesfireTask.DeleteApplication);
+                BindAll(task);
+                var vault = new Vault { OnRequest = _ => task.SelectedDesfireDeleteAuthMethod = DesfireDeleteAuthMethod.ApplicationMasterKey0 };
+                vault.Install();
+                var reader = new KeyRecordingReader();
+
+                await RunAsync(task, reader);
+
+                // Asked for the card master key, and told the reader the same, although the dialog changed meanwhile.
+                Assert.Equal(DesfireDeleteAuthMethod.PiccMasterKey, reader.LastDeleteAuthMethod);
+                Assert.Equal(SecureKeySlots.DesfirePiccCurrent, Assert.Single(vault.Requests).SlotId);
             });
         }
 
@@ -737,7 +926,7 @@ namespace RFiDGear.Tests.SecureKeys
             return new Run(Describe(reader), task.CurrentTaskErrorLevel, task.StatusText ?? string.Empty);
         }
 
-        private static async Task<ExecResult> ExecuteAsync(MifareDesfireSetupViewModel task, TaskExecutionService service)
+        private static async Task<ExecResult> ExecuteAsync(MifareDesfireSetupViewModel task, TaskExecutionService service, CancellationToken cancellationToken = default)
         {
             // Its own folder: opening the project database resets the files of the application's profile.
             var root = Directory.CreateTempSubdirectory("KeyResolutionRun").FullName;
@@ -749,7 +938,7 @@ namespace RFiDGear.Tests.SecureKeys
                 var host = new TaskExecHostImpl(service, project, coordinator);
                 project.ReplaceTaskCollection(new object[] { task });
 
-                return await host.ExecuteAllAsync(ExecutionRequest.Empty);
+                return await host.ExecuteAllAsync(ExecutionRequest.Empty, cancellationToken);
             }
             finally
             {
@@ -816,6 +1005,9 @@ namespace RFiDGear.Tests.SecureKeys
             /// <summary>Gets or sets a text that the vault throws instead of answering; <c>null</c> for none.</summary>
             public string? ThrowText { get; set; }
 
+            /// <summary>Gets or sets whether the vault hands out a lease that is disposed already, as a provider with a defect might.</summary>
+            public bool ReturnDisposedLease { get; set; }
+
             /// <summary>Gets or sets what happens when a request arrives.</summary>
             public Action<SecureKeyRequest>? OnRequest { get; set; }
 
@@ -848,8 +1040,8 @@ namespace RFiDGear.Tests.SecureKeys
                 Array.Empty<Lazy<ISecureKeyProvider, RFiDGear.ExtensionSdk.ISecureKeyProviderMetadata>>());
 
             /// <summary>Makes this vault the one that commands without a run ask.</summary>
-            public void Install(string? runId = "run-1", string taskIndex = "0", string? cardUid = null, Action? resolutionStarted = null, Action? resolutionFinished = null) =>
-                KeyResolutionScope.SetDefault(new KeyResolutionContext(Registry(), runId, taskIndex, cardUid, interactive: false, resolutionStarted, resolutionFinished));
+            public void Install(string? runId = "run-1", string taskIndex = "0", string? cardUid = null, Action? resolutionStarted = null, Action? resolutionFinished = null, CancellationToken cancellationToken = default) =>
+                KeyResolutionScope.SetDefault(new KeyResolutionContext(Registry(), runId, taskIndex, cardUid, interactive: false, resolutionStarted, resolutionFinished, cancellationToken));
 
             private SecureKeyResolution Answer(SecureKeyRequest request)
             {
@@ -883,7 +1075,14 @@ namespace RFiDGear.Tests.SecureKeys
                     _returnedKeys.Add(Convert.ToHexString(key));
                 }
 
-                return SecureKeyResolution.Resolved(new SecureKeyLease(key));
+                var lease = new SecureKeyLease(key);
+
+                if (ReturnDisposedLease)
+                {
+                    lease.Dispose();
+                }
+
+                return SecureKeyResolution.Resolved(lease);
             }
         }
 

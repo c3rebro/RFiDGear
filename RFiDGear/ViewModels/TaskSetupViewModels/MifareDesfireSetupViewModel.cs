@@ -3068,7 +3068,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, selectedDesfireAppKeyNumberCurrentAsInt));
+                    // Both readers authenticate with key 0 of the application to create a file, whichever key number is chosen
+                    // for the checks: that is where the key is used, so that is what a provider is told.
+                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, 0));
 
                     if (keys.Failed)
                     {
@@ -3581,12 +3583,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     // A key change uses three keys: the one that authenticates, the one that is replaced (the same key unless
                     // the old-key inputs are shown) and the new one. All of them are obtained now, before the card is
                     // touched, so that a key that cannot be obtained costs nothing.
+                    // Whether the old-key inputs are shown is decided once, here: the dialog stays editable while a provider
+                    // answers, and the keys that were asked for must be the keys the command goes on to use.
+                    var showOldInputs = ShowAppKeyOldInputs;
+
                     var needs = new List<KeyNeed>
                     {
                         Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, authKeyNo),
                     };
 
-                    if (ShowAppKeyOldInputs)
+                    if (showOldInputs)
                     {
                         needs.Add(Need(SecureKeySlots.DesfireAppOld, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.ChangeKeyCurrent, AppNumberCurrentAsInt, keyNumberForChange));
                     }
@@ -3601,11 +3607,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     }
 
                     var authKeyValue = keys.Failed ? null : keys.Hex(SecureKeySlots.DesfireAppCurrent);
-                    var oldKeyForTargetSlot = keys.Failed ? null : keys.Hex(ShowAppKeyOldInputs ? SecureKeySlots.DesfireAppOld : SecureKeySlots.DesfireAppCurrent);
+                    var oldKeyForTargetSlot = keys.Failed ? null : keys.Hex(showOldInputs ? SecureKeySlots.DesfireAppOld : SecureKeySlots.DesfireAppCurrent);
                     var newKeyValue = keys.Failed ? null : keys.Hex(SecureKeySlots.DesfireAppNew);
 
                     var isAuthKeyValid = KeyIsUsable(keys, SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent);
-                    var isOldKeyValid = !ShowAppKeyOldInputs || KeyIsUsable(keys, SecureKeySlots.DesfireAppOld, SelectedDesfireAppKeyEncryptionTypeCurrent);
+                    var isOldKeyValid = !showOldInputs || KeyIsUsable(keys, SecureKeySlots.DesfireAppOld, SelectedDesfireAppKeyEncryptionTypeCurrent);
 
                     if (isAuthKeyValid && isOldKeyValid)
                     {
@@ -3867,7 +3873,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     DESFireKeyType authKeyType;
                     var authApplicationId = 0;
 
-                    if (SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0)
+                    // Decided once: the key that is asked for and the method the reader is told must belong together.
+                    var authMethod = SelectedDesfireDeleteAuthMethod;
+
+                    if (authMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0)
                     {
                         authSlot = SecureKeySlots.DesfireAppCurrent;
                         authKeyType = SelectedDesfireAppKeyEncryptionTypeCurrent;
@@ -3893,7 +3902,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             keys.Hex(authSlot),
                             authKeyType,
                             (uint)AppNumberNewAsInt,
-                            SelectedDesfireDeleteAuthMethod);
+                            authMethod);
 
                         await SetOperationResultAsync(
                             result,
@@ -3930,7 +3939,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, selectedDesfireAppKeyNumberCurrentAsInt));
+                    // Deleting a file authenticates with key 0 of the application, in both readers. A key from a provider is
+                    // asked for for that key, and so it is also the key number of the authentication before the delete.
+                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, 0));
+                    var authKeyNumber = keys.IsBound(SecureKeySlots.DesfireAppCurrent) ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
 
                     if (keys.Failed)
                     {
@@ -3942,7 +3954,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         var result = await device.AuthToMifareDesfireApplication(
                                 keys.Hex(SecureKeySlots.DesfireAppCurrent),
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
+                                authKeyNumber, AppNumberCurrentAsInt);
 
                         if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                         {
@@ -3963,6 +3975,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             {
                                 return;
                             }
+                            return;
+                        }
+                        else if (keys.IsBound(SecureKeySlots.DesfireAppCurrent))
+                        {
+                            // A key from a provider was asked for for this application. It did not authenticate here, and it
+                            // is not tried on another one.
+                            StatusText += string.Format("{0}: Unable to Authenticate to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+                            CurrentTaskErrorLevel = result == ERROR.NoError ? ERROR.ProtocolConstraint : result;
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
                         }
                         else
@@ -4930,7 +4951,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, selectedDesfireAppKeyNumberCurrentAsInt));
+                    // The directory is read at card level: the reader selects application 0 and authenticates with key 0
+                    // there, with whatever key the slot holds. That is where the key is used, so that is what a provider
+                    // is told.
+                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, 0, 0));
 
                     if (keys.Failed)
                     {
