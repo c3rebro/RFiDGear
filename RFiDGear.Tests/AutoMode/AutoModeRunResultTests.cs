@@ -13,6 +13,7 @@ using Xunit;
 
 using static RFiDGear.Tests.AutoMode.AutoModeHostTests;
 using static RFiDGear.Tests.AutoMode.AutoModeMainWindowTests;
+using static RFiDGear.Tests.CardCheckAssistant.ViewModelTestSupport;
 
 namespace RFiDGear.Tests.AutoMode
 {
@@ -225,6 +226,54 @@ namespace RFiDGear.Tests.AutoMode
 
                 host.Start();
                 Assert.Equal(AutoModeStopReason.None, host.LastStopReason);
+                await Task.CompletedTask;
+            });
+        }
+
+        [Fact]
+        public async Task AStopWhileARunIsInProgress_IsAnnouncedFirst_AndTheResultOfThatRunStillFollows_WithTheModeOff()
+        {
+            await WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                exec.Gate = gate.Task;
+                var events = new List<string>();
+                host.AutoModeStateChanged += (_, _) => events.Add("mode:" + host.IsAutoModeEnabled);
+                host.AutoModeRunCompleted += (_, result) => events.Add("completed:" + result.Outcome + ":" + host.IsAutoModeEnabled);
+                viewModel.ExtensionHost.Execution.IsRunningChanged += (_, _) => events.Add("running:" + viewModel.ExtensionHost.Execution.IsRunning);
+                host.Start();
+                provider.Card = Card(CardA);
+
+                var tick = viewModel.AutoMode.TickAsync();
+                await WaitUntil(() => viewModel.ExtensionHost.Execution.IsRunning, "the run to start");
+                host.Stop();
+                gate.SetResult(true);
+                await Within(tick);
+
+                // The mode is off, and told so, before the run that was in progress ends; its result still follows.
+                Assert.Equal(
+                    new[] { "mode:True", "running:True", "mode:False", "running:False", "completed:Success:False" },
+                    events);
+                Assert.Equal(AutoModeStopReason.StopRequested, host.LastStopReason);
+            });
+        }
+
+        [Fact]
+        public async Task ARunTheExtensionStarted_ThatTheWatchdogGaveUp_StopsTheMode_AsATimeout_WithoutBeingReportedAsARunOfTheMode()
+        {
+            await WithHost(async (viewModel, host, _, exec, _) =>
+            {
+                var reported = 0;
+                host.AutoModeRunCompleted += (_, _) => reported++;
+                host.Start();
+                exec.OnExecute = _ => new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Failure, Abandoned = true };
+
+                await viewModel.ExtensionHost.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
+
+                // No result of the mode to wait for: the extension has the result of its own run.
+                Assert.False(host.IsAutoModeEnabled);
+                Assert.Equal(AutoModeStopReason.RunTimedOut, host.LastStopReason);
+                Assert.Equal(0, reported);
                 await Task.CompletedTask;
             });
         }
