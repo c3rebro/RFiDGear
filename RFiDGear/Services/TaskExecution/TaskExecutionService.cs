@@ -141,11 +141,27 @@ namespace RFiDGear.Services.TaskExecution
     public class ChipHydrationResult
     {
         public ChipHydrationResult(GenericChipModel chip)
+            : this(chip, chip)
+        {
+        }
+
+        /// <summary>Initializes a result whose chip the read did not necessarily find.</summary>
+        /// <param name="chip">The chip the tasks work on: what the device holds after the read.</param>
+        /// <param name="foundChip">The chip the read itself found, or an empty chip when it found no card or failed.</param>
+        public ChipHydrationResult(GenericChipModel chip, GenericChipModel foundChip)
         {
             Chip = chip;
+            FoundChip = foundChip;
         }
 
         public GenericChipModel Chip { get; }
+
+        /// <summary>
+        /// Gets the chip that the run's read itself found: <see cref="Chip"/> when the read found a card, an empty chip
+        /// when it found none or failed. They differ because a failed read, and the read of a PC/SC reader without a
+        /// card, leave the chip of the read before on the device, and that chip is not a card this run saw.
+        /// </summary>
+        public GenericChipModel FoundChip { get; }
     }
 
     /// <summary>
@@ -262,8 +278,10 @@ namespace RFiDGear.Services.TaskExecution
         /// <summary>
         /// Optional. Called once per run, with the chip the run's <em>own</em> read found, after that read and before the
         /// first task starts. The run reads the card again after anything the caller read before it, and the card can be
-        /// another one by then; automatic mode uses this to remember the card the tasks really work on. It is not called
-        /// by a run that has no reader read of its own (one driven by task descriptors).
+        /// another one by then; automatic mode uses this to remember the card the tasks really work on, and the result of
+        /// the run names it. The chip is what that read <em>found</em>: when the read found no card, or failed, it is an
+        /// empty chip (no UID), never the chip of an earlier read that a PC/SC reader or a failed read leaves on the
+        /// device. It is not called by a run that has no reader read of its own (one driven by task descriptors).
         /// </summary>
         public Action<GenericChipModel> ChipHydrated { get; set; }
     }
@@ -436,7 +454,7 @@ namespace RFiDGear.Services.TaskExecution
                             cancellationToken,
                         runId);
 
-                        request.ChipHydrated?.Invoke(hydrationResult.Chip);
+                        request.ChipHydrated?.Invoke(hydrationResult.FoundChip);
 
                         _ = await ExecuteStageWithTimeout(
                             "SelectionSync",
@@ -604,8 +622,16 @@ namespace RFiDGear.Services.TaskExecution
             // Always ReadChipPublic first: it reconnects the reader if the session
             // has lapsed since the last read (required by the Elatec SDK before any
             // DESFire command — connect then search-tag).
-            await device.ReadChipPublic();
+            var readResult = await device.ReadChipPublic();
             var genericChip = device.GenericChip ?? new GenericChipModel();
+
+            // What the read itself found. The result is not looked at above, and the chip on the device may be the one of
+            // the read before: a PC/SC reader answers a read without a card with an error and leaves it, and so does a
+            // read that failed. The same interpretation as the reader scan and the polls of automatic mode decides, so a
+            // UID that is reported for this run is one that this run's read saw.
+            var found = RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.FromRead(
+                null, true, device.IsPcscReader, device.IsConnected, readResult, genericChip);
+            var readFoundACard = found.State == RFiDGear.Contracts.ReaderScanState.Ready && found.Credentials.Count > 0;
 
             if (!string.IsNullOrEmpty(genericChip.UID) &&
                 genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
@@ -615,7 +641,7 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            return new ChipHydrationResult(genericChip);
+            return new ChipHydrationResult(genericChip, readFoundACard ? genericChip : new GenericChipModel());
         }
 
         private SelectionSyncResult SynchronizeSelection(TaskExecutionRequest request, GenericChipModel hydratedChip)

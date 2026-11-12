@@ -59,7 +59,9 @@ namespace RFiDGear.Contracts
         /// <para>
         /// <c>null</c> when the run did not get to know a card: it ended before its read (no reader, a fault in the read),
         /// the read found no card, or the run is driven without a reader read of its own. A run that fails <em>after</em>
-        /// its read still carries the UID.
+        /// its read still carries the UID. It is never the UID of an earlier read: a read that found no card or failed
+        /// gives <c>null</c> even where the reader still holds the card of the read before (a PC/SC reader answers a read
+        /// without a card with an error and leaves it).
         /// </para>
         /// <para>
         /// It is the only card data the host puts in a result. It is not a secret, but it identifies a card: do not write

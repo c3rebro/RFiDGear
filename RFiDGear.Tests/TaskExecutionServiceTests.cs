@@ -1173,6 +1173,63 @@ namespace RFiDGear.Tests
             Assert.False(called);
         }
 
+        private static async Task<(bool Called, string Uid)> HydratedUidAsync(RFiDGear.Tests.Reader.ScriptedReadProvider reader)
+        {
+            var called = false;
+            string uid = null;
+            var request = new TaskExecutionRequest { ChipHydrated = chip => { called = true; uid = chip.UID; } };
+            var service = new TaskExecutionService(
+                new FixedReaderDeviceProvider(reader),
+                new StubDispatcherTimerAdapter(),
+                new StubDispatcherTimerAdapter());
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await service.ExecuteOnceAsync(request);
+            });
+
+            return (called, uid);
+        }
+
+        [Theory]
+        [InlineData(true, true, ERROR.TransportError)]   // PC/SC: no card answers with an error and leaves the chip
+        [InlineData(false, true, ERROR.TransportError)]  // a read that failed leaves the chip as well
+        [InlineData(false, false, ERROR.NoError)]        // a reader that is not connected after the read is no reader
+        public async Task ChipHydrated_NamesNoCard_WhenTheRunsReadFoundNone_NotTheCardOfTheReadBefore(
+            bool pcsc, bool connected, ERROR result)
+        {
+            // Card A was read before and is still the chip on the device; the run's own read finds nothing.
+            var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider
+            {
+                Pcsc = pcsc,
+                Connected = connected,
+                GenericChip = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102)
+            };
+            reader.Script(result);
+
+            var (called, uid) = await HydratedUidAsync(reader);
+
+            Assert.True(called);
+            Assert.Null(uid);
+            Assert.Equal(1, reader.ReadCount);
+        }
+
+        [Fact]
+        public async Task ChipHydrated_NamesTheCard_WhenAPcscReaderFindsOne()
+        {
+            var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider
+            {
+                Pcsc = true,
+                GenericChip = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102),
+                Card = new RFiDGear.Models.GenericChipModel("9876543210", CARD_TYPE.EM4102)
+            };
+
+            var (called, uid) = await HydratedUidAsync(reader);
+
+            Assert.True(called);
+            Assert.Equal("9876543210", uid);
+        }
+
         private sealed class FixedReaderDeviceProvider : IReaderDeviceProvider
         {
             private readonly RFiDGear.Infrastructure.ReaderProviders.ReaderDevice _device;
