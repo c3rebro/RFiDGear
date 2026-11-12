@@ -154,7 +154,7 @@ namespace RFiDGear.Tests.Reader
         [Fact]
         public void TheNearestFileAbove_IsTheOneThatIsUsed()
         {
-            var nested = Directory.CreateDirectory(Path.Combine(_root, "bin", "Debug", "net8.0-windows")).FullName;
+            var nested = Directory.CreateDirectory(Path.Combine(_root, "bin", "Debug", "net10.0-windows")).FullName;
             File.WriteAllText(Path.Combine(_root, HilSettings.FileName), "{ \"readerScan\": true }");
 
             Assert.Equal(Path.Combine(_root, HilSettings.FileName), HilSettings.Find(nested));

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
     <!-- WPF only for IApplicationUIExtension, which hands the host a FrameworkElement. -->
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64;x86</Platforms>

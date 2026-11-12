@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Plain net8.0 on purpose: no WPF, no windows-only API. The boundary tests pin this. -->
+    <!-- Plain net10.0 on purpose: no WPF, no windows-only API. The boundary tests pin this. -->
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU;x64;x86</Platforms>

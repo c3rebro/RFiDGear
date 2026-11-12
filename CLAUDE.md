@@ -37,11 +37,15 @@ by default on purpose: tests, clean checkouts and mutation runs also build the
 extensions and must not write into a real RFiDGear. See
 `RFiDGear.Extensions/DeployToRFiDGear.targets`.
 
-The host (`RFiDGear`), the test projects, the sample plugin and the sample CLI
-target `net10.0-windows` (the CLI plain `net10.0`). The extension contract
-(`RFiDGear.Contracts`, `RFiDGear.ExtensionSdk`), `CardCheckAssistant` and the
-`CardCheck` library stay on `net8.0` on purpose: a .NET 10 host loads them, and
-extensions that were built earlier keep working. `global.json` pins the SDK to
+Everything targets .NET 10: the host (`RFiDGear`), the test projects, the
+sample plugin, the extension contract (`RFiDGear.Contracts`,
+`RFiDGear.ExtensionSdk`) and `CardCheckAssistant` as `net10.0-windows` (written
+`net10.0-windows7.0` in some projects, which is the same), and the sample CLI
+and the `CardCheck` library as plain `net10.0`. The contract assemblies keep
+their assembly version `1.0.0.0`, so an extension that was built earlier against
+`net8.0` keeps binding to them: `RFiDGear.Tests/Fixtures/LegacyExtensions`
+holds prebuilt `net8.0` extensions, and the tests load them in the host.
+`global.json` pins the SDK to
 10.0.x, because a newer preview SDK on the machine would otherwise be picked
 up. Visual Studio 2022 cannot target `net10.0`; use Visual Studio 2026 or the
 `dotnet` CLI. Tests require the
@@ -221,7 +225,7 @@ a PDF engine) keeps that code in a support library named
 `RFiDGear.Extensions`, in any letter case.** `MefHelper` scans the extensions
 folder for `RFiDGear.Extensions*.dll` and hands every match to MEF, so a library
 called `RFiDGear.ExtensionsNative.*` or `RFiDGear.ExtensionSupport.*` would be
-loaded as an extension at every start-up. A support library is plain `net8.0`
+loaded as an extension at every start-up. A support library is plain `net10.0`
 (no WPF), references no other RFiDGear project, compiles against host-owned
 packages (Serilog, GemBox.Pdf) without shipping a copy of them, and sits flat
 next to the extension that uses it: .NET finds it there, the host needs no
