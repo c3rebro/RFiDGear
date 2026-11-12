@@ -267,7 +267,15 @@ namespace RFiDGear.Services.SecureKeys
             return false;
         }
 
-        private static async Task<SecureKeyResolution> Settle(
+        /// <summary>
+        /// Turns a finished provider call into the answer the host hands out. Internal so that a test can give it a call
+        /// and a host stop that are both finished already, which an end-to-end test cannot arrange reliably.
+        /// </summary>
+        /// <param name="call">The provider call; completed.</param>
+        /// <param name="hostStop">Completes with the reason when the caller cancels or the deadline passes.</param>
+        /// <param name="providerId">The provider id, for the log.</param>
+        /// <returns>The answer; a key is only handed out while <paramref name="hostStop"/> is not complete.</returns>
+        internal static async Task<SecureKeyResolution> Settle(
             Task<SecureKeyResolution> call,
             Task<SecureKeyFailureReason> hostStop,
             string providerId)

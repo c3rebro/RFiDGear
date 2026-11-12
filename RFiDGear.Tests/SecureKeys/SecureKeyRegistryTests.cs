@@ -266,6 +266,40 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.True(IsDisposed(issued!), "the key was handed out although the caller had given up");
         }
 
+        [Theory]
+        [InlineData(SecureKeyFailureReason.Cancelled)]
+        [InlineData(SecureKeyFailureReason.Timeout)]
+        public async Task A_key_that_is_ready_when_the_host_has_already_stopped_waiting_is_not_handed_out(SecureKeyFailureReason stopReason)
+        {
+            // Both the provider's answer and the host's stop signal are complete when the host looks, and the answer is
+            // the first it checks: the stop signal still wins, and the key is disposed.
+            var issued = new SecureKeyLease(SecureKeyTestData.SixteenBytes());
+
+            using var answer = await SecureKeyRegistry.Settle(
+                Task.FromResult(SecureKeyResolution.Resolved(issued)),
+                Task.FromResult(stopReason),
+                Id);
+
+            Assert.Equal(stopReason, answer.FailureReason);
+            Assert.True(IsDisposed(issued), "the key was handed out although the host had stopped waiting");
+        }
+
+        [Fact]
+        public async Task A_key_is_handed_out_while_the_host_is_still_waiting()
+        {
+            var issued = new SecureKeyLease(SecureKeyTestData.SixteenBytes());
+            var neverStops = new TaskCompletionSource<SecureKeyFailureReason>();
+
+            using var answer = await SecureKeyRegistry.Settle(
+                Task.FromResult(SecureKeyResolution.Resolved(issued)),
+                neverStops.Task,
+                Id);
+
+            Assert.True(answer.IsResolved);
+            Assert.Same(issued, answer.Key);
+            Assert.False(IsDisposed(issued));
+        }
+
         [Fact]
         public async Task A_callback_a_provider_registers_on_its_token_cannot_hold_the_host_up()
         {
