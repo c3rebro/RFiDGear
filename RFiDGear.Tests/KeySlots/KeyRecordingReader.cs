@@ -210,8 +210,30 @@ namespace RFiDGear.Tests.KeySlots
         // ── Classic ──
 
         /// <inheritdoc />
-        public override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey) =>
-            Task.FromResult(Record(nameof(ReadMifareClassicSingleSector), aKey, bKey));
+        public override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        {
+            var scripted = Record(nameof(ReadMifareClassicSingleSector), aKey, bKey);
+
+            // The view model reads the sector that a successful call leaves behind.
+            if (scripted == ERROR.NoError)
+            {
+                Sector = NewSector(sectorNumber);
+            }
+
+            return Task.FromResult(scripted);
+        }
+
+        private static MifareClassicSectorModel NewSector(int sectorNumber)
+        {
+            var sector = new MifareClassicSectorModel { SectorNumber = sectorNumber, IsAuthenticated = true };
+
+            for (var block = 0; block < 4; block++)
+            {
+                sector.DataBlock.Add(new MifareClassicDataBlockModel(sectorNumber * 4 + block, block) { Data = new byte[16], IsAuthenticated = true });
+            }
+
+            return sector;
+        }
 
         /// <inheritdoc />
         public override Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer) =>
@@ -233,7 +255,17 @@ namespace RFiDGear.Tests.KeySlots
         /// <inheritdoc />
         public override Task<ERROR> ReadMifareClassicWithMAD(
             int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse,
-            int _length, byte _madGPB, bool _useMADToAuth, bool _aiToUseIsMAD) =>
-            Task.FromResult(Record(nameof(ReadMifareClassicWithMAD), _aKeyToUse, _bKeyToUse, _madAKeyToUse, _madBKeyToUse));
+            int _length, byte _madGPB, bool _useMADToAuth, bool _aiToUseIsMAD)
+        {
+            var scripted = Record(nameof(ReadMifareClassicWithMAD), _aKeyToUse, _bKeyToUse, _madAKeyToUse, _madBKeyToUse);
+
+            // The view model reads the data that a successful call leaves behind.
+            if (scripted == ERROR.NoError)
+            {
+                MifareClassicData = new byte[Math.Max(_length, 0)];
+            }
+
+            return Task.FromResult(scripted);
+        }
     }
 }
