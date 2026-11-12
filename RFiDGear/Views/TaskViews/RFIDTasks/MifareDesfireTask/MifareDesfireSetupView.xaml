@@ -67,7 +67,8 @@
                 Margin="9,8,8,0"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicSetupTaskConfiguration'}">
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicSetupTaskConfiguration'}"
+                IsEnabled="{Binding AreInputsEnabled}">
                 <Grid
                     Grid.Row="0"
                     Grid.Column="0"

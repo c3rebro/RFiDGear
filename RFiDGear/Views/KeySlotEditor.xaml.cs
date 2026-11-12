@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -18,6 +19,7 @@ namespace RFiDGear.View
     /// </para>
     /// </summary>
     [ContentProperty(nameof(EmbeddedKey))]
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half of the class is generated from the XAML, which the analyser cannot see.")]
     public partial class KeySlotEditor : UserControl
     {
         /// <summary>Identifies <see cref="SlotId"/>.</summary>

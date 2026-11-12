@@ -90,6 +90,61 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public async Task Binding_the_current_application_key_also_clears_a_copy_of_it_in_the_old_key_but_keeps_an_old_key_that_differs()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                const string Different = "FFEEDDCCBBAA99887766554433221100";
+                var copy = NewKeyChange(Aes, Aes);
+                var differing = NewKeyChange(Aes, Different);
+                Assert.True(copy.ShowAppKeyOldInputs);
+                Assert.True(differing.ShowAppKeyOldInputs);
+
+                copy.BindKeySlot(SecureKeySlots.DesfireAppCurrent, "test.vault", "ref/app");
+                differing.BindKeySlot(SecureKeySlots.DesfireAppCurrent, "test.vault", "ref/app");
+
+                // What was discarded is not saved through the old key; an old key of its own is.
+                Assert.DoesNotContain(Aes, XmlOf(copy), StringComparison.OrdinalIgnoreCase);
+                Assert.Contains(Different, XmlOf(differing), StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(Aes, XmlOf(differing), StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(DesfireSlots))]
+        public async Task Switching_a_desfire_slot_back_clears_a_key_that_a_loaded_task_kept_next_to_its_binding(string slot)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = new MifareDesfireSetupViewModel();
+                SetKey(task, slot, Aes);
+
+                // As a file that was edited by hand can leave it: the binding and the key.
+                task.KeyBindings = new[] { new KeyBindingEntry { Slot = slot, ProviderId = "test.vault", Reference = "ref/x" } };
+                Assert.True(task.HasEmbeddedKey(slot));
+
+                task.UnbindKeySlot(slot);
+
+                Assert.False(task.IsKeyBound(slot));
+                Assert.False(task.HasEmbeddedKey(slot));
+            });
+        }
+
+        [Fact]
+        public async Task Unbinding_a_slot_that_is_not_bound_leaves_the_key_that_is_typed()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = new MifareDesfireSetupViewModel();
+                SetKey(task, SecureKeySlots.DesfireRead, Aes);
+
+                task.UnbindKeySlot(SecureKeySlots.DesfireRead);
+
+                Assert.True(task.HasEmbeddedKey(SecureKeySlots.DesfireRead));
+            });
+        }
+
+        [Fact]
         public async Task Unbinding_a_desfire_slot_removes_only_its_binding()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
@@ -252,6 +307,38 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Theory]
+        [MemberData(nameof(ClassicSlots))]
+        public async Task Switching_a_classic_slot_back_clears_a_key_that_a_loaded_task_kept_next_to_its_binding(string slot)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = new MifareClassicSetupViewModel();
+                SetKey(task, slot, Classic);
+                task.KeyBindings = new[] { new KeyBindingEntry { Slot = slot, ProviderId = "test.vault", Reference = "ref/x" } };
+                Assert.True(task.HasEmbeddedKey(slot));
+
+                task.UnbindKeySlot(slot);
+
+                Assert.False(task.IsKeyBound(slot));
+                Assert.False(task.HasEmbeddedKey(slot));
+            });
+        }
+
+        [Fact]
+        public async Task Unbinding_a_classic_slot_that_is_not_bound_leaves_the_key_that_is_typed()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = new MifareClassicSetupViewModel();
+                SetKey(task, SecureKeySlots.ClassicACurrent, Classic);
+
+                task.UnbindKeySlot(SecureKeySlots.ClassicACurrent);
+
+                Assert.True(task.HasEmbeddedKey(SecureKeySlots.ClassicACurrent));
+            });
+        }
+
         [Fact]
         public async Task Unbinding_a_classic_slot_removes_only_its_binding()
         {
@@ -383,6 +470,29 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         // ── Helpers ──
+
+        // A key change in an application other than the card, for a key other than 0: the old-key inputs show then.
+        private static MifareDesfireSetupViewModel NewKeyChange(string current, string old)
+        {
+            var task = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = TaskType_MifareDesfireTask.ApplicationKeyChangeover,
+                AppNumberCurrent = "1",
+                SelectedDesfireAppKeyNumberCurrent = "1",
+            };
+            task.DesfireAppKeyCurrent = current;
+            task.DesfireAppKeyCurrentOld = old;
+
+            return task;
+        }
+
+        private static string XmlOf(MifareDesfireSetupViewModel task)
+        {
+            using var writer = new StringWriter();
+            new XmlSerializer(typeof(MifareDesfireSetupViewModel)).Serialize(writer, task);
+
+            return writer.ToString();
+        }
 
         private static void SetKey(MifareDesfireSetupViewModel task, string slot, string value)
         {

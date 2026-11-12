@@ -84,7 +84,8 @@ namespace RFiDGear.View
             ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-            _box.MaxLength = hexLength;
+            // No limit on the length: a limit would cut a key that is too long when it is pasted, and the first digits of
+            // it would be stored as if they were the key. What is entered reaches the check of the exact length whole.
             _box.MinWidth = 320;
 
             var ok = new Button

@@ -352,9 +352,10 @@ namespace RFiDGear.Tests.SecureKeys
 
             public KeyBindingEntry? GetKeyBinding(string slotId) => _bindings.FirstOrDefault(entry => entry.Slot == slotId)?.Clone();
 
-            public bool HasEmbeddedKey(string slotId) => EmbeddedKey.Length > 0;
+            // The task has one slot; a question about another is a mistake of the editor.
+            public bool HasEmbeddedKey(string slotId) => slotId == Slot && EmbeddedKey.Length > 0;
 
-            public int ExpectedKeyHexLength(string slotId) => HexLength;
+            public int ExpectedKeyHexLength(string slotId) => slotId == Slot ? HexLength : 0;
 
             public void BindKeySlot(string slotId, string providerId, string reference)
             {

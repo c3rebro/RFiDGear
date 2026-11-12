@@ -1338,12 +1338,30 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             // The binding first and the key second: a slot has one or the other, and a failure in between leaves the binding.
             KeyBindings = KeyBindingList.With(keyBindings, new KeyBindingEntry { Slot = slotId, ProviderId = providerId, Reference = reference });
+
+            // With the old-key inputs showing, the old key is a box of its own. When it holds a copy of the key that is
+            // discarded here, it would carry the secret on in the project, so it goes too; an old key that differs stays.
+            if (slotId == SecureKeySlots.DesfireAppCurrent
+                && !string.IsNullOrEmpty(DesfireAppKeyCurrent)
+                && string.Equals(DesfireAppKeyCurrentOld, DesfireAppKeyCurrent, StringComparison.Ordinal))
+            {
+                DesfireAppKeyCurrentOld = string.Empty;
+            }
+
             SetEmbeddedKey(slotId, string.Empty);
         }
 
         /// <inheritdoc />
         public void UnbindKeySlot(string slotId)
         {
+            // A task that was loaded can hold a key next to its binding (a file that was edited by hand): it is not
+            // reactivated by "Use key", the person types the key again. It goes while the slot is still bound, so that no
+            // save in between can write it.
+            if (SecureKeySlots.Desfire.Contains(slotId) && IsKeyBound(slotId))
+            {
+                SetEmbeddedKey(slotId, string.Empty);
+            }
+
             KeyBindings = KeyBindingList.Without(keyBindings, slotId);
         }
 

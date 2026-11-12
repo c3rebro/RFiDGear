@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 using Xunit;
 using static RFiDGear.Tests.RenderedTab;
@@ -221,7 +222,7 @@ namespace RFiDGear.Tests
         public async Task The_store_button_is_there_for_the_credential_manager_and_waits_for_a_valid_reference()
         {
             // A task type enables the group of the keys; without one the whole group, and so the button, is disabled.
-            await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, async (view, task) =>
+            await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, async (view, _) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
                 var button = (Button)editor.FindName("StoreKeyButton");
@@ -247,7 +248,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task The_provider_box_appears_only_when_there_is_more_than_one_provider_to_choose_from()
         {
-            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, task) =>
+            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, _) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
                 StateOf(editor).ToggleMode();
@@ -261,7 +262,7 @@ namespace RFiDGear.Tests
                 WindowsCredentialKeyProvider.Registration(),
                 new SecureKeyProviderRegistration("other.vault", "Other vault", ScriptedSecureKeyProvider.Failing(SecureKeyFailureReason.NotFound)));
 
-            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, task) =>
+            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, _) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
                 StateOf(editor).ToggleMode();
@@ -280,7 +281,7 @@ namespace RFiDGear.Tests
         {
             UseProviders();
 
-            await OnClassicTab(() => new MifareClassicSetupViewModel(), (view, task) =>
+            await OnClassicTab(() => new MifareClassicSetupViewModel(), (view, _) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
                 var button = (Button)editor.FindName("ModeButton");
@@ -303,7 +304,7 @@ namespace RFiDGear.Tests
 
                     return task;
                 },
-                (view, task) =>
+                (view, _) =>
                 {
                     var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
 
@@ -325,12 +326,27 @@ namespace RFiDGear.Tests
 
                     return task;
                 },
-                (view, task) =>
+                (view, _) =>
                 {
                     Assert.Empty(BlankCaptions(view));
 
                     return Task.CompletedTask;
                 });
+        }
+
+        // ── Storing a key ──
+
+        [Fact]
+        public async Task The_window_that_asks_for_a_key_does_not_cut_what_is_pasted()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var window = new StoreKeyWindow(32);
+
+                // A limit would cut a key of 48 digits pasted into a slot of 32, and its first 32 would be stored as the key.
+                var box = Assert.Single(LogicalDescendants(window).OfType<PasswordBox>());
+                Assert.Equal(0, box.MaxLength);
+            });
         }
 
         // ── The dialog while the keys are obtained ──
@@ -360,7 +376,10 @@ namespace RFiDGear.Tests
                     await Flush();
 
                     var tabs = One<TabControl>(window, UIElement.IsEnabledProperty, nameof(MifareDesfireSetupViewModel.AreInputsEnabled));
+                    var taskGroup = One<GroupBox>(window, UIElement.IsEnabledProperty, nameof(MifareDesfireSetupViewModel.AreInputsEnabled));
+                    var typeSelector = One<ComboBox>(window, Selector.SelectedItemProperty, nameof(MifareDesfireSetupViewModel.SelectedTaskType));
                     Assert.True(tabs.IsEnabled);
+                    Assert.True(typeSelector.IsEnabled);
 
                     using (ReaderDeviceScope.Use(new KeyRecordingReader()))
                     {
@@ -368,7 +387,11 @@ namespace RFiDGear.Tests
                         await provider.Asked;
                         await Flush();
 
+                        // The tabs and the task type with the index, the description and the conditions above them: changing
+                        // the type meanwhile would change keys that the command is waiting for.
                         Assert.False(tabs.IsEnabled);
+                        Assert.False(taskGroup.IsEnabled);
+                        Assert.False(typeSelector.IsEnabled);
 
                         provider.Release();
                         await running;
@@ -376,6 +399,8 @@ namespace RFiDGear.Tests
                     }
 
                     Assert.True(tabs.IsEnabled);
+                    Assert.True(taskGroup.IsEnabled);
+                    Assert.True(typeSelector.IsEnabled);
                 }
                 finally
                 {
@@ -410,7 +435,10 @@ namespace RFiDGear.Tests
                     await Flush();
 
                     var tabs = One<TabControl>(window, UIElement.IsEnabledProperty, nameof(MifareClassicSetupViewModel.AreInputsEnabled));
+                    var taskGroup = One<GroupBox>(window, UIElement.IsEnabledProperty, nameof(MifareClassicSetupViewModel.AreInputsEnabled));
+                    var typeSelector = One<ComboBox>(window, Selector.SelectedItemProperty, nameof(MifareClassicSetupViewModel.SelectedTaskType));
                     Assert.True(tabs.IsEnabled);
+                    Assert.True(typeSelector.IsEnabled);
 
                     using (ReaderDeviceScope.Use(new KeyRecordingReader()))
                     {
@@ -418,7 +446,11 @@ namespace RFiDGear.Tests
                         await provider.Asked;
                         await Flush();
 
+                        // The tabs and the task type with the index, the description and the conditions above them: changing
+                        // the type meanwhile would change keys that the command is waiting for.
                         Assert.False(tabs.IsEnabled);
+                        Assert.False(taskGroup.IsEnabled);
+                        Assert.False(typeSelector.IsEnabled);
 
                         provider.Release();
                         await running;
@@ -426,6 +458,8 @@ namespace RFiDGear.Tests
                     }
 
                     Assert.True(tabs.IsEnabled);
+                    Assert.True(taskGroup.IsEnabled);
+                    Assert.True(typeSelector.IsEnabled);
                 }
                 finally
                 {
@@ -496,12 +530,18 @@ namespace RFiDGear.Tests
                 return false;
             }
 
-            public System.Security.SecureString? AskForKey(int hexLength) => null;
+            public int? AskedHexLength { get; private set; }
 
-            public void Show(KeySlotMessage message, int detail)
+            public List<(KeySlotMessage Message, int Detail)> Told { get; } = new List<(KeySlotMessage, int)>();
+
+            public System.Security.SecureString? AskForKey(int hexLength)
             {
-                // Nothing is ever stored in this test, so there is nothing to tell.
+                AskedHexLength = hexLength;
+
+                return null;
             }
+
+            public void Show(KeySlotMessage message, int detail) => Told.Add((message, detail));
         }
     }
 }

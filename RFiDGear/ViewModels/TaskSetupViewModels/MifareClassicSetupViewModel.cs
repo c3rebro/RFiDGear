@@ -1195,6 +1195,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <inheritdoc />
         public void UnbindKeySlot(string slotId)
         {
+            // A task that was loaded can hold a key next to its binding (a file that was edited by hand): it is not
+            // reactivated by "Use key", the person types the key again. It goes while the slot is still bound, so that no
+            // save in between can write it.
+            if (SecureKeySlots.Classic.Contains(slotId) && IsKeyBound(slotId))
+            {
+                SetEmbeddedKey(slotId, string.Empty);
+            }
+
             KeyBindings = KeyBindingList.Without(keyBindings, slotId);
         }
 
