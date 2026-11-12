@@ -40,7 +40,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     /// <summary>
     /// Description of MifareClassicSetupViewModel.
     /// </summary>
-    public class MifareClassicSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, IKeySlotHost
+    public class MifareClassicSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, IKeySlotHost, IKeyMigrationHost
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -1205,6 +1205,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             KeyBindings = KeyBindingList.Without(keyBindings, slotId);
         }
+
+        /// <inheritdoc />
+        public IReadOnlyList<string> EmbeddedKeySlots() =>
+            SecureKeySlots.Classic.Where(slot => HasEmbeddedKey(slot) && IsWrittenToProject(slot)).ToList();
+
+        /// <inheritdoc />
+        public string GetEmbeddedKey(string slotId) => EmbeddedKeyOf(slotId) ?? string.Empty;
+
+        // The rules the serializer asks, so that this is the list of what the file holds.
+        private bool IsWrittenToProject(string slotId) => slotId switch
+        {
+            SecureKeySlots.ClassicACurrent => ShouldSerializeClassicKeyAKeyCurrent(),
+            SecureKeySlots.ClassicBCurrent => ShouldSerializeClassicKeyBKeyCurrent(),
+            SecureKeySlots.ClassicATarget => ShouldSerializeClassicKeyAKeyTarget(),
+            SecureKeySlots.ClassicBTarget => ShouldSerializeClassicKeyBKeyTarget(),
+            SecureKeySlots.ClassicMadACurrent => ShouldSerializeClassicMADKeyAKeyCurrent(),
+            SecureKeySlots.ClassicMadBCurrent => ShouldSerializeClassicMADKeyBKeyCurrent(),
+            SecureKeySlots.ClassicMadATarget => ShouldSerializeClassicMADKeyAKeyTarget(),
+            SecureKeySlots.ClassicMadBTarget => ShouldSerializeClassicMADKeyBKeyTarget(),
+            _ => throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a MIFARE Classic task."),
+        };
 
         private void SetEmbeddedKey(string slotId, string value)
         {

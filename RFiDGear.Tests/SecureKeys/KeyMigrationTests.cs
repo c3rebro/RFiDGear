@@ -1,0 +1,590 @@
+using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Models;
+using RFiDGear.Services.SecureKeys;
+using RFiDGear.ViewModel.TaskSetupViewModels;
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+using Xunit;
+
+namespace RFiDGear.Tests.SecureKeys
+{
+    /// <summary>
+    /// The migration moves the typed keys of a project into the vault and writes a new project that names them. These tests run
+    /// it on real project files in a folder of their own, with a vault that is a dictionary, and check what matters: the keys
+    /// are in the vault and in no file, the new project names them and the old project is not touched, a failure at any step
+    /// leaves nothing behind, and nothing that is reported holds a key.
+    /// </summary>
+    public sealed class KeyMigrationTests : IDisposable
+    {
+        private static readonly (string Slot, string Property)[] DesfireProperties =
+        {
+            (SecureKeySlots.DesfirePiccCurrent, "DesfireMasterKeyCurrent"),
+            (SecureKeySlots.DesfirePiccNew, "DesfireMasterKeyTarget"),
+            (SecureKeySlots.DesfireAppCurrent, "DesfireAppKeyCurrent"),
+            (SecureKeySlots.DesfireAppOld, "DesfireAppKeyCurrentOld"),
+            (SecureKeySlots.DesfireAppNew, "DesfireAppKeyTarget"),
+            (SecureKeySlots.DesfireRead, "DesfireReadKeyCurrent"),
+            (SecureKeySlots.DesfireWrite, "DesfireWriteKeyCurrent"),
+        };
+
+        private static readonly (string Slot, string Property)[] ClassicProperties =
+        {
+            (SecureKeySlots.ClassicACurrent, "ClassicKeyAKeyCurrent"),
+            (SecureKeySlots.ClassicBCurrent, "ClassicKeyBKeyCurrent"),
+            (SecureKeySlots.ClassicATarget, "ClassicKeyAKeyTarget"),
+            (SecureKeySlots.ClassicBTarget, "ClassicKeyBKeyTarget"),
+            (SecureKeySlots.ClassicMadACurrent, "ClassicMADKeyAKeyCurrent"),
+            (SecureKeySlots.ClassicMadBCurrent, "ClassicMADKeyBKeyCurrent"),
+            (SecureKeySlots.ClassicMadATarget, "ClassicMADKeyAKeyTarget"),
+            (SecureKeySlots.ClassicMadBTarget, "ClassicMADKeyBKeyTarget"),
+        };
+
+        // One recognizable key per slot; no key is part of another and none is a number that a project file holds anyway.
+        private static readonly Dictionary<string, string> KeyOf = DesfireProperties
+            .Select((entry, index) => (entry.Slot, Key: string.Concat(Enumerable.Repeat($"{0xE1 + index:X2}", 8)) + string.Concat(Enumerable.Repeat($"{0xF1 + index:X2}", 8))))
+            .Concat(ClassicProperties.Select((entry, index) => (entry.Slot, Key: string.Concat(Enumerable.Repeat($"{0xC1 + index:X2}5A", 3)))))
+            .ToDictionary(entry => entry.Slot, entry => entry.Key);
+
+        private readonly string _folder = Path.Combine(Path.GetTempPath(), "rfidgear-migration-" + Guid.NewGuid().ToString("N"));
+        private readonly FakeCredentialStore _store = new FakeCredentialStore();
+        private readonly DatabaseKeyMigrationProjects _projects = new DatabaseKeyMigrationProjects();
+
+        public KeyMigrationTests()
+        {
+            Directory.CreateDirectory(_folder);
+        }
+
+        public void Dispose()
+        {
+            _projects.Dispose();
+
+            if (Directory.Exists(_folder))
+            {
+                Directory.Delete(_folder, recursive: true);
+            }
+        }
+
+        // ── Moving ──
+
+        [Fact]
+        public Task Every_typed_key_is_in_the_vault_and_in_no_file_and_the_new_project_names_it()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewDesfireTask(), NewClassicTask());
+                var before = File.ReadAllBytes(source);
+                using var logs = CapturedLogs.Install();
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+
+                Assert.True(report.Succeeded, report.ToString());
+                Assert.Equal(15, report.Moved.Count);
+                Assert.Equal(15, report.DifferentKeys);
+                Assert.Empty(report.NotMoved);
+                Assert.Equal(Target("migrated"), report.TargetPath);
+                Assert.Equal(before, File.ReadAllBytes(source));
+                AssertHoldsNoKey(ProjectText(report.TargetPath));
+
+                // Every key is in the vault under the reference the project names.
+                Assert.Equal(15, _store.Blobs.Count);
+                Assert.All(report.Moved, moved => Assert.Equal(KeyOf[moved.Slot], VaultKeyOf(moved.Reference), ignoreCase: true));
+
+                // The new project is a project that opens: every moved slot is bound, none has a key typed into it.
+                var reloaded = await _projects.ReadAsync(report.TargetPath, CancellationToken.None);
+                Assert.NotNull(reloaded);
+                Assert.All(report.Moved, moved =>
+                {
+                    var host = (IKeyMigrationHost)reloaded!.TaskCollection[moved.Task - 1];
+                    Assert.Equal(moved.Reference, host.GetKeyBinding(moved.Slot)!.Reference);
+                    Assert.Equal(WindowsCredentialKeyProvider.ProviderId, host.GetKeyBinding(moved.Slot)!.ProviderId);
+                    Assert.False(host.HasEmbeddedKey(moved.Slot));
+                });
+
+                AssertHoldsNoKey(report.ToString());
+                Assert.All(logs.All(), logEvent => AssertHoldsNoKey(CapturedLogs.EverythingWrittenFor(logEvent)));
+            });
+        }
+
+        [Fact]
+        public Task Slots_with_the_same_key_share_one_credential()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask(), NewClassicTask());
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+
+                Assert.True(report.Succeeded, report.ToString());
+                Assert.Equal(16, report.Moved.Count);
+                Assert.Equal(8, report.DifferentKeys);
+                Assert.Equal(8, _store.Blobs.Count);
+                Assert.All(report.Moved.GroupBy(moved => moved.Slot), slot => Assert.Single(slot.Select(moved => moved.Reference).Distinct()));
+            });
+        }
+
+        [Fact]
+        public Task A_reference_that_is_taken_is_not_overwritten()
+        {
+            return Sta(async () =>
+            {
+                var taken = WindowsCredentialKeyProvider.TargetPrefix + "taken";
+                _store.Blobs[taken] = new byte[] { 1, 2, 3 };
+                var names = new Queue<string>(new[] { "taken" }.Concat(Enumerable.Range(1, 30).Select(i => "fresh" + i)));
+                var source = WriteProject("source", NewClassicTask());
+
+                var report = await NewMigration(references: () => names.Dequeue()).MoveAsync(source, Target("migrated"));
+
+                Assert.True(report.Succeeded, report.ToString());
+                Assert.Equal(new byte[] { 1, 2, 3 }, _store.Blobs[taken]);
+                Assert.DoesNotContain(report.Moved, moved => moved.Reference == "taken");
+            });
+        }
+
+        [Fact]
+        public Task A_key_that_is_not_a_key_of_its_slot_stays_where_it_is_and_is_reported()
+        {
+            return Sta(async () =>
+            {
+                var task = NewDesfireTask();
+                task.DesfireAppKeyTarget = "A5A5";
+                Assert.Equal("A5A5", task.DesfireAppKeyTarget);
+                var source = WriteProject("source", task);
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+
+                Assert.True(report.Succeeded, report.ToString());
+                Assert.Equal(6, report.Moved.Count);
+                var unmoved = Assert.Single(report.NotMoved);
+                Assert.Equal(SecureKeySlots.DesfireAppNew, unmoved.Slot);
+                Assert.Equal(1, unmoved.Task);
+                Assert.DoesNotContain(report.Moved, moved => moved.Slot == SecureKeySlots.DesfireAppNew);
+            });
+        }
+
+        [Fact]
+        public Task A_project_without_a_typed_key_is_not_written_again()
+        {
+            return Sta(async () =>
+            {
+                var task = NewDesfireTask();
+                task.KeyBindings = DesfireProperties.Select(entry => new KeyBindingEntry { Slot = entry.Slot, ProviderId = "test.vault", Reference = "cards/" + entry.Slot }).ToArray();
+                var source = WriteProject("source", task);
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+
+                Assert.True(report.NothingToMove, report.ToString());
+                Assert.False(report.Succeeded);
+                Assert.False(File.Exists(Target("migrated")));
+                Assert.Empty(_store.Blobs);
+                Assert.Empty(_store.Writes);
+            });
+        }
+
+        // ── Refusing ──
+
+        [Fact]
+        public Task The_project_is_never_written_over_itself_or_over_a_file_that_exists()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var other = WriteProject("other", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+                var otherBefore = File.ReadAllBytes(other);
+
+                var sameFile = await NewMigration().MoveAsync(source, source);
+                var existing = await NewMigration().MoveAsync(source, other);
+
+                Assert.Equal(KeyMigrationFailure.SameFile, sameFile.Failure);
+                Assert.Equal(KeyMigrationFailure.TargetExists, existing.Failure);
+                Assert.Equal(before, File.ReadAllBytes(source));
+                Assert.Equal(otherBefore, File.ReadAllBytes(other));
+                Assert.Empty(_store.Writes);
+            });
+        }
+
+        [Fact]
+        public Task A_file_that_is_not_a_project_is_refused_and_nothing_is_stored()
+        {
+            return Sta(async () =>
+            {
+                var notAProject = Path.Combine(_folder, "garbage.rfPrj");
+                File.WriteAllText(notAProject, "this is not a project");
+
+                var garbage = await NewMigration().MoveAsync(notAProject, Target("migrated"));
+                var missing = await NewMigration().MoveAsync(Path.Combine(_folder, "missing.rfPrj"), Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.SourceUnreadable, garbage.Failure);
+                Assert.Equal(KeyMigrationFailure.SourceUnreadable, missing.Failure);
+                Assert.False(File.Exists(Target("migrated")));
+                Assert.Empty(_store.Writes);
+            });
+        }
+
+        // ── Failing: whatever step fails, the vault and the folder are as they were ──
+
+        [Fact]
+        public Task A_vault_that_refuses_a_key_leaves_nothing_behind()
+        {
+            return Sta(async () =>
+            {
+                _store.WriteError = CredentialErrors.AccessDenied;
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.KeyStoreRefused, report.Failure);
+                Assert.Equal(CredentialErrors.AccessDenied, report.FailureDetail);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task A_vault_that_fails_at_the_third_key_gives_back_the_two_before()
+        {
+            return Sta(async () =>
+            {
+                var flaky = new FlakyStore(_store) { FailWriteNumber = 3 };
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+
+                var report = await NewMigration(store: flaky).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.KeyStoreRefused, report.Failure);
+                Assert.Equal(2, _store.Writes.Count);
+                Assert.Equal(2, _store.Deletes.Count);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task A_key_that_does_not_come_back_as_it_went_in_is_not_used()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+
+                var report = await NewMigration(store: new FlakyStore(_store) { CorruptReads = true }).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.ReadBackDiffers, report.Failure);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task A_new_project_that_cannot_be_written_leaves_nothing_behind()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+                var projects = new ProjectsDouble(_projects) { OnWrite = (_, _) => null };
+                var throwing = new ProjectsDouble(_projects) { OnWrite = (_, _) => throw new IOException("disk full") };
+
+                var refused = await NewMigration(projects).MoveAsync(source, Target("migrated"));
+                var failed = await NewMigration(throwing).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.TargetNotWritten, refused.Failure);
+                Assert.Equal(KeyMigrationFailure.TargetNotWritten, failed.Failure);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task A_new_project_that_still_holds_a_key_is_deleted_and_the_keys_are_taken_back()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+                var projects = new ProjectsDouble(_projects) { OnText = text => text + KeyOf[SecureKeySlots.ClassicACurrent].ToLowerInvariant() };
+
+                var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.VerificationFailed, report.Failure);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task A_new_project_with_a_slot_that_is_not_bound_is_deleted_and_the_keys_are_taken_back()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+                var projects = new ProjectsDouble(_projects)
+                {
+                    OnWrite = (model, path) =>
+                    {
+                        ((MifareClassicSetupViewModel)model.TaskCollection[0]).UnbindKeySlot(SecureKeySlots.ClassicBTarget);
+
+                        return _projects.Write(model, path);
+                    },
+                };
+
+                var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.VerificationFailed, report.Failure);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task Giving_up_after_the_first_key_was_stored_takes_it_back()
+        {
+            return Sta(async () =>
+            {
+                using var cancel = new CancellationTokenSource();
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+                var flaky = new FlakyStore(_store) { AfterWrite = cancel.Cancel };
+
+                var report = await NewMigration(store: flaky).MoveAsync(source, Target("migrated"), cancel.Token);
+
+                Assert.Equal(KeyMigrationFailure.Cancelled, report.Failure);
+                Assert.Single(_store.Writes);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
+        public Task A_run_that_is_cancelled_before_it_starts_stores_nothing()
+        {
+            return Sta(async () =>
+            {
+                using var cancel = new CancellationTokenSource();
+                cancel.Cancel();
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"), cancel.Token);
+
+                Assert.Equal(KeyMigrationFailure.Cancelled, report.Failure);
+                Assert.Empty(_store.Writes);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        // ── The old project ──
+
+        [Fact]
+        public Task The_old_project_is_deleted_only_after_the_new_one_has_been_checked_again()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var migration = NewMigration();
+                var report = await migration.MoveAsync(source, Target("migrated"));
+                Assert.True(report.Succeeded, report.ToString());
+
+                // The person emptied the vault in between: the new project would not work, so the old one must stay.
+                var kept = _store.Blobs.ToDictionary(pair => pair.Key, pair => pair.Value);
+                _store.Blobs.Clear();
+                Assert.False(await migration.DeleteOriginalAsync(report));
+                Assert.True(File.Exists(source));
+
+                foreach (var pair in kept)
+                {
+                    _store.Blobs[pair.Key] = pair.Value;
+                }
+
+                Assert.True(await migration.DeleteOriginalAsync(report));
+                Assert.False(File.Exists(source));
+                Assert.True(File.Exists(report.TargetPath));
+            });
+        }
+
+        [Fact]
+        public Task Nothing_is_deleted_for_a_migration_that_did_not_succeed()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var migration = NewMigration();
+                var failed = new KeyMigrationReport(source, string.Empty, KeyMigrationFailure.Unexpected, 0, 1, 0, Array.Empty<MovedKey>(), Array.Empty<UnmovedKey>());
+                var oneFile = new KeyMigrationReport(source, source, KeyMigrationFailure.None, 0, 1, 1, new[] { new MovedKey(1, SecureKeySlots.ClassicACurrent, "x") }, Array.Empty<UnmovedKey>());
+
+                Assert.False(await migration.DeleteOriginalAsync(failed));
+                Assert.False(await migration.DeleteOriginalAsync(oneFile));
+                Assert.True(File.Exists(source));
+            });
+        }
+
+        // ── Helpers ──
+
+        private static Task Sta(Func<Task> test) => StaTestRunner.RunOnStaThreadAsync(test);
+
+        private string Target(string name) => Path.Combine(_folder, name + ".rfPrj");
+
+        private KeyMigration NewMigration(IKeyMigrationProjects? projects = null, ICredentialStore? store = null, Func<string>? references = null) =>
+            new KeyMigration(projects ?? _projects, new WindowsCredentialKeyProvider(store ?? _store), references);
+
+        private string WriteProject(string name, params object[] tasks)
+        {
+            var model = new ChipTaskHandlerModel();
+
+            foreach (var task in tasks)
+            {
+                model.TaskCollection.Add(task);
+            }
+
+            var path = Path.Combine(_folder, name + ".rfPrj");
+            new DatabaseReaderWriter(new ProjectManager(Path.Combine(_folder, "appdata"))).WriteDatabase(model, path);
+
+            return path;
+        }
+
+        private string ProjectText(string path)
+        {
+            using var archive = ZipFile.OpenRead(path);
+            using var reader = new StreamReader(archive.GetEntry("taskdatabase.xml")!.Open());
+
+            return reader.ReadToEnd();
+        }
+
+        private string VaultKeyOf(string reference) => Encoding.Unicode.GetString(_store.Blobs[WindowsCredentialKeyProvider.TargetPrefix + reference]);
+
+        // No key in any form a file or a message could show it: as it is, and in pairs separated by a space.
+        private static void AssertHoldsNoKey(string text)
+        {
+            foreach (var key in KeyOf.Values)
+            {
+                Assert.DoesNotContain(key, text, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(string.Join(" ", Enumerable.Range(0, key.Length / 2).Select(i => key.Substring(i * 2, 2))), text, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        // A failed migration: the old project is as it was, no new project, no credential.
+        private void AssertNothingLeft(string source, byte[] sourceBefore)
+        {
+            Assert.Equal(sourceBefore, File.ReadAllBytes(source));
+            Assert.False(File.Exists(Target("migrated")));
+            Assert.Empty(_store.Blobs);
+        }
+
+        // The shape in which the old application key is a slot of its own: the key being replaced is not the one that
+        // authenticates. The old key is set last, because setting the others would copy the application key over it.
+        private static MifareDesfireSetupViewModel NewDesfireTask()
+        {
+            var task = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = TaskType_MifareDesfireTask.ApplicationKeyChangeover,
+                CurrentTaskIndex = "0",
+                AppNumberCurrent = "1",
+                SelectedDesfireAppKeyNumberCurrent = "1",
+            };
+
+            foreach (var (slot, property) in DesfireProperties.Where(entry => entry.Property != "DesfireAppKeyCurrentOld"))
+            {
+                typeof(MifareDesfireSetupViewModel).GetProperty(property)!.SetValue(task, KeyOf[slot]);
+            }
+
+            task.DesfireAppKeyCurrentOld = KeyOf[SecureKeySlots.DesfireAppOld];
+            Assert.Equal(KeyOf[SecureKeySlots.DesfireAppOld], task.DesfireAppKeyCurrentOld);
+
+            return task;
+        }
+
+        private static MifareClassicSetupViewModel NewClassicTask()
+        {
+            var task = new MifareClassicSetupViewModel { CurrentTaskIndex = "0" };
+
+            foreach (var (slot, property) in ClassicProperties)
+            {
+                typeof(MifareClassicSetupViewModel).GetProperty(property)!.SetValue(task, KeyOf[slot]);
+            }
+
+            return task;
+        }
+
+        /// <summary>The real projects, except for what a test changes.</summary>
+        private sealed class ProjectsDouble : IKeyMigrationProjects
+        {
+            private readonly IKeyMigrationProjects _inner;
+
+            public ProjectsDouble(IKeyMigrationProjects inner)
+            {
+                _inner = inner;
+            }
+
+            public Func<ChipTaskHandlerModel, string, string?>? OnWrite { get; init; }
+
+            public Func<string, string>? OnText { get; init; }
+
+            public string TargetPathOf(string path) => _inner.TargetPathOf(path);
+
+            public Task<ChipTaskHandlerModel?> ReadAsync(string path, CancellationToken cancellationToken) => _inner.ReadAsync(path, cancellationToken);
+
+            public string? Write(ChipTaskHandlerModel model, string path) => OnWrite != null ? OnWrite(model, path) : _inner.Write(model, path);
+
+            public string? ReadProjectText(string path)
+            {
+                var text = _inner.ReadProjectText(path);
+
+                return text != null && OnText != null ? OnText(text) : text;
+            }
+        }
+
+        /// <summary>A vault that fails, or lies, or notes what happened, on request. Everything else is the fake.</summary>
+        private sealed class FlakyStore : ICredentialStore
+        {
+            private readonly FakeCredentialStore _inner;
+            private int _writes;
+
+            public FlakyStore(FakeCredentialStore inner)
+            {
+                _inner = inner;
+            }
+
+            public int FailWriteNumber { get; init; }
+
+            public bool CorruptReads { get; init; }
+
+            public Action? AfterWrite { get; init; }
+
+            public CredentialRead Read(string targetName)
+            {
+                var read = _inner.Read(targetName);
+
+                if (!CorruptReads || read.Blob == null)
+                {
+                    return read;
+                }
+
+                var wrong = (byte[])read.Blob.Clone();
+                wrong[0] ^= 0x01;
+
+                return new CredentialRead(0, wrong);
+            }
+
+            public int Write(string targetName, byte[] blob)
+            {
+                _writes++;
+
+                if (_writes == FailWriteNumber)
+                {
+                    return CredentialErrors.AccessDenied;
+                }
+
+                var error = _inner.Write(targetName, blob);
+                AfterWrite?.Invoke();
+
+                return error;
+            }
+
+            public int Delete(string targetName) => _inner.Delete(targetName);
+        }
+    }
+}
