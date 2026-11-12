@@ -291,7 +291,10 @@ namespace RFiDGear.Infrastructure.FileAccess
             Convert.ToInt64(string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", appVersion.Major, appVersion.Minor, appVersion.Build), CultureInfo.InvariantCulture);
 
         /// <summary>
-        /// Normalizes legacy XML values in a project payload to the currently supported ones.
+        /// Normalizes legacy XML values in a project payload to the currently supported ones. The old name of the error
+        /// code <c>AuthFailure</c> (<c>AuthenticationError</c>) is only replaced as the whole value of the two elements that
+        /// hold an error code, not anywhere in the text: a provider id, a key reference, a description or a path may
+        /// contain it and must not change.
         /// </summary>
         /// <param name="projectXml">The raw project XML.</param>
         /// <returns>The normalized project XML.</returns>
@@ -302,8 +305,19 @@ namespace RFiDGear.Infrastructure.FileAccess
                 return projectXml ?? string.Empty;
             }
 
-            return projectXml.Replace("AuthenticationError", "AuthFailure", StringComparison.Ordinal);
+            foreach (var element in LegacyErrorCodeElements)
+            {
+                projectXml = projectXml.Replace(
+                    $"<{element}>AuthenticationError</{element}>",
+                    $"<{element}>AuthFailure</{element}>",
+                    StringComparison.Ordinal);
+            }
+
+            return projectXml;
         }
+
+        // The elements of a project that store an error code by name: the condition of a task, and a checkpoint.
+        private static readonly string[] LegacyErrorCodeElements = { "SelectedExecuteConditionErrorLevel", "ErrorLevel" };
 
         private SettingsLoadResult CreateSettingsLoadResult(Version appVersion, string resolvedPath, DefaultSpecification specification)
         {
