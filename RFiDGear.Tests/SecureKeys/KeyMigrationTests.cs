@@ -320,6 +320,24 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public Task A_new_project_whose_references_do_not_give_the_keys_is_deleted_and_the_keys_are_taken_back()
+        {
+            return Sta(async () =>
+            {
+                var source = WriteProject("source", NewClassicTask());
+                var before = File.ReadAllBytes(source);
+
+                // The text is looked at first when the new project is checked; the vault is empty by the time it is asked.
+                var projects = new ProjectsDouble(_projects) { OnText = text => { _store.Blobs.Clear(); return text; } };
+
+                var report = await NewMigration(projects).MoveAsync(source, Target("migrated"));
+
+                Assert.Equal(KeyMigrationFailure.VerificationFailed, report.Failure);
+                AssertNothingLeft(source, before);
+            });
+        }
+
+        [Fact]
         public Task A_new_project_with_a_slot_that_is_not_bound_is_deleted_and_the_keys_are_taken_back()
         {
             return Sta(async () =>
@@ -415,12 +433,18 @@ namespace RFiDGear.Tests.SecureKeys
             {
                 var source = WriteProject("source", NewClassicTask());
                 var migration = NewMigration();
-                var failed = new KeyMigrationReport(source, string.Empty, KeyMigrationFailure.Unexpected, 0, 1, 0, Array.Empty<MovedKey>(), Array.Empty<UnmovedKey>());
-                var oneFile = new KeyMigrationReport(source, source, KeyMigrationFailure.None, 0, 1, 1, new[] { new MovedKey(1, SecureKeySlots.ClassicACurrent, "x") }, Array.Empty<UnmovedKey>());
+                var report = await migration.MoveAsync(source, Target("migrated"));
+                Assert.True(report.Succeeded, report.ToString());
+
+                // Everything but the failure is as it is after a success: the new project is there and gives its keys.
+                var failed = report with { Failure = KeyMigrationFailure.VerificationFailed };
+                // The same file on both sides: deleting "the original" would delete the new project.
+                var oneFile = report with { SourcePath = report.TargetPath };
 
                 Assert.False(await migration.DeleteOriginalAsync(failed));
                 Assert.False(await migration.DeleteOriginalAsync(oneFile));
                 Assert.True(File.Exists(source));
+                Assert.True(File.Exists(report.TargetPath));
             });
         }
 
