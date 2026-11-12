@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
     <OutputType>Library</OutputType>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
@@ -38,8 +38,7 @@
     <ItemGroup>
       <_PrivateHostCopy Include="$(OutDir)RFiDGear.Contracts.dll;$(OutDir)RFiDGear.ExtensionSdk.dll;$(OutDir)RFiDGear.dll;$(OutDir)System.ComponentModel.Composition.dll;$(OutDir)GemBox.Pdf.dll;$(OutDir)Serilog.dll;$(OutDir)SkiaSharp.dll;$(OutDir)HarfBuzzSharp.dll;$(OutDir)Newtonsoft.Json.dll" />
     </ItemGroup>
-    <Error Condition="'@(_PrivateHostCopy)' != '' And Exists('%(_PrivateHostCopy.FullPath)')"
-           Text="The extension's output folder holds a private copy of a host assembly: %(_PrivateHostCopy.FullPath). Extensions must reference RFiDGear.Contracts and RFiDGear.ExtensionSdk with Private=false." />
+    <Error Condition="'@(_PrivateHostCopy)' != '' And Exists('%(_PrivateHostCopy.FullPath)')" Text="The extension's output folder holds a private copy of a host assembly: %(_PrivateHostCopy.FullPath). Extensions must reference RFiDGear.Contracts and RFiDGear.ExtensionSdk with Private=false." />
   </Target>
   <!-- Copies the built extension and its support library to RFiDGear's extension folder when asked to (see the file). -->
   <Import Project="..\DeployToRFiDGear.targets" />
