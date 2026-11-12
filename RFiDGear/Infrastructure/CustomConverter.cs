@@ -194,7 +194,7 @@ namespace RFiDGear.Infrastructure
         /// <param name="keyType">Key algorithm; determines the expected byte count.</param>
         /// <param name="formatted">The key as pairs of hex digits separated by a space; empty when the key is not valid.</param>
         /// <returns>A <see cref="KEY_ERROR"/> indicating success or the specific validation failure.</returns>
-        public static KEY_ERROR TryFormatMifareDesfireKey(string keyHex, DESFireKeyType keyType, out string formatted)
+        internal static KEY_ERROR TryFormatMifareDesfireKey(string keyHex, DESFireKeyType keyType, out string formatted)
         {
             formatted = string.Empty;
 
