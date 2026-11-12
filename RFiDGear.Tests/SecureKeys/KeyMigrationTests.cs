@@ -511,6 +511,7 @@ namespace RFiDGear.Tests.SecureKeys
                 var declined = new DialogsDouble { Go = false, Source = source, Target = Target("migrated") };
                 await NewFlow(declined).RunAsync();
                 Assert.Equal(new[] { "confirm" }, declined.Calls);
+                Assert.Equal(Text("messageKeyMigrationIntro"), declined.Introduction);
 
                 var noSource = new DialogsDouble { Source = null, Target = Target("migrated") };
                 await NewFlow(noSource).RunAsync();
@@ -738,9 +739,12 @@ namespace RFiDGear.Tests.SecureKeys
 
             public int OpenWork { get; private set; }
 
+            public string? Introduction { get; private set; }
+
             public bool Confirm(string text)
             {
                 Calls.Add("confirm");
+                Introduction = text;
 
                 return Go;
             }
@@ -842,7 +846,12 @@ namespace RFiDGear.Tests.SecureKeys
 
             public string TargetPathOf(string path) => _inner.TargetPathOf(path);
 
-            public Task<ChipTaskHandlerModel?> ReadAsync(string path, CancellationToken cancellationToken) => throw new InvalidDataException("not a project");
+            public Task<ChipTaskHandlerModel?> ReadAsync(string path, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                throw new InvalidDataException("not a project: " + path);
+            }
 
             public string? Write(ChipTaskHandlerModel model, string path) => _inner.Write(model, path);
 
