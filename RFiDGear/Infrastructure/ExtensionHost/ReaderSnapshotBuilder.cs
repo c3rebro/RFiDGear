@@ -104,6 +104,20 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             new ReaderSnapshot(readerName ?? string.Empty, ReaderScanState.NoReader, Array.Empty<CredentialInfo>());
 
         /// <summary>
+        /// The UID of the primary credential of a chip tree, written exactly as <see cref="CredentialInfo.Uid"/> and
+        /// <see cref="ReaderSnapshot"/> report it (trimmed, upper case). It is the one place that says which UID stands
+        /// for a card, so the polls of automatic mode, the card it remembers and <see cref="ExecResult.CardUid"/> agree.
+        /// </summary>
+        /// <param name="chip">The root of the tree, or <c>null</c>.</param>
+        /// <returns>The UID; <c>null</c> when the chip is <c>null</c> or holds no card.</returns>
+        internal static string? PrimaryUidOf(GenericChipModel? chip)
+        {
+            var credentials = CredentialsOf(chip);
+
+            return credentials.Count > 0 ? credentials[0].Uid : null;
+        }
+
+        /// <summary>
         /// Lists the credentials of a chip tree, depth first, the chip itself before its children. A node without a UID
         /// is not a credential, but its children still are. The first credential is the primary one.
         /// </summary>

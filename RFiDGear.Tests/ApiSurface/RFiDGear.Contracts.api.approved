@@ -19,6 +19,7 @@ public sealed record RFiDGear.Contracts.CredentialInfo : System.IEquatable<Crede
 
 public record RFiDGear.Contracts.ExecResult : System.IEquatable<ExecResult>
     public ctor(string RunId, ExecutionOutcome Outcome, int TotalTasks, int FailedTasks, System.DateTimeOffset StartedAt, System.DateTimeOffset CompletedAt, System.Collections.Generic.IReadOnlyList<TaskOutcome> TaskOutcomes, ExecutionFailureReason FailureReason = ExecutionFailureReason.None)
+    public string? CardUid { get; init; }
     public System.DateTimeOffset CompletedAt { get; init; }
     public int FailedTasks { get; init; }
     public ExecutionFailureReason FailureReason { get; init; }
