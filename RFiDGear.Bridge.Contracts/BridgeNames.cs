@@ -1,0 +1,229 @@
+using System.Collections.Generic;
+
+namespace RFiDGear.Bridge
+{
+    /// <summary>
+    /// The capabilities of version 1 of the protocol. A client decides what it may call from the list that the host
+    /// answers in <c>hello</c>, never from the application version. Later versions add names; none is removed or re-meant
+    /// within a major version.
+    /// </summary>
+    public static class BridgeCapabilities
+    {
+        /// <summary>The handshake itself: protocol negotiation and the capability list. Always present.</summary>
+        public const string Session = "session";
+
+        /// <summary>The dynamic status: what is possible right now.</summary>
+        public const string Status = "status";
+
+        /// <summary>Loading a project file.</summary>
+        public const string ProjectLoad = "project.load";
+
+        /// <summary>Starting a run of the task list and getting one final result for it. Starting is idempotent: every request carries an id that makes a repeated request recognizable.</summary>
+        public const string ExecutionRun = "execution.run";
+
+
+        /// <summary>Cancelling a run that was started over the bridge (honoured between tasks).</summary>
+        public const string ExecutionCancel = "execution.cancel";
+
+        /// <summary>Asking for the result of a run later, for example after a reconnect.</summary>
+        public const string ExecutionResultLookup = "execution.resultLookup";
+
+        /// <summary>Events about a run started over the bridge: started and completed.</summary>
+        public const string EventsExecution = "events.execution";
+
+        /// <summary>The event that says whether any run, from anywhere, is going on.</summary>
+        public const string EventsRunning = "events.running";
+
+        /// <summary>The event that says the reader or the card on it changed.</summary>
+        public const string EventsReader = "events.reader";
+
+        /// <summary>The event that says the loaded project changed.</summary>
+        public const string EventsProject = "events.project";
+
+        /// <summary>The event that says RFiDGear is shutting down.</summary>
+        public const string EventsLifecycle = "events.lifecycle";
+
+        /// <summary>Scanning the reader on request.</summary>
+        public const string ReaderScan = "reader.scan";
+
+        /// <summary>Gets every capability of version 1, in the order they are listed here.</summary>
+        public static IReadOnlyList<string> All { get; } = new[]
+        {
+            Session,
+            Status,
+            ProjectLoad,
+            ExecutionRun,
+            ExecutionCancel,
+            ExecutionResultLookup,
+            EventsExecution,
+            EventsRunning,
+            EventsReader,
+            EventsProject,
+            EventsLifecycle,
+            ReaderScan,
+        };
+    }
+
+    /// <summary>The names of the methods a client calls, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
+    public static class BridgeMethods
+    {
+        /// <summary>The handshake; the first call on every connection.</summary>
+        public const string Hello = "hello";
+
+        /// <summary>The dynamic status.</summary>
+        public const string GetStatus = "getStatus";
+
+        /// <summary>Loads a project.</summary>
+        public const string LoadProject = "loadProject";
+
+        /// <summary>Starts a run.</summary>
+        public const string StartRun = "startRun";
+
+        /// <summary>Cancels a run.</summary>
+        public const string CancelRun = "cancelRun";
+
+        /// <summary>Looks up the result of a run.</summary>
+        public const string GetRunResult = "getRunResult";
+
+        /// <summary>Scans the reader.</summary>
+        public const string ScanReader = "scanReader";
+    }
+
+    /// <summary>The names of the notifications the host sends, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
+    public static class BridgeEvents
+    {
+        /// <summary>A run started over the bridge was admitted.</summary>
+        public const string RunStarted = "runStarted";
+
+        /// <summary>A run started over the bridge ended. Sent exactly once per run.</summary>
+        public const string RunCompleted = "runCompleted";
+
+        /// <summary>A task run, from anywhere, started or ended.</summary>
+        public const string RunningChanged = "runningChanged";
+
+        /// <summary>The reader or the card on it changed.</summary>
+        public const string ReaderChanged = "readerChanged";
+
+        /// <summary>The loaded project changed.</summary>
+        public const string ProjectChanged = "projectChanged";
+
+        /// <summary>RFiDGear is closing. Best effort: its absence proves nothing.</summary>
+        public const string ShuttingDown = "shuttingDown";
+
+        /// <summary>Gets every event name of version 1.</summary>
+        public static IReadOnlyList<string> All { get; } = new[]
+        {
+            RunStarted,
+            RunCompleted,
+            RunningChanged,
+            ReaderChanged,
+            ProjectChanged,
+            ShuttingDown,
+        };
+    }
+
+    /// <summary>The values of <see cref="RunResultDto.Status"/>: how a run ended, as one word.</summary>
+    public static class RunStatuses
+    {
+        /// <summary>Every task ran as intended.</summary>
+        public const string Success = "success";
+
+        /// <summary>The run finished and some tasks failed on purpose (a check that answers no is an answer, not a failure).</summary>
+        public const string CompletedWithIntentionalFailures = "completedWithIntentionalFailures";
+
+        /// <summary>The run finished or was cut short by a failure.</summary>
+        public const string Failure = "failure";
+
+        /// <summary>The run was cancelled between two tasks.</summary>
+        public const string Cancelled = "cancelled";
+
+        /// <summary>The run did not finish in time.</summary>
+        public const string TimedOut = "timedOut";
+    }
+
+    /// <summary>The values of <see cref="RunResultDto.FailureReason"/>: why a run did not end the normal way.</summary>
+    public static class FailureReasons
+    {
+        /// <summary>The run did not fail.</summary>
+        public const string None = "none";
+
+        /// <summary>The run was cancelled.</summary>
+        public const string Cancelled = "cancelled";
+
+        /// <summary>The run timed out.</summary>
+        public const string TimedOut = "timedOut";
+
+        /// <summary>The run ended in a fault inside RFiDGear.</summary>
+        public const string Faulted = "faulted";
+
+        /// <summary>The bridge itself could not finish the run (for example the host answered something unknown).</summary>
+        public const string BridgeFault = "bridgeFault";
+
+        /// <summary>The host reported a value this protocol version does not know.</summary>
+        public const string Unknown = "unknown";
+    }
+
+    /// <summary>The values of the state of a run in <see cref="StartRunResponse.State"/> and the lookups.</summary>
+    public static class RunStates
+    {
+        /// <summary>The run was admitted and is in flight.</summary>
+        public const string Running = "running";
+
+        /// <summary>The run ended; its result is available.</summary>
+        public const string Completed = "completed";
+
+        /// <summary>The host does not know the id. It was never started, or it is older than the history that is kept.</summary>
+        public const string Unknown = "unknown";
+
+        /// <summary>RFiDGear restarted while the run was in flight; what the card went through is not known.</summary>
+        public const string InterruptedByRestart = "interruptedByRestart";
+    }
+
+    /// <summary>The values of <see cref="ReaderDto.State"/>.</summary>
+    public static class ReaderStates
+    {
+        /// <summary>No reader is connected.</summary>
+        public const string NoReader = "noReader";
+
+        /// <summary>A reader answered; <see cref="ReaderDto.Credentials"/> lists the cards on it.</summary>
+        public const string Ready = "ready";
+
+        /// <summary>A reader is there, but the card could not be read.</summary>
+        public const string ReadFailed = "readFailed";
+
+        /// <summary>The reader is in use by a run or another scan.</summary>
+        public const string Busy = "busy";
+
+        /// <summary>The host reported a state this protocol version does not know.</summary>
+        public const string Unknown = "unknown";
+    }
+
+    /// <summary>The values of <see cref="ActiveRunDto.Source"/>: who started the run that is going on.</summary>
+    public static class RunSources
+    {
+        /// <summary>A client over this bridge.</summary>
+        public const string Bridge = "bridge";
+
+        /// <summary>The user, in the main window, or the start-up arguments.</summary>
+        public const string Gui = "gui";
+
+        /// <summary>Automatic mode.</summary>
+        public const string AutoMode = "autoMode";
+
+        /// <summary>Somebody else; RFiDGear cannot tell.</summary>
+        public const string Other = "other";
+    }
+
+    /// <summary>The values of <see cref="ShuttingDownEvent.Reason"/>.</summary>
+    public static class ShutdownReasons
+    {
+        /// <summary>The user closed the window.</summary>
+        public const string UserClose = "userClose";
+
+        /// <summary>The process is ending for another reason.</summary>
+        public const string ProcessExit = "processExit";
+
+        /// <summary>The updater is replacing RFiDGear.</summary>
+        public const string Update = "update";
+    }
+}

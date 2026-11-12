@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Plain net10.0 on purpose: an external application references this assembly to talk to RFiDGear, and it must
+         not need the Windows Desktop runtime, WPF or any RFiDGear assembly. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <AssemblyName>RFiDGear.Bridge.Contracts</AssemblyName>
+    <RootNamespace>RFiDGear.Bridge</RootNamespace>
+    <!-- The protocol is versioned on its own: bump the major only for a breaking change of the wire protocol, never with
+         the application version, so a client compiled once keeps binding to it. -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+  <!-- No package and no project reference, by design: the serializer is System.Text.Json from the framework, and the
+       JSON-RPC library lives in the host and in the client, not in the contract. A test pins this. -->
+</Project>
