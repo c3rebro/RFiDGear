@@ -53,6 +53,9 @@ namespace RFiDGear.View
         {
             InitializeComponent();
 
+            // Here and not in the markup: x:Static does not reach a constant of an internal class.
+            ReferenceBox.MaxLength = SecureKeySyntax.MaxReferenceLength;
+
             Loaded += (_, _) =>
             {
                 if (State == null)

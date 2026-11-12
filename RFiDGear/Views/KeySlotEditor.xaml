@@ -4,8 +4,7 @@
     x:Name="Self"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
-    xmlns:keys="clr-namespace:RFiDGear.Services.SecureKeys">
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure">
     <UserControl.Resources>
         <dal:ResourceLoader x:Key="Localization" />
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
@@ -54,7 +53,6 @@
             <TextBox
                 x:Name="ReferenceBox"
                 VerticalContentAlignment="Center"
-                MaxLength="{x:Static keys:SecureKeySyntax.MaxReferenceLength}"
                 Text="{Binding Reference, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotReference}">
                 <TextBox.Resources>
