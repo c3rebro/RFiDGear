@@ -99,6 +99,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             IReadOnlyList<object?> snapshot = Array.Empty<object?>();
             var abandoned = false;
 
+            // The UID of the card the service's own read found; it stays null for a run that never gets that far.
+            string? cardUid = null;
+
             ExecResult execResult;
             try
             {
@@ -128,8 +131,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     // task %EXIT (the old assistant's way of closing RFiDGear) ends the run and not the application.
                     KeepApplicationOpen = true,
 
-                    // The run works on the card that is on the reader, so automatic mode must know which one.
-                    ChipHydrated = _runObserver == null ? null : chip => _runObserver.ChipHydrated(chip),
+                    // The service reads the card once more before its first task, and that is the card the tasks work on:
+                    // its UID goes into the result, and automatic mode must know which card it is.
+                    ChipHydrated = chip =>
+                    {
+                        cardUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
+                        _runObserver?.ChipHydrated(chip);
+                    },
                 };
 
                 var rawResult = await _execService.ExecuteOnceAsync(taskRequest, ct).ConfigureAwait(false);
@@ -141,7 +149,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     Logger.Warning("Extension-triggered run {RunId} ended without a terminal evaluation", runId);
                 }
 
-                execResult = ExecResultBuilder.FromCompletion(runId, startedAt, rawResult.TerminalStatus, snapshot, observations);
+                execResult = ExecResultBuilder.FromCompletion(runId, startedAt, rawResult.TerminalStatus, snapshot, observations, cardUid);
             }
             catch (Exception ex)
             {
@@ -150,7 +158,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 var failureReason = ExecResultBuilder.Classify(ex, ct);
                 LogFailedRun(runId, failureReason, ex);
 
-                execResult = ExecResultBuilder.FromFailure(runId, startedAt, failureReason, snapshot, observations);
+                execResult = ExecResultBuilder.FromFailure(runId, startedAt, failureReason, snapshot, observations, cardUid);
             }
             finally
             {

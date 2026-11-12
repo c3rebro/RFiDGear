@@ -1481,6 +1481,9 @@ namespace RFiDGear.ViewModel
             ExecResult execResult;
             var abandoned = false;
 
+            // The UID of the card the service's own read found; it stays null for a run that never gets that far.
+            string? cardUid = null;
+
             try
             {
                 Mouse.OverrideCursor = Cursors.AppStarting;
@@ -1507,7 +1510,11 @@ namespace RFiDGear.ViewModel
                     RunId = runId,
                     Observations = observations,
                     KeepApplicationOpen = keepApplicationOpen,
-                    ChipHydrated = RememberCard,
+                    ChipHydrated = chip =>
+                    {
+                        cardUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
+                        RememberCard(chip);
+                    },
                     TaskHandler = taskHandler,
                     TreeViewParentNodes = treeViewParentNodes,
                     VariablesFromArgs = variablesFromArgs,
@@ -1532,7 +1539,7 @@ namespace RFiDGear.ViewModel
                 SelectedSetupViewModel = result.SelectedSetupViewModel;
 
                 abandoned = result.Abandoned;
-                execResult = ExecResultBuilder.FromCompletion(runId, startedAt, result.TerminalStatus, snapshot, observations);
+                execResult = ExecResultBuilder.FromCompletion(runId, startedAt, result.TerminalStatus, snapshot, observations, cardUid);
             }
             catch (Exception ex)
             {
@@ -1545,7 +1552,7 @@ namespace RFiDGear.ViewModel
                 });
 
                 execResult = ExecResultBuilder.FromFailure(
-                    runId, startedAt, ExecResultBuilder.Classify(ex, CancellationToken.None), snapshot, observations);
+                    runId, startedAt, ExecResultBuilder.Classify(ex, CancellationToken.None), snapshot, observations, cardUid);
             }
             finally
             {
@@ -1564,7 +1571,7 @@ namespace RFiDGear.ViewModel
         /// <param name="chip">The chip a read left behind; none or an empty chip changes nothing.</param>
         private void RememberCard(GenericChipModel chip)
         {
-            var uid = ReaderSnapshotBuilder.CredentialsOf(chip).FirstOrDefault()?.Uid;
+            var uid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
             if (uid != null)
             {
                 _autoMode?.RememberCard(uid);

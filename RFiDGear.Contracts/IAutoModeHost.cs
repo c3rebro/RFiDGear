@@ -179,9 +179,11 @@ namespace RFiDGear.Contracts
         /// </para>
         /// <para>
         /// Sensitive data: the payload is built like the result of <c>ExecuteAllAsync</c>, so the same exclusions apply:
-        /// no key values, payload bytes, card data or task descriptions are added by the host (see
-        /// <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/>). The UID of
-        /// the card is not part of it; an extension that needs it reads it through <see cref="IReaderHost"/>.
+        /// no key values, payload bytes or task descriptions are added by the host (see
+        /// <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/>). The one
+        /// piece of card data in it is <see cref="ExecResult.CardUid"/>, the UID of the card the run worked on: it is the
+        /// card the run's own read found, so it belongs to this <see cref="ExecResult.RunId"/> even if the card on the
+        /// reader has changed since. It is <c>null</c> if the run did not get to know a card.
         /// </para>
         /// </summary>
         event EventHandler<ExecResult> AutoModeRunCompleted;

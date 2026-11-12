@@ -5,8 +5,9 @@ namespace RFiDGear.Contracts
 {
     /// <summary>
     /// Immutable summary of a completed task-loop execution returned by <see cref="ITaskExecHost"/>.
-    /// Does not contain key material, payload bytes, or card data. The one free-text field in it is
-    /// <see cref="TaskOutcome.ProjectTaskIndex"/>, which is the task index as stored in the project.
+    /// Does not contain key material, payload bytes, or card data other than the UID of the card the run worked on
+    /// (<see cref="CardUid"/>). The one free-text field in it is <see cref="TaskOutcome.ProjectTaskIndex"/>, which is the
+    /// task index as stored in the project.
     /// </summary>
     /// <param name="RunId">
     /// Unique identifier for this execution pass. Correlates all <see cref="TaskOutcomes"/> entries
@@ -45,5 +46,27 @@ namespace RFiDGear.Contracts
         DateTimeOffset StartedAt,
         DateTimeOffset CompletedAt,
         IReadOnlyList<TaskOutcome> TaskOutcomes,
-        ExecutionFailureReason FailureReason = ExecutionFailureReason.None);
+        ExecutionFailureReason FailureReason = ExecutionFailureReason.None)
+    {
+        /// <summary>
+        /// The UID of the card the run worked on: its primary credential, in upper case, written exactly as
+        /// <see cref="CredentialInfo.Uid"/> reports the same card, so a client can match the two. It is the card that the
+        /// run's <em>own</em> read found, taken before the first task started, so it is the card the tasks worked on even
+        /// if another card was on the reader when the run was asked for. That makes it the way to tell which card a
+        /// <see cref="RunId"/> belongs to (including the runs reported by
+        /// <see cref="IAutoModeHost.AutoModeRunCompleted"/>), instead of looking at the reader afterwards, when another
+        /// card may be there.
+        /// <para>
+        /// <c>null</c> when the run did not get to know a card: it ended before its read (no reader, a fault in the read),
+        /// the read found no card, or the run is driven without a reader read of its own. A run that fails <em>after</em>
+        /// its read still carries the UID.
+        /// </para>
+        /// <para>
+        /// It is the only card data the host puts in a result. It is not a secret, but it identifies a card: do not write
+        /// it to logs or files that are not meant to hold it. It is part of the record's equality and of
+        /// <c>ToString()</c>, so logging a whole result logs the UID.
+        /// </para>
+        /// </summary>
+        public string? CardUid { get; init; }
+    }
 }

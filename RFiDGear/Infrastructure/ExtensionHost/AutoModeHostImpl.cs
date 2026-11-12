@@ -84,7 +84,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void ChipHydrated(GenericChipModel chip)
         {
             // As the polls report the card, so that the mode compares like with like.
-            var uid = ReaderSnapshotBuilder.CredentialsOf(chip).FirstOrDefault()?.Uid;
+            var uid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
             if (uid != null)
             {
                 _controller.RememberCard(uid);

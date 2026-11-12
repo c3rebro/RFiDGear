@@ -25,13 +25,15 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="terminalStatus">The terminal classification the execution service returned, or <c>null</c>.</param>
         /// <param name="snapshot">The task collection as it was when the run started.</param>
         /// <param name="observations">The observations the run recorded.</param>
+        /// <param name="cardUid">The UID of the card the run's own read found, or <c>null</c> (see <see cref="ExecResult.CardUid"/>).</param>
         /// <returns>The result. A <c>null</c> <paramref name="terminalStatus"/> is never reported as a clean run.</returns>
         internal static ExecResult FromCompletion(
             string runId,
             DateTimeOffset startedAt,
             TaskLoopTerminalStatus? terminalStatus,
             IReadOnlyList<object?> snapshot,
-            IReadOnlyList<TaskExecutionObservation> observations)
+            IReadOnlyList<TaskExecutionObservation> observations,
+            string? cardUid = null)
         {
             var failureReason = terminalStatus == null ? ExecutionFailureReason.Faulted : ExecutionFailureReason.None;
             var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
@@ -44,7 +46,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 startedAt,
                 DateTimeOffset.UtcNow,
                 taskOutcomes,
-                failureReason);
+                failureReason)
+            {
+                CardUid = cardUid,
+            };
         }
 
         /// <summary>
@@ -56,13 +61,17 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="failureReason">Why the run ended; see <see cref="Classify"/>.</param>
         /// <param name="snapshot">The task collection as it was when the run started.</param>
         /// <param name="observations">The observations the run recorded.</param>
+        /// <param name="cardUid">
+        /// The UID of the card the run's own read found, or <c>null</c>. A run that failed after its read still has it.
+        /// </param>
         /// <returns>A <see cref="ExecutionOutcome.Failure"/> result.</returns>
         internal static ExecResult FromFailure(
             string runId,
             DateTimeOffset startedAt,
             ExecutionFailureReason failureReason,
             IReadOnlyList<object?> snapshot,
-            IReadOnlyList<TaskExecutionObservation> observations)
+            IReadOnlyList<TaskExecutionObservation> observations,
+            string? cardUid = null)
         {
             var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
 
@@ -74,7 +83,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 startedAt,
                 DateTimeOffset.UtcNow,
                 taskOutcomes,
-                failureReason);
+                failureReason)
+            {
+                CardUid = cardUid,
+            };
         }
 
         /// <summary>
