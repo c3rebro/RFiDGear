@@ -117,7 +117,7 @@ namespace RFiDGear.Services.SecureKeys
             {
                 SlotId = need.Slot,
                 Reference = binding.Reference,
-                Algorithm = AlgorithmOf(need.KeyType),
+                Algorithm = need.Algorithm,
                 Usage = need.Usage,
                 Scope = new SecureKeyScope { ApplicationId = need.ApplicationId, KeyNumber = need.KeyNumber },
                 RunId = context.RunId,
@@ -142,7 +142,7 @@ namespace RFiDGear.Services.SecureKeys
             }
 
             // The provider answers for the algorithm it was told; a key of another length is not this key.
-            if (lease.Length * 2 != CustomConverter.GetExpectedKeyHexLength(need.KeyType))
+            if (lease.Length * 2 != need.HexLength)
             {
                 return (null, SecureKeyFailureReason.InvalidKey.ToString());
             }

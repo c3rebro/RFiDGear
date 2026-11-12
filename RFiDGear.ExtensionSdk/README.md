@@ -33,11 +33,21 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
 **Secure key providers:**
 
 A provider hands out card keys that a project names by a reference instead of
-containing them. Status: DESFire tasks ask providers for the keys of their
-bound slots, all of them before the card is touched, each once per task run. A
-slot is bound by an entry in the project file; the editor for it, the MIFARE
-Classic tasks and a provider built into RFiDGear follow in later steps of the
-same feature (issue 234).
+containing them. Status: DESFire and MIFARE Classic tasks ask providers for the
+keys of their bound slots, all of them before the card is touched, each once
+per task run. A slot is bound by an entry in the project file; the editor for
+it and a provider built into RFiDGear follow in later steps of the same
+feature (issue 234).
+
+A MIFARE Classic task asks for every key its reader call carries, all or none:
+a reader may try key B after key A, or use the MAD keys only for some cards,
+and the task does not guess which. A key that cannot be obtained stops the
+task before the card is touched; the reader is never left to go on with key A
+alone. For a Classic key `Algorithm` is `Classic6Byte` (6 bytes), the scope has
+neither an application nor a key number, and `Usage` is `Authenticate` for the
+keys that open a sector and `ChangeKeyNew` for the keys written into a sector
+trailer. The sector is not part of the request: one MAD operation uses a key
+for several sectors.
 
 - The id is stored in project files, so it never changes. It has 1 to 64 of
   `a-z`, `0-9`, `.`, `_` and `-`. A provider with another id is ignored with
