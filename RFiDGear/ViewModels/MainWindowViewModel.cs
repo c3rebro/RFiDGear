@@ -29,6 +29,7 @@ using RedCell.Diagnostics.Update;
 using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.AutoMode;
+using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -1865,6 +1866,22 @@ namespace RFiDGear.ViewModel
                         Mouse.OverrideCursor = null;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Moves the card keys that are typed into the tasks of a project into the Windows Credential Manager and saves a new
+        /// project that refers to them. The project that is open is not touched: the migration reads and writes files of its own.
+        /// </summary>
+        public IAsyncRelayCommand MigrateProjectKeysCommand => new AsyncRelayCommand(OnMigrateProjectKeys);
+        private async Task OnMigrateProjectKeys()
+        {
+            using (var projects = new DatabaseKeyMigrationProjects())
+            {
+                var migration = new KeyMigration(projects, new WindowsCredentialKeyProvider(new NativeCredentialStore()));
+                var flow = new KeyMigrationFlow(migration, new MvvmKeyMigrationDialogs(Dialogs, mw), ResourceLoader.GetResource);
+
+                await flow.RunAsync();
             }
         }
 

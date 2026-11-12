@@ -44,7 +44,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails, IKeySlotHost
+    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails, IKeySlotHost, IKeyMigrationHost
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -1364,6 +1364,28 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             KeyBindings = KeyBindingList.Without(keyBindings, slotId);
         }
+
+        /// <inheritdoc />
+        public IReadOnlyList<string> EmbeddedKeySlots() =>
+            SecureKeySlots.Desfire.Where(slot => HasEmbeddedKey(slot) && IsWrittenToProject(slot)).ToList();
+
+        /// <inheritdoc />
+        public string GetEmbeddedKey(string slotId) => EmbeddedKeyOf(slotId) ?? string.Empty;
+
+        // The rules the serializer asks, so that this is the list of what the file holds. With the old-key inputs hidden the
+        // old key is a copy of the current one that the task keeps for itself: it is not a key of its own, and it goes with
+        // the current key when that is bound.
+        private bool IsWrittenToProject(string slotId) => slotId switch
+        {
+            SecureKeySlots.DesfirePiccCurrent => ShouldSerializeDesfireMasterKeyCurrent(),
+            SecureKeySlots.DesfirePiccNew => ShouldSerializeDesfireMasterKeyTarget(),
+            SecureKeySlots.DesfireAppCurrent => ShouldSerializeDesfireAppKeyCurrent(),
+            SecureKeySlots.DesfireAppOld => ShouldSerializeDesfireAppKeyCurrentOld() && ShowAppKeyOldInputs,
+            SecureKeySlots.DesfireAppNew => ShouldSerializeDesfireAppKeyTarget(),
+            SecureKeySlots.DesfireRead => ShouldSerializeDesfireReadKeyCurrent(),
+            SecureKeySlots.DesfireWrite => ShouldSerializeDesfireWriteKeyCurrent(),
+            _ => throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a DESFire task."),
+        };
 
         private DESFireKeyType KeyTypeOf(string slotId) => slotId switch
         {

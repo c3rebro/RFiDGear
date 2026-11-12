@@ -163,7 +163,9 @@ fallback branches that a project wrote for a card that refused a key.
 - **Settings**: XML-serialized `settings.xml` in `%LocalAppData%\RFiDGear\`.
 - **Runtime defaults**: `runtime-defaults.json` — reader selection, language,
   COM ports, MIFARE default keys, auto-update behavior.
-- **Project files**: Task definitions stored as versioned XML.
+- **Project files**: Task definitions stored as versioned XML. A project is
+  written straight into its archive (`DatabaseReaderWriter.WriteDatabase`);
+  no plain copy of it, with its typed keys, stays in `%LocalAppData%`.
 
 ### Logging
 
@@ -265,6 +267,13 @@ Every box in which a card key is typed is wrapped by `KeySlotEditor`
 to a secure key provider instead. Its decisions are in `KeySlotEditorState`;
 the task view models implement `IKeySlotHost`. A new key box needs the wrapper
 and a slot id (see `DEVELOPER_NOTES.md`).
+
+File > "Move keys of a project..." (`KeyMigration`, `KeyMigrationFlow`) moves
+the typed keys of an existing project into the Credential Manager and writes a
+new project; the old one is only read. It runs on a `ProjectManager` of its own
+because creating a `DatabaseReaderWriter` deletes files in the root of its
+project manager. A task that has typed keys
+implements `IKeyMigrationHost` as well (see `DEVELOPER_NOTES.md`).
 
 ## Key Dependencies
 

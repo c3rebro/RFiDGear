@@ -338,7 +338,11 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// </summary>
         /// <param name="targetPath">The file to create or replace.</param>
         /// <param name="writeTo">Writes the complete new content to the path it is given.</param>
-        private void WriteFileAtomically(string targetPath, Action<string> writeTo)
+        /// <param name="replaceExisting">
+        /// <c>false</c> creates the file only: the move that puts it in place fails when a file exists, also when that file
+        /// appeared after the caller looked, and the file that exists is left as it is.
+        /// </param>
+        private void WriteFileAtomically(string targetPath, Action<string> writeTo, bool replaceExisting = true)
         {
             var fullTargetPath = Path.GetFullPath(targetPath);
             // Both names are unique to this operation, so no file that happens to lie next to the target is touched.
@@ -350,7 +354,7 @@ namespace RFiDGear.Infrastructure.FileAccess
             {
                 writeTo(temporaryPath);
 
-                if (File.Exists(fullTargetPath))
+                if (replaceExisting && File.Exists(fullTargetPath))
                 {
                     File.Replace(temporaryPath, fullTargetPath, backupPath, true);
                     TryDeleteFile(backupPath);
@@ -411,13 +415,17 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// </summary>
         /// <param name="objModel">The project to write.</param>
         /// <param name="_path">Target path as chosen by the user or caller.</param>
+        /// <param name="replaceExisting">
+        /// <c>false</c> writes a new file only: a file that exists at the target, also one that appeared while the
+        /// project was written, is kept and an <see cref="IOException"/> is thrown.
+        /// </param>
         /// <returns>
         /// The path that was actually written, which differs from <paramref name="_path"/> when an extension
         /// was appended, or <c>null</c> when the project could not be serialized (the failure is logged).
         /// </returns>
         /// <exception cref="IOException">The file could not be written.</exception>
         /// <exception cref="UnauthorizedAccessException">The location is not writable.</exception>
-        public string WriteDatabase(ChipTaskHandlerModel objModel, string _path = "")
+        public string WriteDatabase(ChipTaskHandlerModel objModel, string _path = "", bool replaceExisting = true)
         {
             try
             {
@@ -430,28 +438,29 @@ namespace RFiDGear.Infrastructure.FileAccess
 
                 if (saveAsXml)
                 {
-                    WriteFileAtomically(_path, temporaryPath => SerializeToFile(serializer, objModel, temporaryPath));
+                    WriteFileAtomically(_path, temporaryPath => SerializeToFile(serializer, objModel, temporaryPath), replaceExisting);
                     return _path;
                 }
-
-                // The archive entry is staged in the application data folder; only the archive is the user's file.
-                var xmlOutputPath = projectManager.TaskDatabasePath;
-                SerializeToFile(serializer, objModel, xmlOutputPath);
 
                 var archivePath = string.IsNullOrWhiteSpace(_path)
                     ? projectManager.CompressedTaskDatabasePath
                     : ProjectSavePath(_path);
 
+                // The project is serialized straight into the entry of the archive. It used to be written to a file in the
+                // application data folder first and copied from there, which left a plaintext copy of every key of the
+                // project behind until the next start.
                 WriteFileAtomically(archivePath, temporaryPath =>
                 {
                     using (var archive = ZipFile.Open(temporaryPath, ZipArchiveMode.Create))
                     {
-                        archive.CreateEntryFromFile(
-                            xmlOutputPath,
-                            Path.GetFileName(projectManager.TaskDatabasePath),
-                            CompressionLevel.Optimal);
+                        var entry = archive.CreateEntry(Path.GetFileName(projectManager.TaskDatabasePath), CompressionLevel.Optimal);
+
+                        using (var writer = new StreamWriter(entry.Open(), new UTF8Encoding(false)))
+                        {
+                            serializer.Serialize(writer, objModel);
+                        }
                     }
-                });
+                }, replaceExisting);
 
                 return archivePath;
             }
