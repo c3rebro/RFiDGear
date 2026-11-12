@@ -357,7 +357,14 @@ namespace RFiDGear.Infrastructure
         TransportError,
         Unknown,
         IsNotTrue,
-        IsNotFalse
+        IsNotFalse,
+        /// <summary>
+        /// A key slot of the task is bound to a secure key provider, and the key could not be obtained (provider missing,
+        /// vault unavailable, reference unknown, access refused, a key of the wrong length, a broken binding). The command
+        /// made no card call. It is not routed like <see cref="AuthFailure"/>: a vault outage must not start the fallback
+        /// branches of a project that were written for a card that refused a key.
+        /// </summary>
+        KeyUnavailable
     }
 
     /// <summary>

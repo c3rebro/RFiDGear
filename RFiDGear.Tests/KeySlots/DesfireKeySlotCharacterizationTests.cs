@@ -34,7 +34,7 @@ namespace RFiDGear.Tests.KeySlots
         };
 
         // One entry per task type: the reader calls that carry keys, in order, with the slot of each key argument.
-        private static readonly Dictionary<TaskType_MifareDesfireTask, string> ExpectedCalls = new Dictionary<TaskType_MifareDesfireTask, string>
+        internal static readonly Dictionary<TaskType_MifareDesfireTask, string> ExpectedCalls = new Dictionary<TaskType_MifareDesfireTask, string>
         {
             [TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover] = "AuthToMifareDesfireApplication[AppCurrent] | ChangeMifareDesfireApplicationKeySettings[AppCurrent]",
             [TaskType_MifareDesfireTask.ChangeFileSettings] = "ChangeMifareDesfireFileSettings[AppCurrent]",

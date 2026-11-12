@@ -556,8 +556,7 @@ namespace RFiDGear.Tests
                 {
                     SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
                     SelectedDesfireAppKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_AES,
-                    SelectedDesfireAppKeyVersionTarget = "01",
-                    DesfireAppKeyTarget = "A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1"
+                    SelectedDesfireAppKeyVersionTarget = "01"
                 };
 
                 var payload = viewModel.BuildAppKeyChangePayload(
@@ -565,6 +564,7 @@ namespace RFiDGear.Tests
                     keyNumberForChange: 0,
                     authKeyHex: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
                     oldKeyForTargetSlot: "00000000000000000000000000000000",
+                    newTargetKeyHex: "A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1",
                     currentKeySettings: DESFireKeySettings.ChangeKeyWithTargetedKeyNumber |
                                         DESFireKeySettings.AllowChangeMasterKey |
                                         DESFireKeySettings.ConfigurationChangeable);

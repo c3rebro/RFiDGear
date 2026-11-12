@@ -38,6 +38,23 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets the text of the exception thrown by <see cref="ThrowMethod"/>.</summary>
         public string ThrowText { get; set; } = "The reader failed.";
 
+        /// <summary>Gets or sets the card the reader finds when the chip is read; <c>null</c> for none.</summary>
+        public GenericChipModel? Card { get; set; }
+
+        /// <inheritdoc />
+        public override bool IsConnected => Card != null || base.IsConnected;
+
+        /// <inheritdoc />
+        public override Task<ERROR> ReadChipPublic()
+        {
+            if (Card != null)
+            {
+                GenericChip = Card;
+            }
+
+            return base.ReadChipPublic();
+        }
+
         /// <summary>Gets the calls of one method.</summary>
         /// <param name="method">The reader method.</param>
         /// <returns>The calls, in order.</returns>
@@ -151,8 +168,15 @@ namespace RFiDGear.Tests.KeySlots
 
         /// <inheritdoc />
         public override Task<ERROR> DeleteMifareDesfireApplication(
-            string _applicationMasterKey, DESFireKeyType _keyType, uint _appID, DesfireDeleteAuthMethod _authMethod = DesfireDeleteAuthMethod.PiccMasterKey) =>
-            Task.FromResult(Record(nameof(DeleteMifareDesfireApplication), _applicationMasterKey));
+            string _applicationMasterKey, DESFireKeyType _keyType, uint _appID, DesfireDeleteAuthMethod _authMethod = DesfireDeleteAuthMethod.PiccMasterKey)
+        {
+            LastDeleteAuthMethod = _authMethod;
+
+            return Task.FromResult(Record(nameof(DeleteMifareDesfireApplication), _applicationMasterKey));
+        }
+
+        /// <summary>Gets the method the last application delete was told to authenticate with; <c>null</c> before one.</summary>
+        public DesfireDeleteAuthMethod? LastDeleteAuthMethod { get; private set; }
 
         /// <inheritdoc />
         public override Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0) =>
