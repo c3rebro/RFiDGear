@@ -84,6 +84,14 @@ namespace RFiDGear.Tests.SecureKeys
         protected override void Dispose(bool disposing) => Interlocked.Increment(ref _disposals);
     }
 
+    /// <summary>A kind of key whose disposal fails with a message that must not reach a log.</summary>
+    internal sealed class KeyThatCannotBeDisposed : ResolvedSecureKey
+    {
+        protected override void Dispose(bool disposing) => Fail();
+
+        private static void Fail() => throw new InvalidOperationException(SecureKeyTestData.Secret);
+    }
+
     internal static class SecureKeyTestData
     {
         /// <summary>A text that must never reach a log: tests put it into exception messages.</summary>

@@ -114,6 +114,26 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Contains(logs.From(nameof(MefHelper)), e => e.Level == LogEventLevel.Error && e.RenderMessage().Contains("export queries", StringComparison.Ordinal));
         }
 
+        [Fact]
+        public void What_a_broken_provider_export_throws_is_neither_logged_nor_kept()
+        {
+            using var logs = CapturedLogs.Install();
+            using var folder = new TempFolder();
+            folder.Touch(GoodFile);
+            using var composed = new Composed(folder.FullPath, Catalogs((GoodFile, () => new LateBreakingProviderCatalog())));
+
+            var result = Assert.Single(composed.Helper.LastLoadResults);
+
+            // Only the type of the original survives: not its message, and not the original as an inner exception.
+            Assert.NotNull(result.Error);
+            Assert.DoesNotContain(SecureKeyTestData.Secret, result.Error!.ToString(), StringComparison.Ordinal);
+            Assert.Null(result.Error.InnerException);
+            Assert.Contains(nameof(InvalidOperationException), result.Error.Message, StringComparison.Ordinal);
+            Assert.All(
+                logs.All().Select(CapturedLogs.EverythingWrittenFor),
+                text => Assert.DoesNotContain(SecureKeyTestData.Secret, text, StringComparison.Ordinal));
+        }
+
         private static Func<string, ComposablePartCatalog> Catalogs(params (string File, Func<ComposablePartCatalog> Create)[] byFile) =>
             path => byFile.FirstOrDefault(entry => entry.File == Path.GetFileName(path)).Create?.Invoke() ?? new AssemblyCatalog(path);
 
@@ -191,7 +211,7 @@ namespace RFiDGear.Tests.SecureKeys
             public override IDictionary<string, object?> Metadata =>
                 Interlocked.Increment(ref _reads) == 1
                     ? _metadata
-                    : throw new InvalidOperationException("The metadata changed after it was probed.");
+                    : throw new InvalidOperationException($"The metadata changed after it was probed ({SecureKeyTestData.Secret}).");
         }
 
         private sealed class Composed : IDisposable

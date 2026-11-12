@@ -9,7 +9,7 @@ namespace RFiDGear.Contracts
     /// </summary>
     public sealed class SecureKeyResolution : IDisposable
     {
-        private SecureKeyResolution(ResolvedSecureKey? key, SecureKeyFailureReason? failureReason)
+        internal SecureKeyResolution(ResolvedSecureKey? key, SecureKeyFailureReason? failureReason)
         {
             Key = key;
             FailureReason = failureReason;

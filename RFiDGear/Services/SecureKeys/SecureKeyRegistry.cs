@@ -74,7 +74,10 @@ namespace RFiDGear.Services.SecureKeys
                 }
                 catch (Exception e)
                 {
-                    Log.ForContext<SecureKeyRegistry>().Error(e, "The extensions' secure key providers could not be listed; continuing with the built-in ones");
+                    // Only the type: what an extension throws while its provider export is evaluated is not ours to print.
+                    Log.ForContext<SecureKeyRegistry>().Error(
+                        "The extensions' secure key providers could not be listed ({ExceptionType}); continuing with the built-in ones",
+                        e.GetType().FullName);
                 }
             }
 
@@ -175,32 +178,32 @@ namespace RFiDGear.Services.SecureKeys
                 return SecureKeyResolution.Failed(SecureKeyFailureReason.Cancelled);
             }
 
-            // The token the provider sees is cancelled by the caller and by the time limit alike.
-            var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            linked.CancelAfter(request.Interactive ? _interactiveTimeout : _timeout);
-            var token = linked.Token;
+            // Three signals that never share a token. The provider gets its own, which only the host cancels (and only on
+            // a worker thread, see Abandon): a callback a provider registers on it can block or throw, and must not be
+            // able to delay the host or take down the timer thread. The host waits on its own deadline and on the
+            // caller's token, whose callbacks are trivial.
+            var providerStop = new CancellationTokenSource();
+            var providerToken = providerStop.Token;
+            var call = Task.Run(() => entry.Provider.ResolveAsync(request, providerToken).AsTask(), CancellationToken.None);
 
-            var call = Task.Run(() => entry.Provider.ResolveAsync(request, token).AsTask(), CancellationToken.None);
-            var stopWaiting = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            Task first;
+            var hostStop = new TaskCompletionSource<SecureKeyFailureReason>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var deadline = new CancellationTokenSource(request.Interactive ? _interactiveTimeout : _timeout);
+            using var onDeadline = deadline.Token.Register(() => hostStop.TrySetResult(SecureKeyFailureReason.Timeout));
+            using var onCaller = cancellationToken.Register(() => hostStop.TrySetResult(SecureKeyFailureReason.Cancelled));
 
-            using (token.Register(() => stopWaiting.TrySetResult(true)))
-            {
-                first = await Task.WhenAny(call, stopWaiting.Task).ConfigureAwait(false);
-            }
+            var first = await Task.WhenAny(call, hostStop.Task).ConfigureAwait(false);
 
             if (first != call)
             {
                 // The provider is still busy. Whatever it hands over later has nobody to receive it.
-                Abandon(call, linked, entry.Id);
+                Abandon(call, providerStop, entry.Id);
 
-                return SecureKeyResolution.Failed(
-                    cancellationToken.IsCancellationRequested ? SecureKeyFailureReason.Cancelled : SecureKeyFailureReason.Timeout);
+                return SecureKeyResolution.Failed(await hostStop.Task.ConfigureAwait(false));
             }
 
-            linked.Dispose();
+            providerStop.Dispose();
 
-            return await Settle(call, entry.Id, cancellationToken, token).ConfigureAwait(false);
+            return await Settle(call, hostStop.Task, entry.Id).ConfigureAwait(false);
         }
 
         private static List<Candidate> ReadMetadata(IEnumerable<Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>> extensions)
@@ -266,9 +269,8 @@ namespace RFiDGear.Services.SecureKeys
 
         private static async Task<SecureKeyResolution> Settle(
             Task<SecureKeyResolution> call,
-            string providerId,
-            CancellationToken callerToken,
-            CancellationToken linkedToken)
+            Task<SecureKeyFailureReason> hostStop,
+            string providerId)
         {
             SecureKeyResolution? answer;
 
@@ -278,14 +280,9 @@ namespace RFiDGear.Services.SecureKeys
             }
             catch (OperationCanceledException e)
             {
-                if (callerToken.IsCancellationRequested)
+                if (hostStop.IsCompleted)
                 {
-                    return SecureKeyResolution.Failed(SecureKeyFailureReason.Cancelled);
-                }
-
-                if (linkedToken.IsCancellationRequested)
-                {
-                    return SecureKeyResolution.Failed(SecureKeyFailureReason.Timeout);
+                    return SecureKeyResolution.Failed(hostStop.Result);
                 }
 
                 LogProviderFailure(providerId, e);
@@ -303,6 +300,14 @@ namespace RFiDGear.Services.SecureKeys
                 return SecureKeyResolution.Failed(SecureKeyFailureReason.ProviderUnavailable);
             }
 
+            // The caller gave up, or the deadline passed, while the answer was on its way (both can be true before the
+            // host looks): nobody is waiting for it any more, so it is not handed out.
+            if (hostStop.IsCompleted)
+            {
+                DisposeQuietly(answer, providerId);
+                return SecureKeyResolution.Failed(hostStop.Result);
+            }
+
             if (!answer.IsResolved || answer.Key is SecureKeyLease)
             {
                 return answer;
@@ -312,35 +317,73 @@ namespace RFiDGear.Services.SecureKeys
                 "The secure key provider {ProviderId} answered with a kind of key this version cannot use ({KeyType})",
                 providerId,
                 answer.Key?.GetType().FullName);
-            answer.Dispose();
+            DisposeQuietly(answer, providerId);
 
             return SecureKeyResolution.Failed(SecureKeyFailureReason.Unsupported);
         }
 
-        private static void Abandon(Task<SecureKeyResolution> call, CancellationTokenSource linked, string providerId)
+        /// <summary>
+        /// The provider has not answered yet and the host stops waiting. It is told to stop, and whatever it hands over
+        /// later is disposed. The provider's token is cancelled on a worker thread of its own, and every exception is
+        /// caught: a callback the provider registered on that token can block or throw.
+        /// </summary>
+        private static void Abandon(Task<SecureKeyResolution> call, CancellationTokenSource providerStop, string providerId)
         {
-            _ = call.ContinueWith(
-                finished =>
+            var stopped = Task.Run(() =>
+            {
+                try
                 {
-                    try
-                    {
-                        if (finished.IsFaulted)
-                        {
-                            LogProviderFailure(providerId, finished.Exception?.GetBaseException());
-                        }
-                        else if (finished.Status == TaskStatus.RanToCompletion)
-                        {
-                            finished.Result?.Dispose();
-                        }
-                    }
-                    finally
-                    {
-                        linked.Dispose();
-                    }
-                },
+                    providerStop.Cancel();
+                }
+                catch (Exception e)
+                {
+                    LogProviderFailure(providerId, e);
+                }
+            });
+
+            var late = call.ContinueWith(
+                finished => HandleLateAnswer(finished, providerId),
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
+
+            // The source can only be disposed when nothing is going to cancel it any more.
+            _ = Task.WhenAll(stopped, late).ContinueWith(
+                _ => providerStop.Dispose(),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        private static void HandleLateAnswer(Task<SecureKeyResolution> finished, string providerId)
+        {
+            if (finished.IsFaulted)
+            {
+                LogProviderFailure(providerId, finished.Exception?.GetBaseException());
+            }
+            else if (finished.Status == TaskStatus.RanToCompletion && finished.Result != null)
+            {
+                DisposeQuietly(finished.Result, providerId);
+            }
+        }
+
+        /// <summary>
+        /// Disposes an answer the host does not hand out. The key may be of a kind written by the provider, whose
+        /// <c>Dispose</c> can throw; that must not escape from the registry.
+        /// </summary>
+        private static void DisposeQuietly(SecureKeyResolution answer, string providerId)
+        {
+            try
+            {
+                answer.Dispose();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<SecureKeyRegistry>().Warning(
+                    "The secure key provider {ProviderId} threw {ExceptionType} while its key was disposed",
+                    providerId,
+                    e.GetType().FullName);
+            }
         }
 
         private static void LogProviderFailure(string providerId, Exception? exception) =>

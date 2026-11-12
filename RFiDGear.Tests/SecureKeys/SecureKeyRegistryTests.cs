@@ -6,6 +6,7 @@ using Serilog.Events;
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition.Hosting;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -125,6 +126,46 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public async Task A_key_whose_disposal_throws_is_still_unsupported_and_nothing_it_says_is_logged()
+        {
+            using var logs = CapturedLogs.Install();
+            var registry = RegistryOf(new ScriptedSecureKeyProvider((_, _) =>
+                new ValueTask<SecureKeyResolution>(SecureKeyResolution.Resolved(new KeyThatCannotBeDisposed()))));
+
+            using var answer = await registry.ResolveAsync(Id, SecureKeyTestData.Request(), CancellationToken.None);
+
+            Assert.Equal(SecureKeyFailureReason.Unsupported, answer.FailureReason);
+            var written = logs.From(nameof(SecureKeyRegistry)).Select(CapturedLogs.EverythingWrittenFor).ToList();
+            Assert.Contains(written, text => text.Contains(nameof(InvalidOperationException), StringComparison.Ordinal));
+            Assert.All(written, text => Assert.DoesNotContain(SecureKeyTestData.Secret, text, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task A_late_key_whose_disposal_throws_is_logged_by_type_only()
+        {
+            using var logs = CapturedLogs.Install();
+            var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var registry = RegistryOf(
+                new ScriptedSecureKeyProvider(async (_, _) =>
+                {
+                    await release.Task;
+                    return SecureKeyResolution.Resolved(new KeyThatCannotBeDisposed());
+                }),
+                timeout: TimeSpan.FromMilliseconds(150));
+
+            using var answer = await registry.ResolveAsync(Id, SecureKeyTestData.Request(), CancellationToken.None);
+            release.SetResult(true);
+
+            Assert.Equal(SecureKeyFailureReason.Timeout, answer.FailureReason);
+            Assert.True(
+                await WaitFor(() => logs.From(nameof(SecureKeyRegistry)).Any(e => e.RenderMessage().Contains("disposed", StringComparison.Ordinal))),
+                "the failed disposal was not logged");
+            Assert.All(
+                logs.From(nameof(SecureKeyRegistry)).Select(CapturedLogs.EverythingWrittenFor),
+                text => Assert.DoesNotContain(SecureKeyTestData.Secret, text, StringComparison.Ordinal));
+        }
+
+        [Fact]
         public async Task The_provider_runs_without_the_synchronization_context_of_the_caller()
         {
             SynchronizationContext? seen = new SynchronizationContext();
@@ -184,24 +225,100 @@ namespace RFiDGear.Tests.SecureKeys
         {
             var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             SecureKeyLease? late = null;
-            var tokenWasCancelled = false;
+            var providerToken = CancellationToken.None;
             var registry = RegistryOf(
                 new ScriptedSecureKeyProvider(async (_, token) =>
                 {
                     // Does not look at the token, as a provider that ignores the contract would.
+                    providerToken = token;
                     await release.Task;
-                    tokenWasCancelled = token.IsCancellationRequested;
                     late = new SecureKeyLease(SecureKeyTestData.SixteenBytes());
                     return SecureKeyResolution.Resolved(late);
                 }),
                 timeout: TimeSpan.FromMilliseconds(150));
 
             using var answer = await registry.ResolveAsync(Id, SecureKeyTestData.Request(), CancellationToken.None);
-            release.SetResult(true);
 
             Assert.Equal(SecureKeyFailureReason.Timeout, answer.FailureReason);
+            Assert.True(await WaitFor(() => providerToken.IsCancellationRequested), "the provider was not told to stop");
+            release.SetResult(true);
             Assert.True(await WaitFor(() => late != null && IsDisposed(late)), "the late key was not disposed");
-            Assert.True(tokenWasCancelled, "the provider was not told to stop");
+        }
+
+        [Fact]
+        public async Task A_key_that_arrives_after_the_caller_gave_up_is_not_handed_out()
+        {
+            // The caller cancels while the provider is answering, so that both are done when the host looks: the answer
+            // must lose, and the key must be disposed.
+            SecureKeyLease? issued = null;
+            using var cancel = new CancellationTokenSource();
+            var registry = RegistryOf(new ScriptedSecureKeyProvider((_, _) =>
+            {
+                cancel.Cancel();
+                issued = new SecureKeyLease(SecureKeyTestData.SixteenBytes());
+                return new ValueTask<SecureKeyResolution>(SecureKeyResolution.Resolved(issued));
+            }));
+
+            using var answer = await registry.ResolveAsync(Id, SecureKeyTestData.Request(), cancel.Token);
+
+            Assert.Equal(SecureKeyFailureReason.Cancelled, answer.FailureReason);
+            Assert.NotNull(issued);
+            Assert.True(IsDisposed(issued!), "the key was handed out although the caller had given up");
+        }
+
+        [Fact]
+        public async Task A_callback_a_provider_registers_on_its_token_cannot_hold_the_host_up()
+        {
+            using var unblock = new ManualResetEventSlim();
+            var registry = RegistryOf(
+                new ScriptedSecureKeyProvider(async (_, token) =>
+                {
+                    // Registers after the host has started waiting, and blocks whoever cancels the token.
+                    await Task.Delay(100);
+                    token.Register(() => unblock.Wait());
+                    await Task.Delay(Timeout.Infinite);
+                    throw new InvalidOperationException("unreachable");
+                }),
+                timeout: TimeSpan.FromMilliseconds(500));
+
+            try
+            {
+                var pending = registry.ResolveAsync(Id, SecureKeyTestData.Request(), CancellationToken.None);
+                var finished = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(10)));
+
+                Assert.Same(pending, finished);
+                using var answer = await pending;
+                Assert.Equal(SecureKeyFailureReason.Timeout, answer.FailureReason);
+            }
+            finally
+            {
+                unblock.Set();
+            }
+        }
+
+        [Fact]
+        public async Task A_callback_on_the_providers_token_that_throws_is_logged_by_type_only()
+        {
+            using var logs = CapturedLogs.Install();
+            var registry = RegistryOf(
+                new ScriptedSecureKeyProvider(async (_, token) =>
+                {
+                    await Task.Delay(100);
+                    token.Register(() => throw new InvalidOperationException($"the callback failed for {SecureKeyTestData.Secret}"));
+                    await Task.Delay(Timeout.Infinite);
+                    throw new InvalidOperationException("unreachable");
+                }),
+                timeout: TimeSpan.FromMilliseconds(500));
+
+            using var answer = await registry.ResolveAsync(Id, SecureKeyTestData.Request(), CancellationToken.None);
+
+            Assert.Equal(SecureKeyFailureReason.Timeout, answer.FailureReason);
+            Assert.True(
+                await WaitFor(() => logs.From(nameof(SecureKeyRegistry)).Any(e => e.Level == LogEventLevel.Warning)),
+                "the failure of the callback was not logged");
+            Assert.All(
+                logs.From(nameof(SecureKeyRegistry)).Select(CapturedLogs.EverythingWrittenFor),
+                text => Assert.DoesNotContain(SecureKeyTestData.Secret, text, StringComparison.Ordinal));
         }
 
         [Fact]
@@ -240,7 +357,7 @@ namespace RFiDGear.Tests.SecureKeys
             using var answer = await pending;
 
             Assert.Equal(SecureKeyFailureReason.Cancelled, answer.FailureReason);
-            Assert.True(providerToken.IsCancellationRequested);
+            Assert.True(await WaitFor(() => providerToken.IsCancellationRequested), "the provider was not told to stop");
         }
 
         [Fact]
@@ -418,6 +535,22 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal(
                 new[] { new SecureKeyProviderInfo("a.vault", "a.vault"), new SecureKeyProviderInfo("b.vault", "Beta") },
                 registry.Providers);
+        }
+
+        [Fact]
+        public void A_container_that_cannot_list_the_providers_is_logged_by_type_without_the_exception()
+        {
+            using var logs = CapturedLogs.Install();
+            var container = new CompositionContainer();
+            container.Dispose();
+            var builtIn = ScriptedSecureKeyProvider.Failing(SecureKeyFailureReason.NotFound);
+
+            var registry = SecureKeyRegistry.FromContainer(container, new[] { new SecureKeyProviderRegistration(Id, "Built in", builtIn) });
+
+            Assert.Equal(new[] { Id }, registry.Providers.Select(p => p.Id));
+            var logged = Assert.Single(logs.From(nameof(SecureKeyRegistry)), e => e.Level == LogEventLevel.Error);
+            Assert.Null(logged.Exception);
+            Assert.Contains(nameof(ObjectDisposedException), CapturedLogs.EverythingWrittenFor(logged), StringComparison.Ordinal);
         }
 
         [Fact]
