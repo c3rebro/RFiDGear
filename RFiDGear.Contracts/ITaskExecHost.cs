@@ -98,14 +98,24 @@ namespace RFiDGear.Contracts
         /// <see cref="ExecutionFailureReason.Cancelled"/> when cancelled mid-run.
         /// </para>
         /// <para>
+        /// Automatic mode: in the main application a run started through this method works on the card that is on the
+        /// reader, as a run of <see cref="IAutoModeHost"/> does. The mode therefore counts the card as processed, and does
+        /// not run it again until it has been taken away and put back, and a run that ends with a fault, a timeout, a
+        /// cancellation or the watchdog's giving up stops a mode that is on. The mode's own events follow
+        /// <see cref="ExecutionCompleted"/>. A run of the mode itself is not reported here; see
+        /// <see cref="IAutoModeHost.AutoModeStateChanged"/>.
+        /// </para>
+        /// <para>
         /// Event ordering: <see cref="ExecutionCompleted"/> is raised exactly once for every accepted run,
         /// after <see cref="IsRunning"/> has returned to <c>false</c> (and <see cref="IsRunningChanged"/> has been
         /// raised for it) and before the returned task completes.
         /// </para>
         /// <para>
-        /// Sensitive data: the host adds no key values, payload bytes, card data, or task descriptions to the
+        /// Sensitive data: the host adds no key values, payload bytes, or task descriptions to the
         /// returned <see cref="ExecResult"/>, its <see cref="TaskOutcome"/> entries, or the
-        /// <see cref="ExecutionCompleted"/> payload. The one free-text field is
+        /// <see cref="ExecutionCompleted"/> payload, and the only card data it adds is the UID of the card the run worked
+        /// on (<see cref="ExecResult.CardUid"/>; it identifies a card, so keep it out of logs that are not meant to hold
+        /// it). The one free-text field is
         /// <see cref="TaskOutcome.ProjectTaskIndex"/>, which is the task index exactly as stored in the project, so
         /// do not put secrets in task indexes. Failures are logged under the <see cref="ExecResult.RunId"/>.
         /// Exception messages and stack traces written to those logs pass through a best-effort filter. It replaces
@@ -188,7 +198,8 @@ namespace RFiDGear.Contracts
         /// </para>
         /// <para>
         /// Sensitive data: the payload is the same <see cref="ExecResult"/> the caller receives, so the same
-        /// exclusions apply: no key values, payload bytes, card data, or task descriptions added by the host.
+        /// exclusions apply: no key values, payload bytes, or task descriptions added by the host, and no card data other
+        /// than the UID in <see cref="ExecResult.CardUid"/>.
         /// </para>
         /// </summary>
         event EventHandler<ExecResult> ExecutionCompleted;

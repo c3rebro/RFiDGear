@@ -212,6 +212,9 @@ namespace RFiDGear.Tests.Reader
             await WithViewModel(async (viewModel, provider, _) =>
             {
                 var tick = typeof(MainWindowViewModel).GetMethod("UpdateChip", Private)!;
+
+                // The clock only has an effect while automatic mode is on (it is off until it is asked for).
+                viewModel.AutoMode.TryStart(requireReady: false, keepApplicationOpen: false);
                 Assert.True(viewModel.ReaderGate.TryEnter());
 
                 tick.Invoke(viewModel, new object?[] { null, EventArgs.Empty });

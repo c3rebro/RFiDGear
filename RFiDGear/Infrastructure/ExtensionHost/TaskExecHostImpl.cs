@@ -29,15 +29,26 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private readonly ITaskExecutionService _execService;
         private readonly ProjectHostImpl _project;
         private readonly ExtensionOperationCoordinator _coordinator;
+        private readonly IRunObserver? _runObserver;
 
+        /// <summary>Initializes the execution host.</summary>
+        /// <param name="execService">The execution service that runs the tasks.</param>
+        /// <param name="project">The project host, which owns the live task model.</param>
+        /// <param name="coordinator">The admission gate shared with the main window.</param>
+        /// <param name="runObserver">
+        /// Optional. Told which card each run works on and how each run ended, for automatic mode (see
+        /// <see cref="IRunObserver"/>).
+        /// </param>
         public TaskExecHostImpl(
             ITaskExecutionService execService,
             ProjectHostImpl project,
-            ExtensionOperationCoordinator coordinator)
+            ExtensionOperationCoordinator coordinator,
+            IRunObserver? runObserver = null)
         {
             _execService = execService ?? throw new ArgumentNullException(nameof(execService));
             _project = project ?? throw new ArgumentNullException(nameof(project));
             _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
+            _runObserver = runObserver;
 
             // The coordinator is shared with the main window, so this also republishes its runs. The host and the
             // coordinator live for the whole session, which is why there is nothing to unsubscribe.
@@ -86,6 +97,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             // execution service throws and returns nothing. One fresh list per run.
             var observations = new List<TaskExecutionObservation>();
             IReadOnlyList<object?> snapshot = Array.Empty<object?>();
+            var abandoned = false;
+
+            // The UID of the card the service's own read found; it stays null for a run that never gets that far.
+            string? cardUid = null;
 
             ExecResult execResult;
             try
@@ -115,53 +130,35 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     // The page that started the run has to stay open to show its result: a project that ends with the
                     // task %EXIT (the old assistant's way of closing RFiDGear) ends the run and not the application.
                     KeepApplicationOpen = true,
+
+                    // The service reads the card once more before its first task, and that is the card the tasks work on:
+                    // its UID goes into the result, and automatic mode must know which card it is.
+                    ChipHydrated = chip =>
+                    {
+                        cardUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
+                        _runObserver?.ChipHydrated(chip);
+                    },
                 };
 
                 var rawResult = await _execService.ExecuteOnceAsync(taskRequest, ct).ConfigureAwait(false);
+                abandoned = rawResult.Abandoned;
 
-                var completedAt = DateTimeOffset.UtcNow;
-                var outcome = MapOutcome(rawResult.TerminalStatus);
-                var failureReason = ExecutionFailureReason.None;
                 if (rawResult.TerminalStatus == null)
                 {
                     // The service returned without evaluating the task loop; never report that as a clean result.
-                    failureReason = ExecutionFailureReason.Faulted;
                     Logger.Warning("Extension-triggered run {RunId} ended without a terminal evaluation", runId);
                 }
 
-                var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
-                var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
-
-                execResult = new ExecResult(
-                    runId,
-                    outcome,
-                    snapshot.Count,
-                    failedCount,
-                    startedAt,
-                    completedAt,
-                    taskOutcomes,
-                    failureReason);
+                execResult = ExecResultBuilder.FromCompletion(runId, startedAt, rawResult.TerminalStatus, snapshot, observations, cardUid);
             }
             catch (Exception ex)
             {
                 // Cancelled or faulted runs still produce a terminal ExecResult. Preserve
                 // partial task outcomes so the caller can correlate completed tasks with logs.
-                var failureReason = Classify(ex, ct);
+                var failureReason = ExecResultBuilder.Classify(ex, ct);
                 LogFailedRun(runId, failureReason, ex);
 
-                var completedAt = DateTimeOffset.UtcNow;
-                var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
-                var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
-
-                execResult = new ExecResult(
-                    runId,
-                    ExecutionOutcome.Failure,
-                    snapshot.Count,
-                    failedCount,
-                    startedAt,
-                    completedAt,
-                    taskOutcomes,
-                    failureReason);
+                execResult = ExecResultBuilder.FromFailure(runId, startedAt, failureReason, snapshot, observations, cardUid);
             }
             finally
             {
@@ -171,7 +168,33 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             // Raised after the coordinator is released and outside try/finally, so exactly one
             // publication happens per accepted run and subscribers see IsRunning == false.
             RaiseExecutionCompleted(execResult);
+            NotifyRunEnded(execResult, abandoned);
             return execResult;
+        }
+
+        /// <summary>
+        /// Tells the observer (automatic mode) that the run has ended, after <see cref="IsRunningChanged"/> and
+        /// <see cref="ExecutionCompleted"/>, so a stop it causes is announced after both. The observer must not throw; if
+        /// it does anyway, that is logged and does not turn a finished card operation into an exception.
+        /// </summary>
+        private void NotifyRunEnded(ExecResult result, bool abandoned)
+        {
+            if (_runObserver == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _runObserver.RunEnded(result, abandoned);
+            }
+            catch (Exception ex)
+            {
+                var error = new SanitizedException(ex);
+                Logger.Error(
+                    "The observer of run {RunId} threw; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                    result.RunId, error.TypeName, error.Message, error.StackTrace);
+            }
         }
 
         /// <inheritdoc/>
@@ -216,25 +239,6 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             : _coordinator.IsMutating ? whenEditing
             : _coordinator.IsScanning ? whenScanning
             : whenRunning;
-
-        private static ExecutionOutcome MapOutcome(TaskLoopTerminalStatus? status) => status switch
-        {
-            TaskLoopTerminalStatus.Success                          => ExecutionOutcome.Success,
-            TaskLoopTerminalStatus.CompletedWithIntentionalFailures => ExecutionOutcome.CompletedWithIntentionalFailures,
-            _                                                       => ExecutionOutcome.Failure,
-        };
-
-        /// <summary>
-        /// Maps an exception from the execution service to a non-sensitive reason. A bare
-        /// <see cref="OperationCanceledException"/> only counts as caller cancellation when the
-        /// caller's token was actually cancelled; anything else is an unexpected fault.
-        /// </summary>
-        private static ExecutionFailureReason Classify(Exception ex, CancellationToken ct) => ex switch
-        {
-            OperationCanceledException when ct.IsCancellationRequested => ExecutionFailureReason.Cancelled,
-            TimeoutException                                            => ExecutionFailureReason.TimedOut,
-            _                                                           => ExecutionFailureReason.Faulted,
-        };
 
         /// <summary>
         /// Logs a run that ended abnormally. The exception is described through <see cref="SanitizedException"/>

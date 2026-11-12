@@ -122,6 +122,24 @@ Task categories:
 `TaskExecutionService` drives sequential execution with error handling;
 individual task VMs implement `ITaskViewModel`.
 
+### Automatic Mode
+
+Continuous card handling is one state machine, `AutoModeController`
+(`Services/AutoMode`). The menu toggle, the `AUTOMODE=1` start-up argument and
+the host API all drive it, and nothing else polls the reader for new cards.
+Its `IsEnabled` flag is the state; the reader timer is only a clock, because
+every run switches the timer off and puts it back.
+
+A card is run once per *presence*: a poll that finds the reader empty ends the
+presence, so a card that stays is not run again, and a card that is taken away
+and put back is. The card is remembered when its run is admitted, so a run that
+fails is never repeated by the machine (the one-attempt rule). A run made by
+hand counts as processing the card on the reader, and the card it really read
+(the execution service reads once more) is the one remembered. A fault, a
+timeout, a run the watchdog gave up or a lost reader stops the mode instead of
+guessing, whoever started the run; an ordinary task failure does not. A run of
+the mode that waits for a reader scan of an extension is withdrawn by a stop.
+
 ### Key Design Rule
 
 **One-attempt rule**: Card-state-changing operations (write, authenticate,
@@ -158,9 +176,10 @@ only these, never `RFiDGear.exe`:
   the project, execution, reader and culture services). It has no MEF
   dependency.
 - `RFiDGear.ExtensionSdk` is the MEF-facing ABI: `[UiExtension]`,
-  `HostPlacement`, `IUIExtension`, `IUIExtensionDetails`. It is versioned on
-  its own (see its README). `RFiDGear.exe` forwards the old locations of
-  these types so already-built extensions keep working.
+  `HostPlacement`, `IUIExtension`, `IUIExtensionDetails`,
+  `[SecureKeyProvider]`. It is versioned on its own (see its README).
+  `RFiDGear.exe` forwards the old locations of the UI types so already-built
+  extensions keep working.
 
 Both public surfaces are frozen by approved snapshots under
 `RFiDGear.Tests/ApiSurface/`; a change fails the test and is accepted by
@@ -184,6 +203,16 @@ probes each DLL (parts, export metadata, imports) before adding it to the
 container, logs a failure with Serilog and skips that file. If the extensions
 that passed still break the export queries, it rebuilds the container from the
 host alone. `MefHelper.LastLoadResults` records the outcome per file.
+
+A secure key provider (`ISecureKeyProvider` in `RFiDGear.Contracts`, exported
+with `[SecureKeyProvider]` from the SDK) hands out card keys that a project
+names by reference instead of containing them. `SecureKeyRegistry`
+(`Services/SecureKeys`) is the only way to call one: it creates the providers
+once, runs each call on a worker thread under a time limit, turns anything a
+provider does wrong into a failed answer, logs only the type of a provider's
+exception (never its message), and disposes a key that arrives late. A
+resolved key lives only in a `SecureKeyLease` on the stack of the card
+operation: never put one in a property or a static, and never log it.
 
 An extension that needs more than the contract (services, a database driver,
 a PDF engine) keeps that code in a support library named

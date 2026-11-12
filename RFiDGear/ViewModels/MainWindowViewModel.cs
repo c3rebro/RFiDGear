@@ -28,6 +28,7 @@ using RFiDGear.Infrastructure.DI;
 using RedCell.Diagnostics.Update;
 using RFiDGear.Models;
 using RFiDGear.Services;
+using RFiDGear.Services.AutoMode;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -78,11 +79,15 @@ namespace RFiDGear.ViewModel
 
         private HeadlessExtensionHost extensionHost;
         private ExtensionOperationCoordinator _coordinator;
+        private AutoModeController _autoMode;
         private Dispatcher uiDispatcher;
         private readonly ReaderAccessGate _readerGate = new ReaderAccessGate();
 
         /// <summary>The gate that lets one party at a time read a card: the reads of this window and the scans of extensions.</summary>
         internal ReaderAccessGate ReaderGate => _readerGate;
+
+        /// <summary>The state machine of automatic mode: the menu toggle, the start-up argument and the host all drive it.</summary>
+        internal AutoModeController AutoMode => _autoMode;
         private readonly IApplicationExtensionLauncher applicationExtensionLauncher;
 
         private protected MainWindow mw;
@@ -226,6 +231,37 @@ namespace RFiDGear.ViewModel
 
             uiDispatcher = Dispatcher.CurrentDispatcher;
             var owningDispatcher = uiDispatcher;
+
+            // Before the host, which hands its state to extensions. What the machine needs of the host (to store what
+            // the reader showed) it reads when it is called, not now.
+            _autoMode = new AutoModeController(
+                _coordinator,
+                poll: PollReaderForAutoModeAsync,
+                // The run reads the card itself (the card may have been swapped since the poll), so it needs no UID.
+                runCard: (_, keepApplicationOpen, isStillWanted) => RunCardForAutoModeAsync(keepApplicationOpen, isStillWanted),
+                setClock: enabled => triggerReadChip.IsEnabled = enabled,
+                post: action =>
+                {
+                    if (owningDispatcher.CheckAccess())
+                    {
+                        action();
+                    }
+                    else
+                    {
+                        owningDispatcher.InvokeAsync(action);
+                    }
+                },
+                isReaderSelected: () => ReaderDevice.Instance != null,
+                hasTasks: () => (taskHandler?.TaskCollection?.Count ?? 0) > 0);
+
+            // The menu item shows the state of the machine, whoever changed it (the click, the start-up argument, or an
+            // extension through the host). The state can change on any thread; the binding is raised on the UI thread.
+            _autoMode.StateChanged += (_, _) => owningDispatcher.InvokeAsync(() =>
+            {
+                OnPropertyChanged(nameof(IsWriteToAllChipAutoChecked));
+                OnPropertyChanged(nameof(IsWriteSelectedToChipAutoChecked));
+            });
+
             extensionHost = new HeadlessExtensionHost(
                 databaseReaderWriter,
                 taskExecutionService,
@@ -257,7 +293,8 @@ namespace RFiDGear.ViewModel
                 getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english",
                 isOnUiThread: () => owningDispatcher.CheckAccess(),
                 getReaderName: () => CurrentReader,
-                readerGate: _readerGate);
+                readerGate: _readerGate,
+                autoMode: new AutoModeHostImpl(_autoMode, _coordinator));
 
             // The Extensions menu entries were built when MEF composed this view model, before the host existed, and
             // stay disabled until now.
@@ -568,71 +605,112 @@ namespace RFiDGear.ViewModel
         /// <param name="e"></param>
         private async void UpdateChip(object sender, EventArgs args)
         {
-            GenericChipModel GenericChip;
+            if (_autoMode == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await _autoMode.TickAsync();
+            }
+            catch (Exception e)
+            {
+                // TickAsync lets nothing escape; this is for an async void that must never end the application.
+                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
+            }
+        }
+
+        /// <summary>
+        /// Looks at the reader once for automatic mode, with the reader to itself, and says what the look meant. The
+        /// picture the extensions see is stored from the same read, as the Read button does, so they learn of a card
+        /// that comes or goes while automatic mode is on.
+        /// </summary>
+        /// <returns>
+        /// What the read meant; <c>null</c> when somebody else holds the reader (an extension's scan or a read of the
+        /// Read button), in which case this tick is skipped and the next one tries again.
+        /// </returns>
+        private async Task<AutoModePoll?> PollReaderForAutoModeAsync()
+        {
             Mouse.OverrideCursor = Cursors.AppStarting;
 
             try
             {
-
-                //try to get singleton instance
+                // The singleton, as every caller takes it: disposing it between reads is how the session is released.
                 using (var device = ReaderDevice.Instance)
                 {
-                    //reader was ready - proceed
-                    if (device != null)
+                    if (device == null)
                     {
-                        // A reader scan of an extension (or a read of the Read button) may hold the reader: this tick is
-                        // skipped, and the next one tries again.
-                        if (!_readerGate.TryEnter())
-                        {
-                            Mouse.OverrideCursor = null;
-
-                            return;
-                        }
-
-                        try
-                        {
-                            IsReaderBusy = true;
-                            await device.ReadChipPublic();
-
-                            GenericChip = device.GenericChip;
-                        }
-                        finally
-                        {
-                            IsReaderBusy = false;
-                            _readerGate.Exit();
-                        }
+                        return new AutoModePoll(ReaderScanState.NoReader, null);
                     }
-                    else
+
+                    if (!_readerGate.TryEnter())
                     {
-                        return;
+                        return null;
                     }
+
+                    ReaderSnapshot snapshot;
+                    var generation = extensionHost?.ReaderGeneration ?? 0;
+                    var changed = false;
+                    try
+                    {
+                        IsReaderBusy = true;
+
+                        // Emptied first, as the Read button does: a provider that finds the same high-frequency card again
+                        // returns without touching the chip, so the low-frequency and LEGIC children of the read before
+                        // would stay on it, and the picture would show a tag that was taken away.
+                        device.GenericChip = new GenericChipModel();
+                        var result = await device.ReadChipPublic();
+
+                        // The one place that says what a read means (a PC/SC reader without a card answers with an error).
+                        snapshot = extensionHost != null
+                            ? extensionHost.InterpretRead(device, result) ?? ReaderSnapshotBuilder.ReadFailed(CurrentReader)
+                            : ReaderSnapshotBuilder.FromRead(CurrentReader, true, device.IsPcscReader, device.IsConnected, result, device.GenericChip);
+
+                        // Stored while the reader is still held, so that pictures are stored in the order of the reads.
+                        changed = extensionHost?.StoreRead(snapshot, generation) ?? false;
+                    }
+                    catch (Exception e)
+                    {
+                        Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
+                        snapshot = ReaderSnapshotBuilder.ReadFailed(CurrentReader);
+                    }
+                    finally
+                    {
+                        IsReaderBusy = false;
+                        _readerGate.Exit();
+                    }
+
+                    // After the reader is given back, so that a handler may scan again.
+                    extensionHost?.AnnounceReaderChange(changed, generation);
+
+                    return new AutoModePoll(snapshot.State, snapshot.Credentials.FirstOrDefault()?.Uid);
                 }
-                //proceed to create dummy only when uid is yet unknown
-                if (!string.IsNullOrWhiteSpace(GenericChip.UID) &&
-                    !treeViewParentNodes.Any(x => (x.UID == GenericChip.UID)))
-                {
-                    foreach (var item in treeViewParentNodes)
-                    {
-                        item.IsExpanded = false;
-                    }
-
-                    // fill treeview with dummy models and viewmodels
-                    await ReadChipCommand.ExecuteAsync(null);
-
-                    // No message when it is refused: this runs on a timer, and the run below would be refused too.
-                    if (await TryResetTaskStatusAsync())
-                    {
-                        await WriteToChipOnceCommand.ExecuteAsync(null);
-                    }
-                }
-
             }
-            catch (Exception e)
+            finally
             {
-                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        /// <summary>
+        /// Processes a card that automatic mode found newly presented: the same run as "Run all tasks once", with the
+        /// card put in the tree by the run's own read.
+        /// </summary>
+        /// <param name="keepApplicationOpen">Whether a program task <c>%EXIT</c> ends the run instead of closing the application.</param>
+        /// <param name="isStillWanted">
+        /// Whether automatic mode, in the session that asked for this run, is still on. The run may wait for a reader scan
+        /// of an extension before it is admitted, and a stop meanwhile must not be followed by a run.
+        /// </param>
+        /// <returns>What came of it; not admitted when something else held the execution slot or the request was withdrawn.</returns>
+        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen, Func<bool> isStillWanted)
+        {
+            foreach (var item in treeViewParentNodes)
+            {
+                item.IsExpanded = false;
             }
 
-            Mouse.OverrideCursor = null;
+            return await RunAllOnceCoreAsync(keepApplicationOpen, isStillWanted);
         }
 
         /// <summary>
@@ -1006,8 +1084,10 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand ReadChipCommand => new AsyncRelayCommand(OnNewReadChipCommand);
         private async Task OnNewReadChipCommand()
         {
-            var timerState = triggerReadChip.IsEnabled;
-            triggerReadChip.IsEnabled = false;
+            // The tick of automatic mode holds back for as long as this read lasts. A scope, not a save and restore of
+            // the timer: this method awaits, so a start or stop of automatic mode can come in meanwhile, and a restore
+            // would undo it. (Before, it also left the timer off when there was no reader.)
+            using var pause = _autoMode?.PausePolling();
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
@@ -1090,8 +1170,6 @@ namespace RFiDGear.ViewModel
 
             Mouse.OverrideCursor = null;
             IsReaderBusy = false;
-
-            triggerReadChip.IsEnabled = timerState;
 
             // Last, and after everything that must be restored: the subscribers of the event run now, on this thread.
             extensionHost?.AnnounceReaderChange(pictureChanged, pictureGeneration);
@@ -1329,13 +1407,23 @@ namespace RFiDGear.ViewModel
         public ICommand WriteToAllChipAutoCommand => new RelayCommand(OnNewWriteToAllChipAutoCommand);
         private void OnNewWriteToAllChipAutoCommand()
         {
-            if (!triggerReadChip.IsEnabled)
+            if (_autoMode == null)
             {
-                triggerReadChip.IsEnabled = true;
+                return;
             }
-            else
+
+            if (_autoMode.IsEnabled)
             {
-                triggerReadChip.IsEnabled = false;
+                _autoMode.Stop();
+
+                return;
+            }
+
+            // The menu does not insist on a reader or a task (the reader may be plugged in later); it only refuses to
+            // start in the middle of something that would be disturbed by it.
+            if (_autoMode.TryStart(requireReady: false, keepApplicationOpen: false) == AutoModeStartResult.Busy)
+            {
+                ShowProjectBusy();
             }
         }
 
@@ -1355,11 +1443,46 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand WriteToChipOnceCommand => new AsyncRelayCommand(OnNewWriteToChipOnceCommand);
         private async Task OnNewWriteToChipOnceCommand()
         {
-            if (!await TryBeginExecutionAfterAScanAsync())
+            var report = await RunAllOnceCoreAsync(keepApplicationOpen: false);
+
+            // Whoever started a run, one that ended in a way that leaves the card in an unknown state also stops a mode
+            // that is on; otherwise the next card would be run on the strength of it.
+            _autoMode?.OnOtherRunEnded(report);
+        }
+
+        /// <summary>
+        /// Runs all tasks once on the card that is on the reader: the run behind "Run all tasks once", behind
+        /// <c>AUTORUN=1</c> and behind every card of automatic mode. A run that is not admitted (something else holds
+        /// the execution slot) has touched nothing.
+        /// </summary>
+        /// <remarks>
+        /// The run gets a <c>RunId</c> and records its observations, so the result can be judged by the same rules as
+        /// the result of a run an extension started. The card the run read is remembered by automatic mode before the
+        /// first task starts, so that the machine does not run it a second time, however the run ends.
+        /// </remarks>
+        /// <param name="keepApplicationOpen">Whether a program task <c>%EXIT</c> ends the run instead of closing the application.</param>
+        /// <param name="isStillWanted">
+        /// Asked while the run waits for a reader scan of an extension to end: when it returns <c>false</c> the run is
+        /// given up (not admitted). <c>null</c> for a run by hand, which is always wanted.
+        /// </param>
+        /// <returns>What came of it; <see cref="AutoModeRunReport.NotAdmitted"/> when nothing ran.</returns>
+        private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen, Func<bool> isStillWanted = null)
+        {
+            if (!await TryBeginExecutionAfterAScanAsync(isStillWanted))
             {
                 Mouse.OverrideCursor = null;
-                return;
+                return AutoModeRunReport.NotAdmitted;
             }
+
+            var runId = Guid.NewGuid().ToString("N");
+            var startedAt = DateTimeOffset.UtcNow;
+            var observations = new List<TaskExecutionObservation>();
+            IReadOnlyList<object> snapshot = Array.Empty<object>();
+            ExecResult execResult;
+            var abandoned = false;
+
+            // The UID of the card the service's own read found; it stays null for a run that never gets that far.
+            string? cardUid = null;
 
             try
             {
@@ -1375,8 +1498,23 @@ namespace RFiDGear.ViewModel
                 OnPropertyChanged(nameof(TreeViewParentNodes));
                 OnPropertyChanged(nameof(ChipTasks));
 
+                // What the reader showed so far. The run reads the card once more before its first task (see ChipHydrated
+                // below), and that read is the one that counts if the card was swapped in between.
+                RememberCard(ReaderDevice.Instance?.GenericChip);
+
+                // The positions of the observations index into the list as it is now; the live one may change meanwhile.
+                snapshot = taskHandler?.TaskCollection?.ToList() ?? new List<object>();
+
                 var request = new TaskExecutionRequest
                 {
+                    RunId = runId,
+                    Observations = observations,
+                    KeepApplicationOpen = keepApplicationOpen,
+                    ChipHydrated = chip =>
+                    {
+                        cardUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
+                        RememberCard(chip);
+                    },
                     TaskHandler = taskHandler,
                     TreeViewParentNodes = treeViewParentNodes,
                     VariablesFromArgs = variablesFromArgs,
@@ -1399,47 +1537,80 @@ namespace RFiDGear.ViewModel
                 reportTemplateFile = result.ReportTemplateFile;
                 _runSelectedOnly = result.RunSelectedOnly;
                 SelectedSetupViewModel = result.SelectedSetupViewModel;
+
+                abandoned = result.Abandoned;
+                execResult = ExecResultBuilder.FromCompletion(runId, startedAt, result.TerminalStatus, snapshot, observations, cardUid);
             }
             catch (Exception ex)
             {
-                Log.ForContext<MainWindowViewModel>().Error(ex, "Task execution failed.");
+                Log.ForContext<MainWindowViewModel>().Error(ex, "Task execution failed. Run {RunId}", runId);
                 Dialogs.Add(new CustomDialogViewModel
                 {
                     Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
                     Message = ex.Message,
                     OnOk = sender => sender.Close()
                 });
+
+                execResult = ExecResultBuilder.FromFailure(
+                    runId, startedAt, ExecResultBuilder.Classify(ex, CancellationToken.None), snapshot, observations, cardUid);
             }
             finally
             {
                 _coordinator.EndExecution();
                 Mouse.OverrideCursor = null;
             }
+
+            return new AutoModeRunReport(admitted: true, execResult, abandoned);
+        }
+
+        /// <summary>
+        /// Tells automatic mode which card a run works on, as the polls would report it, so that automatic mode does not
+        /// run that card again while it stays on the reader. Called with what the run's reads found: the preliminary read
+        /// of the window first, then the read of the execution service, which is the one the tasks work on.
+        /// </summary>
+        /// <param name="chip">The chip a read left behind; none or an empty chip changes nothing.</param>
+        private void RememberCard(GenericChipModel chip)
+        {
+            var uid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
+            if (uid != null)
+            {
+                _autoMode?.RememberCard(uid);
+            }
         }
 
         /// <summary>The longest a run waits for a reader scan of an extension to end before it gives up.</summary>
         internal TimeSpan MaxWaitForAScan { get; set; } = TimeSpan.FromSeconds(20);
 
-        // A scan is short. A run that meets one waits for it instead of being dropped: in automatic mode the card is in the
-        // tree already, so nothing would ever try it again. Any other reason to refuse (a run, a load, an edit) still
-        // refuses at once.
-        internal Task<bool> TryBeginExecutionAfterAScanAsync() => TryBeginAfterAScanAsync(_coordinator.TryBeginExecution);
+        // A scan is short. A run that meets one waits for it instead of being dropped, so that a click is not lost and a
+        // card of automatic mode does not wait for the next tick. Any other reason to refuse (a run, a load, an edit)
+        // still refuses at once. A request of automatic mode can be withdrawn while it waits (isStillWanted).
+        internal Task<bool> TryBeginExecutionAfterAScanAsync(Func<bool> isStillWanted = null) =>
+            TryBeginAfterAScanAsync(_coordinator.TryBeginExecution, isStillWanted);
 
         /// <summary>
         /// Admits an operation with <paramref name="tryBegin"/>, waiting up to <see cref="MaxWaitForAScan"/> while the
         /// only thing in the way is a reader scan.
         /// </summary>
         /// <param name="tryBegin">The coordinator's admission method for the operation.</param>
+        /// <param name="isStillWanted">
+        /// Asked before every attempt, so before the one that succeeds when the scan has ended: when it returns
+        /// <c>false</c> the operation is not admitted. <c>null</c> means it is always wanted.
+        /// </param>
         /// <returns><c>true</c> when the operation was admitted.</returns>
-        private async Task<bool> TryBeginAfterAScanAsync(Func<bool> tryBegin)
+        private async Task<bool> TryBeginAfterAScanAsync(Func<bool> tryBegin, Func<bool> isStillWanted = null)
         {
             var giveUp = DateTime.UtcNow + MaxWaitForAScan;
-            while (!tryBegin())
+            while (isStillWanted == null || isStillWanted())
             {
+                if (tryBegin())
+                {
+                    return true;
+                }
+
                 if (!_coordinator.IsScanning)
                 {
                     // Not a scan, or a scan that ended since the attempt: one more attempt tells which.
-                    return tryBegin();
+                    return (isStillWanted == null || isStillWanted()) && tryBegin();
                 }
 
                 if (DateTime.UtcNow >= giveUp)
@@ -1450,7 +1621,7 @@ namespace RFiDGear.ViewModel
                 await Task.Delay(TimeSpan.FromMilliseconds(25));
             }
 
-            return true;
+            return false;
         }
 
         private void TaskExecutionService_ExecutionCompleted(object sender, TaskExecutionCompletedEventArgs e)
@@ -1571,6 +1742,14 @@ namespace RFiDGear.ViewModel
 
                     OnOk = (sender) =>
                     {
+                        // Judged before the settings are overwritten: the dialog also confirms changes that have nothing
+                        // to do with the reader (the update check), and those must not stop automatic mode.
+                        var readerChanged = currentSettings.DefaultReaderProvider != sender.SelectedReader
+                            || (sender.SelectedReader == ReaderTypes.PCSC
+                                && !string.Equals(currentSettings.DefaultReaderName, sender.SelectedReaderName, StringComparison.Ordinal))
+                            || (sender.SelectedReader == ReaderTypes.Elatec
+                                && !string.Equals(currentSettings.LastUsedComPort, sender.ComPort, StringComparison.Ordinal));
+
                         currentSettings.DefaultReaderProvider = sender.SelectedReader;
                         currentSettings.DefaultReaderName = sender.SelectedReader == ReaderTypes.PCSC
                             ? sender.SelectedReaderName
@@ -1587,6 +1766,13 @@ namespace RFiDGear.ViewModel
                         // Switch the provider first: setting the name announces the change to extensions, and they read
                         // the connection and card state of whichever provider is current when that happens.
                         ReaderDevice.Reader = sender.SelectedReader;
+
+                        // Another reader: automatic mode does not carry on with it unasked, and forgets the card of the old
+                        // one. (Not in the setter of CurrentReader: the reader monitor keeps assigning a status label to it.)
+                        if (readerChanged)
+                        {
+                            _autoMode?.OnReaderChanged();
+                        }
 
                         CurrentReader = string.IsNullOrWhiteSpace(sender.SelectedReaderName)
                             ? Enum.GetName(typeof(ReaderTypes), sender.SelectedReader)
@@ -2093,12 +2279,12 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteToAllChipAutoChecked => triggerReadChip?.IsEnabled ?? false;
+        public bool IsWriteToAllChipAutoChecked => _autoMode?.IsEnabled ?? false;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteSelectedToChipAutoChecked => triggerReadChip?.IsEnabled ?? false;
+        public bool IsWriteSelectedToChipAutoChecked => _autoMode?.IsEnabled ?? false;
         private bool isWriteSelectedToChipAutoCheckedTemp;
 
         /// <summary>

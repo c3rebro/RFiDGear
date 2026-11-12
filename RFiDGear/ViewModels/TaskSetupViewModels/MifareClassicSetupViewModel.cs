@@ -32,6 +32,7 @@ using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Services.SecureKeys;
 
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
@@ -996,6 +997,86 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private bool isValidSelectedKeySetupTaskIndex;
+
+        #region Key bindings
+
+        private KeyBindingEntry[] keyBindings = Array.Empty<KeyBindingEntry>();
+
+        /// <summary>
+        /// Gets or sets the key slots of this task whose key comes from a secure key provider instead of from the project.
+        /// A slot that has an entry here never uses its embedded key. The list is replaced as a whole and both accessors
+        /// copy it: the dialog that edits a task copies every public property by reference, and a shared list would let a
+        /// cancelled edit change the task.
+        /// </summary>
+        public KeyBindingEntry[] KeyBindings
+        {
+            get => KeyBindingList.Copy(keyBindings);
+            set
+            {
+                keyBindings = KeyBindingList.Copy(value);
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>Tells the serializer to write <see cref="KeyBindings"/> only when there are any, so that a task without bindings is saved as before.</summary>
+        /// <returns><see langword="true"/> when the task has at least one key binding.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeKeyBindings() => keyBindings.Length > 0;
+
+        /// <summary>Returns whether a slot has a key binding, usable or not; see <see cref="SecureKeySlots"/> for the slot ids.</summary>
+        /// <param name="slotId">The slot id.</param>
+        /// <returns><see langword="true"/> when the slot has an entry in <see cref="KeyBindings"/>.</returns>
+        public bool IsKeyBound(string slotId) => KeyBindingList.IsBound(keyBindings, slotId);
+
+        /// <summary>Returns a copy of the binding of a slot.</summary>
+        /// <param name="slotId">The slot id.</param>
+        /// <returns>The binding, or <see langword="null"/> when the slot has none.</returns>
+        public KeyBindingEntry GetKeyBinding(string slotId) => KeyBindingList.Find(keyBindings, slotId)?.Clone();
+
+        // The embedded key of a slot that is bound is not written, so a project that was moved to a provider does not
+        // keep the old key beside the reference. The properties stay readable and writable, to load older projects.
+
+        /// <summary>Tells the serializer not to write the embedded key A of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicKeyAKeyCurrent() => !IsKeyBound(SecureKeySlots.ClassicACurrent);
+
+        /// <summary>Tells the serializer not to write the embedded key B of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicKeyBKeyCurrent() => !IsKeyBound(SecureKeySlots.ClassicBCurrent);
+
+        /// <summary>Tells the serializer not to write the embedded target key A of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicKeyAKeyTarget() => !IsKeyBound(SecureKeySlots.ClassicATarget);
+
+        /// <summary>Tells the serializer not to write the embedded target key B of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicKeyBKeyTarget() => !IsKeyBound(SecureKeySlots.ClassicBTarget);
+
+        /// <summary>Tells the serializer not to write the embedded MAD key A of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicMADKeyAKeyCurrent() => !IsKeyBound(SecureKeySlots.ClassicMadACurrent);
+
+        /// <summary>Tells the serializer not to write the embedded MAD key B of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicMADKeyBKeyCurrent() => !IsKeyBound(SecureKeySlots.ClassicMadBCurrent);
+
+        /// <summary>Tells the serializer not to write the embedded target MAD key A of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicMADKeyAKeyTarget() => !IsKeyBound(SecureKeySlots.ClassicMadATarget);
+
+        /// <summary>Tells the serializer not to write the embedded target MAD key B of a bound slot.</summary>
+        /// <returns><see langword="true"/> when the slot is not bound.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeClassicMADKeyBKeyTarget() => !IsKeyBound(SecureKeySlots.ClassicMadBTarget);
+
+        #endregion
 
         /// <summary>
         ///

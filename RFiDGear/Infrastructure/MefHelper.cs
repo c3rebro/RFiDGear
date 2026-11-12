@@ -5,6 +5,8 @@ using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using RFiDGear.Contracts;
+using RFiDGear.ExtensionSdk;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.DI.Interfaces;
 using RFiDGear.UI.UIExtensions.Interfaces;
@@ -428,11 +430,33 @@ public sealed class MefHelper : IDisposable
                 _ = export.Metadata.Name;
             }
 
-            return null;
+            return FindProviderQueryFailure(container);
         }
         catch (Exception e)
         {
             return e;
+        }
+    }
+
+    /// <summary>
+    /// The query for secure key providers. What an extension throws while its provider export is evaluated is code of
+    /// that extension, and the host promises never to print what a provider throws: the failure that comes back keeps
+    /// the type of the original and nothing else, and does not keep the original as an inner exception.
+    /// </summary>
+    private static Exception FindProviderQueryFailure(CompositionContainer container)
+    {
+        try
+        {
+            foreach (var export in container.GetExports<ISecureKeyProvider, ISecureKeyProviderMetadata>())
+            {
+                _ = export.Metadata.Id;
+            }
+
+            return null;
+        }
+        catch (Exception e)
+        {
+            return new InvalidOperationException($"The secure key provider exports could not be listed ({e.GetType().FullName}).");
         }
     }
 

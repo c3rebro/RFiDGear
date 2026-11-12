@@ -775,7 +775,9 @@ namespace RFiDGear.Tests
 
         public DispatcherTimer CreateTriggerReadTimer(EventHandler tickHandler)
         {
-            var timer = new DispatcherTimer();
+            // Automatic mode switches this clock on. With the default interval (none) it would tick all the time while a
+            // test awaits; the tests that need a tick make it themselves (AutoModeController.TickAsync).
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
             timer.Tick += tickHandler;
             return timer;
         }
@@ -808,10 +810,26 @@ namespace RFiDGear.Tests
 
         public int CurrentTaskIndex { get; private set; }
 
-        public Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request, CancellationToken cancellationToken = default)
+        /// <summary>The requests of the runs, in order.</summary>
+        public List<TaskExecutionRequest> Requests { get; } = new();
+
+        /// <summary>Decides what a run ends with; without it a run returns a bare result.</summary>
+        public Func<TaskExecutionRequest, TaskExecutionResult>? OnExecute { get; set; }
+
+        /// <summary>When set, a run waits for it before it ends.</summary>
+        public Task? Gate { get; set; }
+
+        public async Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request, CancellationToken cancellationToken = default)
         {
             CurrentTaskIndex++;
-            return Task.FromResult(new TaskExecutionResult());
+            Requests.Add(request);
+
+            if (Gate != null)
+            {
+                await Gate;
+            }
+
+            return OnExecute?.Invoke(request) ?? new TaskExecutionResult();
         }
 
         public void HandleTaskTimeout()

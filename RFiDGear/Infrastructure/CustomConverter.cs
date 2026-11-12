@@ -10,8 +10,6 @@ namespace RFiDGear.Infrastructure
     //**************************************************************************
     public static class CustomConverter
     {
-        public static string DesfireKeyToCheck { get; private set; }
-
         #region parser
 
         public static bool KeyFormatQuickCheck(string keyToCheck)
@@ -178,19 +176,34 @@ namespace RFiDGear.Infrastructure
             => keyType == DESFireKeyType.DF_KEY_3K3DES ? 48 : 32;
 
         /// <summary>
-        /// Validates a DESFire key hex string and writes the space-separated result to <see cref="DesfireKeyToCheck"/>.
+        /// Validates a DESFire key hex string. The key is not kept anywhere; use
+        /// <see cref="TryFormatMifareDesfireKey"/> to also get the space-separated form.
         /// </summary>
         /// <param name="Str">Raw hex string (spaces allowed).</param>
         /// <param name="keyType">Key algorithm; determines the expected byte count.</param>
         /// <returns>A <see cref="KEY_ERROR"/> indicating success or the specific validation failure.</returns>
         public static KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str, DESFireKeyType keyType = DESFireKeyType.DF_KEY_AES)
+            => TryFormatMifareDesfireKey(Str, keyType, out _);
+
+        /// <summary>
+        /// Validates a DESFire key hex string and returns the space-separated, upper-case form through
+        /// <paramref name="formatted"/>. The result goes to the caller only: there is no shared state, so the validation
+        /// of one key can never decide which key another caller builds.
+        /// </summary>
+        /// <param name="keyHex">Raw hex string (spaces allowed).</param>
+        /// <param name="keyType">Key algorithm; determines the expected byte count.</param>
+        /// <param name="formatted">The key as pairs of hex digits separated by a space; empty when the key is not valid.</param>
+        /// <returns>A <see cref="KEY_ERROR"/> indicating success or the specific validation failure.</returns>
+        internal static KEY_ERROR TryFormatMifareDesfireKey(string keyHex, DESFireKeyType keyType, out string formatted)
         {
-            if (string.IsNullOrEmpty(Str))
+            formatted = string.Empty;
+
+            if (string.IsNullOrEmpty(keyHex))
             {
                 return KEY_ERROR.KEY_IS_EMPTY;
             }
 
-            var temp = Str.Replace(" ", "");
+            var temp = keyHex.Replace(" ", "");
 
             if (!IsInHexFormat(temp))
             {
@@ -207,9 +220,33 @@ namespace RFiDGear.Infrastructure
                 temp = temp.Insert(i, " ");
             }
 
-            DesfireKeyToCheck = temp.ToUpper();
+            formatted = temp.ToUpperInvariant();
 
             return KEY_ERROR.NO_ERROR;
+        }
+
+        /// <summary>
+        /// Returns the space-separated, upper-case form of a DESFire key, or throws when the key is not valid for its
+        /// type. For the code that hands a key to a reader library: a key that does not pass must stop the call and
+        /// must never be replaced by another one.
+        /// </summary>
+        /// <param name="keyHex">Raw hex string (spaces allowed).</param>
+        /// <param name="keyType">Key algorithm; determines the expected byte count.</param>
+        /// <returns>The key as pairs of hex digits separated by a space.</returns>
+        /// <exception cref="ArgumentException">
+        /// The key is empty, not hexadecimal or does not have the length of its type. The message names the problem and
+        /// never contains the key.
+        /// </exception>
+        public static string FormatMifareDesfireKeyOrThrow(string keyHex, DESFireKeyType keyType)
+        {
+            var error = TryFormatMifareDesfireKey(keyHex, keyType, out var formatted);
+
+            if (error != KEY_ERROR.NO_ERROR)
+            {
+                throw new ArgumentException($"The DESFire key is not valid for {keyType}: {error}.", nameof(keyHex));
+            }
+
+            return formatted;
         }
 
         public static KEY_ERROR FormatMifareClassicKeyStringWithSpacesEachByte(string Str)
