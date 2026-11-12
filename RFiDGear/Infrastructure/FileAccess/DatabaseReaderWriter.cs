@@ -434,22 +434,23 @@ namespace RFiDGear.Infrastructure.FileAccess
                     return _path;
                 }
 
-                // The archive entry is staged in the application data folder; only the archive is the user's file.
-                var xmlOutputPath = projectManager.TaskDatabasePath;
-                SerializeToFile(serializer, objModel, xmlOutputPath);
-
                 var archivePath = string.IsNullOrWhiteSpace(_path)
                     ? projectManager.CompressedTaskDatabasePath
                     : ProjectSavePath(_path);
 
+                // The project is serialized straight into the entry of the archive. It used to be written to a file in the
+                // application data folder first and copied from there, which left a plaintext copy of every key of the
+                // project behind until the next start.
                 WriteFileAtomically(archivePath, temporaryPath =>
                 {
                     using (var archive = ZipFile.Open(temporaryPath, ZipArchiveMode.Create))
                     {
-                        archive.CreateEntryFromFile(
-                            xmlOutputPath,
-                            Path.GetFileName(projectManager.TaskDatabasePath),
-                            CompressionLevel.Optimal);
+                        var entry = archive.CreateEntry(Path.GetFileName(projectManager.TaskDatabasePath), CompressionLevel.Optimal);
+
+                        using (var writer = new StreamWriter(entry.Open(), new UTF8Encoding(false)))
+                        {
+                            serializer.Serialize(writer, objModel);
+                        }
                     }
                 });
 

@@ -60,6 +60,65 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void WriteProject_LeavesNoCopyOfTheProjectInTheApplicationDataFolder()
+        {
+            using (var folder = new TemporaryFolder())
+            {
+                var appData = folder.Combine("appdata");
+                var projectManager = new ProjectManager(appData);
+                var readerWriter = new DatabaseReaderWriter(projectManager);
+                var before = Directory.GetFiles(appData).OrderBy(file => file, StringComparer.Ordinal).ToArray();
+
+                readerWriter.WriteDatabase(new ChipTaskHandlerModel(), folder.Combine("project.rfPrj"));
+
+                // The project used to be written there first and copied into the archive from there, which left the keys of
+                // every task in plaintext in the profile until the next start.
+                Assert.False(File.Exists(projectManager.TaskDatabasePath));
+                Assert.Equal(before, Directory.GetFiles(appData).OrderBy(file => file, StringComparer.Ordinal).ToArray());
+            }
+        }
+
+        [Fact]
+        public void OpeningTheDatabase_RemovesTheCopyOfAProjectThatAnEarlierVersionLeftBehind()
+        {
+            using (var folder = new TemporaryFolder())
+            {
+                var appData = folder.Combine("appdata");
+                Directory.CreateDirectory(appData);
+                var projectManager = new ProjectManager(appData);
+                File.WriteAllText(projectManager.TaskDatabasePath, "<ChipTaskHandlerModel>an earlier version wrote this</ChipTaskHandlerModel>");
+
+                _ = new DatabaseReaderWriter(projectManager);
+
+                Assert.False(File.Exists(projectManager.TaskDatabasePath));
+            }
+        }
+
+        [Fact]
+        public void WriteProject_StillPutsTheProjectIntoTheArchiveAsTheEntryThatIsReadBack()
+        {
+            using (var folder = new TemporaryFolder())
+            {
+                var readerWriter = new DatabaseReaderWriter(new ProjectManager(folder.Combine("appdata")));
+                var target = folder.Combine("project.rfPrj");
+                var model = new ChipTaskHandlerModel { ManifestVersion = "2.0.10" };
+
+                readerWriter.WriteDatabase(model, target);
+
+                using (var archive = ZipFile.OpenRead(target))
+                {
+                    var entry = Assert.Single(archive.Entries);
+                    Assert.Equal("taskdatabase.xml", entry.Name);
+
+                    using (var reader = new StreamReader(entry.Open()))
+                    {
+                        Assert.Contains("<ManifestVersion>2.0.10</ManifestVersion>", reader.ReadToEnd(), StringComparison.Ordinal);
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public void WriteProject_LeavesAFileNextToTheTargetAlone()
         {
             using (var folder = new TemporaryFolder())

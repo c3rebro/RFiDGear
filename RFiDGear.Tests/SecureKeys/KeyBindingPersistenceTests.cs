@@ -120,7 +120,7 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
-        public async Task A_bound_slots_key_reaches_neither_the_archive_nor_the_staging_copy()
+        public async Task A_bound_slots_key_does_not_reach_the_archive_and_no_key_reaches_the_application_data_folder()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
@@ -137,11 +137,16 @@ namespace RFiDGear.Tests.SecureKeys
                 readerWriter.WriteDatabase(project, target);
 
                 var inTheArchive = ReadArchiveXml(target);
-                var inTheStagingCopy = File.ReadAllText(projectManager.TaskDatabasePath);
-                foreach (var text in new[] { inTheArchive, inTheStagingCopy })
+                Assert.All(DesfireSlots.Where(slot => bound.Contains(slot.Key)), slot => AssertNoKey(inTheArchive, slot.Value.Key));
+                Assert.All(DesfireSlots.Where(slot => !bound.Contains(slot.Key)), slot => AssertHasKey(inTheArchive, slot.Value.Key));
+
+                // Saving used to leave a plaintext copy of the project in the application data folder. Nothing is left there:
+                // no staging file, and no file that holds a key, bound or not.
+                Assert.False(File.Exists(projectManager.TaskDatabasePath));
+                foreach (var file in Directory.GetFiles(folder.Combine("appdata"), "*", SearchOption.AllDirectories))
                 {
-                    Assert.All(DesfireSlots.Where(slot => bound.Contains(slot.Key)), slot => AssertNoKey(text, slot.Value.Key));
-                    Assert.All(DesfireSlots.Where(slot => !bound.Contains(slot.Key)), slot => AssertHasKey(text, slot.Value.Key));
+                    var text = File.ReadAllText(file);
+                    Assert.All(DesfireSlots, slot => AssertNoKey(text, slot.Value.Key));
                 }
 
                 var (result, loaded) = await readerWriter.ReadProjectAsync(target);
