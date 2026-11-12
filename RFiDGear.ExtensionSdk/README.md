@@ -33,11 +33,22 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
 **Secure key providers:**
 
 A provider hands out card keys that a project names by a reference instead of
-containing them. Status: DESFire and MIFARE Classic tasks ask providers for the
-keys of their bound slots, all of them before the card is touched, each once
-per task run. A slot is bound by an entry in the project file; the editor for
-it and a provider built into RFiDGear follow in later steps of the same
-feature (issue 234).
+containing them. DESFire and MIFARE Classic tasks ask providers for the keys of
+their bound slots, all of them before the card is touched, each once per task
+run. A slot is bound by an entry in the project file (slot, provider id,
+reference). In the task dialogs a key box has a button that binds its slot: the
+user picks a provider (a drop-down appears when there is more than one) and
+types a reference. RFiDGear brings the provider `windows-credential-manager`;
+the user can store a key in it from the dialog, and File > "Move keys of a
+project..." moves the typed keys of an existing project into it. That tool moves
+to the built-in provider only: there is no way for an extension to take part in
+it.
+
+A reference is opaque to RFiDGear except for its shape: 1 to 128 of `A-Z`, `a-z`,
+`0-9`, `.`, `_`, `:`, `/` and `-`. A binding with another shape fails its task
+before any provider is asked, so a reference cannot carry markup or a line
+break into a project file or a log. What a reference means is up to the
+provider.
 
 A MIFARE Classic task asks for every key its reader call carries, all or none:
 a reader may try key B after key A, or use the MAD keys only for some cards,

@@ -54,6 +54,14 @@ File > "Move keys of a project to the Credential Manager..." takes a project who
 - `KeyMigrationReport` has task numbers, slot ids, references, counts and paths, and no key; it is what the person sees and what the logs may hold. The logs of the run have the type of an exception and never its message.
 - A project is now written straight into its archive. An earlier version wrote `taskdatabase.xml` into `%LocalAppData%\RFiDGear\` first and zipped that copy; it held every typed key in plain text. A `DatabaseReaderWriter` removes that file from the folder when it is created.
 
+## Hardware cases for the secure key provider
+`RFiDGear.HIL.Tests/SecureKeyWorkflowTests` runs bound DESFire tasks on a real card (the reserved test application, AES and DES). They are gated by the setting `secureKeys` in `hil.settings.json`, which is off in the sample, because they change a key on the card and put test credentials into the user's Credential Manager. `SECURE-KEYS.md` next to them lists the cases, the checklist for what needs a person (the PICC master key, a card pulled during a key change, MIFARE Classic and MAD, saving during a run, automatic mode, Format card, the migration) and how to clean up after an interrupted run.
+
+- A setting has to be added in two places: `HilSettings` (the tests) and `Run-HilTests.ps1`, which reads the file with a parser of its own and refuses a name it does not know. `HilSettingsTests` fails when they drift apart.
+- The HIL project sees the internals of the host (`InternalsVisibleTo`), so that the cases store their test keys with `WindowsCredentialKeyProvider.Store`, the code the application uses. `HilVault` keeps what it stored under `hil/<run>/...` and removes exactly that when it is disposed.
+- The keys typed into a bound slot are decoys on purpose: they are the ones the card would accept where the vault key is refused, or the other way round, so a task that used the typed key could not pass.
+- `HilSecureKeyScenarioSelfCheckTests` runs the same task builders and the same vault helper against a scripted reader and a dictionary, so a mistake in the set-up of a case shows up without a card.
+
 ## Trying an extension in RFiDGear while you develop it
 RFiDGear reads its extensions from `%ProgramData%\RFiDGear\Extensions` once, at start-up. After a build, the extension and the support libraries it needs (`RFiDGear.ExtensionLibraries.*`) can be copied there for you, so you only restart RFiDGear.
 

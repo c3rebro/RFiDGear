@@ -71,6 +71,19 @@ The main window exposes keyboard-driven file and options commands described in t
 * **Save as…** (`Alt` + `D`, `U`): store multiple projects under distinct paths
 * **Language** (`Alt` + `O`, `L`): change the UI language (requires restart)
 * **Load last project on startup** (`Alt` + `O`, `P`): automatically reopen the default project saved via the file menu
+* **Move keys of a project to the Credential Manager…** (file menu): see the next section
+
+## Keeping card keys out of project files
+
+A project file normally holds the card keys of its tasks as text. A task can instead name a key by a *reference* to the Windows Credential Manager: the project then holds the reference, and the key is read from the Credential Manager when the task runs. A project with references can be copied, backed up and mailed without the keys going with it.
+
+**Binding a key box.** In a task dialog, every box in which a card key is typed (DESFire card mastering, application mastering and data explorer, MIFARE Classic key tab) has a button **Use reference…**. It asks before it removes a key that is typed in, because the key is not kept anywhere else. In reference mode the box takes a reference: letters, digits and `. _ : / -`, up to 128 characters. **Store key…** puts the key under that reference: the digits are typed into a password box, are not shown again, and are not kept by RFiDGear. Without the dialog, `cmdkey /generic:RFiDGear/key/<reference> /user:RFiDGear /pass` stores a key and asks for the digits at a prompt (a key written on the command line can be read by other programs and ends up in shell histories). The credential holds the hexadecimal digits of the key: 12 for a MIFARE Classic key, 32 for a DES or AES key, 48 for a 3K3DES key.
+
+**A key that cannot be obtained** (no such credential, the wrong length, the Credential Manager does not answer) stops the task before the card is touched, with the result `KeyUnavailable`. A bound slot never falls back to a key that is still typed into the task, and a task never reuses the key of an earlier task.
+
+**Moving an existing project.** File > **Move keys of a project to the Credential Manager…** takes a project whose keys are typed in, stores each different key once in the Credential Manager under a random reference (`migrated/…`), and saves a *new* project that names them. The project you choose is only read, and an existing file is never overwritten. If a step fails, everything the attempt created is removed again. Afterwards you are asked whether the old project may be deleted; before it is, the new project is read once more and every key it refers to is compared with the key the old project holds.
+
+**What this does and does not protect.** It protects against a key that ends up in a project file, a backup or an e-mail. It does not protect against a program that runs as the same Windows user: the Credential Manager gives the secret to every process of that user. The keys stay with that user on that computer; a project with references does not run on another computer or for another user until the keys are stored there too. Versions of RFiDGear before 2.1 do not know references: they open such a project, but without the keys. Plug-ins can add other places to read keys from (see `RFiDGear.ExtensionSdk/README.md`).
 
 ## Codebase overview
 
