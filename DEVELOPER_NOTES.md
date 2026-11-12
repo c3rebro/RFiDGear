@@ -25,6 +25,23 @@ RFiDGear brings one secure key provider of its own, `windows-credential-manager`
 - The conversion from the stored text to the key works on the bytes and never makes a string, because a string cannot be erased. The copies of the secret that the vault hands out are erased, and the arrays that hold one are on the pinned object heap, so the garbage collector never leaves an old copy behind.
 - `ICredentialStore` is the seam in front of the vault. The tests use a dictionary; one test uses the real vault with a name of its own and removes it.
 
+## Key slot editors in the task dialogs
+Every box in which a card key is typed is wrapped by `KeySlotEditor` (`Views/KeySlotEditor.xaml`): the sixteen key boxes of the DESFire card mastering, application mastering and data explorer tabs and of the MIFARE Classic key tab. The wrapper lets a person name the key by a reference to a secure key provider instead of typing it.
+
+```xml
+<ctl:KeySlotEditor Grid.Row="0" Grid.Column="1" Host="{Binding}" SlotId="desfire.read">
+    <TextBox Text="{Binding DesfireReadKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" ... />
+</ctl:KeySlotEditor>
+```
+
+- The wrapped box keeps everything it had: its style, its tool tip, its validity colours, its `MaxLength`. Only the grid placement and the `Visibility` move to the wrapper. `SlotId` is an id of `SecureKeySlots`; `Host` is the task and has to implement `IKeySlotHost`, which both setup view models do.
+- What the editor decides is in `KeySlotEditorState`, with the questions to the person behind `IKeySlotEditorDialogs`, so that it is tested without a window. Switching a slot that holds a key to a reference asks first (a slot without a key is switched without a question). The binding is written first and the key is cleared second, so the slot is never left with neither.
+- The box for the reference has the state as its data context, never the task: nothing in it can reach the setter of a key.
+- "Store key..." (only for the Credential Manager) takes the digits in a password box, reads them with `KeyEntry` without making a string, and stores them with `WindowsCredentialKeyProvider.Store`. The key is not shown again.
+- While the keys of a command are obtained from their providers (`IsFetchingKeys`), the tabs of the dialog take no input (`AreInputsEnabled`): what a person changes meanwhile would no longer be what the keys were asked for.
+- A new key box needs the wrapper and a slot id. `KeySlotEditorViewTests` lists the slots of every tab and fails when a key has no editor.
+- `x:Static` cannot reach a constant of an internal class: such a value is set in the code-behind.
+
 ## Trying an extension in RFiDGear while you develop it
 RFiDGear reads its extensions from `%ProgramData%\RFiDGear\Extensions` once, at start-up. After a build, the extension and the support libraries it needs (`RFiDGear.ExtensionLibraries.*`) can be copied there for you, so you only restart RFiDGear.
 

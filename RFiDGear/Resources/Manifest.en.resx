@@ -1945,4 +1945,52 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusFileSettingNameChange" xml:space="preserve">
     <value>right to change the access rights</value>
   </data>
+  <data name="buttonContentKeySlotUseReference" xml:space="preserve">
+    <value>Use reference...</value>
+  </data>
+  <data name="buttonContentKeySlotUseKey" xml:space="preserve">
+    <value>Use key</value>
+  </data>
+  <data name="toolTipKeySlotMode" xml:space="preserve">
+    <value>Where this key comes from: a key that is typed here and saved in the project, or a reference to a key in a key store that is looked up when the task runs. With a reference the project saves only the reference.</value>
+  </data>
+  <data name="toolTipKeySlotReference" xml:space="preserve">
+    <value>The name of the key in the key store. The project saves this name, never the key.</value>
+  </data>
+  <data name="toolTipKeySlotProvider" xml:space="preserve">
+    <value>The key store that the reference points into.</value>
+  </data>
+  <data name="buttonContentKeySlotStoreKey" xml:space="preserve">
+    <value>Store key...</value>
+  </data>
+  <data name="toolTipKeySlotStoreKey" xml:space="preserve">
+    <value>Stores a key in the Windows Credential Manager under this reference. The key is typed hidden and is never shown again.</value>
+  </data>
+  <data name="captionKeySlot" xml:space="preserve">
+    <value>Secure key</value>
+  </data>
+  <data name="messageKeySlotReplaceKey" xml:space="preserve">
+    <value>The key typed in this task will be removed from it and replaced by a reference. It is not saved anywhere else. Continue?</value>
+  </data>
+  <data name="windowTitleKeySlotStoreKey" xml:space="preserve">
+    <value>Store key</value>
+  </data>
+  <data name="labelKeySlotStoreKeyPrompt" xml:space="preserve">
+    <value>Key as {0} hexadecimal digits (0-9, A-F), without spaces:</value>
+  </data>
+  <data name="buttonContentKeySlotStoreKeyOk" xml:space="preserve">
+    <value>Store</value>
+  </data>
+  <data name="buttonContentKeySlotStoreKeyCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="messageKeySlotKeyStored" xml:space="preserve">
+    <value>The key was stored under the reference.</value>
+  </data>
+  <data name="messageKeySlotKeyNotStored" xml:space="preserve">
+    <value>The key could not be stored (error {0}).</value>
+  </data>
+  <data name="messageKeySlotKeyInvalid" xml:space="preserve">
+    <value>A key of {0} hexadecimal digits (0-9, A-F) without spaces is needed. Nothing was stored.</value>
+  </data>
 </root>

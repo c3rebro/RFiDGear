@@ -69,6 +69,22 @@ namespace RFiDGear.Tests
             "statusHeaderReaderIsInitializing",
             "menuItemExtensionsHeader",
             "textBoxStatusKeyUnavailable",
+            "buttonContentKeySlotUseReference",
+            "buttonContentKeySlotUseKey",
+            "toolTipKeySlotMode",
+            "toolTipKeySlotReference",
+            "toolTipKeySlotProvider",
+            "buttonContentKeySlotStoreKey",
+            "toolTipKeySlotStoreKey",
+            "captionKeySlot",
+            "messageKeySlotReplaceKey",
+            "windowTitleKeySlotStoreKey",
+            "labelKeySlotStoreKeyPrompt",
+            "buttonContentKeySlotStoreKeyOk",
+            "buttonContentKeySlotStoreKeyCancel",
+            "messageKeySlotKeyStored",
+            "messageKeySlotKeyNotStored",
+            "messageKeySlotKeyInvalid",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.

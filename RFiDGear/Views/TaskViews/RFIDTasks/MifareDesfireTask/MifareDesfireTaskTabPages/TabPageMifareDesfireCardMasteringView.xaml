@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:ctl="clr-namespace:RFiDGear.View"
     xmlns:access="clr-namespace:RFiDGear.Infrastructure.AccessControl"
     xmlns:local="clr-namespace:RFiDGear"
     
@@ -71,34 +72,38 @@
                         VerticalContentAlignment="Center"
                         Visibility="{Binding ShowPiccMasterKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
-                    <TextBox
+                    <ctl:KeySlotEditor
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="8,8,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
                         Visibility="{Binding ShowPiccMasterKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
-                        MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                        Text="{Binding DesfireMasterKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox" >
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidDesfireMasterKeyTarget}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidDesfireMasterKeyTarget}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        Host="{Binding}"
+                        SlotId="desfire.picc.new">
+                        <TextBox
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireMasterKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox" >
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireMasterKeyTarget}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireMasterKeyTarget}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </ctl:KeySlotEditor>
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
@@ -413,33 +418,37 @@
                             HorizontalContentAlignment="Left"
                             VerticalContentAlignment="Center"
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
-                        <TextBox
+                        <ctl:KeySlotEditor
                             Grid.Row="0"
                             Grid.Column="1"
-                            Margin="8,8,8,8"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch"
-                            HorizontalContentAlignment="Left"
-                            VerticalContentAlignment="Center"
-                            MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                            Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                            <TextBox.Resources>
-                                <Style TargetType="TextBox">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="True">
-                                            <Setter Property="Foreground" Value="Green" />
-                                            <Setter Property="Background" Value="White" />
-                                            <Setter Property="FontWeight" Value="Normal" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="False">
-                                            <Setter Property="Foreground" Value="Black" />
-                                            <Setter Property="Background" Value="Red" />
-                                            <Setter Property="FontWeight" Value="Normal" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Resources>
-                        </TextBox>
+                            Host="{Binding}"
+                            SlotId="desfire.picc.current">
+                            <TextBox
+                                Margin="8,8,8,8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                VerticalContentAlignment="Center"
+                                MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                                Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                <TextBox.Resources>
+                                    <Style TargetType="TextBox">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="True">
+                                                <Setter Property="Foreground" Value="Green" />
+                                                <Setter Property="Background" Value="White" />
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="False">
+                                                <Setter Property="Foreground" Value="Black" />
+                                                <Setter Property="Background" Value="Red" />
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Resources>
+                            </TextBox>
+                        </ctl:KeySlotEditor>
                         <Label
                             Grid.Row="1"
                             Grid.Column="0"
@@ -562,34 +571,38 @@
                             HorizontalContentAlignment="Left"
                             VerticalContentAlignment="Center"
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
-                        <TextBox
+                        <ctl:KeySlotEditor
                             Grid.Row="1"
                             Grid.Column="1"
-                            Height="26"
-                            Margin="8,0,8,8"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch"
-                            HorizontalContentAlignment="Left"
-                            VerticalContentAlignment="Center"
-                            MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                            Text="{Binding DesfireAppKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                            <TextBox.Resources>
-                                <Style TargetType="TextBox">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="True">
-                                            <Setter Property="Foreground" Value="Green" />
-                                            <Setter Property="Background" Value="White" />
-                                            <Setter Property="FontWeight" Value="Normal" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="False">
-                                            <Setter Property="Foreground" Value="Black" />
-                                            <Setter Property="Background" Value="Red" />
-                                            <Setter Property="FontWeight" Value="Normal" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Resources>
-                        </TextBox>
+                            Host="{Binding}"
+                            SlotId="desfire.app.current">
+                            <TextBox
+                                Height="26"
+                                Margin="8,0,8,8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                VerticalContentAlignment="Center"
+                                MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                                Text="{Binding DesfireAppKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                <TextBox.Resources>
+                                    <Style TargetType="TextBox">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="True">
+                                                <Setter Property="Foreground" Value="Green" />
+                                                <Setter Property="Background" Value="White" />
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="False">
+                                                <Setter Property="Foreground" Value="Black" />
+                                                <Setter Property="Background" Value="Red" />
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Resources>
+                            </TextBox>
+                        </ctl:KeySlotEditor>
                         <Label
                             Grid.Row="2"
                             Grid.Column="0"

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="RFiDGear.View.KeySlotEditor"
+    x:Name="Self"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure">
+    <UserControl.Resources>
+        <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- The key as it always was: the box that the view brings. It keeps its own data context, the task. -->
+        <Border
+            x:Name="EmbeddedHost"
+            Grid.Column="0"
+            Visibility="{Binding State.IsEmbeddedMode, ElementName=Self, Converter={StaticResource BoolToVisConv}, FallbackValue=Visible}" />
+
+        <!-- The key as a reference. Its data context is the state of the editor, never the task, so that nothing in here
+             can reach a key setter. -->
+        <DockPanel
+            x:Name="ReferencePanel"
+            Grid.Column="0"
+            Height="{Binding EmbeddedHeight, ElementName=Self}"
+            Margin="{Binding EmbeddedMargin, ElementName=Self}"
+            DataContext="{Binding State, ElementName=Self}"
+            Visibility="{Binding IsReferenceMode, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}">
+            <Button
+                x:Name="StoreKeyButton"
+                Margin="4,0,0,0"
+                Padding="6,2"
+                DockPanel.Dock="Right"
+                Command="{Binding StoreKeyCommand}"
+                Content="{Binding Converter={StaticResource Localization}, ConverterParameter=buttonContentKeySlotStoreKey}"
+                ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotStoreKey}"
+                Visibility="{Binding ProviderOffersStoreKey, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
+            <ComboBox
+                x:Name="ProviderBox"
+                MinWidth="120"
+                Margin="0,0,4,0"
+                DockPanel.Dock="Left"
+                DisplayMemberPath="DisplayName"
+                ItemsSource="{Binding Providers}"
+                SelectedValue="{Binding ProviderId, Mode=TwoWay}"
+                SelectedValuePath="Id"
+                ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotProvider}"
+                Visibility="{Binding ShowProviderChoice, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
+            <TextBox
+                x:Name="ReferenceBox"
+                VerticalContentAlignment="Center"
+                Text="{Binding Reference, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotReference}">
+                <TextBox.Resources>
+                    <Style TargetType="TextBox">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReferenceValid}" Value="True">
+                                <Setter Property="Foreground" Value="Green" />
+                                <Setter Property="Background" Value="White" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsReferenceValid}" Value="False">
+                                <Setter Property="Foreground" Value="Black" />
+                                <Setter Property="Background" Value="Red" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Resources>
+            </TextBox>
+        </DockPanel>
+
+        <!-- The switch between the two. It is the same button in both modes and names the mode it leads to. -->
+        <Button
+            x:Name="ModeButton"
+            Grid.Column="1"
+            Height="{Binding EmbeddedHeight, ElementName=Self}"
+            Margin="{Binding SwitchMargin, ElementName=Self}"
+            Padding="6,2"
+            VerticalAlignment="Center"
+            Command="{Binding State.ToggleModeCommand, ElementName=Self}"
+            DataContext="{Binding State, ElementName=Self}"
+            ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotMode}">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding State, ElementName=Self}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+            <Grid>
+                <TextBlock
+                    Text="{Binding Converter={StaticResource Localization}, ConverterParameter=buttonContentKeySlotUseReference}"
+                    Visibility="{Binding IsEmbeddedMode, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
+                <TextBlock
+                    Text="{Binding Converter={StaticResource Localization}, ConverterParameter=buttonContentKeySlotUseKey}"
+                    Visibility="{Binding IsReferenceMode, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
+            </Grid>
+        </Button>
+    </Grid>
+</UserControl>

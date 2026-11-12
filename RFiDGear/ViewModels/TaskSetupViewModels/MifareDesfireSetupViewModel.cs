@@ -44,7 +44,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails
+    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails, IKeySlotHost
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -160,8 +160,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     DesfireAppKeyCurrentOld = DesfireAppKeyCurrent;
 
-                    DesfireAppKeyTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
+                    // The type first: the key is cut to the length of the type it has when it is set.
                     SelectedDesfireAppKeyEncryptionTypeTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType;
+                    DesfireAppKeyTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
 
 
                     DesfireReadKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey).Key;
@@ -1240,8 +1241,43 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         // from the property and checked as it always was. This method is the only place that reads the key properties on
         // the way to the card.
 
-        private Task<AcquiredKeys> AcquireKeysAsync(params KeyNeed[] needs) =>
-            KeyAcquisition.AcquireAsync(needs, KeyBindings, SecureKeySlots.Desfire, EmbeddedKeyOf, KeyResolutionScope.Current);
+        private async Task<AcquiredKeys> AcquireKeysAsync(params KeyNeed[] needs)
+        {
+            // While a provider answers the dialog does not take input: what a person changes in the meantime would no longer
+            // be what the keys were asked for.
+            SetFetchingKeys(true);
+
+            try
+            {
+                return await KeyAcquisition.AcquireAsync(needs, KeyBindings, SecureKeySlots.Desfire, EmbeddedKeyOf, KeyResolutionScope.Current);
+            }
+            finally
+            {
+                SetFetchingKeys(false);
+            }
+        }
+
+        private bool isFetchingKeys;
+
+        /// <summary>Gets whether the keys of a command are being obtained from their providers; the dialog is locked meanwhile.</summary>
+        [XmlIgnore]
+        public bool IsFetchingKeys => isFetchingKeys;
+
+        /// <summary>Gets whether the inputs of the dialog take input: they do not while the keys of a command are being obtained.</summary>
+        [XmlIgnore]
+        public bool AreInputsEnabled => !isFetchingKeys;
+
+        private void SetFetchingKeys(bool fetching)
+        {
+            if (isFetchingKeys == fetching)
+            {
+                return;
+            }
+
+            isFetchingKeys = fetching;
+            OnPropertyChanged(nameof(IsFetchingKeys));
+            OnPropertyChanged(nameof(AreInputsEnabled));
+        }
 
         private string EmbeddedKeyOf(string slotId) => slotId switch
         {
@@ -1275,6 +1311,100 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             StatusText += LocalizedStatusLine("textBoxStatusKeyUnavailable", DateTime.Now, keys.Failure?.Slot ?? string.Empty);
             CurrentTaskErrorLevel = ERROR.KeyUnavailable;
+        }
+
+        #endregion
+
+        #region Key slot editing
+
+        // What the key slot editors of the dialog ask of the task (see IKeySlotHost). IsKeyBound and GetKeyBinding are above.
+
+        /// <inheritdoc />
+        public bool HasEmbeddedKey(string slotId) => !string.IsNullOrEmpty(EmbeddedKeyOf(slotId));
+
+        /// <inheritdoc />
+        public int ExpectedKeyHexLength(string slotId) => CustomConverter.GetExpectedKeyHexLength(KeyTypeOf(slotId));
+
+        /// <inheritdoc />
+        public void BindKeySlot(string slotId, string providerId, string reference)
+        {
+            ArgumentNullException.ThrowIfNull(providerId);
+            ArgumentNullException.ThrowIfNull(reference);
+
+            if (!SecureKeySlots.Desfire.Contains(slotId))
+            {
+                throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a DESFire task.");
+            }
+
+            // The binding first and the key second: a slot has one or the other, and a failure in between leaves the binding.
+            KeyBindings = KeyBindingList.With(keyBindings, new KeyBindingEntry { Slot = slotId, ProviderId = providerId, Reference = reference });
+
+            // With the old-key inputs showing, the old key is a box of its own. When it holds a copy of the key that is
+            // discarded here, it would carry the secret on in the project, so it goes too; an old key that differs stays.
+            if (slotId == SecureKeySlots.DesfireAppCurrent
+                && !string.IsNullOrEmpty(DesfireAppKeyCurrent)
+                && string.Equals(DesfireAppKeyCurrentOld, DesfireAppKeyCurrent, StringComparison.Ordinal))
+            {
+                DesfireAppKeyCurrentOld = string.Empty;
+            }
+
+            SetEmbeddedKey(slotId, string.Empty);
+        }
+
+        /// <inheritdoc />
+        public void UnbindKeySlot(string slotId)
+        {
+            // A task that was loaded can hold a key next to its binding (a file that was edited by hand): it is not
+            // reactivated by "Use key", the person types the key again. It goes while the slot is still bound, so that no
+            // save in between can write it.
+            if (SecureKeySlots.Desfire.Contains(slotId) && IsKeyBound(slotId))
+            {
+                SetEmbeddedKey(slotId, string.Empty);
+            }
+
+            KeyBindings = KeyBindingList.Without(keyBindings, slotId);
+        }
+
+        private DESFireKeyType KeyTypeOf(string slotId) => slotId switch
+        {
+            SecureKeySlots.DesfirePiccCurrent => SelectedDesfireMasterKeyEncryptionTypeCurrent,
+            SecureKeySlots.DesfirePiccNew => SelectedDesfireMasterKeyEncryptionTypeTarget,
+            SecureKeySlots.DesfireAppCurrent => SelectedDesfireAppKeyEncryptionTypeCurrent,
+            SecureKeySlots.DesfireAppOld => SelectedDesfireAppKeyEncryptionTypeCurrent,
+            SecureKeySlots.DesfireAppNew => SelectedDesfireAppKeyEncryptionTypeTarget,
+            SecureKeySlots.DesfireRead => SelectedDesfireReadKeyEncryptionType,
+            SecureKeySlots.DesfireWrite => SelectedDesfireWriteKeyEncryptionType,
+            _ => throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a DESFire task."),
+        };
+
+        private void SetEmbeddedKey(string slotId, string value)
+        {
+            switch (slotId)
+            {
+                case SecureKeySlots.DesfirePiccCurrent:
+                    DesfireMasterKeyCurrent = value;
+                    break;
+                case SecureKeySlots.DesfirePiccNew:
+                    DesfireMasterKeyTarget = value;
+                    break;
+                case SecureKeySlots.DesfireAppCurrent:
+                    DesfireAppKeyCurrent = value;
+                    break;
+                case SecureKeySlots.DesfireAppOld:
+                    DesfireAppKeyCurrentOld = value;
+                    break;
+                case SecureKeySlots.DesfireAppNew:
+                    DesfireAppKeyTarget = value;
+                    break;
+                case SecureKeySlots.DesfireRead:
+                    DesfireReadKeyCurrent = value;
+                    break;
+                case SecureKeySlots.DesfireWrite:
+                    DesfireWriteKeyCurrent = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(slotId), "Not a key slot of a DESFire task.");
+            }
         }
 
         #endregion
@@ -2180,8 +2310,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     : CustomConverter.IsInHexFormat(desfireAppKeyCurrent) && desfireAppKeyCurrent.Length == CustomConverter.GetExpectedKeyHexLength(value);
                 IsValidDesfireAppKeyCurrentOld = string.IsNullOrEmpty(desfireAppKeyCurrentOld) ? (bool?)null
                     : CustomConverter.IsInHexFormat(desfireAppKeyCurrentOld) && desfireAppKeyCurrentOld.Length == CustomConverter.GetExpectedKeyHexLength(value);
-                IsValidDesfireAppKeyTarget = string.IsNullOrEmpty(desfireAppKeyTarget) ? (bool?)null
-                    : CustomConverter.IsInHexFormat(desfireAppKeyTarget) && desfireAppKeyTarget.Length == CustomConverter.GetExpectedKeyHexLength(value);
+
+                // An application cannot change the type of its keys, and the dialog has one box for the type: the new key
+                // has the type of the current one. A task that was saved with another target type gets it back when the
+                // properties are restored, because the target type is declared, and so restored, after this one.
+                SelectedDesfireAppKeyEncryptionTypeTarget = value;
             }
         }
         private DESFireKeyType selectedDesfireAppKeyEncryptionTypeCurrent;
@@ -2393,10 +2526,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireAppKeyTarget;
             set
             {
-                desfireAppKeyTarget = NormalizeDesfireKeyInput(value, CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeCurrent));
+                // The new key has the type the change command gives it: the target type, not the current one.
+                desfireAppKeyTarget = NormalizeDesfireKeyInput(value, CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeTarget));
                 IsValidDesfireAppKeyTarget = (
                     CustomConverter.IsInHexFormat(desfireAppKeyTarget) &&
-                    desfireAppKeyTarget.Length == CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeCurrent));
+                    desfireAppKeyTarget.Length == CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeTarget));
                 OnPropertyChanged(nameof(DesfireAppKeyTarget));
             }
         }

@@ -7,6 +7,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:ctl="clr-namespace:RFiDGear.View"
     mc:Ignorable="d">
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
@@ -109,60 +110,68 @@
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"
                                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyBValue, Converter={StaticResource Localization}}" />
-                            <TextBox
+                            <ctl:KeySlotEditor
                                 Grid.Row="0"
                                 Grid.Column="1"
-                                Margin="8,8,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                FontFamily="Lucida Console"
-                                Text="{Binding ClassicKeyAKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="TextBox" >
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyAKeyCurrent}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyAKeyCurrent}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
-                            <TextBox
+                                Host="{Binding}"
+                                SlotId="classic.a.current">
+                                <TextBox
+                                    Margin="8,8,8,8"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyAKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="TextBox" >
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyCurrent}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyCurrent}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
+                            <ctl:KeySlotEditor
                                 Grid.Row="1"
                                 Grid.Column="1"
-                                Margin="8,0,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                FontFamily="Lucida Console"
-                                Text="{Binding ClassicKeyBKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="TextBox" >
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyBKeyCurrent}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyBKeyCurrent}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
+                                Host="{Binding}"
+                                SlotId="classic.b.current">
+                                <TextBox
+                                    Margin="8,0,8,8"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyBKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="TextBox" >
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyCurrent}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyCurrent}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
                         </Grid>
                     </GroupBox>
                     <GroupBox
@@ -198,60 +207,68 @@
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"
                                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyBValue, Converter={StaticResource Localization}}" />
-                            <TextBox
+                            <ctl:KeySlotEditor
                                 Grid.Row="0"
                                 Grid.Column="1"
-                                Margin="9,8,7,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                FontFamily="Lucida Console"
-                                Text="{Binding ClassicKeyAKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="TextBox" >
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyAKeyTarget}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyAKeyTarget}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
-                            <TextBox
+                                Host="{Binding}"
+                                SlotId="classic.a.target">
+                                <TextBox
+                                    Margin="9,8,7,8"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyAKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="TextBox" >
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyTarget}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyTarget}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
+                            <ctl:KeySlotEditor
                                 Grid.Row="1"
                                 Grid.Column="1"
-                                Margin="9,3,7,7"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                FontFamily="Lucida Console"
-                                Text="{Binding ClassicKeyBKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="TextBox" >
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyBKeyTarget}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicKeyBKeyTarget}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
+                                Host="{Binding}"
+                                SlotId="classic.b.target">
+                                <TextBox
+                                    Margin="9,3,7,7"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyBKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="TextBox" >
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyTarget}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyTarget}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
                         </Grid>
                     </GroupBox>
                     <Grid.RowDefinitions>
@@ -512,60 +529,68 @@
                                     HorizontalContentAlignment="Left"
                                     VerticalContentAlignment="Center"
                                     Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyBValue, Converter={StaticResource Localization}}" />
-                            <TextBox
-                                    Grid.Row="0"
-                                    Grid.Column="1"
-                                    Margin="8,8,8,8"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    FontFamily="Lucida Console"
-                                    Text="{Binding ClassicMADKeyAKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="{x:Type TextBox}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyCurrent}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyCurrent}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
-                            <TextBox
-                                    Grid.Row="1"
-                                    Grid.Column="1"
-                                    Margin="8,0,8,8"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    FontFamily="Lucida Console"
-                                    Text="{Binding ClassicMADKeyBKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="{x:Type TextBox}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyCurrent}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyCurrent}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
+                            <ctl:KeySlotEditor
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Host="{Binding}"
+                                SlotId="classic.mad.a.current">
+                                <TextBox
+                                        Margin="8,8,8,8"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        VerticalContentAlignment="Center"
+                                        FontFamily="Lucida Console"
+                                        Text="{Binding ClassicMADKeyAKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyCurrent}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyCurrent}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
+                            <ctl:KeySlotEditor
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Host="{Binding}"
+                                SlotId="classic.mad.b.current">
+                                <TextBox
+                                        Margin="8,0,8,8"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        VerticalContentAlignment="Center"
+                                        FontFamily="Lucida Console"
+                                        Text="{Binding ClassicMADKeyBKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyCurrent}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyCurrent}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
                         </Grid>
                     </GroupBox>
 
@@ -603,60 +628,68 @@
                                     HorizontalAlignment="Stretch"
                                     VerticalAlignment="Stretch"
                                     Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyBValue, Converter={StaticResource Localization}}" />
-                            <TextBox
-                                    Grid.Row="0"
-                                    Grid.Column="1"
-                                    Margin="8,8,8,8"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    FontFamily="Lucida Console"
-                                    Text="{Binding ClassicMADKeyAKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="{x:Type TextBox}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyTarget}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyTarget}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
-                            <TextBox
-                                    Grid.Row="1"
-                                    Grid.Column="1"
-                                    Margin="9,3,7,7"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    FontFamily="Lucida Console"
-                                    Text="{Binding ClassicMADKeyBKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                <TextBox.Resources>
-                                    <Style TargetType="{x:Type TextBox}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyTarget}" Value="True">
-                                                <Setter Property="Foreground" Value="Green" />
-                                                <Setter Property="Background" Value="White" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyTarget}" Value="False">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="Background" Value="Red" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Resources>
-                            </TextBox>
+                            <ctl:KeySlotEditor
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Host="{Binding}"
+                                SlotId="classic.mad.a.target">
+                                <TextBox
+                                        Margin="8,8,8,8"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        VerticalContentAlignment="Center"
+                                        FontFamily="Lucida Console"
+                                        Text="{Binding ClassicMADKeyAKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyTarget}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyTarget}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
+                            <ctl:KeySlotEditor
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Host="{Binding}"
+                                SlotId="classic.mad.b.target">
+                                <TextBox
+                                        Margin="9,3,7,7"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        VerticalContentAlignment="Center"
+                                        FontFamily="Lucida Console"
+                                        Text="{Binding ClassicMADKeyBKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyTarget}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyTarget}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </ctl:KeySlotEditor>
                         </Grid>
                     </GroupBox>
                 </Grid>
