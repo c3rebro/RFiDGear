@@ -260,6 +260,12 @@ Views are organized under `Views/` by task category: `CommonTask/`,
 `MifareUltralightTask/`. Dialog flows use the **MVVM Dialogs** library for
 message boxes and file pickers.
 
+Every box in which a card key is typed is wrapped by `KeySlotEditor`
+(`Views/KeySlotEditor.xaml`), which lets a person name the key by a reference
+to a secure key provider instead. Its decisions are in `KeySlotEditorState`;
+the task view models implement `IKeySlotHost`. A new key box needs the wrapper
+and a slot id (see `DEVELOPER_NOTES.md`).
+
 ## Key Dependencies
 
 | Package | Purpose |
