@@ -192,8 +192,10 @@ namespace RFiDGear.Tests.SecureKeys
 
                 var run = await RunAsync(task);
 
-                // Not even the keys that were obtained before the failing one reach the card.
+                // Not even the keys that were obtained before the failing one reach the card, and no other call is made either:
+                // a write reads the chip first, and that waits for the keys as well.
                 Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(0, run.ReadChipCalls);
                 Assert.Equal(ERROR.KeyUnavailable, run.Error);
                 Assert.False(run.Completed);
                 Assert.Contains(failingSlot, run.Status, StringComparison.Ordinal);
@@ -504,7 +506,7 @@ namespace RFiDGear.Tests.SecureKeys
 
         // ── Helpers ──
 
-        private sealed record Run(string Calls, ERROR Error, string Status, bool? Completed);
+        private sealed record Run(string Calls, ERROR Error, string Status, bool? Completed, int ReadChipCalls);
 
         private static MifareClassicSetupViewModel NewTask(Scenario scenario, bool withEmbeddedKeys = true)
         {
@@ -545,7 +547,7 @@ namespace RFiDGear.Tests.SecureKeys
                 await task.CommandDelegator.ExecuteAsync(task.SelectedTaskType);
             }
 
-            return new Run(Describe(reader), task.CurrentTaskErrorLevel, task.StatusText ?? string.Empty, task.IsTaskCompletedSuccessfully);
+            return new Run(Describe(reader), task.CurrentTaskErrorLevel, task.StatusText ?? string.Empty, task.IsTaskCompletedSuccessfully, reader.ReadChipCalls);
         }
 
         private static async Task<ExecResult> ExecuteAsync(MifareClassicSetupViewModel task, TaskExecutionService service)

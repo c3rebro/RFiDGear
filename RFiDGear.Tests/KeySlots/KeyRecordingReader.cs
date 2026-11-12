@@ -44,9 +44,14 @@ namespace RFiDGear.Tests.KeySlots
         /// <inheritdoc />
         public override bool IsConnected => Card != null || base.IsConnected;
 
+        /// <summary>Gets how often the chip was read; a call that carries no key and so is not in <see cref="Calls"/>.</summary>
+        public int ReadChipCalls { get; private set; }
+
         /// <inheritdoc />
         public override Task<ERROR> ReadChipPublic()
         {
+            ReadChipCalls++;
+
             if (Card != null)
             {
                 GenericChip = Card;
