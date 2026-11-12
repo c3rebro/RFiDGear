@@ -221,6 +221,10 @@ provider does wrong into a failed answer, logs only the type of a provider's
 exception (never its message), and disposes a key that arrives late. A
 resolved key lives only in a `SecureKeyLease` on the stack of the card
 operation: never put one in a property or a static, and never log it.
+RFiDGear brings one provider of its own, `windows-credential-manager`
+(`WindowsCredentialKeyProvider`), which reads a key from a generic credential
+below the prefix `RFiDGear/key/`; the registry holds it as a built-in, so no
+extension can take its id. See `DEVELOPER_NOTES.md` for the format.
 
 A task stores which slots are bound as `KeyBindings` (one entry per slot:
 slot id, provider id, opaque reference; `SecureKeySlots` has the ids). The

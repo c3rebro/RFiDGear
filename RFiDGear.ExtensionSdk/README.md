@@ -52,7 +52,8 @@ for several sectors.
 - The id is stored in project files, so it never changes. It has 1 to 64 of
   `a-z`, `0-9`, `.`, `_` and `-`. A provider with another id is ignored with
   a log entry. If two extensions use one id, neither is used, and the ids of
-  providers built into RFiDGear cannot be taken over.
+  providers built into RFiDGear cannot be taken over. RFiDGear itself brings
+  one, `windows-credential-manager`.
 - One instance is created per provider when the host builds its registry, on
   the user-interface thread: the constructor must be quick and must not show
   anything or wait. The host then calls it from worker threads, possibly

@@ -69,15 +69,27 @@ namespace RFiDGear.Services.SecureKeys
         /// affected. Call it on the user-interface thread.
         /// </summary>
         /// <returns>The registry.</returns>
-        internal static SecureKeyRegistry FromApplicationExtensions()
+        internal static SecureKeyRegistry FromApplicationExtensions() =>
+            FromComposition(() =>
+            {
+                MefHelper.Instance.EnsureCompose();
+
+                return MefHelper.Instance.Container;
+            });
+
+        /// <summary>
+        /// Builds the registry from the built-in providers and the container that <paramref name="compose"/> gives. When it
+        /// throws, the registry holds the built-in providers only. Internal so that a test can make composing fail.
+        /// </summary>
+        /// <param name="compose">Composes the extensions and returns the container.</param>
+        /// <returns>The registry.</returns>
+        internal static SecureKeyRegistry FromComposition(Func<CompositionContainer?> compose)
         {
             var builtIns = BuiltInProviders();
 
             try
             {
-                MefHelper.Instance.EnsureCompose();
-
-                return FromContainer(MefHelper.Instance.Container, builtIns);
+                return FromContainer(compose(), builtIns);
             }
             catch (Exception e)
             {

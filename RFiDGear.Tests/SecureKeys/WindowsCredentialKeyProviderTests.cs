@@ -329,6 +329,18 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void When_the_extensions_cannot_be_composed_the_registry_still_holds_the_provider_and_the_log_shows_the_type_only()
+        {
+            using var logs = CapturedLogs.Install();
+
+            var registry = SecureKeyRegistry.FromComposition(() => throw new InvalidOperationException(SecureKeyTestData.Secret));
+
+            Assert.Contains(registry.Providers, info => info.Id == WindowsCredentialKeyProvider.ProviderId);
+            Assert.NotEmpty(logs.All());
+            Assert.All(logs.All().Select(CapturedLogs.EverythingWrittenFor), text => Assert.DoesNotContain(SecureKeyTestData.Secret, text, StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void The_registry_the_application_builds_holds_the_provider()
         {
             var registry = SecureKeyRegistry.FromApplicationExtensions();
