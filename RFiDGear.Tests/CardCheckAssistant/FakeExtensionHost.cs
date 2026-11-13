@@ -136,7 +136,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void ReplaceTaskCollection(IEnumerable<object> tasks) => throw new NotSupportedException();
     }
 
-    internal sealed class FakeExecHost : ITaskExecHost
+    internal sealed class FakeExecHost : ITaskExecHost, RFiDGear.Infrastructure.ExtensionHost.IPreassignedRunExecution
     {
         private readonly SubscriberCounter _runningSubscribers = new SubscriberCounter();
         private readonly SubscriberCounter _completedSubscribers = new SubscriberCounter();
@@ -209,6 +209,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
         /// <summary>Moves <see cref="IsRunning"/> without raising the event.</summary>
         public void SetRunningQuietly(bool running) => Volatile.Write(ref _isRunning, running ? 1 : 0);
 
+        /// <summary>Raises <c>ExecutionCompleted</c> on the calling thread, as the host does for a run after it gave up its gate.</summary>
+        public void RaiseExecutionCompleted(ExecResult result, object? sender = null) => _executionCompleted?.Invoke(sender ?? this, result);
+
         public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default)
         {
             Requests.Add(request);
@@ -247,6 +250,53 @@ namespace RFiDGear.Tests.CardCheckAssistant
         [Obsolete("The page always supplies a request.")]
         public Task<ExecResult> ExecuteAllAsync(CancellationToken ct = default) =>
             ExecuteAllAsync(ExecutionRequest.Empty, ct);
+
+        /// <summary>The ids of the runs that were started under an id chosen by the caller, in order.</summary>
+        public List<string> RunIds { get; } = new List<string>();
+
+        /// <summary>
+        /// The run as the external control bridge starts it: under an id the caller chose, which is the id in the result. Like the
+        /// real host it refuses by returning a task that has already faulted (see <see cref="ThrowOnExecute"/>), and a run that
+        /// waits for <see cref="RunGate"/> ends as cancelled when its token is cancelled first, at the "task boundary" that is
+        /// the wait.
+        /// </summary>
+        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct)
+        {
+            Requests.Add(request);
+            RunTokens.Add(ct);
+            RunIds.Add(runId);
+
+            if (ThrowOnExecute != null)
+            {
+                throw ThrowOnExecute;
+            }
+
+            OnExecute?.Invoke(request);
+
+            if (SimulateRunningState)
+            {
+                SetRunning(true);
+            }
+
+            try
+            {
+                if (RunGate != null)
+                {
+                    await Task.WhenAny(RunGate.Task, Task.Delay(Timeout.Infinite, ct)).ConfigureAwait(true);
+                }
+
+                return ct.IsCancellationRequested && (RunGate == null || !RunGate.Task.IsCompleted)
+                    ? Result with { RunId = runId, Outcome = ExecutionOutcome.Failure, FailureReason = ExecutionFailureReason.Cancelled }
+                    : Result with { RunId = runId };
+            }
+            finally
+            {
+                if (SimulateRunningState)
+                {
+                    SetRunning(false);
+                }
+            }
+        }
 
         public void ResetStatus() => throw new NotSupportedException();
     }

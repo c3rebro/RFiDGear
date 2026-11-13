@@ -2074,4 +2074,10 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelExternalControlStatusBar" xml:space="preserve">
     <value>External control: connected</value>
   </data>
+  <data name="messageBoxCloseDuringBridgeRunCaption" xml:space="preserve">
+    <value>A run is in progress</value>
+  </data>
+  <data name="messageBoxCloseDuringBridgeRunMessage" xml:space="preserve">
+    <value>Another program is running the tasks of the project through external control. If you close RFiDGear now, that run is cut off on the card and the program gets no result. Close anyway?</value>
+  </data>
 </root>

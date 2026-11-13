@@ -2096,4 +2096,10 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelExternalControlStatusBar" xml:space="preserve">
     <value>Externe Steuerung: verbunden</value>
   </data>
+  <data name="messageBoxCloseDuringBridgeRunCaption" xml:space="preserve">
+    <value>Ein Lauf ist aktiv</value>
+  </data>
+  <data name="messageBoxCloseDuringBridgeRunMessage" xml:space="preserve">
+    <value>Ein anderes Programm führt über die externe Steuerung die Aufgaben des Projekts aus. Wenn Sie RFiDGear jetzt schließen, wird dieser Lauf an der Karte abgebrochen, und das Programm erhält kein Ergebnis. Trotzdem schließen?</value>
+  </data>
 </root>

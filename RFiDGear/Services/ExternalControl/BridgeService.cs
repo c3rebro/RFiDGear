@@ -42,6 +42,15 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets what <c>scanReader</c> does; a host that offers the <c>reader.scan</c> capability sets it.</summary>
         internal Func<Task<ScanReaderResponse>>? ScanReader { get; init; }
+
+        /// <summary>Gets what <c>startRun</c> does; a host that offers the <c>execution.run</c> capability sets it.</summary>
+        internal Func<StartRunRequest, Task<StartRunResponse>>? StartRun { get; init; }
+
+        /// <summary>Gets what <c>cancelRun</c> does; a host that offers the <c>execution.cancel</c> capability sets it.</summary>
+        internal Func<CancelRunRequest, Task<CancelRunResponse>>? CancelRun { get; init; }
+
+        /// <summary>Gets what <c>getRunResult</c> does; a host that offers the <c>execution.resultLookup</c> capability sets it.</summary>
+        internal Func<GetRunResultRequest, Task<GetRunResultResponse>>? GetRunResult { get; init; }
     }
 
     /// <summary>
@@ -90,13 +99,16 @@ namespace RFiDGear.Services.ExternalControl
             Run(BridgeMethods.LoadProject, () => (_options.LoadProject ?? throw new NotSupportedException())(request));
 
         /// <inheritdoc />
-        public Task<StartRunResponse> StartRun(StartRunRequest request) => Run<StartRunResponse>(BridgeMethods.StartRun, () => throw new NotSupportedException());
+        public Task<StartRunResponse> StartRun(StartRunRequest request) =>
+            Run(BridgeMethods.StartRun, () => (_options.StartRun ?? throw new NotSupportedException())(request));
 
         /// <inheritdoc />
-        public Task<CancelRunResponse> CancelRun(CancelRunRequest request) => Run<CancelRunResponse>(BridgeMethods.CancelRun, () => throw new NotSupportedException());
+        public Task<CancelRunResponse> CancelRun(CancelRunRequest request) =>
+            Run(BridgeMethods.CancelRun, () => (_options.CancelRun ?? throw new NotSupportedException())(request));
 
         /// <inheritdoc />
-        public Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request) => Run<GetRunResultResponse>(BridgeMethods.GetRunResult, () => throw new NotSupportedException());
+        public Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request) =>
+            Run(BridgeMethods.GetRunResult, () => (_options.GetRunResult ?? throw new NotSupportedException())(request));
 
         /// <inheritdoc />
         public Task<ScanReaderResponse> ScanReader(ScanReaderRequest request) =>

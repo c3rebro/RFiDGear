@@ -2361,6 +2361,11 @@ namespace RFiDGear.ViewModel
         public ICommand CloseApplication => new RelayCommand(OnCloseRequest);
         private void OnCloseRequest()
         {
+            if (!ShouldClose(AskToCloseDuringBridgeRun))
+            {
+                return;
+            }
+
             externalControl?.Shutdown(RFiDGear.Bridge.ShutdownReasons.UserClose);
             Environment.Exit(0);
         }
@@ -2815,8 +2820,35 @@ namespace RFiDGear.ViewModel
 
         private void CloseThreads(object sender, CancelEventArgs e)
         {
+            // Closing the window while another program is running the tasks cuts that run off on the card: the user decides.
+            if (!ShouldClose(AskToCloseDuringBridgeRun))
+            {
+                e.Cancel = true;
+
+                return;
+            }
+
             externalControl?.Shutdown(RFiDGear.Bridge.ShutdownReasons.UserClose);
             Environment.Exit(0);
+        }
+
+        /// <summary>
+        /// Says whether the application may close now. It may when no run that another program started is in flight; when
+        /// one is, the user is asked, and only a yes closes it.
+        /// </summary>
+        /// <param name="confirm">Asks the user whether to close anyway; called only when a run of the bridge is in flight.</param>
+        /// <returns><see langword="true"/> when the application may close.</returns>
+        internal bool ShouldClose(Func<bool> confirm) => externalControl == null || !externalControl.RunInFlight() || confirm();
+
+        private bool AskToCloseDuringBridgeRun()
+        {
+            var caption = ResourceLoader.GetResource("messageBoxCloseDuringBridgeRunCaption");
+            var message = ResourceLoader.GetResource("messageBoxCloseDuringBridgeRunMessage");
+            var answer = mw != null
+                ? MessageBox.Show(mw, message, caption, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No)
+                : MessageBox.Show(message, caption, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+
+            return answer == MessageBoxResult.Yes;
         }
 
         /// <summary>

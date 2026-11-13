@@ -20,7 +20,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// <see cref="ITaskExecHost"/> implementation backed by <see cref="ITaskExecutionService"/>.
     /// Drives headless single-pass execution without a WPF dispatcher or UI callbacks.
     /// </summary>
-    internal sealed class TaskExecHostImpl : ITaskExecHost
+    internal sealed class TaskExecHostImpl : ITaskExecHost, IPreassignedRunExecution
     {
         // Resolved on each use, not cached, so the logger configured at startup (and the one tests install)
         // is the one that is used even if this type was touched before logging was configured.
@@ -65,11 +65,20 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public event EventHandler<ExecResult>? ExecutionCompleted;
 
         /// <inheritdoc/>
-        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default)
+        public Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default) =>
+            ExecuteAllAsync(request, Guid.NewGuid().ToString("N"), ct);
+
+        /// <inheritdoc/>
+        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct)
         {
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
+            }
+
+            if (string.IsNullOrWhiteSpace(runId))
+            {
+                throw new ArgumentException("A run id is needed.", nameof(runId));
             }
 
             // Resolve and validate report variables before admission: a request that cannot produce
@@ -88,9 +97,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     whenRunning: "An execution is already in progress."));
             }
 
-            // Allocate the RunId before the call so result, logs, and the execution service
-            // all share the same identity regardless of where or when the run ends.
-            var runId = Guid.NewGuid().ToString("N");
+            // The RunId is fixed before the call (by the caller, or minted by the overload above) so result, logs, and the
+            // execution service all share the same identity regardless of where or when the run ends.
             var startedAt = DateTimeOffset.UtcNow;
 
             // The sink is owned here so the observations survive cancellation and faults, where the

@@ -85,29 +85,88 @@ namespace RFiDGear.Tests.ExternalControl
 
             var hello = await client.HelloAsync(BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged, BridgeEvents.RunStarted);
 
-            // Status, the project and the reader, and the events about them; nothing whose methods are not there yet.
+            // Everything of the contract as it stands: status, project and reader, runs and their lookup, and the events about them.
             var offered = new[]
             {
                 BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.ProjectLoad, BridgeCapabilities.ReaderScan,
-                BridgeCapabilities.EventsRunning, BridgeCapabilities.EventsProject, BridgeCapabilities.EventsReader, BridgeCapabilities.EventsLifecycle,
+                BridgeCapabilities.ExecutionRun, BridgeCapabilities.ExecutionCancel, BridgeCapabilities.ExecutionResultLookup,
+                BridgeCapabilities.EventsExecution, BridgeCapabilities.EventsRunning, BridgeCapabilities.EventsProject,
+                BridgeCapabilities.EventsReader, BridgeCapabilities.EventsLifecycle,
             };
             Assert.Equal(BridgeCapabilities.All.Where(offered.Contains).ToList(), hello.Capabilities);
             Assert.Equal(
-                new[] { BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged }.OrderBy(n => n),
+                new[] { BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.RunStarted, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged }.OrderBy(n => n),
                 hello.Events.OrderBy(n => n));
             Assert.Equal("2.0.10", hello.AppVersion);
             Assert.Equal(service.InstanceId, hello.InstanceId);
         }
 
-        [Fact]
-        public async Task AMethodOfALaterSlice_IsRefusedAsNotOffered_NotAsBroken()
+        /// <summary>A host whose execution cannot start a run under an id the caller chose; everything else is the fake's.</summary>
+        private sealed class HostWithoutPreassignedRuns : IRFiDGearExtensionHost
         {
-            var (_, name, _) = Start();
-            var client = await ConnectAsync(name);
-            await client.HelloAsync();
+            private readonly FakeExtensionHost _inner = new FakeExtensionHost();
 
+            public IProjectHost Project => _inner.Project;
+
+            public ITaskExecHost Execution { get; } = new PlainExecution();
+
+            public IReaderHost Reader => _inner.Reader;
+
+            public IAutoModeHost AutoMode => _inner.AutoMode;
+
+            public IAppContext AppContext => _inner.AppContext;
+
+            private sealed class PlainExecution : ITaskExecHost
+            {
+                public bool IsRunning => false;
+
+                public event EventHandler? IsRunningChanged
+                {
+                    add { _ = value; }
+                    remove { _ = value; }
+                }
+
+                public event EventHandler<ExecResult>? ExecutionCompleted
+                {
+                    add { _ = value; }
+                    remove { _ = value; }
+                }
+
+                public Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default)
+                {
+                    ArgumentNullException.ThrowIfNull(request);
+                    ct.ThrowIfCancellationRequested();
+
+                    throw new NotSupportedException();
+                }
+
+#pragma warning disable CS0618
+                public Task<ExecResult> ExecuteAllAsync(CancellationToken ct = default)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    throw new NotSupportedException();
+                }
+#pragma warning restore CS0618
+
+                public void ResetStatus() => throw new NotSupportedException();
+            }
+        }
+
+        [Fact]
+        public async Task AHostThatCannotStartARunUnderAnId_DoesNotOfferRuns_ItIsRefusedAsNotOffered()
+        {
+            var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+            var service = new ExternalControlService(new HostWithoutPreassignedRuns(), RunAtOnce, () => false, "2.0.10", name);
+            _disposables.Add(service);
+            Assert.True(service.Start());
+            var client = await ConnectAsync(name);
+
+            var hello = await client.HelloAsync();
             var failure = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.StartRun(new StartRunRequest { RequestId = "r-1" }));
 
+            Assert.DoesNotContain(BridgeCapabilities.ExecutionRun, hello.Capabilities);
+            Assert.DoesNotContain(BridgeCapabilities.EventsExecution, hello.Capabilities);
             Assert.Equal(BridgeErrorCodes.CapabilityNotSupported, failure.ErrorCode);
             Assert.Equal(BridgeCapabilities.ExecutionRun, BridgeTestClient.DataOf(failure)!.Details!["capability"]);
         }
@@ -406,16 +465,25 @@ namespace RFiDGear.Tests.ExternalControl
         public void Disposing_LetsGoOfTheHost_AndOfTheProcessExitHook()
         {
             var (service, _, host) = Start();
-            Assert.Equal(new[] { 1, 1, 1 }, new[] { host.ExecutionHost.IsRunningChangedSubscribers, host.ProjectHost.ProjectChangedSubscribers, host.ReaderHost.ReaderStateChangedSubscribers });
+            Assert.Equal(new[] { 1, 1, 1, 1 }, Subscribers(host));
             Assert.True(IsHookedToProcessExit(service));
 
             service.Dispose();
             service.Dispose();
 
-            Assert.Equal(new[] { 0, 0, 0 }, new[] { host.ExecutionHost.IsRunningChangedSubscribers, host.ProjectHost.ProjectChangedSubscribers, host.ReaderHost.ReaderStateChangedSubscribers });
+            Assert.Equal(new[] { 0, 0, 0, 0 }, Subscribers(host));
             Assert.False(IsHookedToProcessExit(service));
             Assert.Equal(BridgeServerState.Stopped, service.ServerState);
         }
+
+        // The events of the host the bridge listens to: a run starting or ending, the project, the reader, the end of a run.
+        private static int[] Subscribers(FakeExtensionHost host) => new[]
+        {
+            host.ExecutionHost.IsRunningChangedSubscribers,
+            host.ProjectHost.ProjectChangedSubscribers,
+            host.ReaderHost.ReaderStateChangedSubscribers,
+            host.ExecutionHost.ExecutionCompletedSubscribers,
+        };
 
         [Fact]
         public void TheServiceHooksTheProcessExit_SoEveryWayOutOfTheApplicationTellsTheClient()

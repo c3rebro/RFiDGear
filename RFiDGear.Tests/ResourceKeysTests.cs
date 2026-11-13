@@ -112,6 +112,8 @@ namespace RFiDGear.Tests
             "labelEnableExternalControl",
             "toolTipEnableExternalControl",
             "labelExternalControlStatusBar",
+            "messageBoxCloseDuringBridgeRunCaption",
+            "messageBoxCloseDuringBridgeRunMessage",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.

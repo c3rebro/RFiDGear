@@ -103,6 +103,32 @@ namespace RFiDGear.Services.ExternalControl
         /// <returns>The fault.</returns>
         internal static BridgeFault ProjectLoadFailed() => new BridgeFault(BridgeErrorCodes.ProjectLoadFailed, BridgeErrorKinds.ProjectLoadFailed);
 
+        /// <summary>No project is loaded, or it holds no task.</summary>
+        /// <returns>The fault; nothing was started.</returns>
+        internal static BridgeFault NoProjectLoaded() => new BridgeFault(BridgeErrorCodes.NoProjectLoaded, BridgeErrorKinds.NoProjectLoaded, neverStarted: true);
+
+        /// <summary>The loaded project is not the one the client expected.</summary>
+        /// <param name="field">Which expectation failed, <c>expectProjectPath</c> or <c>expectTaskCount</c>; never a value.</param>
+        /// <returns>The fault; nothing was started.</returns>
+        internal static BridgeFault ProjectMismatch(string field) =>
+            new BridgeFault(BridgeErrorCodes.ProjectMismatch, BridgeErrorKinds.ProjectMismatch, neverStarted: true, details: new Dictionary<string, string> { ["field"] = field });
+
+        /// <summary>The request id was used before with another request.</summary>
+        /// <returns>The fault; this request started nothing.</returns>
+        internal static BridgeFault RequestIdConflict() => new BridgeFault(BridgeErrorCodes.RequestIdConflict, BridgeErrorKinds.RequestIdConflict, neverStarted: true);
+
+        /// <summary>The main window did not respond in time.</summary>
+        /// <returns>The fault; nothing was started.</returns>
+        internal static BridgeFault UiUnresponsive() => new BridgeFault(BridgeErrorCodes.UiUnresponsive, BridgeErrorKinds.UiUnresponsive, neverStarted: true);
+
+        /// <summary>RFiDGear is closing.</summary>
+        /// <returns>The fault; nothing was started.</returns>
+        internal static BridgeFault ShuttingDown() => new BridgeFault(BridgeErrorCodes.ShuttingDown, BridgeErrorKinds.ShuttingDown, neverStarted: true);
+
+        /// <summary>Makes a new fault with the same content, for answering several callers with the same refusal.</summary>
+        /// <returns>The copy.</returns>
+        internal BridgeFault Clone() => new BridgeFault(Code, Kind, NeverStarted, Details);
+
         /// <summary>Turns the fault into the error of the wire.</summary>
         /// <returns>The exception that StreamJsonRpc answers with.</returns>
         internal LocalRpcException ToRpc() => new LocalRpcException(Kind)
