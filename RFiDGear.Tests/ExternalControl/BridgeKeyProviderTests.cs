@@ -598,7 +598,7 @@ namespace RFiDGear.Tests.ExternalControl
             using var source = new CancellationTokenSource();
 
             var pending = Ask(registry, source.Token);
-            await asked.Task;
+            Assert.True(await Task.WhenAny(asked.Task, Task.Delay(5000)) == asked.Task, "The client was not asked.");
             source.Cancel();
             using var answer = await pending;
 
@@ -621,7 +621,7 @@ namespace RFiDGear.Tests.ExternalControl
             };
 
             var pending = Ask(registry);
-            await asked.Task;
+            Assert.True(await Task.WhenAny(asked.Task, Task.Delay(5000)) == asked.Task, "The client was not asked.");
             client.Dispose();
             var finished = await Task.WhenAny(pending, Task.Delay(5000));
 
