@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- What an external application looks like: plain net10.0, the contract assembly of RFiDGear, and the JSON-RPC library
+         at the version of the host. Nothing of RFiDGear itself. -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RootNamespace>RFiDGear.Bridge.SampleClient</RootNamespace>
+    <!-- The pipe client and its security options are part of the framework; the satellite assemblies of the libraries are not
+         needed by a sample. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RFiDGear.Bridge.Contracts\RFiDGear.Bridge.Contracts.csproj" />
+    <PackageReference Include="StreamJsonRpc" Version="2.26.150" />
+  </ItemGroup>
+</Project>

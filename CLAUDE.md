@@ -144,6 +144,68 @@ timeout, a run the watchdog gave up or a lost reader stops the mode instead of
 guessing, whoever started the run; an ordinary task failure does not. A run of
 the mode that waits for a reader scan of an extension is withdrawn by a stop.
 
+### External Control Bridge
+
+A program next to RFiDGear (SIE Encode is the reason it exists, issue 232) can
+drive the official process over ONE named pipe, JSON-RPC 2.0 (StreamJsonRpc
+2.26.150), built into the host: `Services/ExternalControl`. It listens only
+when the setting `EnableExternalControl` is on OR the start-up argument
+`EXTERNALCONTROL=1` is given. The contract is `RFiDGear.Bridge.Contracts`
+(plain `net10.0`, no references, assembly version `1.0.0.0`, shipped with the
+installer); `RFiDGear.Bridge.Contracts/README.md` is the protocol,
+`CLIENT-GUIDE.md` the guide, `RFiDGear.Bridge.SampleClient` a working client
+whose tests (`BridgeSampleClientTests`) prove the guide. The contract is NOT
+frozen until the hands-on checklist `RFiDGear.HIL.Tests/EXTERNAL-CONTROL.md` has
+passed with a real reader; until then a snapshot may be re-baselined.
+
+- `ExternalControlService` is the composition: `BridgeServer` (the pipe, one
+  session at a time, current user only) -> `BridgeSession` (one `JsonRpc`, one
+  event consumer) -> `BridgeService` (the guard: hello first, capability gate,
+  start-up gate, faults to wire errors). It never touches the main window; what
+  it needs arrives as a delegate. The application creates it in
+  `MainWindowViewModel.StartExternalControl` right after the extension host.
+- Every method and event of the contract has exactly ONE `[Capability]`; the
+  `hello` answer is generated from those attributes (`BridgeCatalog`), so a
+  capability cannot be advertised without a method and a method cannot be
+  called without its capability. A new request field ships only with a new
+  capability a client has seen. A guarantee (`execution.journal`) has no method
+  and is listed in `BridgeCapabilities.Guarantees`.
+- **The bridge never retries a card operation, and never repeats a request.**
+  `startRun` is idempotent by the client's request id (`RunRegistry`,
+  `RunSupervisor`: admission by compare-and-swap, the window's callback must win
+  before it touches the host, the 5 s wait must win before it answers
+  `uiUnresponsive`), answers when the run is admitted and not when it ends, and
+  a write-ahead journal (`RunJournal`) lets a restarted RFiDGear still know
+  which ids it admitted. An error carries `neverStarted: true` only when that is
+  certain.
+- Every result gets a number (`resultSeq`) in one sequence for the runs of
+  clients and those of automatic mode (`RunRegistry` keeps the last 64 for
+  `listRunResults`). Events are hints and never replayed: the truth is
+  `getStatus`, `getRunResult` and `listRunResults`.
+- Automatic mode is driven through the internal `IAutoModeControl` (an enum
+  answer instead of an exception text, and the number of a start). What a client
+  owns is a claim on one START of the mode (`AutoModeController.CurrentSession`,
+  `StopIfSession`), never on "the mode", so a mode the user switched on is never
+  stopped for a client.
+- Card keys: the built-in secure key provider `bridge-client`
+  (`BridgeKeyProvider`) is bound to the connected client that called
+  `registerKeyProvider`; RFiDGear then calls `resolveKey` on the client inside
+  the registry's limits. No client means `ProviderUnavailable` and the task ends
+  `ERROR.KeyUnavailable`. No key, reference, UID or text of a client reaches a
+  log (only the type of an exception), and the text forms of the two messages
+  are fixed strings.
+- Logs hold method names, request and run ids, numbers and error kinds. Never a
+  variable, a path, a UID, a key or the text of an exception (`SanitizedException`
+  is for the existing logs; the bridge logs only the type). Errors on the wire
+  carry an `errorId` that matches the log.
+- The tests: `BridgeTestClient` (a typed client on a real pipe that overrides
+  `GetErrorDetailsDataType`), `FakeExtensionHost` (scriptable execution, project,
+  reader and automatic mode), golden JSON (`BridgeSamples`, `BridgeGolden`) and
+  the approved API snapshot (`RFiDGear.Bridge.Contracts.api.approved`,
+  regenerated with `RFIDGEAR_UPDATE_API_SNAPSHOT=1` and the filter
+  `BridgeContractsApiSurface`). A test through the main window view model must
+  pass a temporary journal folder.
+
 ### Key Design Rule
 
 **One-attempt rule**: Card-state-changing operations (write, authenticate,
