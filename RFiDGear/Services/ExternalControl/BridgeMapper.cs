@@ -13,6 +13,29 @@ namespace RFiDGear.Services.ExternalControl
     /// </summary>
     internal static class BridgeMapper
     {
+        /// <summary>
+        /// Reads the picture the reader shows now and maps it. A reader provider that fails when it is asked (it is somebody
+        /// else's code) must not take the notice or the status down with it: the answer is a reader in the state
+        /// <see cref="ReaderStates.Unknown"/>, and the log has the type of the failure.
+        /// </summary>
+        /// <param name="reader">The reader service of the host.</param>
+        /// <returns>The reader as the wire has it.</returns>
+        internal static ReaderDto ReadReader(IReaderHost reader)
+        {
+            System.ArgumentNullException.ThrowIfNull(reader);
+
+            try
+            {
+                return ToDto(reader.CurrentSnapshot);
+            }
+            catch (System.Exception e)
+            {
+                Serilog.Log.ForContext(typeof(BridgeMapper)).Debug("External control: the reader could not be read ({ExceptionType})", e.GetType().FullName);
+
+                return new ReaderDto { State = ReaderStates.Unknown };
+            }
+        }
+
         /// <summary>Maps the picture of the reader.</summary>
         /// <param name="snapshot">What the reader showed last.</param>
         /// <returns>The reader as the wire has it.</returns>

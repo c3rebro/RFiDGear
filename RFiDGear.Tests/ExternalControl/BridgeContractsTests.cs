@@ -254,6 +254,7 @@ namespace RFiDGear.Tests.ExternalControl
         [InlineData(typeof(ReaderStates))]
         [InlineData(typeof(RunSources))]
         [InlineData(typeof(ShutdownReasons))]
+        [InlineData(typeof(BusyActivities))]
         [InlineData(typeof(BridgeMethods))]
         [InlineData(typeof(BridgeEvents))]
         public void TheStringConstantsOfAClass_AreDistinct_AndWrittenInLowerCamelCase(Type type)

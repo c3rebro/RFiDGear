@@ -83,12 +83,18 @@ namespace RFiDGear.Tests.ExternalControl
             var (service, name, _) = Start();
             var client = await ConnectAsync(name);
 
-            var hello = await client.HelloAsync(BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.ReaderChanged);
+            var hello = await client.HelloAsync(BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged, BridgeEvents.RunStarted);
 
-            // Status and the two events of this slice; nothing whose methods are not there yet.
-            var offered = new[] { BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.EventsRunning, BridgeCapabilities.EventsLifecycle };
+            // Status, the project and the reader, and the events about them; nothing whose methods are not there yet.
+            var offered = new[]
+            {
+                BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.ProjectLoad, BridgeCapabilities.ReaderScan,
+                BridgeCapabilities.EventsRunning, BridgeCapabilities.EventsProject, BridgeCapabilities.EventsReader, BridgeCapabilities.EventsLifecycle,
+            };
             Assert.Equal(BridgeCapabilities.All.Where(offered.Contains).ToList(), hello.Capabilities);
-            Assert.Equal(new[] { BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown }.OrderBy(n => n), hello.Events.OrderBy(n => n));
+            Assert.Equal(
+                new[] { BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged }.OrderBy(n => n),
+                hello.Events.OrderBy(n => n));
             Assert.Equal("2.0.10", hello.AppVersion);
             Assert.Equal(service.InstanceId, hello.InstanceId);
         }
@@ -100,9 +106,10 @@ namespace RFiDGear.Tests.ExternalControl
             var client = await ConnectAsync(name);
             await client.HelloAsync();
 
-            var failure = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\a.rfPrj" }));
+            var failure = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.StartRun(new StartRunRequest { RequestId = "r-1" }));
 
             Assert.Equal(BridgeErrorCodes.CapabilityNotSupported, failure.ErrorCode);
+            Assert.Equal(BridgeCapabilities.ExecutionRun, BridgeTestClient.DataOf(failure)!.Details!["capability"]);
         }
 
         // ── getStatus ──
@@ -399,13 +406,13 @@ namespace RFiDGear.Tests.ExternalControl
         public void Disposing_LetsGoOfTheHost_AndOfTheProcessExitHook()
         {
             var (service, _, host) = Start();
-            Assert.Equal(1, host.ExecutionHost.IsRunningChangedSubscribers);
+            Assert.Equal(new[] { 1, 1, 1 }, new[] { host.ExecutionHost.IsRunningChangedSubscribers, host.ProjectHost.ProjectChangedSubscribers, host.ReaderHost.ReaderStateChangedSubscribers });
             Assert.True(IsHookedToProcessExit(service));
 
             service.Dispose();
             service.Dispose();
 
-            Assert.Equal(0, host.ExecutionHost.IsRunningChangedSubscribers);
+            Assert.Equal(new[] { 0, 0, 0 }, new[] { host.ExecutionHost.IsRunningChangedSubscribers, host.ProjectHost.ProjectChangedSubscribers, host.ReaderHost.ReaderStateChangedSubscribers });
             Assert.False(IsHookedToProcessExit(service));
             Assert.Equal(BridgeServerState.Stopped, service.ServerState);
         }

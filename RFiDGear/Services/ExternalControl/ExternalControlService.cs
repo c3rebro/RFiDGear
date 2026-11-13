@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using RFiDGear.Bridge;
 using RFiDGear.Contracts;
+using RFiDGear.Infrastructure.ExtensionHost;
 
 using Serilog;
 
@@ -43,6 +44,7 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="pipeName">The name of the pipe (<see cref="PipeNames.ForCurrentUser"/>).</param>
         /// <param name="timings">The time limits of a connection; the defaults when <see langword="null"/>.</param>
         /// <param name="uiTimeout">How long <c>getStatus</c> waits for the main window; two seconds when <see langword="null"/>.</param>
+        /// <param name="busyActivity">Says what the application is busy with (one of <see cref="BusyActivities"/>), for the hint in a "busy" error; may return <see langword="null"/>.</param>
         internal ExternalControlService(
             IRFiDGearExtensionHost host,
             Func<Action, Task> dispatchToUi,
@@ -50,7 +52,8 @@ namespace RFiDGear.Services.ExternalControl
             string appVersion,
             string pipeName,
             BridgeServerTimings? timings = null,
-            TimeSpan? uiTimeout = null)
+            TimeSpan? uiTimeout = null,
+            Func<string?>? busyActivity = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = Guid.NewGuid().ToString("N");
@@ -62,6 +65,7 @@ namespace RFiDGear.Services.ExternalControl
                 isReaderInitializing,
                 dispatchToUi,
                 uiTimeout ?? TimeSpan.FromSeconds(2));
+            var operations = new BridgeHostOperations(host, busyActivity);
 
             // What the host offers in this version of the bridge; a capability appears only when everything behind it is there.
             var options = new BridgeServiceOptions
@@ -72,11 +76,17 @@ namespace RFiDGear.Services.ExternalControl
                 {
                     BridgeCapabilities.Session,
                     BridgeCapabilities.Status,
+                    BridgeCapabilities.ProjectLoad,
+                    BridgeCapabilities.ReaderScan,
                     BridgeCapabilities.EventsRunning,
+                    BridgeCapabilities.EventsProject,
+                    BridgeCapabilities.EventsReader,
                     BridgeCapabilities.EventsLifecycle,
                 },
                 IsStartupComplete = () => IsStartupComplete,
                 GetStatus = status.GetStatusAsync,
+                LoadProject = operations.LoadProjectAsync,
+                ScanReader = operations.ScanReaderAsync,
             };
 
             _server = new BridgeServer(pipeName, options, timings);
@@ -124,12 +134,42 @@ namespace RFiDGear.Services.ExternalControl
 
             // The host raises this synchronously from inside the start and the end of a run: the handler only queues.
             _host.Execution.IsRunningChanged += OnIsRunningChanged;
+            _host.Project.ProjectChanged += OnProjectChanged;
+            _host.Reader.ReaderStateChanged += OnReaderStateChanged;
 
             // The only hook that every way out of the application shares (they all end in Environment.Exit).
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
             Logger.Information("External control: listening (instance {InstanceId})", _instanceId);
 
             return true;
+        }
+
+        /// <summary>
+        /// Says what the host is busy with, for the hint in a "busy" error. The state is read at one moment and may have moved on
+        /// when the client reads it; it is a hint, not a promise.
+        /// </summary>
+        /// <param name="coordinator">The coordinator of the operations on the project and the reader.</param>
+        /// <returns>One of <see cref="BusyActivities"/>, or <see langword="null"/> when nothing the coordinator knows of is going on.</returns>
+        internal static string? ActivityOf(ExtensionOperationCoordinator coordinator)
+        {
+            ArgumentNullException.ThrowIfNull(coordinator);
+
+            if (coordinator.IsExecuting)
+            {
+                return BusyActivities.Run;
+            }
+
+            if (coordinator.IsLoading)
+            {
+                return BusyActivities.Load;
+            }
+
+            if (coordinator.IsMutating)
+            {
+                return BusyActivities.Edit;
+            }
+
+            return coordinator.IsScanning ? BusyActivities.Scan : null;
         }
 
         /// <summary>Says that the application has finished starting: the methods other than <c>hello</c> and <c>getStatus</c> work from now on.</summary>
@@ -189,9 +229,44 @@ namespace RFiDGear.Services.ExternalControl
 
             AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
             _host.Execution.IsRunningChanged -= OnIsRunningChanged;
+            _host.Project.ProjectChanged -= OnProjectChanged;
+            _host.Reader.ReaderStateChanged -= OnReaderStateChanged;
             _server.StateChanged -= OnServerStateChanged;
             _server.Dispose();
         }
+
+        // Raised on the thread that changed the project (the window's), after the change: the path and the count are read
+        // here, because the count belongs to the live task list and must not be read from the thread that sends. Nothing may
+        // escape into the host that raised the event.
+        private void OnProjectChanged(object? sender, EventArgs e)
+        {
+            string? path;
+            int taskCount;
+
+            try
+            {
+                path = _host.Project.CurrentPath;
+                taskCount = _host.Project.TaskCount;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning("External control: the project could not be read for a notice ({ExceptionType})", ex.GetType().FullName);
+
+                return;
+            }
+
+            _server.Publish(
+                BridgeEvents.ProjectChanged,
+                durable: false,
+                (seq, sessionId, at) => new ProjectChangedEvent { Seq = seq, SessionId = sessionId, At = at, Path = path, TaskCount = taskCount });
+        }
+
+        // The picture of the reader is taken when the notice is sent, so a client always gets the latest one.
+        private void OnReaderStateChanged(object? sender, EventArgs e) =>
+            _server.Publish(
+                BridgeEvents.ReaderChanged,
+                durable: false,
+                (seq, sessionId, at) => new ReaderChangedEvent { Seq = seq, SessionId = sessionId, At = at, Reader = BridgeMapper.ReadReader(_host.Reader) });
 
         private void OnIsRunningChanged(object? sender, EventArgs e) =>
             _server.Publish(

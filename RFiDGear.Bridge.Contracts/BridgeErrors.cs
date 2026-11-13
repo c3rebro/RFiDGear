@@ -34,7 +34,11 @@ namespace RFiDGear.Bridge
         /// <summary>RFiDGear is still starting; only <c>hello</c> and <c>getStatus</c> work yet.</summary>
         public const int NotReady = 1005;
 
-        /// <summary>A run, a project load, an edit or a reader scan is in progress; <c>details.activity</c> says which.</summary>
+        /// <summary>
+        /// A run, a project load, an edit or a reader scan is in progress; <c>details.activity</c> says which (one of
+        /// <see cref="BusyActivities"/>; it is a hint read at one moment, and <c>other</c> when RFiDGear cannot tell). The call
+        /// did nothing, so it is safe to try again later.
+        /// </summary>
         public const int Busy = 1006;
 
         /// <summary>Automatic mode is on, started by the user in the main window.</summary>

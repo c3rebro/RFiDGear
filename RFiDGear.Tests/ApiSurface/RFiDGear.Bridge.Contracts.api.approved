@@ -124,6 +124,13 @@ public static class RFiDGear.Bridge.BridgeProtocol
     public static bool IsValidRequestId(string? requestId)
     public static string PipeNameFor(string userSid)
 
+public static class RFiDGear.Bridge.BusyActivities
+    public const string Edit = "edit"
+    public const string Load = "load"
+    public const string Other = "other"
+    public const string Run = "run"
+    public const string Scan = "scan"
+
 public sealed record RFiDGear.Bridge.CancelRunRequest : System.IEquatable<CancelRunRequest>
     public ctor()
     [JsonPropertyName("requestId")] public string RequestId { get; init; }
