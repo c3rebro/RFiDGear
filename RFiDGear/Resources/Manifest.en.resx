@@ -2009,7 +2009,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Key store provided by an extension (id: {0}).</value>
   </data>
   <data name="keySlotSupplierStatusOff" xml:space="preserve">
-    <value>No program can supply keys: external control is switched off. Switch it on in the settings, or start RFiDGear with EXTERNALCONTROL=1.</value>
+    <value>No program can supply keys: external control is not running. It is switched off, or it could not be started (see the log). Switch it on in the settings, or start RFiDGear with EXTERNALCONTROL=1.</value>
   </data>
   <data name="keySlotSupplierStatusNoSupplier" xml:space="preserve">
     <value>External control is on, but no connected program has registered as the supplier of keys.</value>

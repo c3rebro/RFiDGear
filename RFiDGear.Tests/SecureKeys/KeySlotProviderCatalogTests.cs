@@ -128,6 +128,19 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal(3, statuses.Distinct().Count());
         }
 
+        [Theory]
+        [InlineData("en", "log")]
+        [InlineData("de", "Protokoll")]
+        public void The_off_text_names_both_causes_and_where_to_look(string culture, string logWord)
+        {
+            // Off is a bridge that is switched off and one that is on but could not start (the pipe is taken): the text must
+            // not claim the first, and says where the reason of the second is written.
+            var text = InLanguage(culture).StatusText(KeySupplierAvailability.Off);
+
+            Assert.Contains("EXTERNALCONTROL=1", text);
+            Assert.Contains(logWord, text);
+        }
+
         [Fact]
         public void The_two_languages_give_different_texts()
         {

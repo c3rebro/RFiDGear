@@ -2031,7 +2031,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Schlüsselspeicher einer Erweiterung (Kennung: {0}).</value>
   </data>
   <data name="keySlotSupplierStatusOff" xml:space="preserve">
-    <value>Kein Programm kann Schlüssel liefern: die externe Steuerung ist ausgeschaltet. Schalten Sie sie in den Einstellungen ein oder starten Sie RFiDGear mit EXTERNALCONTROL=1.</value>
+    <value>Kein Programm kann Schlüssel liefern: die externe Steuerung läuft nicht. Sie ist ausgeschaltet oder konnte nicht gestartet werden (siehe Protokoll). Schalten Sie sie in den Einstellungen ein oder starten Sie RFiDGear mit EXTERNALCONTROL=1.</value>
   </data>
   <data name="keySlotSupplierStatusNoSupplier" xml:space="preserve">
     <value>Die externe Steuerung ist eingeschaltet, aber kein verbundenes Programm hat sich als Lieferant von Schlüsseln angemeldet.</value>
