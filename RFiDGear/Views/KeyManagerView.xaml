@@ -34,8 +34,7 @@
                 HorizontalAlignment="Right"
                 Command="{Binding CloseCommand}"
                 Content="{Binding CloseText}"
-                IsCancel="True"
-                IsDefault="True" />
+                IsCancel="True" />
         </Grid>
 
         <!-- Whether a program can supply keys; only shown while a slot is named in its key store. -->
@@ -119,6 +118,12 @@
                                         <Button.ToolTip>
                                             <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding ModeToolTip}" />
                                         </Button.ToolTip>
+                                        <AutomationProperties.Name>
+                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                <Binding Path="SlotName" />
+                                                <Binding Path="ModeButtonText" />
+                                            </MultiBinding>
+                                        </AutomationProperties.Name>
                                     </Button>
                                 </Grid>
 
@@ -154,6 +159,12 @@
                                             <ComboBox.ToolTip>
                                                 <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding ProviderToolTip}" />
                                             </ComboBox.ToolTip>
+                                            <AutomationProperties.Name>
+                                                <MultiBinding StringFormat="{}{0}: {1}">
+                                                    <Binding Path="SlotName" />
+                                                    <Binding Path="KeyStoreLabel" />
+                                                </MultiBinding>
+                                            </AutomationProperties.Name>
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <Grid Background="Transparent">
@@ -179,6 +190,12 @@
                                             <TextBox.ToolTip>
                                                 <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding ReferenceToolTip}" />
                                             </TextBox.ToolTip>
+                                            <AutomationProperties.Name>
+                                                <MultiBinding StringFormat="{}{0}: {1}">
+                                                    <Binding Path="SlotName" />
+                                                    <Binding Path="KeyNameLabel" />
+                                                </MultiBinding>
+                                            </AutomationProperties.Name>
                                             <TextBox.Style>
                                                 <Style TargetType="TextBox">
                                                     <Style.Triggers>
@@ -204,7 +221,21 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <PasswordBox x:Name="KeyBox" Height="24" Margin="4,2,4,2" VerticalContentAlignment="Center" MaxLength="0" />
+                                            <!-- Enter stores the key (when it can be stored); it never closes the window and so never throws a key away. -->
+                                            <PasswordBox
+                                                x:Name="KeyBox"
+                                                Height="24"
+                                                Margin="4,2,4,2"
+                                                VerticalContentAlignment="Center"
+                                                MaxLength="0"
+                                                PreviewKeyDown="KeyBox_PreviewKeyDown">
+                                                <AutomationProperties.Name>
+                                                    <MultiBinding StringFormat="{}{0}: {1}">
+                                                        <Binding Path="SlotName" />
+                                                        <Binding Path="KeyPrompt" />
+                                                    </MultiBinding>
+                                                </AutomationProperties.Name>
+                                            </PasswordBox>
                                             <Button
                                                 x:Name="StoreButton"
                                                 Grid.Column="1"
@@ -218,6 +249,12 @@
                                                 <Button.ToolTip>
                                                     <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding StoreToolTip}" />
                                                 </Button.ToolTip>
+                                                <AutomationProperties.Name>
+                                                    <MultiBinding StringFormat="{}{0}: {1}">
+                                                        <Binding Path="SlotName" />
+                                                        <Binding Path="StoreButtonText" />
+                                                    </MultiBinding>
+                                                </AutomationProperties.Name>
                                             </Button>
                                         </Grid>
                                     </StackPanel>

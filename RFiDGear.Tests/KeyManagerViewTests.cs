@@ -115,7 +115,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task A_slot_with_a_typed_key_shows_its_name_and_a_sentence_and_no_reference_controls()
         {
-            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireAppCurrent, SecureKeySlots.DesfireAppNew }, (window, viewModel) =>
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireAppCurrent, SecureKeySlots.DesfireAppNew }, (window, _) =>
             {
                 Assert.Equal(2, All<StackPanel>(window, "ReferencePanel").Count());
                 Assert.All(All<StackPanel>(window, "ReferencePanel"), panel => Assert.False(panel.IsVisible));
@@ -272,6 +272,115 @@ namespace RFiDGear.Tests
                 Assert.Equal(string.Empty, shown.Password);
                 Assert.Equal(string.Empty, collapsed.Password);
             });
+        }
+
+        [Fact]
+        public async Task Enter_in_the_box_of_a_key_stores_it_and_never_closes_the_window()
+        {
+            var setup = new Setup();
+
+            await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                Of<TextBox>(window, "ReferenceBox").Text = "cards/main";
+                var box = Of<PasswordBox>(window, "KeyBox");
+                box.Password = "000102030405060708090a0b0c0d0e0f";
+
+                var args = PressEnter(box);
+                window.UpdateLayout();
+                await Flush();
+
+                Assert.True(args.Handled);
+                Assert.True(window.IsVisible);
+                Assert.Equal(
+                    Encoding.Unicode.GetBytes("000102030405060708090A0B0C0D0E0F"),
+                    setup.Store.Blobs[WindowsCredentialKeyProvider.TargetPrefix + "cards/main"]);
+                Assert.Equal(string.Empty, box.Password);
+            });
+        }
+
+        [Fact]
+        public async Task Enter_when_no_key_can_be_stored_does_nothing_and_keeps_the_digits_and_the_window()
+        {
+            var setup = new Setup();
+
+            await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                var box = Of<PasswordBox>(window, "KeyBox");
+                box.Password = "0001";
+
+                // No name yet: nothing can be stored. The digits stay where the person can still finish them.
+                var args = PressEnter(box);
+                await Flush();
+
+                Assert.True(args.Handled);
+                Assert.True(window.IsVisible);
+                Assert.Empty(setup.Store.Writes);
+                Assert.Equal("0001", box.Password);
+            });
+        }
+
+        [Fact]
+        public async Task The_close_button_is_not_the_default_button_so_that_enter_closes_nothing()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, (window, _) =>
+            {
+                var close = Of<Button>(window, "CloseButton");
+
+                Assert.False(close.IsDefault);
+                Assert.True(close.IsCancel);
+
+                return Task.CompletedTask;
+            });
+        }
+
+        [Fact]
+        public async Task Each_control_of_a_row_has_an_accessible_name_that_names_its_slot_and_the_key_is_not_in_it()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireAppCurrent, SecureKeySlots.DesfireAppNew }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                await Toggle(window, 1);
+                Of<PasswordBox>(window, "KeyBox", 0).Password = "A1B2C3";
+
+                foreach (var (name, slotName) in new[] { (0, "Application key, current"), (1, "Application key, new") })
+                {
+                    foreach (var control in new FrameworkElement[]
+                    {
+                        Of<Button>(window, "ModeButton", name), Of<ComboBox>(window, "ProviderBox", name),
+                        Of<TextBox>(window, "ReferenceBox", name), Of<PasswordBox>(window, "KeyBox", name), Of<Button>(window, "StoreButton", name),
+                    })
+                    {
+                        var accessibleName = System.Windows.Automation.AutomationProperties.GetName(control);
+
+                        Assert.StartsWith(slotName + ": ", accessibleName);
+                        Assert.DoesNotContain("A1B2C3", accessibleName);
+                    }
+                }
+
+                // The same control in two rows is told apart by its name.
+                Assert.NotEqual(
+                    System.Windows.Automation.AutomationProperties.GetName(Of<PasswordBox>(window, "KeyBox", 0)),
+                    System.Windows.Automation.AutomationProperties.GetName(Of<PasswordBox>(window, "KeyBox", 1)));
+            });
+        }
+
+        // Presses Enter in a control the way the keyboard does, as far as the window can tell.
+        private static System.Windows.Input.KeyEventArgs PressEnter(UIElement target)
+        {
+            var args = new System.Windows.Input.KeyEventArgs(
+                System.Windows.Input.Keyboard.PrimaryDevice,
+                PresentationSource.FromVisual(target),
+                0,
+                System.Windows.Input.Key.Enter)
+            {
+                RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent,
+            };
+
+            target.RaiseEvent(args);
+
+            return args;
         }
 
         [Fact]

@@ -25,10 +25,10 @@ namespace RFiDGear.Tests
     {
         private sealed class RecordingLauncher : IKeyManagerLauncher
         {
-            public List<(string[] Slots, Window? Owner)> Shown { get; } = new List<(string[], Window?)>();
+            public List<(string[] Slots, Window? Owner)> Opened { get; } = new List<(string[], Window?)>();
 
             public void Show(KeyManagerViewModel viewModel, Window? owner) =>
-                Shown.Add((viewModel.Rows.Select(row => row.SlotId).ToArray(), owner));
+                Opened.Add((viewModel.Rows.Select(row => row.SlotId).ToArray(), owner));
         }
 
         // A group box with a grid of four rows, the button in the last. It is made on the thread of the window, as every control is.
@@ -160,7 +160,7 @@ namespace RFiDGear.Tests
 
                     Assert.True(section.Button.Open());
 
-                    var (slots, owner) = Assert.Single(section.Launcher.Shown);
+                    var (slots, owner) = Assert.Single(section.Launcher.Opened);
                     Assert.Equal(new[] { SecureKeySlots.DesfireRead, SecureKeySlots.DesfireWrite }, slots);
                     Assert.Same(window, owner);
 
@@ -179,7 +179,7 @@ namespace RFiDGear.Tests
                 (section, _) =>
                 {
                     Assert.False(section.Button.Open());
-                    Assert.Empty(section.Launcher.Shown);
+                    Assert.Empty(section.Launcher.Opened);
 
                     return Task.CompletedTask;
                 });
@@ -194,7 +194,7 @@ namespace RFiDGear.Tests
                 {
                     section.Button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
 
-                    Assert.Single(section.Launcher.Shown);
+                    Assert.Single(section.Launcher.Opened);
 
                     return Task.CompletedTask;
                 });

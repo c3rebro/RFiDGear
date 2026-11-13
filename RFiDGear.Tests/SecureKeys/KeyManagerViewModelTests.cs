@@ -117,6 +117,47 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void A_text_is_read_from_the_resources_once_however_often_the_window_asks_for_it()
+        {
+            // The resources read the settings from the disk on every lookup, and a keystroke in a name makes every row ask for all
+            // its texts again: the manager keeps what it was given for as long as it lives.
+            var asked = new Dictionary<string, int>();
+            string Counting(string key)
+            {
+                asked[key] = asked.TryGetValue(key, out var count) ? count + 1 : 1;
+
+                return TestText.English(key);
+            }
+
+            var host = new FakeKeySlotHost();
+            using var viewModel = KeyManagerViewModel.Create(
+                host,
+                new[] { SecureKeySlots.DesfireRead, SecureKeySlots.DesfireWrite },
+                new[] { CredentialManager, ExternalApplication },
+                new ScriptedKeyDialogs(),
+                new WindowsCredentialKeyProvider(new FakeCredentialStore()),
+                new FakeSupplierStatus(),
+                Counting);
+
+            for (var round = 0; round < 5; round++)
+            {
+                foreach (var row in viewModel.Rows)
+                {
+                    row.ToggleModeCommand.Execute(null);
+                    row.Reference = "cards/main" + round;
+                    _ = (row.SlotName, row.ModeButtonText, row.TypedKeyText, row.KeyStoreLabel, row.KeyNameLabel, row.KeyPrompt,
+                        row.ModeToolTip, row.ProviderToolTip, row.ReferenceToolTip, row.StoreButtonText, row.StoreToolTip);
+                }
+
+                viewModel.RefreshSupplierStatus();
+                _ = (viewModel.Title, viewModel.IntroText, viewModel.NoSlotsText, viewModel.CloseText, viewModel.SupplierStatusText);
+            }
+
+            Assert.NotEmpty(asked);
+            Assert.All(asked, pair => Assert.True(pair.Value == 1, pair.Key + " was read " + pair.Value + " times"));
+        }
+
+        [Fact]
         public void The_texts_come_in_the_language_of_the_application()
         {
             using var rig = new Rig(new[] { SecureKeySlots.DesfireRead });
