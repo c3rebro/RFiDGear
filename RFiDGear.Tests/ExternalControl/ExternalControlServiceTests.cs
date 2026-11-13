@@ -467,24 +467,28 @@ namespace RFiDGear.Tests.ExternalControl
         public void Disposing_LetsGoOfTheHost_AndOfTheProcessExitHook()
         {
             var (service, _, host) = Start();
-            Assert.Equal(new[] { 1, 1, 1, 1 }, Subscribers(host));
+            // The run state is listened to twice: for the notices of the bridge, and for the run of a mode that a client started.
+            Assert.Equal(new[] { 2, 1, 1, 1, 1, 1 }, Subscribers(host));
             Assert.True(IsHookedToProcessExit(service));
 
             service.Dispose();
             service.Dispose();
 
-            Assert.Equal(new[] { 0, 0, 0, 0 }, Subscribers(host));
+            Assert.Equal(new[] { 0, 0, 0, 0, 0, 0 }, Subscribers(host));
             Assert.False(IsHookedToProcessExit(service));
             Assert.Equal(BridgeServerState.Stopped, service.ServerState);
         }
 
-        // The events of the host the bridge listens to: a run starting or ending, the project, the reader, the end of a run.
+        // The events of the host the bridge listens to: a run starting or ending, the project, the reader, the end of a run, and the
+        // state and the runs of automatic mode.
         private static int[] Subscribers(FakeExtensionHost host) => new[]
         {
             host.ExecutionHost.IsRunningChangedSubscribers,
             host.ProjectHost.ProjectChangedSubscribers,
             host.ReaderHost.ReaderStateChangedSubscribers,
             host.ExecutionHost.ExecutionCompletedSubscribers,
+            host.AutoModeHost.StateSubscribers,
+            host.AutoModeHost.RunSubscribers,
         };
 
         [Fact]
