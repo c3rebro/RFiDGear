@@ -4,10 +4,16 @@
     x:Name="Self"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:dal="clr-namespace:RFiDGear.Infrastructure">
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    ToolTipService.ShowDuration="30000">
     <UserControl.Resources>
-        <dal:ResourceLoader x:Key="Localization" />
-        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="KeySlotStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <dal:ResourceLoader x:Key="Localization" />
+            <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+        </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -37,8 +43,12 @@
                 DockPanel.Dock="Right"
                 Command="{Binding StoreKeyCommand}"
                 Content="{Binding Converter={StaticResource Localization}, ConverterParameter=buttonContentKeySlotStoreKey}"
-                ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotStoreKey}"
-                Visibility="{Binding ProviderOffersStoreKey, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
+                ToolTipService.ShowOnDisabled="True"
+                Visibility="{Binding ProviderOffersStoreKey, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}">
+                <Button.ToolTip>
+                    <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotStoreKey}" />
+                </Button.ToolTip>
+            </Button>
             <ComboBox
                 x:Name="ProviderBox"
                 MinWidth="120"
@@ -48,13 +58,18 @@
                 ItemsSource="{Binding Providers}"
                 SelectedValue="{Binding ProviderId, Mode=TwoWay}"
                 SelectedValuePath="Id"
-                ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotProvider}"
-                Visibility="{Binding ShowProviderChoice, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
+                Visibility="{Binding ShowProviderChoice, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}">
+                <ComboBox.ToolTip>
+                    <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotProvider}" />
+                </ComboBox.ToolTip>
+            </ComboBox>
             <TextBox
                 x:Name="ReferenceBox"
                 VerticalContentAlignment="Center"
-                Text="{Binding Reference, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotReference}">
+                Text="{Binding Reference, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                <TextBox.ToolTip>
+                    <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotReference}" />
+                </TextBox.ToolTip>
                 <TextBox.Resources>
                     <Style TargetType="TextBox">
                         <Style.Triggers>
@@ -81,8 +96,10 @@
             Padding="6,2"
             VerticalAlignment="Center"
             Command="{Binding State.ToggleModeCommand, ElementName=Self}"
-            DataContext="{Binding State, ElementName=Self}"
-            ToolTip="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotMode}">
+            DataContext="{Binding State, ElementName=Self}">
+            <Button.ToolTip>
+                <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotMode}" />
+            </Button.ToolTip>
             <Button.Style>
                 <Style TargetType="Button">
                     <Style.Triggers>

@@ -19,6 +19,13 @@ namespace RFiDGear.Services.SecureKeys
         /// <param name="cancellationToken">Cancelled when the host stops waiting; the call to the client is cancelled with it.</param>
         /// <returns>The answer of the client, or <see langword="null"/> when there is no client that supplies keys.</returns>
         Task<ResolveKeyResponse?> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Gets whether a program can supply keys through this channel, right now: <see cref="KeySupplierAvailability.Off"/> when the
+        /// bridge does not listen (it failed or was stopped), <see cref="KeySupplierAvailability.NoSupplier"/> while it listens and no
+        /// connected client registered as the supplier of keys, <see cref="KeySupplierAvailability.Connected"/> when one did.
+        /// </summary>
+        KeySupplierAvailability Availability { get; }
     }
 
     /// <summary>
@@ -48,8 +55,24 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>Gets the provider of this process, which the registry holds and the bridge binds to its connection.</summary>
         internal static BridgeKeyProvider Shared { get; } = new BridgeKeyProvider();
 
+        /// <summary>
+        /// Raised when what <see cref="Availability"/> says may have changed: the provider was bound or unbound, or the connection
+        /// changed. It is raised on whatever thread caused it, so a handler that touches the user interface marshals first. It is
+        /// not raised when a client registers as supplier (that has no event); a window that shows the state asks again now and then.
+        /// </summary>
+        internal event EventHandler? AvailabilityChanged;
+
         /// <summary>Gets whether the provider is bound to a way to a client, which is the case while the bridge listens.</summary>
         internal bool IsBound => Volatile.Read(ref _channel) != null;
+
+        /// <summary>
+        /// Gets whether a program can supply keys right now: <see cref="KeySupplierAvailability.Off"/> without a channel (external
+        /// control was never started) or when the channel says the bridge does not listen, otherwise what the channel says.
+        /// </summary>
+        internal KeySupplierAvailability Availability => Volatile.Read(ref _channel)?.Availability ?? KeySupplierAvailability.Off;
+
+        /// <summary>Tells the listeners that a client connected or went away, which can change <see cref="Availability"/>.</summary>
+        internal void NotifyConnectionChanged() => AvailabilityChanged?.Invoke(this, EventArgs.Empty);
 
         /// <summary>Makes the registration the registry takes in as a built-in provider.</summary>
         /// <returns>The registration of the shared provider.</returns>
@@ -57,11 +80,21 @@ namespace RFiDGear.Services.SecureKeys
 
         /// <summary>Binds the provider to the way to the client. A channel that is bound later replaces this one.</summary>
         /// <param name="channel">The channel.</param>
-        internal void Attach(IBridgeKeyChannel channel) => Volatile.Write(ref _channel, channel ?? throw new ArgumentNullException(nameof(channel)));
+        internal void Attach(IBridgeKeyChannel channel)
+        {
+            Volatile.Write(ref _channel, channel ?? throw new ArgumentNullException(nameof(channel)));
+            AvailabilityChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         /// <summary>Unbinds the provider, but only from this channel: a channel that replaced it stays.</summary>
         /// <param name="channel">The channel to let go of.</param>
-        internal void Detach(IBridgeKeyChannel channel) => Interlocked.CompareExchange(ref _channel, null, channel);
+        internal void Detach(IBridgeKeyChannel channel)
+        {
+            if (ReferenceEquals(Interlocked.CompareExchange(ref _channel, null, channel), channel))
+            {
+                AvailabilityChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
 
         /// <inheritdoc />
         public async ValueTask<SecureKeyResolution> ResolveAsync(SecureKeyRequest request, CancellationToken cancellationToken)

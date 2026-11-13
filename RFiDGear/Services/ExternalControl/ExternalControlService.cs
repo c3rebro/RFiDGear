@@ -419,7 +419,31 @@ namespace RFiDGear.Services.ExternalControl
             return new RunningChangedEvent { Seq = seq, SessionId = sessionId, At = at, IsRunning = running, OwnRequestId = owner?.RequestId, OwnRunId = owner?.RunId };
         }
 
-        private void OnServerStateChanged(object? sender, EventArgs e) => ConnectionChanged?.Invoke(this, EventArgs.Empty);
+        private void OnServerStateChanged(object? sender, EventArgs e)
+        {
+            ConnectionChanged?.Invoke(this, EventArgs.Empty);
+
+            // Whether a program supplies keys changes with the connection.
+            _keyProvider?.NotifyConnectionChanged();
+        }
+
+        /// <summary>
+        /// Says whether a program can supply keys, from the state of the server and whether the connected client registered as
+        /// the supplier. A server that failed (the pipe for the next client could not be created) or was stopped does not
+        /// listen, whatever else is true, so nobody can connect.
+        /// </summary>
+        /// <param name="state">Where the server stands.</param>
+        /// <param name="clientSupplies">Whether the connected client, if there is one, registered as the supplier of keys.</param>
+        /// <returns>What a person is told about the key supplier.</returns>
+        internal static KeySupplierAvailability AvailabilityOf(BridgeServerState state, bool clientSupplies)
+        {
+            if (state != BridgeServerState.Listening && state != BridgeServerState.SessionActive)
+            {
+                return KeySupplierAvailability.Off;
+            }
+
+            return clientSupplies ? KeySupplierAvailability.Connected : KeySupplierAvailability.NoSupplier;
+        }
 
         // The way to the connected program for the secure key provider: the client that is connected, if it registered as the
         // supplier of keys. Without one the provider is told so (null) and answers "unavailable".
@@ -431,6 +455,8 @@ namespace RFiDGear.Services.ExternalControl
             {
                 _server = server;
             }
+
+            public KeySupplierAvailability Availability => AvailabilityOf(_server.State, _server.ActiveSession?.Service.ProvidesKeys == true);
 
             public async Task<ResolveKeyResponse?> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken)
             {

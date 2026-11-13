@@ -1974,7 +1974,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Schlüssel verwenden</value>
   </data>
   <data name="toolTipKeySlotMode" xml:space="preserve">
-    <value>Woher dieser Schlüssel kommt: ein Schlüssel, der hier eingegeben und im Projekt gespeichert wird, oder eine Referenz auf einen Schlüssel in einem Schlüsselspeicher, der beim Ausführen der Aufgabe abgefragt wird. Bei einer Referenz speichert das Projekt nur die Referenz.</value>
+    <value>Den Schlüssel hier eingeben und im Projekt speichern, oder einen Schlüssel in einem Schlüsselspeicher benennen. Bei einem Namen speichert das Projekt nur den Namen.</value>
   </data>
   <data name="toolTipKeySlotReference" xml:space="preserve">
     <value>Der Name des Schlüssels im Schlüsselspeicher. Das Projekt speichert diesen Namen, nie den Schlüssel.</value>
@@ -2014,6 +2014,30 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageKeySlotKeyInvalid" xml:space="preserve">
     <value>Erforderlich ist ein Schlüssel aus {0} Hexadezimalziffern (0-9, A-F) ohne Leerzeichen. Es wurde nichts gespeichert.</value>
+  </data>
+  <data name="keySlotProviderNameCredentialManager" xml:space="preserve">
+    <value>Windows-Anmeldeinformationsverwaltung</value>
+  </data>
+  <data name="keySlotProviderToolTipCredentialManager" xml:space="preserve">
+    <value>Schlüssel in der Windows-Anmeldeinformationsverwaltung dieses PCs. Das Projekt speichert nur den Namen des Schlüssels, nie den Schlüssel selbst.</value>
+  </data>
+  <data name="keySlotProviderNameBridgeClient" xml:space="preserve">
+    <value>Verbundene externe Anwendung</value>
+  </data>
+  <data name="keySlotProviderToolTipBridgeClient" xml:space="preserve">
+    <value>Ein mit RFiDGear verbundenes Programm (externe Steuerung) liefert den Schlüssel, wenn die Aufgabe läuft. Das Projekt speichert nur den Namen; das Programm legt fest, was er bedeutet.</value>
+  </data>
+  <data name="keySlotProviderToolTipExtension" xml:space="preserve">
+    <value>Schlüsselspeicher einer Erweiterung (Kennung: {0}).</value>
+  </data>
+  <data name="keySlotSupplierStatusOff" xml:space="preserve">
+    <value>Kein Programm kann Schlüssel liefern: die externe Steuerung läuft nicht. Sie ist ausgeschaltet oder konnte nicht gestartet werden (siehe Protokoll). Schalten Sie sie in den Einstellungen ein oder starten Sie RFiDGear mit EXTERNALCONTROL=1.</value>
+  </data>
+  <data name="keySlotSupplierStatusNoSupplier" xml:space="preserve">
+    <value>Die externe Steuerung ist eingeschaltet, aber kein verbundenes Programm hat sich als Lieferant von Schlüsseln angemeldet.</value>
+  </data>
+  <data name="keySlotSupplierStatusConnected" xml:space="preserve">
+    <value>Ein verbundenes Programm liefert Schlüssel.</value>
   </data>
   <data name="menuItemMigrateProjectKeys" xml:space="preserve">
     <value>Schlüssel eines Projekts in die Anmeldeinformationsverwaltung verschieben...</value>
