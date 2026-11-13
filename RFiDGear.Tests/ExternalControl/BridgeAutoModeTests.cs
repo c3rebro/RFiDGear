@@ -345,6 +345,24 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task EveryRunOfTheMode_IsSentOnce_AlsoWhenManyEndBeforeTheConnectionSends()
+        {
+            var (_, pipe, host) = Start();
+            var client = await ConnectAsync(pipe, BridgeEvents.AutoRunCompleted);
+
+            for (var i = 0; i < 10; i++)
+            {
+                host.AutoModeHost.RaiseRunCompleted(AResult("run-" + i));
+            }
+
+            var events = await client.WaitForEventsAsync(10);
+            await Task.Delay(200);
+
+            Assert.Equal(10, client.Events.Count);
+            Assert.Equal(Enumerable.Range(1, 10).Select(i => (long)i), events.Cast<AutoRunCompletedEvent>().Select(e => e.Result.ResultSeq));
+            Assert.Equal(Enumerable.Range(0, 10).Select(i => "run-" + i), events.Cast<AutoRunCompletedEvent>().Select(e => e.Result.RunId));
+        }
+        [Fact]
         public async Task AClientThatAskedForNoNotices_GetsNone_AndStillFindsTheResultInTheLog()
         {
             var (_, pipe, host) = Start();
@@ -397,7 +415,8 @@ namespace RFiDGear.Tests.ExternalControl
                 host.AutoModeHost.RaiseRunCompleted(AResult("run-" + i, tasks: 400));
             }
 
-            await WaitUntilAsync(() => !service.IsConnected, 15_000);
+            // Well before the watchdog of a stalled write (ten seconds) would let it go: it is the pile of results that ends the connection.
+            await WaitUntilAsync(() => !service.IsConnected, 5_000);
             var client = await ConnectAsync(pipe);
             var status = await client.Service.GetStatus(new GetStatusRequest());
             var all = await client.Service.ListRunResults(new ListRunResultsRequest { Limit = 3 });
