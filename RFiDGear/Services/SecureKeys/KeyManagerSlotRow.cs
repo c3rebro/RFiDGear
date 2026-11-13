@@ -257,9 +257,13 @@ namespace RFiDGear.Services.SecureKeys
                     return true;
                 case KeySlotMessage.NameInUse:
                     SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeyManagerNameInUse"), _newName), true);
+
+                    // The message sends the person to the list, and the key may be one that was stored after the list was read.
+                    RefreshStoredKeys();
                     return false;
                 case KeySlotMessage.ListUnreadable:
                     SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeyManagerListUnreadable"), result.Detail), true);
+                    RefreshStoredKeys();
                     return false;
                 default:
                     SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeySlotKeyInvalid"), result.Detail), true);
@@ -289,7 +293,11 @@ namespace RFiDGear.Services.SecureKeys
 
                 if (current.Length > 0 && !choices.Any(choice => string.Equals(choice.Reference, current, StringComparison.Ordinal)))
                 {
-                    choices.Insert(0, new StoredKeyChoice(current, string.Format(CultureInfo.CurrentCulture, _text("labelKeyManagerStoredKeyMissing"), current)));
+                    // Only a listing that worked can say that the key is missing; after one that failed it is only not known.
+                    var text = _listError == 0
+                        ? string.Format(CultureInfo.CurrentCulture, _text("labelKeyManagerStoredKeyMissing"), current)
+                        : current;
+                    choices.Insert(0, new StoredKeyChoice(current, text));
                 }
             }
             else

@@ -362,6 +362,23 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal("Cards/Main", choice.Text);
         }
 
+        [Fact]
+        public void A_list_that_cannot_be_read_does_not_say_that_the_key_of_the_slot_is_not_stored()
+        {
+            using var rig = new Rig(new[] { SecureKeySlots.DesfireRead });
+            rig.Host.BindKeySlot(SecureKeySlots.DesfireRead, WindowsCredentialKeyProvider.ProviderId, "cards/main");
+            rig.Store.EnumerateError = CredentialErrors.AccessDenied;
+
+            rig.Row.RefreshStoredKeys();
+
+            // Only a listing that worked can say that a key is missing; this one only says that it is not known, and the slot's own
+            // name stays selectable.
+            var choice = Assert.Single(rig.Row.StoredKeys);
+            Assert.Equal("cards/main", choice.Reference);
+            Assert.Equal("cards/main", choice.Text);
+            Assert.True(rig.Row.HasStoredKeysError);
+        }
+
         // ── Creating a new key ──
 
         [Fact]
@@ -439,6 +456,27 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.True(rig.Row.ResultIsError);
             Assert.Equal("A key named 'Cards/Main' is stored already. Choose it in the list above; to replace its key, use File > Key manager.", rig.Row.ResultText);
             Assert.Equal("Cards/Main", rig.Row.NewName);
+        }
+
+        [Fact]
+        public void A_name_that_was_added_after_the_list_was_read_is_in_the_list_when_the_row_says_that_it_is_in_use()
+        {
+            using var rig = new Rig(new[] { SecureKeySlots.DesfireRead });
+            rig.Row.ToggleModeCommand.Execute(null);
+            Assert.Empty(rig.Row.StoredKeys);
+
+            // Another program (cmdkey) stores a key after the row read the list; the row finds out when it is asked to store a new one.
+            rig.Store.Blobs[Prefix + "cards/late"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            rig.Row.NewName = "cards/late";
+
+            using var entered = TestText.Secure("000102030405060708090A0B0C0D0E0F");
+
+            Assert.False(rig.Row.StoreEntered(entered));
+            Assert.Empty(rig.Store.Writes);
+            Assert.Contains("stored already", rig.Row.ResultText);
+
+            // The message sends the person to the list, so the list has the key.
+            Assert.Equal(new[] { "cards/late" }, rig.Row.StoredKeys.Select(key => key.Reference));
         }
 
         [Fact]
