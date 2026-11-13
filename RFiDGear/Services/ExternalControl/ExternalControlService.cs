@@ -419,7 +419,13 @@ namespace RFiDGear.Services.ExternalControl
             return new RunningChangedEvent { Seq = seq, SessionId = sessionId, At = at, IsRunning = running, OwnRequestId = owner?.RequestId, OwnRunId = owner?.RunId };
         }
 
-        private void OnServerStateChanged(object? sender, EventArgs e) => ConnectionChanged?.Invoke(this, EventArgs.Empty);
+        private void OnServerStateChanged(object? sender, EventArgs e)
+        {
+            ConnectionChanged?.Invoke(this, EventArgs.Empty);
+
+            // Whether a program supplies keys changes with the connection.
+            _keyProvider?.NotifyConnectionChanged();
+        }
 
         // The way to the connected program for the secure key provider: the client that is connected, if it registered as the
         // supplier of keys. Without one the provider is told so (null) and answers "unavailable".
@@ -431,6 +437,8 @@ namespace RFiDGear.Services.ExternalControl
             {
                 _server = server;
             }
+
+            public bool HasSupplier => _server.ActiveSession?.Service.ProvidesKeys == true;
 
             public async Task<ResolveKeyResponse?> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken)
             {

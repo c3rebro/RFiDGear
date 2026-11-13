@@ -80,6 +80,8 @@ namespace RFiDGear.Tests.ExternalControl
                 _handler = handler;
             }
 
+            public bool HasSupplier { get; set; } = true;
+
             internal IReadOnlyList<ResolveKeyRequest> Requests
             {
                 get

@@ -1952,7 +1952,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Use key</value>
   </data>
   <data name="toolTipKeySlotMode" xml:space="preserve">
-    <value>Where this key comes from: a key that is typed here and saved in the project, or a reference to a key in a key store that is looked up when the task runs. With a reference the project saves only the reference.</value>
+    <value>Type the key here and save it in the project, or name a key in a key store. With a name, the project saves only the name.</value>
   </data>
   <data name="toolTipKeySlotReference" xml:space="preserve">
     <value>The name of the key in the key store. The project saves this name, never the key.</value>
@@ -1992,6 +1992,30 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageKeySlotKeyInvalid" xml:space="preserve">
     <value>A key of {0} hexadecimal digits (0-9, A-F) without spaces is needed. Nothing was stored.</value>
+  </data>
+  <data name="keySlotProviderNameCredentialManager" xml:space="preserve">
+    <value>Windows Credential Manager</value>
+  </data>
+  <data name="keySlotProviderToolTipCredentialManager" xml:space="preserve">
+    <value>Keys kept in the Windows Credential Manager of this PC. The project saves only the name of the key, never the key itself.</value>
+  </data>
+  <data name="keySlotProviderNameBridgeClient" xml:space="preserve">
+    <value>Connected external application</value>
+  </data>
+  <data name="keySlotProviderToolTipBridgeClient" xml:space="preserve">
+    <value>A program connected to RFiDGear (external control) supplies the key when the task runs. The project saves only the name; the program decides what it means.</value>
+  </data>
+  <data name="keySlotProviderToolTipExtension" xml:space="preserve">
+    <value>Key store provided by an extension (id: {0}).</value>
+  </data>
+  <data name="keySlotSupplierStatusOff" xml:space="preserve">
+    <value>No program can supply keys: external control is switched off. Switch it on in the settings, or start RFiDGear with EXTERNALCONTROL=1.</value>
+  </data>
+  <data name="keySlotSupplierStatusNoSupplier" xml:space="preserve">
+    <value>External control is on, but no connected program has registered as the supplier of keys.</value>
+  </data>
+  <data name="keySlotSupplierStatusConnected" xml:space="preserve">
+    <value>A connected program supplies keys.</value>
   </data>
   <data name="menuItemMigrateProjectKeys" xml:space="preserve">
     <value>Move keys of a project to the Credential Manager...</value>
