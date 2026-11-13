@@ -345,13 +345,13 @@ namespace RFiDGear.Tests.ExternalControl
         {
             var (server, name) = StartServer();
             using var raw = await RawAsync(name);
-            var before = GC.GetTotalAllocatedBytes(precise: false);
+            var before = GC.GetTotalAllocatedBytes();
 
             await raw.WriteAsync(Encoding.ASCII.GetBytes("Content-Length: 2000000000\r\n\r\n{\"jsonrpc\":\"2.0\""));
             var read = await raw.ReadAsync(new byte[16]).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
 
             Assert.Equal(0, read);
-            Assert.True(GC.GetTotalAllocatedBytes(precise: false) - before < 50_000_000, "The host allocated far more than a small message needs.");
+            Assert.True(GC.GetTotalAllocatedBytes() - before < 50_000_000, "The host allocated far more than a small message needs.");
             await WaitUntilAsync(() => server.State == BridgeServerState.Listening);
 
             using var next = await ConnectAsync(name);
@@ -452,6 +452,26 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.All(events, e => Assert.Equal(hello.SessionId, e.SessionId));
             Assert.Equal("a1", started.RunId);
             Assert.Equal(RunStatuses.Success, completed.Result.Status);
+        }
+
+        [Fact]
+        public async Task AClientThatAskedForNoEvents_IsNotDisconnected_NoMatterHowManyResultsTheHostHas()
+        {
+            var (server, name) = StartServer(Offering(BridgeCapabilities.EventsExecution));
+            using var client = await ConnectAsync(name);
+            await client.HelloAsync();
+
+            // More than the limit of results that wait: none of them is owed to this client, so none of them counts.
+            for (var i = 0; i < BridgeEventQueue.DurableCap * 2; i++)
+            {
+                server.Publish(BridgeEvents.RunCompleted, durable: true, (seq, session, at) => new RunCompletedEvent { Seq = seq, SessionId = session, At = at, Result = new RunResultDto { RunId = "r" } });
+            }
+
+            await Task.Delay(200);
+
+            Assert.True(server.HasSession);
+            Assert.Empty(client.Events);
+            Assert.Equal(BridgeProtocol.Product, (await client.HelloAsync()).Product);
         }
 
         [Fact]

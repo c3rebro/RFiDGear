@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 using RFiDGear.Bridge;
 
@@ -14,6 +15,7 @@ namespace RFiDGear.Services.ExternalControl
     /// client: the kind and the code say what happened, and the details never hold a value the client sent or the text of an
     /// exception.
     /// </summary>
+    [SuppressMessage("Major Code Smell", "S3871:Exception types should be \"public\"", Justification = "It only carries a refusal from the code that serves a call to the guard around it, in this assembly; it never crosses an assembly boundary and is no part of any contract.")]
     internal sealed class BridgeFault : Exception
     {
         /// <summary>Creates a fault.</summary>

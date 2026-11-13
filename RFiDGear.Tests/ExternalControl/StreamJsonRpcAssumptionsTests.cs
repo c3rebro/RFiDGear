@@ -50,7 +50,12 @@ namespace RFiDGear.Tests.ExternalControl
             {
             }
 
-            protected override Type? GetErrorDetailsDataType(JsonRpcError error) => typeof(BridgeErrorData);
+            protected override Type? GetErrorDetailsDataType(JsonRpcError error)
+            {
+                ArgumentNullException.ThrowIfNull(error);
+
+                return typeof(BridgeErrorData);
+            }
         }
 
         private static string Everything(RemoteInvocationException failure) =>
@@ -226,20 +231,37 @@ namespace RFiDGear.Tests.ExternalControl
         {
             public Func<StatusResponse>? OnGetStatus { get; init; }
 
-            public Task<HelloResponse> Hello(HelloRequest request) =>
-                Task.FromResult(new HelloResponse { Product = BridgeProtocol.Product, Capabilities = new[] { BridgeCapabilities.Session } });
+            public Task<HelloResponse> Hello(HelloRequest request)
+            {
+                ArgumentNullException.ThrowIfNull(request);
 
-            public Task<StatusResponse> GetStatus(GetStatusRequest request) => Task.FromResult(OnGetStatus!());
+                return Task.FromResult(new HelloResponse { Product = BridgeProtocol.Product, Capabilities = new[] { BridgeCapabilities.Session } });
+            }
 
-            public Task<LoadProjectResponse> LoadProject(LoadProjectRequest request) => throw new NotSupportedException();
+            public Task<StatusResponse> GetStatus(GetStatusRequest request)
+            {
+                ArgumentNullException.ThrowIfNull(request);
 
-            public Task<StartRunResponse> StartRun(StartRunRequest request) => throw new NotSupportedException();
+                return Task.FromResult(OnGetStatus!());
+            }
 
-            public Task<CancelRunResponse> CancelRun(CancelRunRequest request) => throw new NotSupportedException();
+            public Task<LoadProjectResponse> LoadProject(LoadProjectRequest request) => throw NotUsed(request);
 
-            public Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request) => throw new NotSupportedException();
+            public Task<StartRunResponse> StartRun(StartRunRequest request) => throw NotUsed(request);
 
-            public Task<ScanReaderResponse> ScanReader(ScanReaderRequest request) => throw new NotSupportedException();
+            public Task<CancelRunResponse> CancelRun(CancelRunRequest request) => throw NotUsed(request);
+
+            public Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request) => throw NotUsed(request);
+
+            public Task<ScanReaderResponse> ScanReader(ScanReaderRequest request) => throw NotUsed(request);
+
+            // The methods of the contract that these tests do not call.
+            private static NotSupportedException NotUsed(object request)
+            {
+                ArgumentNullException.ThrowIfNull(request);
+
+                return new NotSupportedException();
+            }
         }
     }
 }

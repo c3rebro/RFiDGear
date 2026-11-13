@@ -84,6 +84,12 @@ namespace RFiDGear.Services.ExternalControl
 
                 if (value == (byte)'\r')
                 {
+                    // Only a line feed may follow a carriage return; another one would also slip past the limit of a line.
+                    if (_sawCarriageReturn)
+                    {
+                        return HeaderScanResult.Malformed;
+                    }
+
                     _sawCarriageReturn = true;
                     continue;
                 }

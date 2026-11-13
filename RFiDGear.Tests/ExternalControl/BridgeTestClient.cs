@@ -151,7 +151,12 @@ namespace RFiDGear.Tests.ExternalControl
             }
 
             // Without this the library reads error.data as its own CommonErrorData and the data of the bridge is lost.
-            protected override Type? GetErrorDetailsDataType(JsonRpcError error) => typeof(BridgeErrorData);
+            protected override Type? GetErrorDetailsDataType(JsonRpcError error)
+            {
+                ArgumentNullException.ThrowIfNull(error);
+
+                return typeof(BridgeErrorData);
+            }
         }
     }
 }

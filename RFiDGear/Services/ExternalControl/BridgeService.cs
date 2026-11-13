@@ -106,15 +106,7 @@ namespace RFiDGear.Services.ExternalControl
             {
                 throw fault.ToRpc();
             }
-            catch (LocalRpcException)
-            {
-                throw;
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception e)
+            catch (Exception e) when (e is not LocalRpcException && e is not OperationCanceledException)
             {
                 // The type, never the text: what a reader, a project or a library throws may hold a path, a name or a value.
                 var errorId = Guid.NewGuid().ToString("N")[..12];

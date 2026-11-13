@@ -121,13 +121,17 @@ namespace RFiDGear.Services.ExternalControl
 
         private void Scan(ReadOnlySpan<byte> bytes)
         {
-            switch (_scanner.Feed(bytes))
+            var result = _scanner.Feed(bytes);
+
+            if (result == HeaderScanResult.TooLarge)
             {
-                case HeaderScanResult.TooLarge:
-                    EndedBecauseTooLarge = true;
-                    throw new InvalidDataException("A message is longer than the limit.");
-                case HeaderScanResult.Malformed:
-                    throw new InvalidDataException("The framing of a message is not the one of the protocol.");
+                EndedBecauseTooLarge = true;
+                throw new InvalidDataException("A message is longer than the limit.");
+            }
+
+            if (result == HeaderScanResult.Malformed)
+            {
+                throw new InvalidDataException("The framing of a message is not the one of the protocol.");
             }
         }
     }

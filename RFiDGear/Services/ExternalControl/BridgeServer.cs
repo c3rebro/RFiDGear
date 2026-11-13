@@ -145,7 +145,9 @@ namespace RFiDGear.Services.ExternalControl
                 session = _session;
             }
 
-            if (session == null)
+            // Only what this client asked for counts towards the limit of results waiting: a client that subscribed to nothing
+            // must not be disconnected because the host had a lot to report.
+            if (session == null || !session.Service.IsEventEnabled(name))
             {
                 return;
             }

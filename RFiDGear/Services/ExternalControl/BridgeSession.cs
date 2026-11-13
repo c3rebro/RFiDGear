@@ -39,6 +39,7 @@ namespace RFiDGear.Services.ExternalControl
         private CappedReadStream? _capped;
         private JsonRpc? _rpc;
         private long _seq;
+        private int _aborted;
         private int _disposed;
 
         /// <summary>Creates the session of a connected client.</summary>
@@ -71,6 +72,14 @@ namespace RFiDGear.Services.ExternalControl
         /// <returns>A task that completes when the connection has ended and everything is released.</returns>
         internal async Task RunAsync()
         {
+            // Stopped between being accepted and starting: nothing is served, and the pipe has been closed by Abort.
+            if (Volatile.Read(ref _aborted) != 0)
+            {
+                Events.Complete();
+
+                return;
+            }
+
             _capped = new CappedReadStream(_pipe, _maxMessageBytes);
             var formatter = new SystemTextJsonFormatter { JsonSerializerOptions = BridgeJson.CreateServerOptions() };
             var rpc = new BridgeJsonRpc(new HeaderDelimitedMessageHandler(_capped, formatter));
@@ -119,8 +128,16 @@ namespace RFiDGear.Services.ExternalControl
             }
         }
 
-        /// <summary>Ends the connection.</summary>
-        internal void Abort() => _rpc?.Dispose();
+        /// <summary>
+        /// Ends the connection. The pipe is closed too, so this also works for a session that has not started yet (a stop that
+        /// comes between the accept and <see cref="RunAsync"/>) and for one whose write is stuck.
+        /// </summary>
+        internal void Abort()
+        {
+            Volatile.Write(ref _aborted, 1);
+            _rpc?.Dispose();
+            _pipe.Dispose();
+        }
 
         /// <inheritdoc />
         public void Dispose()

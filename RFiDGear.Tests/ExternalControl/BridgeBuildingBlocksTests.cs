@@ -90,9 +90,20 @@ namespace RFiDGear.Tests.ExternalControl
         [InlineData("Content-Length:\r\n\r\n")]
         [InlineData("Content-Length: 5\rX\n\r\n")]
         [InlineData("Content-Type: x\r\n\r\n")]
+        [InlineData("Content-Length: 1\r\r\n\r\nx")]
+        [InlineData("\r\r\n")]
         public void FramingThatIsNotTheProtocols_IsRefused(string text)
         {
             Assert.Equal(HeaderScanResult.Malformed, new HeaderScanner(1000).Feed(Encoding.ASCII.GetBytes(text)));
+        }
+
+        [Fact]
+        public void AnyNumberOfCarriageReturns_DoNotSlipPastTheLimitOfALine()
+        {
+            // Carriage returns are not kept in the line, so only refusing the second one stops this from running on forever.
+            var scanner = new HeaderScanner(1000);
+
+            Assert.Equal(HeaderScanResult.Malformed, scanner.Feed(Enumerable.Repeat((byte)'\r', 100_000).ToArray()));
         }
 
         [Fact]
@@ -139,6 +150,33 @@ namespace RFiDGear.Tests.ExternalControl
             await stream.WriteAsync(new byte[] { 1, 2, 3 });
 
             Assert.Equal(new byte[] { 1, 2, 3 }, target.ToArray());
+        }
+
+        // ── The session ──
+
+        private sealed class TrackingStream : MemoryStream
+        {
+            public bool Closed { get; private set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                Closed = true;
+                base.Dispose(disposing);
+            }
+        }
+
+        [Fact]
+        public async Task ASessionThatIsAbortedBeforeItStarts_ServesNothing_AndHasClosedThePipe()
+        {
+            // A stop that comes between the accept and the start of the session must not leave a connection that is served.
+            var pipe = new TrackingStream();
+            using var session = new BridgeSession(pipe, new BridgeServiceOptions(), new BridgeServerTimings());
+
+            session.Abort();
+            await session.RunAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(pipe.Closed);
+            Assert.Null(session.Rpc);
         }
 
         // ── The queue ──
