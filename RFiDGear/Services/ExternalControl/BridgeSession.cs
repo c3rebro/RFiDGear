@@ -68,6 +68,25 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets the events waiting to be sent to this client.</summary>
         internal BridgeEventQueue Events { get; } = new BridgeEventQueue();
 
+        /// <summary>
+        /// Asks the client for a card key, a call from the host to the client over the same connection. The token cancels the
+        /// call on the wire too, so a client that honours it stops looking.
+        /// </summary>
+        /// <param name="request">Which key, and what for.</param>
+        /// <param name="cancellationToken">Cancelled when the host stops waiting.</param>
+        /// <returns>The answer of the client.</returns>
+        internal Task<ResolveKeyResponse> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken)
+        {
+            var rpc = _rpc;
+
+            if (rpc == null || Volatile.Read(ref _aborted) != 0)
+            {
+                throw new InvalidOperationException("The connection is not open.");
+            }
+
+            return rpc.InvokeWithCancellationAsync<ResolveKeyResponse>(BridgeClientMethods.ResolveKey, new object?[] { request }, cancellationToken);
+        }
+
         /// <summary>Serves the client until the connection ends.</summary>
         /// <returns>A task that completes when the connection has ended and everything is released.</returns>
         internal async Task RunAsync()

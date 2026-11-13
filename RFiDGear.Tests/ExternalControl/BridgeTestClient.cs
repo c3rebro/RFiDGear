@@ -21,10 +21,11 @@ namespace RFiDGear.Tests.ExternalControl
     /// to do that the library does not do for it: to receive the error data of the bridge it overrides
     /// <c>GetErrorDetailsDataType</c>.
     /// </summary>
-    internal sealed class BridgeTestClient : IBridgeClientEvents, IDisposable
+    internal sealed class BridgeTestClient : IBridgeClientEvents, IBridgeClientKeys, IDisposable
     {
         private readonly object _gate = new object();
         private readonly List<BridgeEvent> _events = new List<BridgeEvent>();
+        private readonly List<ResolveKeyRequest> _keyRequests = new List<ResolveKeyRequest>();
         private readonly NamedPipeClientStream _pipe;
 
         private BridgeTestClient(NamedPipeClientStream pipe)
@@ -33,6 +34,7 @@ namespace RFiDGear.Tests.ExternalControl
             var formatter = new SystemTextJsonFormatter { JsonSerializerOptions = BridgeJson.CreateClientOptions() };
             Rpc = new ClientRpc(new HeaderDelimitedMessageHandler(pipe, formatter));
             Rpc.AddLocalRpcTarget<IBridgeClientEvents>(this, new JsonRpcTargetOptions { MethodNameTransform = CommonMethodNameTransforms.CamelCase });
+            Rpc.AddLocalRpcTarget<IBridgeClientKeys>(this, new JsonRpcTargetOptions { MethodNameTransform = CommonMethodNameTransforms.CamelCase });
             Service = Rpc.Attach<IBridgeService>(new JsonRpcProxyOptions { MethodNameTransform = CommonMethodNameTransforms.CamelCase });
             Rpc.StartListening();
         }
@@ -42,6 +44,21 @@ namespace RFiDGear.Tests.ExternalControl
 
         /// <summary>Gets the typed proxy of the contract.</summary>
         internal IBridgeService Service { get; }
+
+        /// <summary>Gets or sets what the client answers when the host asks it for a key; without one the call fails like an unexpected error of a client.</summary>
+        internal Func<ResolveKeyRequest, CancellationToken, Task<ResolveKeyResponse>>? KeyHandler { get; set; }
+
+        /// <summary>Gets the requests for a key received so far.</summary>
+        internal IReadOnlyList<ResolveKeyRequest> KeyRequests
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _keyRequests.ToList();
+                }
+            }
+        }
 
         /// <summary>Gets the events received so far.</summary>
         internal IReadOnlyList<BridgeEvent> Events
@@ -133,6 +150,17 @@ namespace RFiDGear.Tests.ExternalControl
 
         /// <inheritdoc />
         public void AutoRunCompleted(AutoRunCompletedEvent e) => Add(e);
+
+        /// <inheritdoc />
+        public Task<ResolveKeyResponse> ResolveKey(ResolveKeyRequest request, CancellationToken cancellationToken)
+        {
+            lock (_gate)
+            {
+                _keyRequests.Add(request);
+            }
+
+            return (KeyHandler ?? throw new InvalidOperationException("This test client has no key handler."))(request, cancellationToken);
+        }
 
         /// <inheritdoc />
         public void Dispose()

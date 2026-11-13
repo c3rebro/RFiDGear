@@ -118,5 +118,18 @@ namespace RFiDGear.Bridge
         /// <returns>The results, whether some are missing, and the number of the latest.</returns>
         [Capability(BridgeCapabilities.ExecutionResultLog)]
         Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request);
+
+        /// <summary>
+        /// Makes the client the supplier of card keys for the rest of the connection. A task of the loaded project that names a key by
+        /// reference to the provider in <see cref="RegisterKeyProviderResponse.ProviderId"/> then gets the key from the client:
+        /// RFiDGear calls <see cref="IBridgeClientKeys.ResolveKey"/> on the object the client registered as its local target, at the
+        /// moment the task needs the key, and keeps the bytes only for the card operation. Without a registered client such a task
+        /// ends with <c>ERROR.KeyUnavailable</c> and the card is not touched. The registration ends with the connection. Calling it
+        /// again changes nothing.
+        /// </summary>
+        /// <param name="request">No parameters yet.</param>
+        /// <returns>The provider id to name in projects, and the time the client has to answer a request.</returns>
+        [Capability(BridgeCapabilities.KeysProvider)]
+        Task<RegisterKeyProviderResponse> RegisterKeyProvider(RegisterKeyProviderRequest request);
     }
 }

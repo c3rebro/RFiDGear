@@ -152,6 +152,22 @@ namespace RFiDGear.Tests.ExternalControl
             },
             ["AutoModeChangedEvent"] = new AutoModeChangedEvent { Seq = 7, SessionId = "s1", At = Start, Enabled = false, StartedBy = null, LastStopReason = AutoModeStopReasons.ReaderLost, LastResultSeq = 8 },
             ["AutoRunCompletedEvent"] = new AutoRunCompletedEvent { Seq = 8, SessionId = "s1", At = Start.AddSeconds(2), Result = AutoResult },
+            ["RegisterKeyProviderRequest"] = new RegisterKeyProviderRequest(),
+            ["RegisterKeyProviderResponse"] = new RegisterKeyProviderResponse { ProviderId = "bridge-client", TimeoutMs = 10000, InteractiveTimeoutMs = 300000 },
+            ["ResolveKeyRequest"] = new ResolveKeyRequest
+            {
+                SlotId = "desfire.app.master",
+                Reference = "vault/order-4711",
+                Algorithm = KeyAlgorithms.Aes128,
+                Usage = KeyUsages.Authenticate,
+                ApplicationId = 3,
+                KeyNumber = 0,
+                RunId = "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+                TaskIndex = "2",
+                CardUid = "04A1B2C3D4E5F6",
+                Interactive = false,
+            },
+            ["ResolveKeyResponse"] = new ResolveKeyResponse { Result = KeyResolveResults.Resolved, Key = "AQIDBAUGBwg=" },
             ["BridgeErrorData"] = new BridgeErrorData
             {
                 Kind = BridgeErrorKinds.Busy,
