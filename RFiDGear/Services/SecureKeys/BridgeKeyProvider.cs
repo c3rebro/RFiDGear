@@ -42,13 +42,14 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>The name a person sees.</summary>
         internal const string DisplayName = "Connected external application";
 
-        // The longest base64 text of BridgeProtocol.MaxKeyBytes bytes, with its padding.
-        private const int MaxKeyTextLength = ((BridgeProtocol.MaxKeyBytes + 2) / 3) * 4;
 
         private IBridgeKeyChannel? _channel;
 
         /// <summary>Gets the provider of this process, which the registry holds and the bridge binds to its connection.</summary>
         internal static BridgeKeyProvider Shared { get; } = new BridgeKeyProvider();
+
+        /// <summary>Gets whether the provider is bound to a way to a client, which is the case while the bridge listens.</summary>
+        internal bool IsBound => Volatile.Read(ref _channel) != null;
 
         /// <summary>Makes the registration the registry takes in as a built-in provider.</summary>
         /// <returns>The registration of the shared provider.</returns>
@@ -129,11 +130,11 @@ namespace RFiDGear.Services.SecureKeys
             }
         }
 
-        // Decodes into a buffer on the stack, copies into the pinned lease, and zeroes the buffer. A text that is too long is not
-        // decoded at all.
+        // Decodes into a buffer on the stack, copies into the pinned lease, and zeroes the buffer. The buffer holds the longest key
+        // there is: a text that decodes to more does not fit, and the decoding stops at once.
         private static SecureKeyResolution ToLease(string? text)
         {
-            if (string.IsNullOrEmpty(text) || text.Length > MaxKeyTextLength)
+            if (string.IsNullOrEmpty(text))
             {
                 return SecureKeyResolution.Failed(SecureKeyFailureReason.InvalidKey);
             }

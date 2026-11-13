@@ -244,6 +244,7 @@ namespace RFiDGear.Tests.ExternalControl
         [InlineData("")]
         [InlineData("!!!not base64!!!")]
         [InlineData("QUJD=====")]
+        [InlineData("   ")]
         public async Task AKeyThatIsNoKey_IsInvalid(string? key)
         {
             var (provider, _) = Bound((_, _) => Task.FromResult<ResolveKeyResponse?>(new ResolveKeyResponse { Result = KeyResolveResults.Resolved, Key = key }));
@@ -437,6 +438,18 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Contains(BridgeCapabilities.KeysProvider, offered.Capabilities);
             Assert.DoesNotContain(BridgeCapabilities.KeysProvider, notOffered.Capabilities);
             Assert.Equal(BridgeErrorCodes.CapabilityNotSupported, (int)failure.ErrorCode);
+        }
+
+        [Fact]
+        public void TheProvider_IsBoundWhileTheServiceListens_AndNotAfterwards()
+        {
+            var (service, _, provider, _) = Start();
+            var whileListening = provider.IsBound;
+
+            service.Dispose();
+
+            Assert.True(whileListening);
+            Assert.False(provider.IsBound);
         }
 
         [Fact]
