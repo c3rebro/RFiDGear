@@ -24,6 +24,11 @@ namespace RFiDGear.Services.SecureKeys
         KeyInvalid,
     }
 
+    /// <summary>What came of storing a key that was entered.</summary>
+    /// <param name="Message">What happened.</param>
+    /// <param name="Detail">The error code of the key store or the number of digits that were needed; <c>0</c> otherwise.</param>
+    internal readonly record struct KeySlotStoreResult(KeySlotMessage Message, int Detail);
+
     /// <summary>The questions the editor asks the person. The control answers them with windows, the tests with a script.</summary>
     internal interface IKeySlotEditorDialogs
     {
@@ -78,6 +83,12 @@ namespace RFiDGear.Services.SecureKeys
             StoreKeyCommand = new RelayCommand(StoreKey, () => CanStoreKey);
             _host.PropertyChanged += OnHostPropertyChanged;
         }
+
+        /// <summary>Gets the id of the slot this state is about; see <see cref="SecureKeySlots"/>.</summary>
+        public string SlotId => _slotId;
+
+        /// <summary>Gets how many hexadecimal digits the key of the slot has now, which follows the key type the person chose.</summary>
+        public int ExpectedKeyHexLength => _host.ExpectedKeyHexLength(_slotId);
 
         /// <summary>Gets whether the slot takes its key from a provider.</summary>
         public bool IsReferenceMode => _host.IsKeyBound(_slotId);
@@ -179,14 +190,35 @@ namespace RFiDGear.Services.SecureKeys
                 return;
             }
 
-            var hexLength = _host.ExpectedKeyHexLength(_slotId);
-            using var entered = _dialogs.AskForKey(hexLength);
+            using var entered = _dialogs.AskForKey(ExpectedKeyHexLength);
 
             if (entered == null)
             {
                 return;
             }
 
+            if (StoreEntered(entered) is { } result)
+            {
+                _dialogs.Show(result.Message, result.Detail);
+            }
+        }
+
+        /// <summary>
+        /// Stores a key that was entered, without asking for it: the caller owns the entry (the key manager has a box of its own
+        /// for it) and disposes it. The key is read from the entry without becoming a string and is erased afterwards.
+        /// </summary>
+        /// <param name="entered">The digits as they were entered.</param>
+        /// <returns>What came of it, or <see langword="null"/> when nothing was tried because no key can be stored under this reference.</returns>
+        internal KeySlotStoreResult? StoreEntered(SecureString entered)
+        {
+            ArgumentNullException.ThrowIfNull(entered);
+
+            if (!CanStoreKey)
+            {
+                return null;
+            }
+
+            var hexLength = ExpectedKeyHexLength;
             Span<byte> key = stackalloc byte[WindowsCredentialKeyProvider.MaxKeyBytes];
 
             try
@@ -195,20 +227,14 @@ namespace RFiDGear.Services.SecureKeys
 
                 if (length == 0)
                 {
-                    _dialogs.Show(KeySlotMessage.KeyInvalid, hexLength);
-                    return;
+                    return new KeySlotStoreResult(KeySlotMessage.KeyInvalid, hexLength);
                 }
 
                 var error = _keyStore.Store(Reference, key.Slice(0, length));
 
-                if (error == 0)
-                {
-                    _dialogs.Show(KeySlotMessage.KeyStored, 0);
-                }
-                else
-                {
-                    _dialogs.Show(KeySlotMessage.KeyNotStored, error);
-                }
+                return error == 0
+                    ? new KeySlotStoreResult(KeySlotMessage.KeyStored, 0)
+                    : new KeySlotStoreResult(KeySlotMessage.KeyNotStored, error);
             }
             finally
             {

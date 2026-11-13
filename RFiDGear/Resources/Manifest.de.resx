@@ -2039,6 +2039,87 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="keySlotSupplierStatusConnected" xml:space="preserve">
     <value>Ein verbundenes Programm liefert Schlüssel.</value>
   </data>
+  <data name="windowTitleKeyManager" xml:space="preserve">
+    <value>Schlüsselverwaltung</value>
+  </data>
+  <data name="labelKeyManagerIntro" xml:space="preserve">
+    <value>Jeder Schlüssel wird entweder in der Aufgabe eingegeben, wodurch er im Projekt gespeichert wird, oder durch eine Referenz auf einen Schlüsselspeicher benannt, der beim Ausführen der Aufgabe befragt wird. Bei einer Referenz speichert das Projekt nur den Namen, nie den Schlüssel.</value>
+  </data>
+  <data name="labelKeyManagerKeyStore" xml:space="preserve">
+    <value>Schlüsselspeicher</value>
+  </data>
+  <data name="labelKeyManagerKeyName" xml:space="preserve">
+    <value>Name des Schlüssels</value>
+  </data>
+  <data name="buttonContentKeyManagerUseReference" xml:space="preserve">
+    <value>Referenz verwenden</value>
+  </data>
+  <data name="buttonContentKeyManagerUseKey" xml:space="preserve">
+    <value>Eingegebenen Schlüssel verwenden</value>
+  </data>
+  <data name="labelKeyManagerTypedKey" xml:space="preserve">
+    <value>Der Schlüssel wird in der Aufgabe eingegeben.</value>
+  </data>
+  <data name="labelKeyManagerNoSlots" xml:space="preserve">
+    <value>Hier gibt es keinen Schlüssel zu verwalten.</value>
+  </data>
+  <data name="buttonContentKeyManagerClose" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="buttonContentKeyManagerStoreKey" xml:space="preserve">
+    <value>Schlüssel speichern</value>
+  </data>
+  <data name="buttonContentKeyManager" xml:space="preserve">
+    <value>Schlüsselverwaltung...</value>
+  </data>
+  <data name="toolTipKeyManager" xml:space="preserve">
+    <value>Legen Sie fest, woher die Schlüssel dieses Bereichs kommen, und speichern Sie Schlüssel in der Windows-Anmeldeinformationsverwaltung.</value>
+  </data>
+  <data name="keySlotNameDesfirePiccCurrent" xml:space="preserve">
+    <value>PICC-Hauptschlüssel, aktuell</value>
+  </data>
+  <data name="keySlotNameDesfirePiccNew" xml:space="preserve">
+    <value>PICC-Hauptschlüssel, neu</value>
+  </data>
+  <data name="keySlotNameDesfireAppCurrent" xml:space="preserve">
+    <value>Anwendungsschlüssel, aktuell</value>
+  </data>
+  <data name="keySlotNameDesfireAppOld" xml:space="preserve">
+    <value>Anwendungsschlüssel, alt</value>
+  </data>
+  <data name="keySlotNameDesfireAppNew" xml:space="preserve">
+    <value>Anwendungsschlüssel, neu</value>
+  </data>
+  <data name="keySlotNameDesfireRead" xml:space="preserve">
+    <value>Schlüssel zum Lesen</value>
+  </data>
+  <data name="keySlotNameDesfireWrite" xml:space="preserve">
+    <value>Schlüssel zum Schreiben</value>
+  </data>
+  <data name="keySlotNameClassicACurrent" xml:space="preserve">
+    <value>Schlüssel A, aktuell</value>
+  </data>
+  <data name="keySlotNameClassicBCurrent" xml:space="preserve">
+    <value>Schlüssel B, aktuell</value>
+  </data>
+  <data name="keySlotNameClassicATarget" xml:space="preserve">
+    <value>Schlüssel A, neu</value>
+  </data>
+  <data name="keySlotNameClassicBTarget" xml:space="preserve">
+    <value>Schlüssel B, neu</value>
+  </data>
+  <data name="keySlotNameClassicMadACurrent" xml:space="preserve">
+    <value>MAD-Schlüssel A, aktuell</value>
+  </data>
+  <data name="keySlotNameClassicMadBCurrent" xml:space="preserve">
+    <value>MAD-Schlüssel B, aktuell</value>
+  </data>
+  <data name="keySlotNameClassicMadATarget" xml:space="preserve">
+    <value>MAD-Schlüssel A, neu</value>
+  </data>
+  <data name="keySlotNameClassicMadBTarget" xml:space="preserve">
+    <value>MAD-Schlüssel B, neu</value>
+  </data>
   <data name="menuItemMigrateProjectKeys" xml:space="preserve">
     <value>Schlüssel eines Projekts in die Anmeldeinformationsverwaltung verschieben...</value>
   </data>

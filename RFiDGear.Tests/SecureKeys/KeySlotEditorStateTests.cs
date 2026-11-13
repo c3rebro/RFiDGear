@@ -245,6 +245,68 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void An_entry_that_is_handed_in_is_stored_without_asking_and_the_state_says_what_came_of_it()
+        {
+            // The key manager has a box for the key of its own: the state is given the entry and neither asks nor shows a message.
+            var store = new FakeCredentialStore();
+            var dialogs = new ScriptedDialogs();
+            var state = NewState(new FakeHost { HexLength = 12 }, dialogs, store: store);
+            state.ToggleMode();
+            state.Reference = "cards/main";
+
+            using var entered = TestText.Secure("a1b2c3d4e5f6");
+            var result = state.StoreEntered(entered);
+
+            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyStored, 0), result);
+            Assert.Null(dialogs.AskedHexLength);
+            Assert.Empty(dialogs.Shown);
+            Assert.Equal(Encoding.Unicode.GetBytes("A1B2C3D4E5F6"), store.Blobs[Prefix + "cards/main"]);
+        }
+
+        [Fact]
+        public void An_entry_of_the_wrong_length_or_a_refusing_vault_is_reported_and_an_impossible_store_is_not_tried()
+        {
+            var store = new FakeCredentialStore();
+            var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
+
+            using (var early = TestText.Secure("a1b2c3d4e5f6"))
+            {
+                // No reference yet: nothing can be stored, and nothing is tried.
+                Assert.Null(state.StoreEntered(early));
+            }
+
+            state.ToggleMode();
+            state.Reference = "cards/main";
+
+            using (var shortKey = TestText.Secure("a1b2"))
+            {
+                Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyInvalid, 12), state.StoreEntered(shortKey));
+            }
+
+            store.WriteError = 5;
+
+            using (var refused = TestText.Secure("a1b2c3d4e5f6"))
+            {
+                Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyNotStored, 5), state.StoreEntered(refused));
+            }
+
+            Assert.Empty(store.Blobs);
+        }
+
+        [Fact]
+        public void The_state_knows_its_slot_and_how_many_digits_its_key_has()
+        {
+            var host = new FakeHost { HexLength = 48 };
+            var state = NewState(host, new ScriptedDialogs());
+
+            Assert.Equal(Slot, state.SlotId);
+            Assert.Equal(48, state.ExpectedKeyHexLength);
+
+            host.HexLength = 12;
+            Assert.Equal(12, state.ExpectedKeyHexLength);
+        }
+
+        [Fact]
         public void A_cancelled_entry_stores_nothing_and_says_nothing()
         {
             var store = new FakeCredentialStore();
