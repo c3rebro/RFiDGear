@@ -148,11 +148,20 @@ namespace RFiDGear.Services.ExternalControl
             }
         }
 
+        // The marker belongs to the thread, not to a supervisor.
+        private static void MarkAdmitting(RunRecord? record) => s_admitting = record;
+
         private static ActiveRunDto ToDto(RunRecord record) =>
             new ActiveRunDto { RequestId = record.RequestId, RunId = record.RunId, Source = RunSources.Bridge, StartedAt = record.StartedAt };
 
         private void OnHostExecutionCompleted(object? sender, ExecResult result)
         {
+            // Only the runs of the host this supervisor works with.
+            if (!ReferenceEquals(sender, _host.Execution))
+            {
+                return;
+            }
+
             var record = _registry.Find(null, result?.RunId);
 
             if (record != null)
@@ -444,7 +453,7 @@ namespace RFiDGear.Services.ExternalControl
 
             try
             {
-                s_admitting = record;
+                MarkAdmitting(record);
                 run = _execution.ExecuteAllAsync(plan.ToExecutionRequest(), record.RunId, record.Cancellation.Token);
             }
             catch (Exception e)
@@ -456,7 +465,7 @@ namespace RFiDGear.Services.ExternalControl
             }
             finally
             {
-                s_admitting = null;
+                MarkAdmitting(null);
             }
 
             // Admission is the synchronous part of the call: a refusal is a task that has already faulted.

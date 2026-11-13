@@ -210,7 +210,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void SetRunningQuietly(bool running) => Volatile.Write(ref _isRunning, running ? 1 : 0);
 
         /// <summary>Raises <c>ExecutionCompleted</c> on the calling thread, as the host does for a run after it gave up its gate.</summary>
-        public void RaiseExecutionCompleted(ExecResult result) => _executionCompleted?.Invoke(this, result);
+        public void RaiseExecutionCompleted(ExecResult result, object? sender = null) => _executionCompleted?.Invoke(sender ?? this, result);
 
         public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default)
         {

@@ -616,6 +616,10 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.False(h.Supervisor.IsHostRunning("another-run"));
             Assert.NotNull(h.Supervisor.ActiveRun);
 
+            // A report that does not come from this host says nothing about its runs.
+            h.Host.ExecutionHost.RaiseExecutionCompleted(FakeResults.Success(2) with { RunId = response.RunId }, sender: new object());
+            Assert.True(h.Supervisor.IsHostRunning(response.RunId));
+
             // The host gives up its gate and reports the run: the task of the run has not completed, and may not for a moment.
             h.Host.ExecutionHost.RaiseExecutionCompleted(FakeResults.Success(2) with { RunId = response.RunId });
             h.Host.ExecutionHost.SetRunningQuietly(true);
