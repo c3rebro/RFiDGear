@@ -109,6 +109,9 @@ namespace RFiDGear.Tests
             "messageKeyMigrationNotDeleted",
             "messageKeyMigrationUndone",
             "messageKeyMigrationNotUndone",
+            "labelEnableExternalControl",
+            "toolTipEnableExternalControl",
+            "labelExternalControlStatusBar",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.

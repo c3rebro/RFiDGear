@@ -697,6 +697,21 @@
                         Foreground="#FFCC6600"
                         ToolTip="PC/SC is not available in Remote Desktop sessions. See Settings &gt; Reader for details." />
                 </StatusBarItem>
+                <StatusBarItem Margin="4,0,0,0">
+                    <StatusBarItem.Style>
+                        <Style TargetType="StatusBarItem">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsExternalControlConnected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StatusBarItem.Style>
+                    <TextBlock
+                        Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelExternalControlStatusBar'}"
+                        FontWeight="Bold" />
+                </StatusBarItem>
                 <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
                     <TextBlock Text="{Binding DateTimeStatusBar, UpdateSourceTrigger=PropertyChanged}" Height="auto" FontWeight="Bold" HorizontalAlignment="Left"/>
                 </StatusBarItem>

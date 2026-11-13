@@ -62,6 +62,10 @@ namespace RFiDGear.Services
                         result.AutoMode = string.Equals(value, "1", StringComparison.Ordinal);
                         break;
 
+                    case "EXTERNALCONTROL":
+                        result.ExternalControl = string.Equals(value, "1", StringComparison.Ordinal);
+                        break;
+
                     case "LASTUSEDPROJECTPATH":
                         PersistLastProjectPath(value);
                         break;
@@ -83,6 +87,32 @@ namespace RFiDGear.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Says whether the arguments switch the external control bridge on (<c>EXTERNALCONTROL=1</c>). The pipe has to open
+        /// as soon as the host exists, before the arguments are processed; <see cref="Process"/> has effects (it takes the next
+        /// free number of a report file, it writes a setting) that must happen once, so this reads that one argument and
+        /// nothing else. It reads it the way <see cref="Process"/> does: the key without regard to case, the value exactly
+        /// <c>1</c>, the last one wins.
+        /// </summary>
+        /// <param name="args">The command line arguments.</param>
+        /// <returns><see langword="true"/> when the bridge is requested.</returns>
+        public static bool IsExternalControlRequested(string[] args)
+        {
+            var requested = false;
+
+            foreach (var arg in args ?? Array.Empty<string>())
+            {
+                var splitArg = (arg ?? string.Empty).Split('=');
+
+                if (splitArg.Length >= 2 && string.Equals(splitArg[0], "EXTERNALCONTROL", StringComparison.OrdinalIgnoreCase))
+                {
+                    requested = string.Equals(string.Join("=", splitArg.Skip(1)), "1", StringComparison.Ordinal);
+                }
+            }
+
+            return requested;
         }
 
         private static bool TryGetProjectFilePathFromArg(string arg, out string projectFilePath)

@@ -49,5 +49,11 @@ namespace RFiDGear.Services.Interfaces
         /// as the reader provider. The provider was automatically switched to <c>None</c> in this case.
         /// </summary>
         public bool IsRdpSession { get; set; }
+
+        /// <summary>
+        /// <see langword="true"/> when the settings switch the external control bridge on. A plain value, so that a caller
+        /// that builds this result without a <see cref="DefaultSpecification"/> (the tests do) does not need one.
+        /// </summary>
+        public bool EnableExternalControl { get; set; }
     }
 }

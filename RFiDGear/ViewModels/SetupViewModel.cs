@@ -58,6 +58,7 @@ namespace RFiDGear.ViewModel
             ComPort = settingsReaderWriter.DefaultSpecification.LastUsedComPort;
             LoadOnStart = settingsReaderWriter.DefaultSpecification.AutoLoadProjectOnStart;
             CheckOnStart = settingsReaderWriter.DefaultSpecification.AutoCheckForUpdates;
+            EnableExternalControl = settingsReaderWriter.DefaultSpecification.EnableExternalControl;
             SelectedBaudRate = settingsReaderWriter.DefaultSpecification.LastUsedBaudRate;
 
             // Load Classic keys into local editable collection
@@ -480,6 +481,17 @@ namespace RFiDGear.ViewModel
             }
         }
         private bool checkOnStart;
+
+        /// <summary>
+        /// Gets or sets whether RFiDGear opens the pipe for the external control bridge. The main window writes it to the
+        /// settings and asks for a restart when it changed.
+        /// </summary>
+        public bool EnableExternalControl
+        {
+            get => enableExternalControl;
+            set => enableExternalControl = value;
+        }
+        private bool enableExternalControl;
 
         #region Default Keys
 

@@ -74,6 +74,12 @@ namespace RFiDGear.Services.ExternalControl
         internal static BridgeFault InvalidRequest(string field) =>
             new BridgeFault(BridgeErrorCodes.InvalidRequest, BridgeErrorKinds.InvalidRequest, details: new Dictionary<string, string> { ["field"] = field });
 
+        /// <summary>RFiDGear cannot serve the call yet.</summary>
+        /// <param name="reason">Why, a short word (<c>startup</c>).</param>
+        /// <returns>The fault; the call did nothing, so it is marked as never started.</returns>
+        internal static BridgeFault NotReady(string reason) =>
+            new BridgeFault(BridgeErrorCodes.NotReady, BridgeErrorKinds.NotReady, neverStarted: true, details: new Dictionary<string, string> { ["reason"] = reason });
+
         /// <summary>Turns the fault into the error of the wire.</summary>
         /// <returns>The exception that StreamJsonRpc answers with.</returns>
         internal LocalRpcException ToRpc() => new LocalRpcException(Kind)

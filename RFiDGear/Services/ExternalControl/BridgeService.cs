@@ -27,6 +27,15 @@ namespace RFiDGear.Services.ExternalControl
         /// <see cref="BridgeErrorCodes.CapabilityNotSupported"/>. The handshake itself is always there.
         /// </summary>
         internal IReadOnlySet<string> Capabilities { get; init; } = new HashSet<string>(StringComparer.Ordinal) { BridgeCapabilities.Session };
+
+        /// <summary>
+        /// Gets whether RFiDGear has finished starting. Until it says so only <c>hello</c> and <c>getStatus</c> are served; every
+        /// other method answers <see cref="BridgeErrorCodes.NotReady"/>.
+        /// </summary>
+        internal Func<bool> IsStartupComplete { get; init; } = () => true;
+
+        /// <summary>Gets what <c>getStatus</c> answers with; a host that offers the <c>status</c> capability sets it.</summary>
+        internal Func<Task<StatusResponse>>? GetStatus { get; init; }
     }
 
     /// <summary>
@@ -67,7 +76,8 @@ namespace RFiDGear.Services.ExternalControl
         public Task<HelloResponse> Hello(HelloRequest request) => Run(BridgeMethods.Hello, () => Task.FromResult(HelloCore(request)));
 
         /// <inheritdoc />
-        public Task<StatusResponse> GetStatus(GetStatusRequest request) => Run<StatusResponse>(BridgeMethods.GetStatus, () => throw new NotSupportedException());
+        public Task<StatusResponse> GetStatus(GetStatusRequest request) =>
+            Run(BridgeMethods.GetStatus, () => (_options.GetStatus ?? throw new NotSupportedException())());
 
         /// <inheritdoc />
         public Task<LoadProjectResponse> LoadProject(LoadProjectRequest request) => Run<LoadProjectResponse>(BridgeMethods.LoadProject, () => throw new NotSupportedException());
@@ -98,6 +108,11 @@ namespace RFiDGear.Services.ExternalControl
                 if (!_options.Capabilities.Contains(capability))
                 {
                     throw BridgeFault.CapabilityNotSupported(capability);
+                }
+
+                if (wireName != BridgeMethods.Hello && wireName != BridgeMethods.GetStatus && !_options.IsStartupComplete())
+                {
+                    throw BridgeFault.NotReady("startup");
                 }
 
                 return await body().ConfigureAwait(false);

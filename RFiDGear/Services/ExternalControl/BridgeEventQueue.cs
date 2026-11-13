@@ -42,6 +42,7 @@ namespace RFiDGear.Services.ExternalControl
         private TaskCompletionSource<bool> _signal = NewSignal();
         private int _durable;
         private bool _completed;
+        private bool _inFlight;
 
         /// <summary>Puts a state event in, or replaces the one of the same name that is waiting.</summary>
         /// <param name="name">The wire name.</param>
@@ -119,6 +120,8 @@ namespace RFiDGear.Services.ExternalControl
                             _stateByName.Remove(entry.Name);
                         }
 
+                        _inFlight = true;
+
                         return new PendingBridgeEvent(entry.Name, entry.Create);
                     }
 
@@ -131,6 +134,27 @@ namespace RFiDGear.Services.ExternalControl
                 }
 
                 await wait.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>Says that the event taken last has been sent (or dropped); the consumer calls it after every event it took.</summary>
+        internal void MarkSent()
+        {
+            lock (_gate)
+            {
+                _inFlight = false;
+            }
+        }
+
+        /// <summary>Gets whether nothing waits and nothing that was taken is still being sent.</summary>
+        internal bool IsDrained
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _items.Count == 0 && !_inFlight;
+                }
             }
         }
 

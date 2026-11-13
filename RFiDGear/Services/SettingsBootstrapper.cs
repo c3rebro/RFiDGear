@@ -72,7 +72,8 @@ namespace RFiDGear.Services
                     LastUsedProjectPath = settings.DefaultSpecification.LastUsedProjectPath,
                     Culture = settings.DefaultSpecification.DefaultLanguage == "german" ? new CultureInfo("de-DE") : new CultureInfo("en-US"),
                     DefaultSpecification = settings.DefaultSpecification,
-                    IsRdpSession = isRdpSession
+                    IsRdpSession = isRdpSession,
+                    EnableExternalControl = settings.DefaultSpecification.EnableExternalControl
                 };
             }
         }

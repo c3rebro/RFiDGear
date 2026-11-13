@@ -5,6 +5,7 @@
   "DefaultAutoPerformTasksEnabled": false,
   "AutoCheckForUpdates": true,
   "AutoLoadProjectOnStart": false,
+  "EnableExternalControl": false,
   "LastUsedProjectPath": "",
   "LastUsedComPort": "USB",
   "LastUsedBaudRate": "9600",

@@ -19,6 +19,9 @@ namespace RFiDGear.Services.Interfaces
 
         public bool AutoMode { get; set; }
 
+        /// <summary><see langword="true"/> for <c>EXTERNALCONTROL=1</c>: the external control bridge is on for this run, whatever the setting says.</summary>
+        public bool ExternalControl { get; set; }
+
         public Dictionary<string, string> Variables { get; } = new Dictionary<string, string>();
     }
 }
