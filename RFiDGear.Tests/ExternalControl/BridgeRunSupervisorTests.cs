@@ -194,10 +194,10 @@ namespace RFiDGear.Tests.ExternalControl
         {
             var h = new Harness();
             h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
-            var first = await h.Supervisor.StartAsync(Request("r-1", ("$JOBNUMBER", "J-42")));
+            var first = await h.Supervisor.StartAsync(Request("r-1", ("$JOBNUMBER", "J-42"), ("$CHIPNUMBER", "C-7")));
 
-            // Same content, another order and case of the names does not matter either.
-            var second = await h.Supervisor.StartAsync(Request("r-1", ("$jobnumber", "J-42")));
+            // The same content in another order is the same request.
+            var second = await h.Supervisor.StartAsync(Request("r-1", ("$CHIPNUMBER", "C-7"), ("$JOBNUMBER", "J-42")));
 
             Assert.True(second.Duplicate);
             Assert.Equal(first.RunId, second.RunId);
@@ -337,6 +337,26 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(BridgeErrorCodes.AutoModeActive, autoMode.Code);
             Assert.All(new[] { empty, otherPath, otherCount, autoMode }, fault => Assert.True(fault.NeverStarted));
             Assert.Empty(h.Host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task AutomaticModeSwitchedOnWhileTheRequestWaitsForTheWindow_RefusesTheRun_BeforeTheHostIsAsked()
+        {
+            var h = new Harness();
+            var window = new ManualWindow();
+            h.Dispatch = window.Dispatch;
+            var start = h.Supervisor.StartAsync(Request("r-1"));
+            await Task.Delay(50);
+
+            // The user switches it on after the first look and before the window gets to the request.
+            h.Host.AutoModeHost.IsAutoModeEnabled = true;
+            window.RunAll();
+            var fault = await RefusalOf(() => start);
+
+            Assert.Equal(BridgeErrorCodes.AutoModeActive, fault.Code);
+            Assert.True(fault.NeverStarted);
+            Assert.Empty(h.Host.ExecutionHost.Requests);
+            Assert.False(h.Supervisor.HasActiveRun);
         }
 
         [Fact]
@@ -585,10 +605,37 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task ARunIsTheOneTheHostRuns_UntilTheHostReportsItAsEnded()
+        {
+            var h = new Harness();
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            h.Host.ExecutionHost.SimulateRunningState = true;
+            var response = await h.Supervisor.StartAsync(Request("r-1"));
+
+            Assert.True(h.Supervisor.IsHostRunning(response.RunId));
+            Assert.False(h.Supervisor.IsHostRunning("another-run"));
+            Assert.NotNull(h.Supervisor.ActiveRun);
+
+            // The host gives up its gate and reports the run: the task of the run has not completed, and may not for a moment.
+            h.Host.ExecutionHost.RaiseExecutionCompleted(FakeResults.Success(2) with { RunId = response.RunId });
+            h.Host.ExecutionHost.SetRunningQuietly(true);
+
+            Assert.False(h.Supervisor.IsHostRunning(response.RunId));
+            Assert.Null(h.Supervisor.ActiveRun);
+            Assert.True(h.Supervisor.HasActiveRun);
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            await ResultOf(h, "r-1");
+            Assert.False(h.Supervisor.HasActiveRun);
+        }
+
+        [Fact]
         public async Task TheRunInFlight_IsKnownByItsRequestAndItsId()
         {
             var h = new Harness();
             h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+
+            // As the real host does: it is running while the run goes on.
+            h.Host.ExecutionHost.SimulateRunningState = true;
             var response = await h.Supervisor.StartAsync(Request("r-1"));
 
             var active = h.Supervisor.ActiveRun!;

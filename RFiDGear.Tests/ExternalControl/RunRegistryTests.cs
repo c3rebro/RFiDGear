@@ -68,6 +68,7 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(RunRecordState.Completed, record.State);
             Assert.Same(first, registry.Read(record).Result);
             Assert.True(record.Completion.Task.IsCompleted);
+            Assert.True(record.Completion.Task.Result);
         }
 
         [Fact]
@@ -90,7 +91,7 @@ namespace RFiDGear.Tests.ExternalControl
             var (newer, created) = registry.GetOrCreate("r-1", "hash");
 
             Assert.True(record.Completion.Task.IsCompleted);
-            Assert.Null(record.Completion.Task.Result);
+            Assert.False(record.Completion.Task.Result);
             Assert.True(created);
             Assert.NotSame(record, newer);
             Assert.Null(registry.Find(null, record.RunId));

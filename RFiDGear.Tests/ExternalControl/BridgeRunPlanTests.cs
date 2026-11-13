@@ -14,7 +14,7 @@ namespace RFiDGear.Tests.ExternalControl
     /// <summary>What a request to run may ask for, how two requests are told apart, and how the result of the host becomes the result on the wire.</summary>
     public class BridgeRunPlanTests
     {
-        private static StartRunRequest Request(string id = "r-1", params (string Name, string Value)[] variables) => new StartRunRequest
+        private static StartRunRequest Request(string id, params (string Name, string Value)[] variables) => new StartRunRequest
         {
             RequestId = id,
             Variables = variables.Select(v => new VariablePair { Name = v.Name, Value = v.Value }).ToList(),
@@ -121,12 +121,21 @@ namespace RFiDGear.Tests.ExternalControl
         // ── Telling two requests apart ──
 
         [Fact]
-        public void TheSameVariables_InAnotherOrderOrCase_AreTheSameRequest()
+        public void TheSameVariables_InAnotherOrder_AreTheSameRequest()
         {
             var a = RunPlan.From(Request("r-1", ("$JOBNUMBER", "J-42"), ("REPORTTARGETPATH", @"C:\r\x.pdf")));
-            var b = RunPlan.From(Request("r-1", ("reporttargetpath", @"C:\r\x.pdf"), ("$jobnumber", "J-42")));
+            var b = RunPlan.From(Request("r-1", ("REPORTTARGETPATH", @"C:\r\x.pdf"), ("$JOBNUMBER", "J-42")));
 
             Assert.Equal(a.PayloadHash, b.PayloadHash);
+        }
+
+        [Fact]
+        public void ANameInAnotherCase_IsAnotherRequest_BecauseTheTasksSubstituteOnlyWhatIsSpelledAsTheName()
+        {
+            var a = RunPlan.From(Request("r-1", ("$JOBNUMBER", "J-42")));
+            var b = RunPlan.From(Request("r-1", ("$jobnumber", "J-42")));
+
+            Assert.NotEqual(a.PayloadHash, b.PayloadHash);
         }
 
         [Fact]

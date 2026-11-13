@@ -12,14 +12,15 @@ using RFiDGear.Contracts;
 namespace RFiDGear.Services.ExternalControl
 {
     /// <summary>
-    /// What a <c>startRun</c> asks for, checked and in a form that can be compared: the variables without regard to the order
-    /// or the case of their names (the host keeps them in a case-insensitive dictionary), and the expectations about the
-    /// project. Two requests with the same id are the same request exactly when their plans have the same hash. A request
-    /// that breaks a rule is refused with the name of the field and never its value.
+    /// What a <c>startRun</c> asks for, checked and in a form that can be compared: the variables without regard to their order
+    /// (but with the spelling of their names, because the tasks substitute a placeholder only where it is spelled as the name
+    /// is, so <c>$jobnumber</c> and <c>$JOBNUMBER</c> do different things), and the expectations about the project. Two
+    /// requests with the same id are the same request exactly when their plans have the same hash. A request that breaks a rule
+    /// is refused with the name of the field and never its value.
     /// </summary>
     internal sealed class RunPlan
     {
-        private RunPlan(string requestId, IReadOnlyList<KeyValuePair<string, string>> variables, string? expectProjectPath, int? expectTaskCount)
+        internal RunPlan(string requestId, IReadOnlyList<KeyValuePair<string, string>> variables, string? expectProjectPath, int? expectTaskCount)
         {
             RequestId = requestId;
             Variables = variables;
@@ -94,8 +95,9 @@ namespace RFiDGear.Services.ExternalControl
                 var name = pair?.Name;
                 var value = pair?.Value;
 
-                // Names are used as keys and may be logged by the host: no control characters, and no name twice (the host
-                // would silently keep the last). Values may be anything but a NUL.
+                // Names are the text the tasks look for: no control characters, and no name twice, also in another case (the host
+                // keeps its variables in a case-insensitive dictionary and would silently keep the last). Values may be anything
+                // but a NUL.
                 if (string.IsNullOrWhiteSpace(name)
                     || name.Length > BridgeProtocol.MaxVariableNameLength
                     || name.Any(char.IsControl)
@@ -136,7 +138,7 @@ namespace RFiDGear.Services.ExternalControl
         }
 
         // SHA-256 over length-prefixed UTF-8, so no two different plans can write the same bytes: the variables sorted by their
-        // upper-cased names, then the expectations, each with a marker for "not given".
+        // names (as spelled), then the expectations, each with a marker for "not given".
         private static string Hash(IReadOnlyList<KeyValuePair<string, string>> variables, string? expectProjectPath, int? expectTaskCount)
         {
             using var stream = new MemoryStream();
@@ -144,7 +146,7 @@ namespace RFiDGear.Services.ExternalControl
 
             writer.Write(variables.Count);
 
-            foreach (var pair in variables.Select(v => new KeyValuePair<string, string>(v.Key.ToUpperInvariant(), v.Value)).OrderBy(v => v.Key, StringComparer.Ordinal))
+            foreach (var pair in variables.OrderBy(v => v.Key, StringComparer.Ordinal))
             {
                 writer.Write(pair.Key);
                 writer.Write(pair.Value);

@@ -60,6 +60,7 @@ namespace RFiDGear.Services.ExternalControl
     {
         private int _state = (int)RunRecordState.Pending;
         private int _cancellationDisposed;
+        private int _hostEnded;
 
         /// <summary>Creates the record of a request.</summary>
         /// <param name="requestId">The request id.</param>
@@ -83,8 +84,12 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets the answer of the host to the request; completed once, and every caller of the same request sees the same one.</summary>
         internal TaskCompletionSource<AdmissionResult> Admission { get; } = new TaskCompletionSource<AdmissionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        /// <summary>Gets what ends a wait for the result: the result, or <see langword="null"/> when the request was refused or abandoned.</summary>
-        internal TaskCompletionSource<RunResultDto?> Completion { get; } = new TaskCompletionSource<RunResultDto?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        /// <summary>
+        /// Gets what wakes up a wait for the result: <see langword="true"/> when the run has ended, <see langword="false"/> when the
+        /// request was refused or abandoned. It carries no result: a waiter reads the registry when it wakes, so that a result the
+        /// history has dropped is not kept alive by a task that someone still holds.
+        /// </summary>
+        internal TaskCompletionSource<bool> Completion { get; } = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         /// <summary>
         /// Gets the source of the token that cancels the run. It exists from the start, so that a cancellation that arrives
@@ -95,6 +100,16 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Says that the source of the cancellation token is to be disposed, once.</summary>
         /// <returns><see langword="true"/> for the one caller that may dispose it.</returns>
         internal bool TryClaimCancellationDisposal() => Interlocked.Exchange(ref _cancellationDisposed, 1) == 0;
+
+        /// <summary>
+        /// Gets or sets whether the host has reported the run as ended (it gave up its gate). The result of the run is final a
+        /// moment later, when its task completes; in between the host may already be running something else.
+        /// </summary>
+        internal bool HostEnded
+        {
+            get => Volatile.Read(ref _hostEnded) != 0;
+            set => Volatile.Write(ref _hostEnded, value ? 1 : 0);
+        }
 
         /// <summary>Gets or sets when the host admitted the run.</summary>
         internal DateTimeOffset? StartedAt { get; set; }
@@ -205,7 +220,7 @@ namespace RFiDGear.Services.ExternalControl
                 _byRunId.Remove(record.RunId);
             }
 
-            record.Completion.TrySetResult(null);
+            record.Completion.TrySetResult(false);
         }
 
         /// <summary>
@@ -234,7 +249,7 @@ namespace RFiDGear.Services.ExternalControl
                 Evict();
             }
 
-            record.Completion.TrySetResult(result);
+            record.Completion.TrySetResult(true);
 
             return result;
         }

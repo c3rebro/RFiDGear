@@ -132,10 +132,21 @@ namespace RFiDGear.Tests.ExternalControl
                     remove { _ = value; }
                 }
 
-                public Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default) => throw new NotSupportedException();
+                public Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default)
+                {
+                    ArgumentNullException.ThrowIfNull(request);
+                    ct.ThrowIfCancellationRequested();
+
+                    throw new NotSupportedException();
+                }
 
 #pragma warning disable CS0618
-                public Task<ExecResult> ExecuteAllAsync(CancellationToken ct = default) => throw new NotSupportedException();
+                public Task<ExecResult> ExecuteAllAsync(CancellationToken ct = default)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    throw new NotSupportedException();
+                }
 #pragma warning restore CS0618
 
                 public void ResetStatus() => throw new NotSupportedException();
@@ -454,16 +465,25 @@ namespace RFiDGear.Tests.ExternalControl
         public void Disposing_LetsGoOfTheHost_AndOfTheProcessExitHook()
         {
             var (service, _, host) = Start();
-            Assert.Equal(new[] { 1, 1, 1 }, new[] { host.ExecutionHost.IsRunningChangedSubscribers, host.ProjectHost.ProjectChangedSubscribers, host.ReaderHost.ReaderStateChangedSubscribers });
+            Assert.Equal(new[] { 1, 1, 1, 1 }, Subscribers(host));
             Assert.True(IsHookedToProcessExit(service));
 
             service.Dispose();
             service.Dispose();
 
-            Assert.Equal(new[] { 0, 0, 0 }, new[] { host.ExecutionHost.IsRunningChangedSubscribers, host.ProjectHost.ProjectChangedSubscribers, host.ReaderHost.ReaderStateChangedSubscribers });
+            Assert.Equal(new[] { 0, 0, 0, 0 }, Subscribers(host));
             Assert.False(IsHookedToProcessExit(service));
             Assert.Equal(BridgeServerState.Stopped, service.ServerState);
         }
+
+        // The events of the host the bridge listens to: a run starting or ending, the project, the reader, the end of a run.
+        private static int[] Subscribers(FakeExtensionHost host) => new[]
+        {
+            host.ExecutionHost.IsRunningChangedSubscribers,
+            host.ProjectHost.ProjectChangedSubscribers,
+            host.ReaderHost.ReaderStateChangedSubscribers,
+            host.ExecutionHost.ExecutionCompletedSubscribers,
+        };
 
         [Fact]
         public void TheServiceHooksTheProcessExit_SoEveryWayOutOfTheApplicationTellsTheClient()

@@ -48,6 +48,12 @@ namespace RFiDGear.Services.ExternalControl
         private readonly object _activeGate = new object();
         private readonly List<RunRecord> _active = new List<RunRecord>();
 
+        // The run this thread is asking the host to admit, for the length of that call. The host raises "running changed"
+        // synchronously inside the call, on this thread, so a handler can tell a run of the bridge from a run of someone else
+        // that starts at the same moment on another thread.
+        [ThreadStatic]
+        private static RunRecord? s_admitting;
+
         /// <summary>Creates the supervisor.</summary>
         /// <param name="host">The host service of RFiDGear.</param>
         /// <param name="execution">The execution of the host that takes the id of the run from the caller.</param>
@@ -75,7 +81,14 @@ namespace RFiDGear.Services.ExternalControl
             _isShuttingDown = isShuttingDown ?? throw new ArgumentNullException(nameof(isShuttingDown));
             _busyActivity = busyActivity ?? throw new ArgumentNullException(nameof(busyActivity));
             _admissionTimeout = admissionTimeout ?? DefaultAdmissionTimeout;
+
+            // Raised by the host for every run, whoever started it, as soon as it has given up its gate: from then on the run
+            // of the bridge no longer owns the host, even though its result is only final a moment later.
+            _host.Execution.ExecutionCompleted += OnHostExecutionCompleted;
         }
+
+        /// <summary>Lets go of the host.</summary>
+        internal void Detach() => _host.Execution.ExecutionCompleted -= OnHostExecutionCompleted;
 
         /// <summary>Gets the number of the latest result.</summary>
         internal long LastResultSeq => _registry.LastResultSeq;
@@ -92,7 +105,11 @@ namespace RFiDGear.Services.ExternalControl
             }
         }
 
-        /// <summary>Gets the run that a client started and that is in flight, or <see langword="null"/>.</summary>
+        /// <summary>
+        /// Gets the run that a client started and that the host is running now, or <see langword="null"/>. The host gives up its
+        /// gate before the task of the run completes, and another starter may take the gate in between: a run whose host has
+        /// reported it as ended is not the one that is running, even though its result is not final yet.
+        /// </summary>
         internal ActiveRunDto? ActiveRun
         {
             get
@@ -101,12 +118,46 @@ namespace RFiDGear.Services.ExternalControl
 
                 lock (_activeGate)
                 {
-                    latest = _active.Count > 0 ? _active[^1] : null;
+                    latest = _active.LastOrDefault(record => !record.HostEnded);
                 }
 
-                return latest == null
-                    ? null
-                    : new ActiveRunDto { RequestId = latest.RequestId, RunId = latest.RunId, Source = RunSources.Bridge, StartedAt = latest.StartedAt };
+                return latest == null || !_host.Execution.IsRunning ? null : ToDto(latest);
+            }
+        }
+
+        /// <summary>
+        /// Says whose run the host is starting, for the handler of "running changed". It must be called on the thread that
+        /// raised the event: only a run of the bridge is admitted by a call this thread is in.
+        /// </summary>
+        /// <returns>The run of the bridge that this thread is admitting, or <see langword="null"/> when whoever raised it is another starter.</returns>
+        internal ActiveRunDto? OwnerOfThisRaise()
+        {
+            var record = s_admitting;
+
+            return record == null ? null : ToDto(record);
+        }
+
+        /// <summary>Says whether a run the bridge started is still the one the host runs.</summary>
+        /// <param name="runId">The id of the run.</param>
+        /// <returns><see langword="true"/> while that run is in flight and the host has not reported it as ended.</returns>
+        internal bool IsHostRunning(string runId)
+        {
+            lock (_activeGate)
+            {
+                return _active.Any(record => !record.HostEnded && string.Equals(record.RunId, runId, StringComparison.Ordinal)) && _host.Execution.IsRunning;
+            }
+        }
+
+        private static ActiveRunDto ToDto(RunRecord record) =>
+            new ActiveRunDto { RequestId = record.RequestId, RunId = record.RunId, Source = RunSources.Bridge, StartedAt = record.StartedAt };
+
+        private void OnHostExecutionCompleted(object? sender, ExecResult result)
+        {
+            var record = _registry.Find(null, result?.RunId);
+
+            if (record != null)
+            {
+                record.HostEnded = true;
             }
         }
 
@@ -360,6 +411,15 @@ namespace RFiDGear.Services.ExternalControl
                 _active.Add(record);
             }
 
+            // Automatic mode may have been switched on while the request waited for the window. The toggle of the user runs on this
+            // thread too, so this is the last look before the host is asked, and nothing can change between it and the call.
+            if (_host.AutoMode.IsAutoModeEnabled)
+            {
+                Refuse(record, decision, BridgeFault.AutoModeActive());
+
+                return;
+            }
+
             BridgeFault? refusal;
 
             try
@@ -384,6 +444,7 @@ namespace RFiDGear.Services.ExternalControl
 
             try
             {
+                s_admitting = record;
                 run = _execution.ExecuteAllAsync(plan.ToExecutionRequest(), record.RunId, record.Cancellation.Token);
             }
             catch (Exception e)
@@ -392,6 +453,10 @@ namespace RFiDGear.Services.ExternalControl
                 Refuse(record, decision, new BridgeFault(BridgeErrorCodes.InternalError, BridgeErrorKinds.InternalError));
 
                 return;
+            }
+            finally
+            {
+                s_admitting = null;
             }
 
             // Admission is the synchronous part of the call: a refusal is a task that has already faulted.

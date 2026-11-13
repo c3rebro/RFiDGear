@@ -169,6 +169,38 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task WhenTheHostHasGivenUpItsGate_ANewRunOfSomeoneElse_IsNotLabelledWithTheRunThatJustEnded()
+        {
+            var (_, pipe, host) = Start();
+            host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            host.ExecutionHost.SimulateRunningState = true;
+            var client = await ConnectAsync(pipe, BridgeEvents.RunningChanged, BridgeEvents.RunCompleted);
+            var response = await client.Service.StartRun(Request("r-1"));
+            var first = Assert.IsType<RunningChangedEvent>((await client.WaitForEventsAsync(1))[0]);
+            Assert.Equal("r-1", first.OwnRequestId);
+
+            // The host gives up its gate and reports the run as ended; the task of the run has not completed yet. Somebody else
+            // takes the gate in between.
+            host.ExecutionHost.SetRunning(false);
+
+            // Gate given up, completion not reported yet: nothing is running, so no run is shown as going on.
+            Assert.Null((await client.Service.GetStatus(new GetStatusRequest())).ActiveRun);
+            host.ExecutionHost.RaiseExecutionCompleted(FakeResults.Success(2) with { RunId = response.RunId });
+            host.ExecutionHost.SetRunning(true);
+            await WaitUntilAsync(() => client.Events.Skip(1).OfType<RunningChangedEvent>().Any(e => e.IsRunning));
+            var status = await client.Service.GetStatus(new GetStatusRequest());
+
+            Assert.True(status.IsRunning);
+            Assert.Null(status.ActiveRun);
+            Assert.All(client.Events.Skip(1).OfType<RunningChangedEvent>(), e => Assert.Null(e.OwnRequestId));
+
+            // The run of the bridge still ends with its one result.
+            host.ExecutionHost.RunGate.SetResult(true);
+            var lookup = await client.Service.GetRunResult(new GetRunResultRequest { RequestId = "r-1", WaitMs = 5000 });
+            Assert.Equal(RunStates.Completed, lookup.State);
+        }
+
+        [Fact]
         public async Task ARunOfSomeoneElse_IsShownAsRunning_ButHasNoOwnerHere_AndNeverANotice()
         {
             var (_, pipe, host) = Start();
@@ -193,6 +225,7 @@ namespace RFiDGear.Tests.ExternalControl
         {
             var (_, pipe, host) = Start();
             host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            host.ExecutionHost.SimulateRunningState = true;
             var client = await ConnectAsync(pipe);
             await client.Service.StartRun(Request("r-1"));
 
