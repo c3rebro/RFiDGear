@@ -1955,7 +1955,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>The key store that the reference points into.</value>
   </data>
   <data name="toolTipKeySlotStoreKey" xml:space="preserve">
-    <value>Stores a key in the Windows Credential Manager under this reference. The key is typed hidden and is never shown again.</value>
+    <value>Stores the key in the Windows Credential Manager under this name. It needs a valid name and a key with the right number of digits.</value>
   </data>
   <data name="captionKeySlot" xml:space="preserve">
     <value>Secure key</value>
@@ -2180,7 +2180,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Key manager...</value>
   </data>
   <data name="labelStoredKeysIntro" xml:space="preserve">
-    <value>These keys are stored in the Windows Credential Manager of this Windows user. A project names a key by its name and never contains the key itself. Only names are listed here: a key is never shown.</value>
+    <value>These keys are stored in the Windows Credential Manager of this Windows user. A project names a key by its name and never contains the key itself.</value>
   </data>
   <data name="labelStoredKeysList" xml:space="preserve">
     <value>Stored keys</value>
@@ -2226,5 +2226,35 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageStoredKeysListFailed" xml:space="preserve">
     <value>The stored keys could not be listed (error {0}).</value>
+  </data>
+  <data name="labelKeyManagerShowKey" xml:space="preserve">
+    <value>Show key</value>
+  </data>
+  <data name="toolTipKeyManagerShowKey" xml:space="preserve">
+    <value>Shows the digits as you type them, so that you can check them. The key is hidden again when the box is cleared.</value>
+  </data>
+  <data name="labelKeyManagerStoredKey" xml:space="preserve">
+    <value>Stored key</value>
+  </data>
+  <data name="labelKeyManagerNewKey" xml:space="preserve">
+    <value>Create a new key</value>
+  </data>
+  <data name="labelKeyManagerStoredKeyMissing" xml:space="preserve">
+    <value>{0} (not stored)</value>
+  </data>
+  <data name="labelKeyManagerNoStoredKeys" xml:space="preserve">
+    <value>No key is stored yet. Create one below.</value>
+  </data>
+  <data name="toolTipKeyManagerStoredKey" xml:space="preserve">
+    <value>The keys that are stored in the Windows Credential Manager. Choose the one that this key should use.</value>
+  </data>
+  <data name="toolTipKeyManagerStoreNew" xml:space="preserve">
+    <value>Stores the key under the name and uses it for this key. It needs a valid name and a key with the right number of digits.</value>
+  </data>
+  <data name="messageKeyManagerNameInUse" xml:space="preserve">
+    <value>A key named '{0}' is stored already. Choose it in the list above; to replace its key, use File &gt; Key manager.</value>
+  </data>
+  <data name="messageKeyManagerListUnreadable" xml:space="preserve">
+    <value>The stored keys could not be listed (error {0}), so nothing was stored.</value>
   </data>
 </root>

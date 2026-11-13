@@ -1977,7 +1977,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Der Schlüsselspeicher, auf den die Referenz zeigt.</value>
   </data>
   <data name="toolTipKeySlotStoreKey" xml:space="preserve">
-    <value>Speichert einen Schlüssel unter dieser Referenz in der Windows-Anmeldeinformationsverwaltung. Der Schlüssel wird verdeckt eingegeben und nie wieder angezeigt.</value>
+    <value>Speichert den Schlüssel unter diesem Namen in der Windows-Anmeldeinformationsverwaltung. Dafür braucht es einen gültigen Namen und einen Schlüssel mit der richtigen Anzahl Ziffern.</value>
   </data>
   <data name="captionKeySlot" xml:space="preserve">
     <value>Sicherer Schlüssel</value>
@@ -2202,7 +2202,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Schlüsselverwaltung...</value>
   </data>
   <data name="labelStoredKeysIntro" xml:space="preserve">
-    <value>Diese Schlüssel sind in der Windows-Anmeldeinformationsverwaltung dieses Windows-Benutzers gespeichert. Ein Projekt nennt einen Schlüssel nur beim Namen und enthält den Schlüssel nie selbst. Hier stehen nur Namen: Ein Schlüssel wird nie angezeigt.</value>
+    <value>Diese Schlüssel sind in der Windows-Anmeldeinformationsverwaltung dieses Windows-Benutzers gespeichert. Ein Projekt nennt einen Schlüssel nur beim Namen und enthält den Schlüssel nie selbst.</value>
   </data>
   <data name="labelStoredKeysList" xml:space="preserve">
     <value>Gespeicherte Schlüssel</value>
@@ -2248,5 +2248,35 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageStoredKeysListFailed" xml:space="preserve">
     <value>Die gespeicherten Schlüssel konnten nicht aufgelistet werden (Fehler {0}).</value>
+  </data>
+  <data name="labelKeyManagerShowKey" xml:space="preserve">
+    <value>Schlüssel anzeigen</value>
+  </data>
+  <data name="toolTipKeyManagerShowKey" xml:space="preserve">
+    <value>Zeigt die Ziffern beim Eingeben, damit Sie sie prüfen können. Der Schlüssel wird wieder verborgen, wenn das Feld geleert wird.</value>
+  </data>
+  <data name="labelKeyManagerStoredKey" xml:space="preserve">
+    <value>Gespeicherter Schlüssel</value>
+  </data>
+  <data name="labelKeyManagerNewKey" xml:space="preserve">
+    <value>Neuen Schlüssel anlegen</value>
+  </data>
+  <data name="labelKeyManagerStoredKeyMissing" xml:space="preserve">
+    <value>{0} (nicht gespeichert)</value>
+  </data>
+  <data name="labelKeyManagerNoStoredKeys" xml:space="preserve">
+    <value>Es ist noch kein Schlüssel gespeichert. Legen Sie unten einen an.</value>
+  </data>
+  <data name="toolTipKeyManagerStoredKey" xml:space="preserve">
+    <value>Die Schlüssel, die in der Windows-Anmeldeinformationsverwaltung gespeichert sind. Wählen Sie den, den dieser Schlüssel verwenden soll.</value>
+  </data>
+  <data name="toolTipKeyManagerStoreNew" xml:space="preserve">
+    <value>Speichert den Schlüssel unter dem Namen und verwendet ihn für diesen Schlüssel. Dafür braucht es einen gültigen Namen und einen Schlüssel mit der richtigen Anzahl Ziffern.</value>
+  </data>
+  <data name="messageKeyManagerNameInUse" xml:space="preserve">
+    <value>Ein Schlüssel mit dem Namen '{0}' ist bereits gespeichert. Wählen Sie ihn in der Liste oben; um seinen Schlüssel zu ersetzen, nutzen Sie Datei &gt; Schlüsselverwaltung.</value>
+  </data>
+  <data name="messageKeyManagerListUnreadable" xml:space="preserve">
+    <value>Die gespeicherten Schlüssel konnten nicht aufgelistet werden (Fehler {0}); es wurde nichts gespeichert.</value>
   </data>
 </root>

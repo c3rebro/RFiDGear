@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using RFiDGear.Services.SecureKeys;
@@ -55,51 +54,54 @@ namespace RFiDGear.View
             {
                 var child = VisualTreeHelper.GetChild(root, index);
 
-                if (child is PasswordBox box)
+                if (child is KeyEntryBox entry)
                 {
-                    box.Clear();
+                    entry.Clear();
                 }
 
                 ClearKeyEntries(child);
             }
         }
 
-        // The key is read from the entry of the row and the entry is cleared, whatever came of it: the digits do not stay in the
-        // window. The entry is the only place the key is ever held; the row and its view model never see it as text.
+        // The key is read from the entry of the row and the entry is cleared when a key was tried, whatever came of it: the digits do
+        // not stay in the window. When nothing was stored (no valid name, the name is in use, the entry is not a key) the digits stay, so
+        // that the person can go on. The entry is the only place the key is ever held; the row and its view model never see it as text.
         private void StoreKey_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button { Parent: Panel panel } && panel.Children.OfType<PasswordBox>().FirstOrDefault() is { } box)
+            if (sender is Button { Parent: Panel panel } && panel.Children.OfType<KeyEntryBox>().FirstOrDefault() is { } entry)
             {
-                Store(box);
+                Store(entry);
             }
         }
 
         // Enter in the box of a key stores the key when one can be stored, and does nothing otherwise. It never closes the window:
         // closing clears the box, and a key typed for a slot would be thrown away without a word.
-        private void KeyBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void KeyBox_EnterPressed(object sender, EventArgs e)
         {
-            if (e.Key != Key.Enter || sender is not PasswordBox box)
+            if (sender is KeyEntryBox entry)
             {
-                return;
+                Store(entry);
             }
-
-            e.Handled = true;
-            Store(box);
         }
 
-        private static void Store(PasswordBox box)
+        private static void Store(KeyEntryBox entry)
         {
-            if (box.DataContext is not KeyManagerSlotRow row || !row.CanStoreKey)
+            if (entry.DataContext is not KeyManagerSlotRow row || !row.CanStoreKey || !entry.IsKeyValid)
             {
                 return;
             }
 
-            using (var entered = box.SecurePassword)
+            bool tried;
+
+            using (var entered = entry.GetEntered())
             {
-                row.StoreEntered(entered);
+                tried = row.StoreEntered(entered);
             }
 
-            box.Clear();
+            if (tried)
+            {
+                entry.Clear();
+            }
         }
 
         private void OnCloseRequested(object sender, EventArgs e) => Close();

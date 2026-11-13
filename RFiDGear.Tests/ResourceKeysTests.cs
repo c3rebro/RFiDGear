@@ -163,6 +163,16 @@ namespace RFiDGear.Tests
             "messageStoredKeysRemoved",
             "messageStoredKeysNotRemoved",
             "messageStoredKeysListFailed",
+            "labelKeyManagerShowKey",
+            "toolTipKeyManagerShowKey",
+            "labelKeyManagerStoredKey",
+            "labelKeyManagerNewKey",
+            "labelKeyManagerStoredKeyMissing",
+            "labelKeyManagerNoStoredKeys",
+            "toolTipKeyManagerStoredKey",
+            "toolTipKeyManagerStoreNew",
+            "messageKeyManagerNameInUse",
+            "messageKeyManagerListUnreadable",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.

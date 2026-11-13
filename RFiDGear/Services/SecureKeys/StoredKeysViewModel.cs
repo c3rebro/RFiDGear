@@ -240,6 +240,12 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>Gets the tooltip of the kind of key.</summary>
         public string KindToolTip => _text("toolTipStoredKeysKind");
 
+        /// <summary>Gets the text of the check box that shows the key that is entered.</summary>
+        public string ShowKeyText => _text("labelKeyManagerShowKey");
+
+        /// <summary>Gets the tooltip of the check box that shows the key that is entered.</summary>
+        public string ShowKeyToolTip => _text("toolTipKeyManagerShowKey");
+
         /// <summary>Gets the text of the button that stores the key.</summary>
         public string StoreButtonText => _text("buttonContentKeyManagerStoreKey");
 
@@ -296,9 +302,9 @@ namespace RFiDGear.Services.SecureKeys
         /// </summary>
         /// <param name="entered">The digits as they were entered.</param>
         /// <returns>
-        /// <see langword="true"/> when storing was tried, and the digits are no longer needed; <see langword="false"/> when nothing was
-        /// tried (the name is not valid, or the person did not agree to replace the key), so that the digits can be kept while the
-        /// person goes on.
+        /// <see langword="true"/> when a key was tried and the digits are no longer needed; <see langword="false"/> when nothing was
+        /// stored and the digits are kept while the person goes on: the name is not valid, the list could not be read, the person did
+        /// not agree to replace the key, or the entry is not a key.
         /// </returns>
         internal bool StoreEntered(SecureString entered)
         {
@@ -340,7 +346,9 @@ namespace RFiDGear.Services.SecureKeys
                     break;
             }
 
-            return true;
+            // An entry that is not a key is not stored and is not thrown away: the person can correct it, which is what the colour of the
+            // box is for.
+            return result.Message != KeySlotMessage.KeyInvalid;
         }
 
         /// <summary>

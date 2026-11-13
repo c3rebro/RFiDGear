@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="RFiDGear.View.KeyEntryBox"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="KeySlotStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- The two boxes share the cell and only one of them is shown. The key is in one of them at a time. -->
+        <PasswordBox
+            x:Name="HiddenBox"
+            Height="24"
+            VerticalContentAlignment="Center"
+            AutomationProperties.Name="{Binding Label, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            MaxLength="{Binding HexLength, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            PasswordChanged="HiddenBox_PasswordChanged"
+            PreviewKeyDown="Box_PreviewKeyDown" />
+        <!-- No undo: a key that was cleared must not come back with Ctrl+Z when the box is shown again. -->
+        <TextBox
+            x:Name="ShownBox"
+            Height="24"
+            VerticalContentAlignment="Center"
+            IsUndoEnabled="False"
+            AutomationProperties.Name="{Binding Label, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            MaxLength="{Binding HexLength, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            PreviewKeyDown="Box_PreviewKeyDown"
+            TextChanged="ShownBox_TextChanged"
+            Visibility="Collapsed" />
+
+        <CheckBox
+            x:Name="ShowCheck"
+            Grid.Column="1"
+            AutomationProperties.Name="{Binding ShowKeyLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            Margin="8,0,0,0"
+            VerticalAlignment="Center"
+            Content="{Binding ShowKeyText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            IsChecked="{Binding IsShown, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}" />
+    </Grid>
+</UserControl>

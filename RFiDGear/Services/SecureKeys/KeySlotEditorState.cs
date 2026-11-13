@@ -19,6 +19,12 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>The key store refused; the detail is its error code.</summary>
         KeyNotStored,
 
+        /// <summary>A key is stored under that name already, so nothing was stored.</summary>
+        NameInUse,
+
+        /// <summary>The stored keys could not be listed, so it is not known whether the name is free and nothing was stored; the detail is the error code.</summary>
+        ListUnreadable,
+
         /// <summary>What was entered is not a key of the right length; the detail is the number of digits needed.</summary>
         KeyInvalid,
     }
@@ -132,9 +138,6 @@ namespace RFiDGear.Services.SecureKeys
         public bool ProviderOffersStoreKey =>
             IsReferenceMode && string.Equals(ProviderId, WindowsCredentialKeyProvider.ProviderId, StringComparison.Ordinal);
 
-        /// <summary>Gets whether a key can be stored under the reference: the provider takes keys, and the reference is valid.</summary>
-        public bool CanStoreKey => ProviderOffersStoreKey && IsReferenceValid;
-
         /// <summary>Gets the command that switches between the key in the task and a reference.</summary>
         public ICommand ToggleModeCommand { get; }
 
@@ -190,23 +193,49 @@ namespace RFiDGear.Services.SecureKeys
             _host.BindKeySlot(_slotId, DefaultProviderId, string.Empty);
         }
 
+        /// <summary>Lists the keys that are stored in the Credential Manager, by name. No key is read.</summary>
+        /// <returns>The error, and the names in alphabetical order.</returns>
+        internal StoredKeyList ListStoredKeys() => _keyStore.List();
+
         /// <summary>
-        /// Stores a key that was entered under the reference in the Credential Manager. The caller owns the entry (the key manager
-        /// has a box of its own for it) and disposes it. The key is read from the entry without becoming a string and is erased
-        /// afterwards; it is not shown again.
+        /// Stores a new key in the Credential Manager under a name that is not in use and makes the slot use it. The caller owns the
+        /// entry (the key manager has a box of its own for it) and disposes it. The key is read from the entry without becoming a
+        /// string and is erased afterwards. A name that is in use is never written to, and neither is any name while the stored
+        /// keys cannot be listed: then it is not known whether the name is free, and the key under it would be replaced unasked.
         /// </summary>
+        /// <param name="name">The name of the new key.</param>
         /// <param name="entered">The digits as they were entered.</param>
-        /// <returns>What came of it, or <see langword="null"/> when nothing was tried because no key can be stored under this reference.</returns>
-        internal KeySlotStoreResult? StoreEntered(SecureString entered)
+        /// <returns>What came of it, or <see langword="null"/> when nothing was tried: the slot holds a typed key, its key store takes no keys from here, or the name is not valid.</returns>
+        internal KeySlotStoreResult? StoreNewKey(string name, SecureString entered)
         {
             ArgumentNullException.ThrowIfNull(entered);
 
-            if (!CanStoreKey)
+            if (!ProviderOffersStoreKey || !SecureKeySyntax.IsValidReference(name))
             {
                 return null;
             }
 
-            return KeyStorage.Store(_keyStore, Reference, ExpectedKeyHexLength, entered);
+            var stored = _keyStore.List();
+
+            if (stored.Error != 0)
+            {
+                return new KeySlotStoreResult(KeySlotMessage.ListUnreadable, stored.Error);
+            }
+
+            if (stored.References.Any(reference => string.Equals(reference, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return new KeySlotStoreResult(KeySlotMessage.NameInUse, 0);
+            }
+
+            var result = KeyStorage.Store(_keyStore, name, ExpectedKeyHexLength, entered);
+
+            if (result.Message == KeySlotMessage.KeyStored)
+            {
+                // The key was made for this slot: the slot names it now.
+                Reference = name;
+            }
+
+            return result;
         }
 
         /// <inheritdoc />

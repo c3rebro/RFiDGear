@@ -327,14 +327,19 @@ message boxes and file pickers.
 Every box in which a card key is typed is wrapped by `KeySlotEditor`
 (`Views/KeySlotEditor.xaml`), which shows that a slot names its key by a
 reference to a secure key provider instead of holding it: the box is greyed and
-a line below it says the name. The choice is made in the key manager
+shows the reference in the place of the key (the editor swaps the binding of the
+box's `Text` and puts it back; the box keeps filling its cell, so it keeps its
+height). The choice is made in the key manager
 (`KeyManagerView`, `KeyManagerViewModel`), which the `KeyManagerButton` at the
 bottom of each section of keys opens. The decisions are in
 `KeySlotEditorState`, which the editor and the manager both show; the task view
 models implement `IKeySlotHost`. A new key box needs the wrapper, a slot id, a
 name for the slot and a `KeyManagerButton` in its section (see
-`DEVELOPER_NOTES.md`). The key manager takes a key in a password box that is
-cleared whatever comes of it; no property of its view models holds a key.
+`DEVELOPER_NOTES.md`). The key manager lists the stored keys to choose from
+and creates a new key in a group of its own (never under a name in use, and
+never while the list cannot be read); the key is entered in a `KeyEntryBox`
+(hidden unless "Show key" is ticked, limited to its digits, green or red) that
+is cleared after a key was tried; no property of its view models holds a key.
 
 File > "Key manager..." (`StoredKeysView`, `StoredKeysViewModel`) needs no
 project: it lists the keys under `RFiDGear/key/` by name only

@@ -144,10 +144,17 @@ afterwards.
   task dialog with keys (card mastering, application mastering, data explorer,
   MIFARE Classic key setup and MAD) and check that its sections have a "Key
   manager..." button at the bottom, level with the buttons beside it. Bind a
-  key: the key box turns grey and the name appears below it, and the window
-  does not grow wider for a long name. Point at the name, at the key stores in
-  the list and at the buttons: the tooltips wrap and stay long enough to read.
-  Store a key with Enter and with the button. Close the window with digits in
+  key: the key box turns grey and shows the reference in the place of the key
+  (nothing lies over it), it is as high as the boxes around it (26 px in the
+  card mastering tab), and the window does not grow wider for a long name.
+  Point at the box, at the key stores in the list and at the buttons: the
+  tooltips wrap and stay long enough to read. In the manager choose a stored
+  key from the list by its name, and create a new key in the group below:
+  the name box has no colour, the key box turns green for a key and red for
+  anything else, takes no more characters than the key has digits, and shows
+  the digits when "Show key" is ticked. Try a name that exists: nothing is
+  stored and the window says so. Store a key with Enter and with the button.
+  Close the window with digits in
   the box that were not stored, open it again: the box is empty. Choose
   "Connected external application", start the sample client of the bridge, let
   it register as a key provider, and watch the line under the list change from
