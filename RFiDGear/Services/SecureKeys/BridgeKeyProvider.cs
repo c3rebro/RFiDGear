@@ -20,8 +20,12 @@ namespace RFiDGear.Services.SecureKeys
         /// <returns>The answer of the client, or <see langword="null"/> when there is no client that supplies keys.</returns>
         Task<ResolveKeyResponse?> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken);
 
-        /// <summary>Gets whether a connected client has registered as the supplier of keys, right now.</summary>
-        bool HasSupplier { get; }
+        /// <summary>
+        /// Gets whether a program can supply keys through this channel, right now: <see cref="KeySupplierAvailability.Off"/> when the
+        /// bridge does not listen (it failed or was stopped), <see cref="KeySupplierAvailability.NoSupplier"/> while it listens and no
+        /// connected client registered as the supplier of keys, <see cref="KeySupplierAvailability.Connected"/> when one did.
+        /// </summary>
+        KeySupplierAvailability Availability { get; }
     }
 
     /// <summary>
@@ -63,23 +67,9 @@ namespace RFiDGear.Services.SecureKeys
 
         /// <summary>
         /// Gets whether a program can supply keys right now: <see cref="KeySupplierAvailability.Off"/> without a channel (external
-        /// control does not listen), <see cref="KeySupplierAvailability.NoSupplier"/> while it listens but no connected client
-        /// registered as the supplier of keys, <see cref="KeySupplierAvailability.Connected"/> when one did.
+        /// control was never started) or when the channel says the bridge does not listen, otherwise what the channel says.
         /// </summary>
-        internal KeySupplierAvailability Availability
-        {
-            get
-            {
-                var channel = Volatile.Read(ref _channel);
-
-                if (channel == null)
-                {
-                    return KeySupplierAvailability.Off;
-                }
-
-                return channel.HasSupplier ? KeySupplierAvailability.Connected : KeySupplierAvailability.NoSupplier;
-            }
-        }
+        internal KeySupplierAvailability Availability => Volatile.Read(ref _channel)?.Availability ?? KeySupplierAvailability.Off;
 
         /// <summary>Tells the listeners that a client connected or went away, which can change <see cref="Availability"/>.</summary>
         internal void NotifyConnectionChanged() => AvailabilityChanged?.Invoke(this, EventArgs.Empty);

@@ -73,7 +73,14 @@ namespace RFiDGear.Tests
         {
             await OnSta((editor, _) =>
             {
-                Assert.True(ToolTipService.GetShowDuration(editor) >= 20000);
+                // WPF reads the duration from the control that owns the tooltip, so each owner is asked, not the editor.
+                foreach (var name in new[] { "ModeButton", "ProviderBox", "ReferenceBox", "StoreKeyButton" })
+                {
+                    var owner = (FrameworkElement)editor.FindName(name);
+
+                    Assert.True(ToolTipService.GetShowDuration(owner) >= 20000, name + " shows its tooltip for " + ToolTipService.GetShowDuration(owner) + " ms");
+                }
+
                 Assert.True(ToolTipService.GetShowOnDisabled((FrameworkElement)editor.FindName("StoreKeyButton")));
             });
         }
