@@ -17,7 +17,7 @@ namespace RFiDGear.ViewModel.DialogFactories
         private readonly Action notifyChipTasksChanged;
         private readonly Action activateMainWindow;
         private readonly Action<bool> updateReaderBusy;
-        private readonly ITaskListEditGate taskListEdit;
+        private readonly ITaskListEditGate taskListEditGate;
 
         /// <summary>
         /// Creates the factory of the add/edit task dialogs.
@@ -25,15 +25,15 @@ namespace RFiDGear.ViewModel.DialogFactories
         /// <param name="notifyChipTasksChanged">Called after a dialog changed the task list.</param>
         /// <param name="activateMainWindow">Called when a dialog closes.</param>
         /// <param name="updateReaderBusy">Called with the reader state while a dialog talks to the reader.</param>
-        /// <param name="taskListEdit">
+        /// <param name="taskListEditGate">
         /// Admits the change of the task list that confirming a dialog makes, so it cannot happen under a running task loop.
         /// </param>
-        public TaskDialogFactory(Action notifyChipTasksChanged, Action activateMainWindow, Action<bool> updateReaderBusy, ITaskListEditGate taskListEdit)
+        public TaskDialogFactory(Action notifyChipTasksChanged, Action activateMainWindow, Action<bool> updateReaderBusy, ITaskListEditGate taskListEditGate)
         {
             this.notifyChipTasksChanged = notifyChipTasksChanged ?? throw new ArgumentNullException(nameof(notifyChipTasksChanged));
             this.activateMainWindow = activateMainWindow ?? throw new ArgumentNullException(nameof(activateMainWindow));
             this.updateReaderBusy = updateReaderBusy ?? (_ => { });
-            this.taskListEdit = taskListEdit ?? throw new ArgumentNullException(nameof(taskListEdit));
+            this.taskListEditGate = taskListEditGate ?? throw new ArgumentNullException(nameof(taskListEditGate));
         }
 
         public IUserDialogViewModel CreateGenericChipTaskDialog(object selectedSetupViewModel, ChipTaskHandlerModel chipTasks, ObservableCollection<IDialogViewModel> dialogs)
@@ -55,7 +55,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                     {
                         // The list changes only while no run, load or other edit is in progress. Otherwise the user
                         // is told, and the dialog stays open so the confirmation can be repeated.
-                        var listChanged = taskListEdit.TryEdit(() =>
+                        var listChanged = taskListEditGate.TryEdit(() =>
                         {
                             if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                             {
@@ -128,7 +128,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                     {
                         // The list changes only while no run, load or other edit is in progress. Otherwise the user
                         // is told, and the dialog stays open so the confirmation can be repeated.
-                        var listChanged = taskListEdit.TryEdit(() =>
+                        var listChanged = taskListEditGate.TryEdit(() =>
                         {
                             if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                             {
@@ -223,7 +223,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                     {
                         // The list changes only while no run, load or other edit is in progress. Otherwise the user
                         // is told, and the dialog stays open so the confirmation can be repeated.
-                        var listChanged = taskListEdit.TryEdit(() =>
+                        var listChanged = taskListEditGate.TryEdit(() =>
                         {
                             if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                             {
@@ -297,7 +297,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                     {
                         // The list changes only while no run, load or other edit is in progress. Otherwise the user
                         // is told, and the dialog stays open so the confirmation can be repeated.
-                        var listChanged = taskListEdit.TryEdit(() =>
+                        var listChanged = taskListEditGate.TryEdit(() =>
                         {
                             if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                             {

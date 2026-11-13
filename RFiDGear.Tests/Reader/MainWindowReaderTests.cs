@@ -425,6 +425,25 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task DeletingASelectionThatIsNotInTheTaskList_IsNotReportedAsRemoved()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                viewModel.ChipTasks.TaskCollection.Add(FinishedTask());
+                viewModel.SelectedSetupViewModel = FinishedTask();   // a task that the list does not hold
+                var dialogsBefore = viewModel.Dialogs.Count;
+
+                Assert.False(viewModel.TryDeleteSelectedTask());
+
+                Assert.Single(viewModel.ChipTasks.TaskCollection);
+                Assert.Equal(dialogsBefore, viewModel.Dialogs.Count);   // the edit was admitted: nobody is told it is busy
+                Assert.True(coordinator.TryBeginProjectOperation());   // and the slot was given back
+                coordinator.EndProjectOperation();
+                await Task.CompletedTask;
+            });
+        }
+
+        [Fact]
         public async Task ConfirmingTheCommonTaskDialog_IsRefusedWhileARunIsInProgress_AndKeepsTheDialogOpen()
         {
             await WithViewModel(async (viewModel, _, coordinator) =>
