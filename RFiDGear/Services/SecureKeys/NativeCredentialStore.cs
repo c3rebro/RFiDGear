@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -22,7 +23,7 @@ namespace RFiDGear.Services.SecureKeys
         // The layout of CREDENTIALW. It is only ever copied to and from the vault, never compared, so IEquatable would be dead code.
         [StructLayout(LayoutKind.Sequential)]
         [SuppressMessage("Major Code Smell", "S3898:Value types should implement IEquatable<T>", Justification = "Interop layout of CREDENTIALW; it is never compared.")]
-        private struct Credential
+        internal struct Credential
         {
             public uint Flags;
             public uint Type;
@@ -46,6 +47,9 @@ namespace RFiDGear.Services.SecureKeys
 
         [DllImport("advapi32.dll", EntryPoint = "CredDeleteW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern bool CredDelete(string target, uint type, uint flags);
+
+        [DllImport("advapi32.dll", EntryPoint = "CredEnumerateW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern bool CredEnumerate(string filter, uint flags, out uint count, out IntPtr credentials);
 
         [DllImport("advapi32.dll", EntryPoint = "CredFree", ExactSpelling = true)]
         private static extern void CredFree(IntPtr buffer);
@@ -115,5 +119,62 @@ namespace RFiDGear.Services.SecureKeys
         /// <inheritdoc />
         public int Delete(string targetName) =>
             CredDelete(targetName, CredTypeGeneric, 0) ? 0 : Marshal.GetLastWin32Error();
+
+        /// <inheritdoc />
+        public CredentialList Enumerate(string targetPrefix)
+        {
+            // The filter takes a wildcard at its end only. The vault answers NOT_FOUND for no match, which is an empty list here.
+            if (!CredEnumerate(targetPrefix + "*", 0, out var count, out var buffer))
+            {
+                var error = Marshal.GetLastWin32Error();
+
+                return new CredentialList(error == CredentialErrors.NotFound ? 0 : error, Array.Empty<string>());
+            }
+
+            try
+            {
+                var names = new List<string>((int)count);
+
+                for (var index = 0; index < count; index++)
+                {
+                    // Only the target name is copied out: the secret in the structure is never read.
+                    var credential = Marshal.PtrToStructure<Credential>(Marshal.ReadIntPtr(buffer, index * IntPtr.Size));
+
+                    if (credential.Type == CredTypeGeneric && Marshal.PtrToStringUni(credential.TargetName) is { } name)
+                    {
+                        names.Add(name);
+                    }
+                }
+
+                return new CredentialList(0, names);
+            }
+            finally
+            {
+                // The vault hands out whole credentials, secrets included, in memory that CredFree gives back without erasing it.
+                // The secrets are erased here, also when reading a name failed.
+                ZeroBlobs(buffer, count);
+                CredFree(buffer);
+            }
+        }
+
+        /// <summary>
+        /// Erases the secret of every credential in a listing that the vault handed out, and nothing else: the array of pointers to
+        /// the credentials, and the credentials themselves, are left as they are for <c>CredFree</c>.
+        /// </summary>
+        /// <param name="credentials">The array of pointers to credentials that <c>CredEnumerate</c> returned.</param>
+        /// <param name="count">How many credentials there are.</param>
+        internal static void ZeroBlobs(IntPtr credentials, uint count)
+        {
+            for (var index = 0; index < count; index++)
+            {
+                var credential = Marshal.PtrToStructure<Credential>(Marshal.ReadIntPtr(credentials, index * IntPtr.Size));
+                var size = (int)credential.CredentialBlobSize;
+
+                if (size > 0 && credential.CredentialBlob != IntPtr.Zero)
+                {
+                    Marshal.Copy(new byte[size], 0, credential.CredentialBlob, size);
+                }
+            }
+        }
     }
 }

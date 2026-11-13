@@ -153,7 +153,23 @@ afterwards.
   it register as a key provider, and watch the line under the list change from
   "external control is not running" (the setting is off) to "no connected
   program has registered" to "a connected program supplies keys", each within
-  a second or two.
+  a second or two. Do this on a screen with the display scaling you use (100%,
+  125% and 150% if you can), with each task dialog at its smallest size and
+  with the splitter between its two groups moved to either side: the buttons
+  and the names under the key boxes stay in view. The tests measure the
+  dialogs at 100%.
+- The key manager of the menu: File > "Key manager...". Needs no project. Check
+  that the stored keys are listed by name only, and compare the list with
+  `cmdkey /list`: it shows the same names below `RFiDGear/key/`, and nothing
+  of other programs. Store a key (all three kinds: 12, 32 and 48 digits) under
+  a new name, and see it appear in the list; store it under the same name
+  again and answer No to the question (nothing changes, the digits stay in the
+  box), then Yes (the key is replaced: use a task that names it to see that it
+  is the new key). Remove a key: the question names it, No removes nothing,
+  Yes removes it, and a task that names it ends `KeyUnavailable` afterwards.
+  Remove a key with `cmdkey /delete` while the window is open and press Remove
+  on its row: the window says it was removed. No key is shown anywhere, and
+  closing the window with digits in the box leaves it empty the next time.
 
 **What to send back:**
 

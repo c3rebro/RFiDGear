@@ -2025,6 +2025,16 @@ namespace RFiDGear.ViewModel
             }
         }
 
+        /// <summary>Gets or sets how the key manager of the menu is shown; the tests replace it.</summary>
+        internal IStoredKeysLauncher StoredKeysLauncher { get; set; } = new RFiDGear.View.WpfStoredKeysLauncher();
+
+        /// <summary>
+        /// Opens the key manager: the keys that are stored in the Windows Credential Manager, listed by name, with a way to store a key
+        /// under a name and to remove one. It needs no project and no task, and it never shows a key.
+        /// </summary>
+        public IRelayCommand OpenKeyManagerCommand => new RelayCommand(OnOpenKeyManager);
+        private void OnOpenKeyManager() => StoredKeysLauncher.Show(mw);
+
         /// <summary>Logs a project-open failure without changing the currently loaded project.</summary>
         private static void LogProjectOpenFailure(string path, ProjectOpenError error) =>
             Log.ForContext<MainWindowViewModel>()

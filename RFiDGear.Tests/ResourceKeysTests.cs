@@ -146,6 +146,23 @@ namespace RFiDGear.Tests
             "labelExternalControlStatusBar",
             "messageBoxCloseDuringBridgeRunCaption",
             "messageBoxCloseDuringBridgeRunMessage",
+            "menuItemKeyManager",
+            "labelStoredKeysIntro",
+            "labelStoredKeysList",
+            "labelStoredKeysNone",
+            "labelStoredKeysAdd",
+            "labelStoredKeysType",
+            "labelStoredKeysTypeClassic",
+            "labelStoredKeysTypeDesAes",
+            "labelStoredKeysTypeThreeKey",
+            "buttonContentStoredKeysRemove",
+            "toolTipStoredKeysRemove",
+            "toolTipStoredKeysKind",
+            "messageStoredKeysConfirmRemove",
+            "messageStoredKeysConfirmReplace",
+            "messageStoredKeysRemoved",
+            "messageStoredKeysNotRemoved",
+            "messageStoredKeysListFailed",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.

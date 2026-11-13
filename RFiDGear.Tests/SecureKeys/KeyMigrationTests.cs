@@ -1126,6 +1126,8 @@ namespace RFiDGear.Tests.SecureKeys
             }
 
             public int Delete(string targetName) => DeleteError != 0 ? DeleteError : _inner.Delete(targetName);
+
+            public CredentialList Enumerate(string targetPrefix) => _inner.Enumerate(targetPrefix);
         }
     }
 }

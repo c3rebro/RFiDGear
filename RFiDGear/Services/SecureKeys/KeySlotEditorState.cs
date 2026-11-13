@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Security;
-using System.Security.Cryptography;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -207,28 +206,7 @@ namespace RFiDGear.Services.SecureKeys
                 return null;
             }
 
-            var hexLength = ExpectedKeyHexLength;
-            Span<byte> key = stackalloc byte[WindowsCredentialKeyProvider.MaxKeyBytes];
-
-            try
-            {
-                var length = KeyEntry.Read(entered, hexLength, key);
-
-                if (length == 0)
-                {
-                    return new KeySlotStoreResult(KeySlotMessage.KeyInvalid, hexLength);
-                }
-
-                var error = _keyStore.Store(Reference, key.Slice(0, length));
-
-                return error == 0
-                    ? new KeySlotStoreResult(KeySlotMessage.KeyStored, 0)
-                    : new KeySlotStoreResult(KeySlotMessage.KeyNotStored, error);
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(key);
-            }
+            return KeyStorage.Store(_keyStore, Reference, ExpectedKeyHexLength, entered);
         }
 
         /// <inheritdoc />
