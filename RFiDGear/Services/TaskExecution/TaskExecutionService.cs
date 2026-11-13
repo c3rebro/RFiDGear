@@ -559,6 +559,13 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
+        // The one line that says a run was given up; the loop leaves at two places, and both write it. The position is
+        // the task the watchdog was timing, or null when no task was timed yet.
+        private void LogAbandoned(string runId, int? taskPosition)
+        {
+            logger.LogInformation("TaskLoop.Abandoned", new { RunId = runId, TaskPosition = taskPosition, Timestamp = DateTimeOffset.UtcNow });
+        }
+
         private IReadOnlyList<TaskDescriptor> BuildTaskDescriptors(TaskExecutionRequest request)
         {
             if (request.TaskDescriptors != null && request.TaskDescriptors.Count > 0)
@@ -724,6 +731,8 @@ namespace RFiDGear.Services.TaskExecution
             var loggedTaskPositions = new HashSet<int>();
             var observations = new List<TaskExecutionObservation>();
             TaskLoopRunResult taskLoopResult = null;
+            var terminalStatus = TaskLoopTerminalStatus.Failure;
+            int? abandonedAt = null;
 
             try
             {
@@ -731,6 +740,32 @@ namespace RFiDGear.Services.TaskExecution
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     await Task.Delay(50, cancellationToken);
+
+                    // The watchdog of the task before may have fired while the loop waited. Nothing awaits between this
+                    // look and the start of the next task, so the watchdog cannot fire in between: a task that starts
+                    // here starts before the run is given up, never after.
+                    if (abandoned)
+                    {
+                        // The index has moved on to the task that will not start; the watchdog timed the one before it,
+                        // and its tag says which.
+                        int? timedPosition = taskTimeout.Tag is int tag ? tag : (int?)null;
+
+                        // AbandonRun marked that task failed in its model, though it had finished. If it ran, its recorded
+                        // outcome says the same now (corrected in place: it is no second attempt) and the evaluator counts
+                        // it as given up, as at the end of a task.
+                        if (timedPosition is int position &&
+                            position < descriptors.Count &&
+                            observations.Any(observation => observation.TaskPosition == position && observation.Decision == "Executed"))
+                        {
+                            var timedDescriptor = descriptors[position];
+                            var timedModel = timedDescriptor.Task ?? request.TaskHandler?.TaskCollection?[position] as IGenericTask;
+                            ReviseObservation(observations, request, CreateTaskObservation(position, timedDescriptor, timedModel, "Executed", false));
+                            abandonedAt = position;
+                        }
+
+                        LogAbandoned(runId, timedPosition);
+                        break;
+                    }
 
                     if (request.RunSelectedOnly && request.TaskHandler.TaskCollection != null)
                     {
@@ -826,6 +861,12 @@ namespace RFiDGear.Services.TaskExecution
                         throw;
                     }
 
+                    // A task of the list that is done is not done again when a jump back passes it: the handlers only step
+                    // over it, as they do on the second visit of every task. A visit that did not run the task, at a
+                    // position that already has its outcome, is that. It is bookkeeping and no skip, so the outcome
+                    // stands, however the handler knows that its task is done (by its state or by its error level).
+                    var steppedOver = !executedTask && observations.Any(observation => observation.TaskPosition == taskPosition);
+
                     if (executedTask)
                     {
                         RecordTaskAttempt(taskModel);
@@ -852,7 +893,7 @@ namespace RFiDGear.Services.TaskExecution
                             loggedTaskPositions.RemoveWhere(position => position >= CurrentTaskIndex);
                         }
                     }
-                    else if (!executedTask && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
+                    else if (!executedTask && !steppedOver && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
                     {
                         var skipReason = GetSkipReason(taskModel);
                         RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Skipped", null, skipReason));
@@ -867,7 +908,8 @@ namespace RFiDGear.Services.TaskExecution
 
                     if (abandoned)
                     {
-                        logger.LogInformation("TaskLoop.Abandoned", new { RunId = runId, TaskPosition = taskPosition, Timestamp = DateTimeOffset.UtcNow });
+                        abandonedAt = taskPosition;
+                        LogAbandoned(runId, taskPosition);
                         break;
                     }
 
@@ -889,7 +931,13 @@ namespace RFiDGear.Services.TaskExecution
                     endedByProjectAt >= 0 ? endedByProjectAt + 1 : descriptors?.Count ?? 0,
                     observations,
                     request?.ErrorRouting,
-                    selectedTaskOnly: request?.RunSelectedOnly ?? false);
+                    selectedTaskOnly: request?.RunSelectedOnly ?? false,
+                    abandonedAt: abandonedAt);
+
+                // A run the watchdog gave up did not complete, whatever the tasks before it answered. The evaluator is told
+                // which task was given up (it has given no answer), so its counts agree with the status; the status itself
+                // is not left to it.
+                terminalStatus = abandoned ? TaskLoopTerminalStatus.Failure : taskLoopResult.TerminalStatus;
 
                 // The status is judged on the tasks up to the exit, but the summary accounts for the whole project: the tasks
                 // after the exit were not started either.
@@ -908,12 +956,12 @@ namespace RFiDGear.Services.TaskExecution
                     taskLoopResult.UnhandledFailures,
                     taskLoopResult.InvalidSkips,
                     NotReached = taskLoopResult.NotReached + tasksAfterProjectExit,
-                    TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
+                    TerminalStatus = terminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });
             }
 
-            return taskLoopResult.TerminalStatus;
+            return terminalStatus;
         }
 
         /// <summary>
@@ -938,6 +986,42 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             request.Observations?.Add(observation);
+        }
+
+        /// <summary>
+        /// Corrects the outcome of the latest attempt of a task, in the loop's own list and in the caller's: no attempt is
+        /// added, so a task that ran once still has one entry in each.
+        /// </summary>
+        private static void ReviseObservation(
+            List<TaskExecutionObservation> evaluated,
+            TaskExecutionRequest request,
+            TaskExecutionObservation observation)
+        {
+            var earlier = evaluated.FindIndex(item => item.TaskPosition == observation.TaskPosition);
+            if (earlier >= 0)
+            {
+                evaluated[earlier] = observation;
+            }
+            else
+            {
+                evaluated.Add(observation);
+            }
+
+            var sink = request.Observations;
+            if (sink == null)
+            {
+                return;
+            }
+
+            var latest = sink.FindLastIndex(item => item.TaskPosition == observation.TaskPosition);
+            if (latest >= 0)
+            {
+                sink[latest] = observation;
+            }
+            else
+            {
+                sink.Add(observation);
+            }
         }
 
         private static TaskExecutionObservation CreateTaskObservation(
