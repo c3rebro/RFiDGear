@@ -43,12 +43,11 @@ namespace RFiDGear.Bridge.SampleClient
     [SupportedOSPlatform("windows")]
     public sealed class BridgeSampleClient : IBridgeClientEvents, IBridgeClientKeys, IAsyncDisposable
     {
-        private const int LongPollMs = 20_000;
-
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
 
         private readonly NamedPipeClientStream _pipe;
         private readonly JsonRpc _rpc;
+        private TimeSpan _longPoll = TimeSpan.FromSeconds(20);
 
         private BridgeSampleClient(NamedPipeClientStream pipe)
         {
@@ -75,6 +74,18 @@ namespace RFiDGear.Bridge.SampleClient
 
         /// <summary>Gets or sets how long a <c>startRun</c> may take before the client stops waiting (and asks, instead of sending it again).</summary>
         public TimeSpan StartTimeout { get; set; } = DefaultStartTimeout;
+
+        /// <summary>
+        /// Gets or sets how long one question about a run waits for the run to end (the long poll of <c>getRunResult</c>). The client
+        /// asks again when it runs out, so this is not how long a run may take. At most <see cref="BridgeProtocol.MaxWaitMs"/> milliseconds.
+        /// </summary>
+        public TimeSpan LongPoll
+        {
+            get => _longPoll;
+            set => _longPoll = value > TimeSpan.Zero && value.TotalMilliseconds <= BridgeProtocol.MaxWaitMs
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(value), "The wait has to be longer than nothing and at most the limit of the host.");
+        }
 
         /// <summary>
         /// Gets or sets the vault of this client: what it answers when the host asks for a key. Without one every request is
@@ -197,7 +208,7 @@ namespace RFiDGear.Bridge.SampleClient
 
                 try
                 {
-                    answer = await Service.GetRunResult(new GetRunResultRequest { RequestId = requestId, WaitMs = LongPollMs }).WaitAsync(cancellationToken).ConfigureAwait(false);
+                    answer = await Service.GetRunResult(new GetRunResultRequest { RequestId = requestId, WaitMs = (int)LongPoll.TotalMilliseconds }).WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception failure) when (failure is TimeoutException || IsLostConnection(failure) || failure is RemoteInvocationException)
                 {

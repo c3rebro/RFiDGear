@@ -156,6 +156,51 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task ARunThatTakesLongerThanOneQuestionWaits_IsAskedAboutAgain_UntilItEnds()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ExecutionHost.RunGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var client = await ConnectAsync(pipe);
+            client.LongPoll = TimeSpan.FromMilliseconds(150);
+
+            var pending = client.RunOnceAsync("job-1", NoVariables);
+            await Task.Delay(700);
+            var stillGoingOn = !pending.IsCompleted;
+            host.ExecutionHost.RunGate.SetResult(true);
+            var outcome = await pending.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.True(stillGoingOn, "The client gave up while the run was still going on.");
+            Assert.Equal(RunOutcomeKind.Completed, outcome.Kind);
+            Assert.Single(host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task TheLongPoll_HasToBeAPositiveTimeUpToTheLimitOfTheHost()
+        {
+            var (_, pipe, _, _) = Start();
+            var client = await ConnectAsync(pipe);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => client.LongPoll = TimeSpan.Zero);
+            Assert.Throws<ArgumentOutOfRangeException>(() => client.LongPoll = TimeSpan.FromMilliseconds(BridgeProtocol.MaxWaitMs + 1));
+            client.LongPoll = TimeSpan.FromMilliseconds(BridgeProtocol.MaxWaitMs);
+            Assert.Equal(TimeSpan.FromMilliseconds(BridgeProtocol.MaxWaitMs), client.LongPoll);
+        }
+
+        [Fact]
+        public async Task AnErrorThatDoesNotSayNothingWasStarted_IsDoubt_NotARefusal()
+        {
+            // The window of the application fails in a way nobody foresaw: the answer is an internal error, which does not promise that
+            // the card was left alone. The client must not take it for "never started".
+            var (_, pipe, host, _) = Start(_ => throw new ApplicationException("the window failed"));
+            var client = await ConnectAsync(pipe);
+
+            var outcome = await client.RunOnceAsync("job-1", NoVariables);
+
+            Assert.Equal(RunOutcomeKind.Unknown, outcome.Kind);
+            Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Fact]
         public async Task ALostConnection_IsAnsweredWithUnknown_AndANewConnectionFindsTheSameRun()
         {
             var (_, pipe, host, _) = Start();
