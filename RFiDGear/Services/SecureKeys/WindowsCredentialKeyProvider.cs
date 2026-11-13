@@ -1,5 +1,7 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,6 +110,44 @@ namespace RFiDGear.Services.SecureKeys
             }
         }
 
+        /// <summary>
+        /// Lists the references that have a key in the Credential Manager: the names below the prefix of this provider, that this
+        /// provider would accept as references. Only the names are asked for; no key is read.
+        /// </summary>
+        /// <returns>The error, and the references in alphabetical order; none on an error.</returns>
+        internal StoredKeyList List()
+        {
+            CredentialList listed;
+
+            try
+            {
+                listed = _store.Enumerate(TargetPrefix);
+            }
+            catch (Exception e)
+            {
+                LogStoreFailure(e);
+                return new StoredKeyList(CredentialErrors.Failed, Array.Empty<string>());
+            }
+
+            if (listed.Error != 0)
+            {
+                return new StoredKeyList(listed.Error, Array.Empty<string>());
+            }
+
+            // The vault is asked for the names below the prefix, and the answer is checked all the same: a name of another
+            // application, or one that this provider would refuse as a reference, is not ours to offer.
+            var references = listed.TargetNames
+                .Where(name => name.StartsWith(TargetPrefix, StringComparison.OrdinalIgnoreCase))
+                .Select(name => name.Substring(TargetPrefix.Length))
+                .Where(SecureKeySyntax.IsValidReference)
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(reference => reference, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(reference => reference, StringComparer.Ordinal)
+                .ToList();
+
+            return new StoredKeyList(0, references);
+        }
+
         private SecureKeyResolution Resolve(string reference, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -180,4 +220,9 @@ namespace RFiDGear.Services.SecureKeys
         private static void LogStoreFailure(Exception e) =>
             Log.ForContext<WindowsCredentialKeyProvider>().Warning("The Windows Credential Manager failed ({ExceptionType})", e.GetType().FullName);
     }
+
+    /// <summary>The answer to a listing of the stored keys: an error code, or the references that have a key.</summary>
+    /// <param name="Error">The Win32 error code; <c>0</c> when the keys were listed.</param>
+    /// <param name="References">The references, in alphabetical order; empty on an error.</param>
+    internal readonly record struct StoredKeyList(int Error, IReadOnlyList<string> References);
 }

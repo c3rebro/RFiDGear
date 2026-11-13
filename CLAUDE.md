@@ -336,6 +336,12 @@ name for the slot and a `KeyManagerButton` in its section (see
 `DEVELOPER_NOTES.md`). The key manager takes a key in a password box that is
 cleared whatever comes of it; no property of its view models holds a key.
 
+File > "Key manager..." (`StoredKeysView`, `StoredKeysViewModel`) needs no
+project: it lists the keys under `RFiDGear/key/` by name only
+(`ICredentialStore.Enumerate`, `WindowsCredentialKeyProvider.List`; no secret is
+read to show a list), stores a key through `KeyStorage.Store` and removes one,
+asking before it replaces or removes a key.
+
 File > "Move keys of a project..." (`KeyMigration`, `KeyMigrationFlow`) moves
 the typed keys of an existing project into the Credential Manager and writes a
 new project; the old one is only read. It runs on a `ProjectManager` of its own

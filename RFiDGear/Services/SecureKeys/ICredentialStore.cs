@@ -1,4 +1,6 @@
 #nullable enable
+using System.Collections.Generic;
+
 namespace RFiDGear.Services.SecureKeys
 {
     /// <summary>
@@ -23,7 +25,20 @@ namespace RFiDGear.Services.SecureKeys
         /// <param name="targetName">The target name of the credential.</param>
         /// <returns>The Win32 error code, <c>0</c> when the credential was deleted.</returns>
         int Delete(string targetName);
+
+        /// <summary>
+        /// Lists the target names of the generic credentials that start with a prefix. Only the names are read: no secret is
+        /// looked at, copied or handed out.
+        /// </summary>
+        /// <param name="targetPrefix">What the target names start with.</param>
+        /// <returns>The error and the names; an empty list, and no error, when there is no such credential.</returns>
+        CredentialList Enumerate(string targetPrefix);
     }
+
+    /// <summary>The answer to a listing: an error code, or the target names.</summary>
+    /// <param name="Error">The Win32 error code; <c>0</c> when the credentials were listed.</param>
+    /// <param name="TargetNames">The target names, in no particular order; empty on an error.</param>
+    internal readonly record struct CredentialList(int Error, IReadOnlyList<string> TargetNames);
 
     /// <summary>The answer to a read: an error code, or the secret.</summary>
     /// <param name="Error">The Win32 error code; <c>0</c> when the credential was read.</param>

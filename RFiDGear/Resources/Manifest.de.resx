@@ -2198,4 +2198,55 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageBoxCloseDuringBridgeRunMessage" xml:space="preserve">
     <value>Ein anderes Programm führt über die externe Steuerung die Aufgaben des Projekts aus. Wenn Sie RFiDGear jetzt schließen, wird dieser Lauf an der Karte abgebrochen, und das Programm erhält kein Ergebnis. Trotzdem schließen?</value>
   </data>
+  <data name="menuItemKeyManager" xml:space="preserve">
+    <value>Schlüsselverwaltung...</value>
+  </data>
+  <data name="labelStoredKeysIntro" xml:space="preserve">
+    <value>Diese Schlüssel sind in der Windows-Anmeldeinformationsverwaltung dieses Windows-Benutzers gespeichert. Ein Projekt nennt einen Schlüssel nur beim Namen und enthält den Schlüssel nie selbst. Hier stehen nur Namen: Ein Schlüssel wird nie angezeigt.</value>
+  </data>
+  <data name="labelStoredKeysList" xml:space="preserve">
+    <value>Gespeicherte Schlüssel</value>
+  </data>
+  <data name="labelStoredKeysNone" xml:space="preserve">
+    <value>Es ist noch kein Schlüssel gespeichert.</value>
+  </data>
+  <data name="labelStoredKeysAdd" xml:space="preserve">
+    <value>Schlüssel speichern</value>
+  </data>
+  <data name="labelStoredKeysType" xml:space="preserve">
+    <value>Art des Schlüssels</value>
+  </data>
+  <data name="labelStoredKeysTypeClassic" xml:space="preserve">
+    <value>MIFARE-Classic-Schlüssel (12 Ziffern)</value>
+  </data>
+  <data name="labelStoredKeysTypeDesAes" xml:space="preserve">
+    <value>DES-, 2K3DES- oder AES-Schlüssel (32 Ziffern)</value>
+  </data>
+  <data name="labelStoredKeysTypeThreeKey" xml:space="preserve">
+    <value>3K3DES-Schlüssel (48 Ziffern)</value>
+  </data>
+  <data name="buttonContentStoredKeysRemove" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="toolTipStoredKeysRemove" xml:space="preserve">
+    <value>Entfernt diesen Schlüssel aus der Windows-Anmeldeinformationsverwaltung. Projekte und Aufgaben, die ihn nennen, bekommen den Schlüssel dann nicht mehr.</value>
+  </data>
+  <data name="toolTipStoredKeysKind" xml:space="preserve">
+    <value>Wie viele Hexadezimalziffern der Schlüssel hat: 12 für einen MIFARE-Classic-Schlüssel, 32 für einen DES-, 2K3DES- oder AES-Schlüssel, 48 für einen 3K3DES-Schlüssel.</value>
+  </data>
+  <data name="messageStoredKeysConfirmRemove" xml:space="preserve">
+    <value>Den Schlüssel '{0}' aus der Windows-Anmeldeinformationsverwaltung entfernen?&#10;&#10;Projekte und Aufgaben, die diesen Schlüssel nennen, bekommen ihn dann nicht mehr. Das lässt sich nicht rückgängig machen.</value>
+  </data>
+  <data name="messageStoredKeysConfirmReplace" xml:space="preserve">
+    <value>Ein Schlüssel mit dem Namen '{0}' ist bereits gespeichert. Durch den eingegebenen Schlüssel ersetzen?&#10;&#10;Projekte und Aufgaben, die ihn nennen, verwenden dann den neuen Schlüssel.</value>
+  </data>
+  <data name="messageStoredKeysRemoved" xml:space="preserve">
+    <value>Der Schlüssel '{0}' wurde entfernt.</value>
+  </data>
+  <data name="messageStoredKeysNotRemoved" xml:space="preserve">
+    <value>Der Schlüssel '{0}' konnte nicht entfernt werden (Fehler {1}).</value>
+  </data>
+  <data name="messageStoredKeysListFailed" xml:space="preserve">
+    <value>Die gespeicherten Schlüssel konnten nicht aufgelistet werden (Fehler {0}).</value>
+  </data>
 </root>

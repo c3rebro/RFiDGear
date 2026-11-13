@@ -2176,4 +2176,55 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageBoxCloseDuringBridgeRunMessage" xml:space="preserve">
     <value>Another program is running the tasks of the project through external control. If you close RFiDGear now, that run is cut off on the card and the program gets no result. Close anyway?</value>
   </data>
+  <data name="menuItemKeyManager" xml:space="preserve">
+    <value>Key manager...</value>
+  </data>
+  <data name="labelStoredKeysIntro" xml:space="preserve">
+    <value>These keys are stored in the Windows Credential Manager of this Windows user. A project names a key by its name and never contains the key itself. Only names are listed here: a key is never shown.</value>
+  </data>
+  <data name="labelStoredKeysList" xml:space="preserve">
+    <value>Stored keys</value>
+  </data>
+  <data name="labelStoredKeysNone" xml:space="preserve">
+    <value>No key is stored yet.</value>
+  </data>
+  <data name="labelStoredKeysAdd" xml:space="preserve">
+    <value>Store a key</value>
+  </data>
+  <data name="labelStoredKeysType" xml:space="preserve">
+    <value>Kind of key</value>
+  </data>
+  <data name="labelStoredKeysTypeClassic" xml:space="preserve">
+    <value>MIFARE Classic key (12 digits)</value>
+  </data>
+  <data name="labelStoredKeysTypeDesAes" xml:space="preserve">
+    <value>DES, 2K3DES or AES key (32 digits)</value>
+  </data>
+  <data name="labelStoredKeysTypeThreeKey" xml:space="preserve">
+    <value>3K3DES key (48 digits)</value>
+  </data>
+  <data name="buttonContentStoredKeysRemove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="toolTipStoredKeysRemove" xml:space="preserve">
+    <value>Removes this key from the Windows Credential Manager. Projects and tasks that name it can no longer get the key.</value>
+  </data>
+  <data name="toolTipStoredKeysKind" xml:space="preserve">
+    <value>How many hexadecimal digits the key has: 12 for a MIFARE Classic key, 32 for a DES, 2K3DES or AES key, 48 for a 3K3DES key.</value>
+  </data>
+  <data name="messageStoredKeysConfirmRemove" xml:space="preserve">
+    <value>Remove the key '{0}' from the Windows Credential Manager?&#10;&#10;Projects and tasks that name this key can no longer get it. This cannot be undone.</value>
+  </data>
+  <data name="messageStoredKeysConfirmReplace" xml:space="preserve">
+    <value>A key named '{0}' is already stored. Replace it with the key you entered?&#10;&#10;Projects and tasks that name it will use the new key.</value>
+  </data>
+  <data name="messageStoredKeysRemoved" xml:space="preserve">
+    <value>The key '{0}' was removed.</value>
+  </data>
+  <data name="messageStoredKeysNotRemoved" xml:space="preserve">
+    <value>The key '{0}' could not be removed (error {1}).</value>
+  </data>
+  <data name="messageStoredKeysListFailed" xml:space="preserve">
+    <value>The stored keys could not be listed (error {0}).</value>
+  </data>
 </root>

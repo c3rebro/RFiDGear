@@ -474,6 +474,7 @@
                         InputGestureText="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShortcutSaveTaskAs'}" />
                     <MenuItem Command="{Binding SaveChipDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSaveChip'}" />
                     <Separator />
+                    <MenuItem Command="{Binding OpenKeyManagerCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemKeyManager'}" />
                     <MenuItem Command="{Binding MigrateProjectKeysCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemMigrateProjectKeys'}" />
                     <Separator />
                     <MenuItem Command="{Binding CloseApplication}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemExitHeader'}" />

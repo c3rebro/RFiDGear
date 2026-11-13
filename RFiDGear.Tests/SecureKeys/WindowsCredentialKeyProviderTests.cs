@@ -345,6 +345,77 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Empty(store.Blobs);
         }
 
+        // ── Listing the references ──
+
+        [Fact]
+        public void The_references_that_are_stored_are_listed_without_the_prefix_in_order_and_no_key_is_read()
+        {
+            var store = new FakeCredentialStore();
+            store.Blobs[Prefix + "cards/b"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            store.Blobs[Prefix + "Cards/a"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            store.Blobs[Prefix + "migrated/0123456789abcdef"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            var provider = new WindowsCredentialKeyProvider(store);
+
+            var list = provider.List();
+
+            Assert.Equal(0, list.Error);
+            Assert.Equal(new[] { "Cards/a", "cards/b", "migrated/0123456789abcdef" }, list.References);
+
+            // Only the names are asked for: the secret of a credential is never read to show a list.
+            Assert.Empty(store.Reads);
+            Assert.Equal(Prefix, Assert.Single(store.Enumerated));
+        }
+
+        [Fact]
+        public void A_credential_of_another_application_or_with_a_name_that_is_not_a_reference_is_not_listed_even_when_the_vault_hands_it_out()
+        {
+            var store = new FakeCredentialStore { EnumerateIgnoresPrefix = true };
+            store.Blobs[Prefix + "cards/main"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            store.Blobs["OtherApp/key/cards"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            store.Blobs[Prefix + "has space"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            store.Blobs[Prefix + "ümlaut"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            store.Blobs[Prefix] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+
+            var list = new WindowsCredentialKeyProvider(store).List();
+
+            Assert.Equal(new[] { "cards/main" }, list.References);
+        }
+
+        [Fact]
+        public void An_empty_vault_has_an_empty_list_and_no_error()
+        {
+            var list = new WindowsCredentialKeyProvider(new FakeCredentialStore()).List();
+
+            Assert.Equal(0, list.Error);
+            Assert.Empty(list.References);
+        }
+
+        [Fact]
+        public void A_vault_that_refuses_gives_the_error_and_an_empty_list()
+        {
+            var store = new FakeCredentialStore { EnumerateError = CredentialErrors.AccessDenied };
+            store.Blobs[Prefix + "cards/main"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+
+            var list = new WindowsCredentialKeyProvider(store).List();
+
+            Assert.Equal(CredentialErrors.AccessDenied, list.Error);
+            Assert.Empty(list.References);
+        }
+
+        [Fact]
+        public void A_vault_that_throws_gives_the_failed_code_and_the_log_shows_the_type_only()
+        {
+            using var logs = CapturedLogs.Install();
+            var store = new FakeCredentialStore { ThrowText = SecureKeyTestData.Secret };
+
+            var list = new WindowsCredentialKeyProvider(store).List();
+
+            Assert.Equal(CredentialErrors.Failed, list.Error);
+            Assert.Empty(list.References);
+            Assert.NotEmpty(logs.All());
+            Assert.All(logs.All().Select(CapturedLogs.EverythingWrittenFor), text => Assert.DoesNotContain(SecureKeyTestData.Secret, text, StringComparison.Ordinal));
+        }
+
         // ── Part of the application ──
 
         [Fact]
@@ -440,6 +511,29 @@ namespace RFiDGear.Tests.SecureKeys
 
             using var gone = await provider.ResolveAsync(RequestFor(reference), CancellationToken.None);
             Assert.Equal(SecureKeyFailureReason.NotFound, gone.FailureReason);
+        }
+
+        [Fact]
+        public void A_key_stored_in_the_real_credential_manager_is_listed_by_its_reference_until_it_is_removed()
+        {
+            // The vault of the person who runs the test may hold other keys of ours: the list is only asked for the one of this test.
+            var provider = new WindowsCredentialKeyProvider(new NativeCredentialStore());
+            var reference = "tests/" + Guid.NewGuid().ToString("N");
+
+            try
+            {
+                Assert.Equal(0, provider.Store(reference, Enumerable.Range(0, 6).Select(i => (byte)(0x10 + i)).ToArray()));
+
+                var list = provider.List();
+                Assert.Equal(0, list.Error);
+                Assert.Contains(reference, list.References);
+            }
+            finally
+            {
+                provider.Remove(reference);
+            }
+
+            Assert.DoesNotContain(reference, provider.List().References);
         }
 
         [Fact]

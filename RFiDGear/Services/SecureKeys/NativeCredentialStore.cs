@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -46,6 +47,9 @@ namespace RFiDGear.Services.SecureKeys
 
         [DllImport("advapi32.dll", EntryPoint = "CredDeleteW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern bool CredDelete(string target, uint type, uint flags);
+
+        [DllImport("advapi32.dll", EntryPoint = "CredEnumerateW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern bool CredEnumerate(string filter, uint flags, out uint count, out IntPtr credentials);
 
         [DllImport("advapi32.dll", EntryPoint = "CredFree", ExactSpelling = true)]
         private static extern void CredFree(IntPtr buffer);
@@ -115,5 +119,39 @@ namespace RFiDGear.Services.SecureKeys
         /// <inheritdoc />
         public int Delete(string targetName) =>
             CredDelete(targetName, CredTypeGeneric, 0) ? 0 : Marshal.GetLastWin32Error();
+
+        /// <inheritdoc />
+        public CredentialList Enumerate(string targetPrefix)
+        {
+            // The filter takes a wildcard at its end only. The vault answers NOT_FOUND for no match, which is an empty list here.
+            if (!CredEnumerate(targetPrefix + "*", 0, out var count, out var buffer))
+            {
+                var error = Marshal.GetLastWin32Error();
+
+                return new CredentialList(error == CredentialErrors.NotFound ? 0 : error, Array.Empty<string>());
+            }
+
+            try
+            {
+                var names = new List<string>((int)count);
+
+                for (var index = 0; index < count; index++)
+                {
+                    // Only the target name is looked at: the pointer to the secret in the structure is never followed.
+                    var credential = Marshal.PtrToStructure<Credential>(Marshal.ReadIntPtr(buffer, index * IntPtr.Size));
+
+                    if (credential.Type == CredTypeGeneric && Marshal.PtrToStringUni(credential.TargetName) is { } name)
+                    {
+                        names.Add(name);
+                    }
+                }
+
+                return new CredentialList(0, names);
+            }
+            finally
+            {
+                CredFree(buffer);
+            }
+        }
     }
 }
