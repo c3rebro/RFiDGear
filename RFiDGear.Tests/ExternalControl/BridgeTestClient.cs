@@ -129,6 +129,12 @@ namespace RFiDGear.Tests.ExternalControl
         public void ShuttingDown(ShuttingDownEvent e) => Add(e);
 
         /// <inheritdoc />
+        public void AutoModeChanged(AutoModeChangedEvent e) => Add(e);
+
+        /// <inheritdoc />
+        public void AutoRunCompleted(AutoRunCompletedEvent e) => Add(e);
+
+        /// <inheritdoc />
         public void Dispose()
         {
             Rpc.Dispose();

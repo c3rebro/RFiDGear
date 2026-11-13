@@ -107,6 +107,12 @@ namespace RFiDGear.Services.ExternalControl
         /// </summary>
         internal event EventHandler? StateChanged;
 
+        /// <summary>
+        /// Raised, on whichever thread it happens, when a connection has ended, with the id of the connection. Handlers must be
+        /// quick and must not throw; one that does is logged and ignored.
+        /// </summary>
+        internal event Action<string>? SessionEnded;
+
         /// <summary>Gets whether a client is connected.</summary>
         internal bool HasSession => State == BridgeServerState.SessionActive;
 
@@ -319,6 +325,7 @@ namespace RFiDGear.Services.ExternalControl
                     // The pipe must be closed before the next instance is created: with one instance allowed, a session that was
                     // ended while a write was stuck would otherwise leave the name busy and turn the bridge off for good.
                     session.Dispose();
+                    RaiseSessionEnded(session.SessionId);
                 }
 
                 bool listening;
@@ -347,6 +354,18 @@ namespace RFiDGear.Services.ExternalControl
                 {
                     return;
                 }
+            }
+        }
+
+        private void RaiseSessionEnded(string sessionId)
+        {
+            try
+            {
+                SessionEnded?.Invoke(sessionId);
+            }
+            catch (Exception e)
+            {
+                Logger.Warning("External control: a handler of the end of a session failed ({ExceptionType})", e.GetType().FullName);
             }
         }
 

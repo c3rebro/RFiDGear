@@ -337,6 +337,42 @@ namespace RFiDGear.Services.ExternalControl
             };
         }
 
+        /// <summary>
+        /// Lists the results of the runs from a number onward, those of the clients and those of automatic mode in the order in
+        /// which they ended, so that a client that missed events or a connection can catch up without reading the log.
+        /// </summary>
+        /// <param name="request">The number of the last result the client has, and how many it wants.</param>
+        /// <param name="instanceId">The id of this process, which the numbers belong to.</param>
+        /// <returns>The results, whether some were dropped from the history, and the number of the latest.</returns>
+        internal ListRunResultsResponse ListResults(ListRunResultsRequest request, string instanceId)
+        {
+            if (request == null)
+            {
+                throw BridgeFault.InvalidRequest("request");
+            }
+
+            if (request.AfterResultSeq < 0)
+            {
+                throw BridgeFault.InvalidRequest("afterResultSeq");
+            }
+
+            if (request.Limit < 0)
+            {
+                throw BridgeFault.InvalidRequest("limit");
+            }
+
+            var (results, gap, last, fromTheFuture) = _registry.ListResults(request.AfterResultSeq, request.Limit);
+
+            // A number this process has not given out belongs to another one (RFiDGear was restarted and the client kept an old
+            // number). Answering "nothing new" would let the client believe it is up to date; it is told that it is not.
+            if (fromTheFuture)
+            {
+                throw BridgeFault.InvalidRequest("afterResultSeq");
+            }
+
+            return new ListRunResultsResponse { InstanceId = instanceId, Results = results, Gap = gap, LastResultSeq = last };
+        }
+
         // ── Admission ──
 
         private sealed class Decision

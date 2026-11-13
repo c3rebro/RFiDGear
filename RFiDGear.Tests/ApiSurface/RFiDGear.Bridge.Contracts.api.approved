@@ -8,7 +8,36 @@ public sealed record RFiDGear.Bridge.ActiveRunDto : System.IEquatable<ActiveRunD
     [JsonPropertyName("source")] public string Source { get; init; }
     [JsonPropertyName("startedAt")] public System.DateTimeOffset? StartedAt { get; init; }
 
+public sealed record RFiDGear.Bridge.AutoModeChangedEvent : BridgeEvent, System.IEquatable<AutoModeChangedEvent>
+    public ctor()
+    [JsonPropertyName("enabled")] public bool Enabled { get; init; }
+    [JsonPropertyName("lastResultSeq")] public long LastResultSeq { get; init; }
+    [JsonPropertyName("lastStopReason")] public string LastStopReason { get; init; }
+    [JsonPropertyName("startedBy")] public string? StartedBy { get; init; }
+
+public sealed record RFiDGear.Bridge.AutoModeStatusDto : System.IEquatable<AutoModeStatusDto>
+    public ctor()
+    [JsonPropertyName("enabled")] public bool Enabled { get; init; }
+    [JsonPropertyName("lastStopReason")] public string LastStopReason { get; init; }
+    [JsonPropertyName("startedBy")] public string? StartedBy { get; init; }
+    [JsonPropertyName("stopOnDisconnect")] public bool StopOnDisconnect { get; init; }
+
+public static class RFiDGear.Bridge.AutoModeStopReasons
+    public const string None = "none"
+    public const string ReaderChanged = "readerChanged"
+    public const string ReaderLost = "readerLost"
+    public const string RunAborted = "runAborted"
+    public const string RunTimedOut = "runTimedOut"
+    public const string StopRequested = "stopRequested"
+    public const string Unknown = "unknown"
+
+public sealed record RFiDGear.Bridge.AutoRunCompletedEvent : BridgeEvent, System.IEquatable<AutoRunCompletedEvent>
+    public ctor()
+    [JsonPropertyName("result")] public RunResultDto Result { get; init; }
+
 public static class RFiDGear.Bridge.BridgeCapabilities
+    public const string AutoMode = "autoMode"
+    public const string EventsAutoMode = "events.autoMode"
     public const string EventsExecution = "events.execution"
     public const string EventsLifecycle = "events.lifecycle"
     public const string EventsProject = "events.project"
@@ -16,6 +45,7 @@ public static class RFiDGear.Bridge.BridgeCapabilities
     public const string EventsRunning = "events.running"
     public const string ExecutionCancel = "execution.cancel"
     public const string ExecutionJournal = "execution.journal"
+    public const string ExecutionResultLog = "execution.resultLog"
     public const string ExecutionResultLookup = "execution.resultLookup"
     public const string ExecutionRun = "execution.run"
     public const string ProjectLoad = "project.load"
@@ -34,6 +64,7 @@ public static class RFiDGear.Bridge.BridgeErrorCodes
     public const int InternalError = 1016
     public const int InvalidRequest = 1004
     public const int NoProjectLoaded = 1011
+    public const int NoReader = 1017
     public const int NotReady = 1005
     public const int ProjectLoadFailed = 1010
     public const int ProjectMismatch = 1012
@@ -59,6 +90,7 @@ public static class RFiDGear.Bridge.BridgeErrorKinds
     public const string InternalError = "internalError"
     public const string InvalidRequest = "invalidRequest"
     public const string NoProjectLoaded = "noProjectLoaded"
+    public const string NoReader = "noReader"
     public const string NotReady = "notReady"
     public const string ProjectLoadFailed = "projectLoadFailed"
     public const string ProjectMismatch = "projectMismatch"
@@ -75,6 +107,8 @@ public abstract record RFiDGear.Bridge.BridgeEvent : System.IEquatable<BridgeEve
     [JsonPropertyName("sessionId")] [JsonPropertyOrder(-2)] public string SessionId { get; init; }
 
 public static class RFiDGear.Bridge.BridgeEvents
+    public const string AutoModeChanged = "autoModeChanged"
+    public const string AutoRunCompleted = "autoRunCompleted"
     public const string ProjectChanged = "projectChanged"
     public const string ReaderChanged = "readerChanged"
     public const string RunCompleted = "runCompleted"
@@ -104,9 +138,12 @@ public static class RFiDGear.Bridge.BridgeMethods
     public const string GetRunResult = "getRunResult"
     public const string GetStatus = "getStatus"
     public const string Hello = "hello"
+    public const string ListRunResults = "listRunResults"
     public const string LoadProject = "loadProject"
     public const string ScanReader = "scanReader"
+    public const string StartAutoMode = "startAutoMode"
     public const string StartRun = "startRun"
+    public const string StopAutoMode = "stopAutoMode"
 
 public static class RFiDGear.Bridge.BridgeProtocol
     public const int Major = 1
@@ -196,6 +233,8 @@ public sealed record RFiDGear.Bridge.HelloResponse : System.IEquatable<HelloResp
     [JsonPropertyName("sessionId")] public string SessionId { get; init; }
 
 public interface RFiDGear.Bridge.IBridgeClientEvents
+    [Capability("events.autoMode")] public void AutoModeChanged(AutoModeChangedEvent e)
+    [Capability("events.autoMode")] public void AutoRunCompleted(AutoRunCompletedEvent e)
     [Capability("events.project")] public void ProjectChanged(ProjectChangedEvent e)
     [Capability("events.reader")] public void ReaderChanged(ReaderChangedEvent e)
     [Capability("events.execution")] public void RunCompleted(RunCompletedEvent e)
@@ -208,9 +247,24 @@ public interface RFiDGear.Bridge.IBridgeService
     [Capability("execution.resultLookup")] public System.Threading.Tasks.Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request)
     [Capability("status")] public System.Threading.Tasks.Task<StatusResponse> GetStatus(GetStatusRequest request)
     [Capability("session")] public System.Threading.Tasks.Task<HelloResponse> Hello(HelloRequest request)
+    [Capability("execution.resultLog")] public System.Threading.Tasks.Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request)
     [Capability("project.load")] public System.Threading.Tasks.Task<LoadProjectResponse> LoadProject(LoadProjectRequest request)
     [Capability("reader.scan")] public System.Threading.Tasks.Task<ScanReaderResponse> ScanReader(ScanReaderRequest request)
+    [Capability("autoMode")] public System.Threading.Tasks.Task<StartAutoModeResponse> StartAutoMode(StartAutoModeRequest request)
     [Capability("execution.run")] public System.Threading.Tasks.Task<StartRunResponse> StartRun(StartRunRequest request)
+    [Capability("autoMode")] public System.Threading.Tasks.Task<StopAutoModeResponse> StopAutoMode(StopAutoModeRequest request)
+
+public sealed record RFiDGear.Bridge.ListRunResultsRequest : System.IEquatable<ListRunResultsRequest>
+    public ctor()
+    [JsonPropertyName("afterResultSeq")] public long AfterResultSeq { get; init; }
+    [JsonPropertyName("limit")] public int Limit { get; init; }
+
+public sealed record RFiDGear.Bridge.ListRunResultsResponse : System.IEquatable<ListRunResultsResponse>
+    public ctor()
+    [JsonPropertyName("gap")] public bool Gap { get; init; }
+    [JsonPropertyName("instanceId")] public string InstanceId { get; init; }
+    [JsonPropertyName("lastResultSeq")] public long LastResultSeq { get; init; }
+    [JsonPropertyName("results")] public System.Collections.Generic.IReadOnlyList<RunResultDto> Results { get; init; }
 
 public sealed record RFiDGear.Bridge.LoadProjectRequest : System.IEquatable<LoadProjectRequest>
     public ctor()
@@ -322,6 +376,16 @@ public sealed record RFiDGear.Bridge.ShuttingDownEvent : BridgeEvent, System.IEq
     [JsonPropertyName("reason")] public string Reason { get; init; }
     [JsonPropertyName("runInFlight")] public bool RunInFlight { get; init; }
 
+public sealed record RFiDGear.Bridge.StartAutoModeRequest : System.IEquatable<StartAutoModeRequest>
+    public ctor()
+    [JsonPropertyName("stopOnDisconnect")] public bool StopOnDisconnect { get; init; }
+
+public sealed record RFiDGear.Bridge.StartAutoModeResponse : System.IEquatable<StartAutoModeResponse>
+    public ctor()
+    [JsonPropertyName("alreadyEnabled")] public bool AlreadyEnabled { get; init; }
+    [JsonPropertyName("enabled")] public bool Enabled { get; init; }
+    [JsonPropertyName("stopOnDisconnect")] public bool StopOnDisconnect { get; init; }
+
 public sealed record RFiDGear.Bridge.StartRunRequest : System.IEquatable<StartRunRequest>
     public ctor()
     [JsonPropertyName("expectProjectPath")] public string? ExpectProjectPath { get; init; }
@@ -339,6 +403,7 @@ public sealed record RFiDGear.Bridge.StartRunResponse : System.IEquatable<StartR
 public sealed record RFiDGear.Bridge.StatusResponse : System.IEquatable<StatusResponse>
     public ctor()
     [JsonPropertyName("activeRun")] public ActiveRunDto? ActiveRun { get; init; }
+    [JsonPropertyName("autoMode")] public AutoModeStatusDto? AutoMode { get; init; }
     [JsonPropertyName("instanceId")] public string InstanceId { get; init; }
     [JsonPropertyName("isRunning")] public bool IsRunning { get; init; }
     [JsonPropertyName("lastResultSeq")] public long LastResultSeq { get; init; }
@@ -348,6 +413,13 @@ public sealed record RFiDGear.Bridge.StatusResponse : System.IEquatable<StatusRe
     [JsonPropertyName("stale")] public bool Stale { get; init; }
     [JsonPropertyName("startupComplete")] public bool StartupComplete { get; init; }
     [JsonPropertyName("uiResponsive")] public bool UiResponsive { get; init; }
+
+public sealed record RFiDGear.Bridge.StopAutoModeRequest : System.IEquatable<StopAutoModeRequest>
+    public ctor()
+
+public sealed record RFiDGear.Bridge.StopAutoModeResponse : System.IEquatable<StopAutoModeResponse>
+    public ctor()
+    [JsonPropertyName("wasEnabled")] public bool WasEnabled { get; init; }
 
 public sealed record RFiDGear.Bridge.TaskOutcomeDto : System.IEquatable<TaskOutcomeDto>
     public ctor()

@@ -125,6 +125,10 @@ namespace RFiDGear.Services.ExternalControl
         /// <returns>The fault; nothing was started.</returns>
         internal static BridgeFault ShuttingDown() => new BridgeFault(BridgeErrorCodes.ShuttingDown, BridgeErrorKinds.ShuttingDown, neverStarted: true);
 
+        /// <summary>No reader is selected, so there is nothing that could see a card.</summary>
+        /// <returns>The fault; nothing was started.</returns>
+        internal static BridgeFault NoReader() => new BridgeFault(BridgeErrorCodes.NoReader, BridgeErrorKinds.NoReader, neverStarted: true);
+
         /// <summary>Makes a new fault with the same content, for answering several callers with the same refusal.</summary>
         /// <returns>The copy.</returns>
         internal BridgeFault Clone() => new BridgeFault(Code, Kind, NeverStarted, Details);

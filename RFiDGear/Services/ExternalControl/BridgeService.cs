@@ -51,6 +51,15 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets what <c>getRunResult</c> does; a host that offers the <c>execution.resultLookup</c> capability sets it.</summary>
         internal Func<GetRunResultRequest, Task<GetRunResultResponse>>? GetRunResult { get; init; }
+
+        /// <summary>Gets what <c>startAutoMode</c> does, given the id of the connection; a host that offers the <c>autoMode</c> capability sets it.</summary>
+        internal Func<string, StartAutoModeRequest, Task<StartAutoModeResponse>>? StartAutoMode { get; init; }
+
+        /// <summary>Gets what <c>stopAutoMode</c> does; a host that offers the <c>autoMode</c> capability sets it.</summary>
+        internal Func<StopAutoModeRequest, Task<StopAutoModeResponse>>? StopAutoMode { get; init; }
+
+        /// <summary>Gets what <c>listRunResults</c> does; a host that offers the <c>execution.resultLog</c> capability sets it.</summary>
+        internal Func<ListRunResultsRequest, Task<ListRunResultsResponse>>? ListRunResults { get; init; }
     }
 
     /// <summary>
@@ -113,6 +122,18 @@ namespace RFiDGear.Services.ExternalControl
         /// <inheritdoc />
         public Task<ScanReaderResponse> ScanReader(ScanReaderRequest request) =>
             Run(BridgeMethods.ScanReader, () => (_options.ScanReader ?? throw new NotSupportedException())());
+
+        /// <inheritdoc />
+        public Task<StartAutoModeResponse> StartAutoMode(StartAutoModeRequest request) =>
+            Run(BridgeMethods.StartAutoMode, () => (_options.StartAutoMode ?? throw new NotSupportedException())(_sessionId, request));
+
+        /// <inheritdoc />
+        public Task<StopAutoModeResponse> StopAutoMode(StopAutoModeRequest request) =>
+            Run(BridgeMethods.StopAutoMode, () => (_options.StopAutoMode ?? throw new NotSupportedException())(request));
+
+        /// <inheritdoc />
+        public Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request) =>
+            Run(BridgeMethods.ListRunResults, () => (_options.ListRunResults ?? throw new NotSupportedException())(request));
 
         private async Task<T> Run<T>(string wireName, Func<Task<T>> body)
         {

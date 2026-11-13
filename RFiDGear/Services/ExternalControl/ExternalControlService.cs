@@ -31,6 +31,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly IRFiDGearExtensionHost _host;
         private readonly BridgeServer _server;
         private readonly RunSupervisor? _supervisor;
+        private readonly AutoModeBridge? _autoMode;
         private readonly RunJournal? _journal;
         private readonly string _instanceId;
         private int _startupComplete;
@@ -69,10 +70,12 @@ namespace RFiDGear.Services.ExternalControl
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = Guid.NewGuid().ToString("N");
 
+            RunRegistry? registry = null;
+
             // Runs can only be offered when the execution host can start a run under an id the bridge chose.
             if (host.Execution is IPreassignedRunExecution execution)
             {
-                var registry = new RunRegistry();
+                registry = new RunRegistry();
 
                 if (journalDirectory != null)
                 {
@@ -93,6 +96,21 @@ namespace RFiDGear.Services.ExternalControl
             }
 
             var supervisor = _supervisor;
+
+            // Automatic mode needs the table of results (every run of the mode is numbered in it) and a host that says why a start
+            // was refused; one that does not (a host of another application) has no mode to offer.
+            if (registry != null && host.AutoMode is IAutoModeControl control)
+            {
+                _autoMode = new AutoModeBridge(
+                    host,
+                    control,
+                    registry,
+                    (name, durable, create) => _server!.Publish(name, durable, create),
+                    () => Volatile.Read(ref _shutdown) != 0,
+                    () => busyActivity?.Invoke());
+            }
+
+            var autoMode = _autoMode;
             var status = new BridgeStatusProvider(
                 host,
                 _instanceId,
@@ -101,7 +119,8 @@ namespace RFiDGear.Services.ExternalControl
                 dispatchToUi,
                 uiTimeout ?? TimeSpan.FromSeconds(2),
                 () => supervisor?.LastResultSeq ?? 0,
-                () => supervisor?.ActiveRun);
+                () => supervisor?.ActiveRun,
+                () => autoMode?.GetStatus());
             var operations = new BridgeHostOperations(host, busyActivity);
 
             // What the host offers in this version of the bridge; a capability appears only when everything behind it is there.
@@ -122,7 +141,14 @@ namespace RFiDGear.Services.ExternalControl
                 capabilities.Add(BridgeCapabilities.ExecutionRun);
                 capabilities.Add(BridgeCapabilities.ExecutionCancel);
                 capabilities.Add(BridgeCapabilities.ExecutionResultLookup);
+                capabilities.Add(BridgeCapabilities.ExecutionResultLog);
                 capabilities.Add(BridgeCapabilities.EventsExecution);
+            }
+
+            if (autoMode != null)
+            {
+                capabilities.Add(BridgeCapabilities.AutoMode);
+                capabilities.Add(BridgeCapabilities.EventsAutoMode);
             }
 
             if (_journal != null)
@@ -142,10 +168,13 @@ namespace RFiDGear.Services.ExternalControl
                 StartRun = supervisor == null ? null : supervisor.StartAsync,
                 CancelRun = supervisor == null ? null : request => Task.FromResult(supervisor.Cancel(request)),
                 GetRunResult = supervisor == null ? null : supervisor.GetResultAsync,
+                ListRunResults = supervisor == null ? null : request => Task.FromResult(supervisor.ListResults(request, _instanceId)),
+                StartAutoMode = autoMode == null ? null : (sessionId, request) => Task.FromResult(autoMode.Start(sessionId, request)),
+                StopAutoMode = autoMode == null ? null : _ => Task.FromResult(autoMode.Stop()),
             };
 
             _server = new BridgeServer(pipeName, options, timings);
-            RunInFlight = () => supervisor?.HasActiveRun ?? false;
+            RunInFlight = () => (supervisor?.HasActiveRun ?? false) || (autoMode?.HasRunInFlight ?? false);
         }
 
         /// <summary>Raised when a client connects or leaves, or the server stops. Any thread.</summary>
@@ -182,6 +211,7 @@ namespace RFiDGear.Services.ExternalControl
             }
 
             _server.StateChanged += OnServerStateChanged;
+            _server.SessionEnded += OnSessionEnded;
 
             if (!_server.Start())
             {
@@ -192,6 +222,7 @@ namespace RFiDGear.Services.ExternalControl
             _host.Execution.IsRunningChanged += OnIsRunningChanged;
             _host.Project.ProjectChanged += OnProjectChanged;
             _host.Reader.ReaderStateChanged += OnReaderStateChanged;
+            _autoMode?.Attach();
 
             // The only hook that every way out of the application shares (they all end in Environment.Exit).
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
@@ -288,7 +319,9 @@ namespace RFiDGear.Services.ExternalControl
             _host.Project.ProjectChanged -= OnProjectChanged;
             _host.Reader.ReaderStateChanged -= OnReaderStateChanged;
             _supervisor?.Detach();
+            _autoMode?.Detach();
             _server.StateChanged -= OnServerStateChanged;
+            _server.SessionEnded -= OnSessionEnded;
             _server.Dispose();
             _journal?.Dispose();
         }
@@ -354,5 +387,8 @@ namespace RFiDGear.Services.ExternalControl
         }
 
         private void OnServerStateChanged(object? sender, EventArgs e) => ConnectionChanged?.Invoke(this, EventArgs.Empty);
+
+        // A mode that a client switched on for as long as it is connected ends with the connection.
+        private void OnSessionEnded(string sessionId) => _autoMode?.OnSessionEnded(sessionId);
     }
 }

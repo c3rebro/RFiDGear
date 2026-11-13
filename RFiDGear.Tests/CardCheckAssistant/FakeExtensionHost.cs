@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.ExtensionHost;
+using RFiDGear.Services.AutoMode;
 
 namespace RFiDGear.Tests.CardCheckAssistant
 {
@@ -564,10 +566,40 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void ChangeCultureQuietly(string cultureName) => Volatile.Write(ref _cultureName, cultureName);
     }
 
-    internal sealed class FakeAutoModeHost : IAutoModeHost
+    /// <summary>
+    /// The automatic mode of the fake host. A test switches it on and off, makes the next start fail for a reason, and raises
+    /// the events the real mode raises; it counts what was asked of it.
+    /// </summary>
+    internal sealed class FakeAutoModeHost : IAutoModeHost, IAutoModeControl
     {
-        /// <summary>Whether the mode is on; a test sets it.</summary>
-        public bool IsAutoModeEnabled { get; set; }
+        private int _enabled;
+        private int _startCalls;
+        private int _stopCalls;
+        private int _lastStopReason;
+        private int _session;
+
+        /// <summary>Gets or sets whether the mode is on; a test sets it, and no event is raised for that.</summary>
+        public bool IsAutoModeEnabled
+        {
+            get => Volatile.Read(ref _enabled) != 0;
+            set => Volatile.Write(ref _enabled, value ? 1 : 0);
+        }
+
+        /// <summary>Gets or sets why the mode last stopped.</summary>
+        public AutoModeStopReason LastStopReason
+        {
+            get => (AutoModeStopReason)Volatile.Read(ref _lastStopReason);
+            set => Volatile.Write(ref _lastStopReason, (int)value);
+        }
+
+        /// <summary>Gets or sets what the next start answers when it does not switch the mode on.</summary>
+        public AutoModeStartResult RefuseWith { get; set; } = AutoModeStartResult.Started;
+
+        /// <summary>Gets how often a start was asked for.</summary>
+        public int StartCalls => Volatile.Read(ref _startCalls);
+
+        /// <summary>Gets how often a stop was asked for.</summary>
+        public int StopCalls => Volatile.Read(ref _stopCalls);
 
         public event EventHandler AutoModeStateChanged
         {
@@ -577,8 +609,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         private EventHandler? AutoModeStateChangedHandlers { get; set; }
 
-        public AutoModeStopReason LastStopReason => AutoModeStopReason.None;
-
         public event EventHandler<ExecResult> AutoModeRunCompleted
         {
             add => AutoModeRunCompletedHandlers += value;
@@ -587,11 +617,95 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         private EventHandler<ExecResult>? AutoModeRunCompletedHandlers { get; set; }
 
-        public void Start() => throw new NotSupportedException();
+        /// <summary>Gets how many subscribers the state event has.</summary>
+        public int StateSubscribers => AutoModeStateChangedHandlers?.GetInvocationList().Length ?? 0;
 
-        public void Stop() => throw new NotSupportedException();
+        /// <summary>Gets how many subscribers the run event has.</summary>
+        public int RunSubscribers => AutoModeRunCompletedHandlers?.GetInvocationList().Length ?? 0;
+
+        /// <summary>Gets or sets what runs after the mode was switched on and before its event is raised, as another thread could come in there.</summary>
+        public Action? BeforeStartEventIsRaised { get; set; }
+
+        /// <summary>Gets or sets what runs after a stop for a start was asked for and before it decides, as another thread could come in there.</summary>
+        public Action? BeforeStopIfSessionDecides { get; set; }
+
+        public int CurrentSession => Volatile.Read(ref _session);
+
+        public AutoModeStartResult TryStart() => TryStart(out _);
+
+        public AutoModeStartResult TryStart(out int session)
+        {
+            Interlocked.Increment(ref _startCalls);
+            session = 0;
+
+            if (IsAutoModeEnabled)
+            {
+                session = CurrentSession;
+
+                return AutoModeStartResult.AlreadyEnabled;
+            }
+
+            if (RefuseWith != AutoModeStartResult.Started)
+            {
+                return RefuseWith;
+            }
+
+            IsAutoModeEnabled = true;
+            LastStopReason = AutoModeStopReason.None;
+            session = Interlocked.Increment(ref _session);
+            BeforeStartEventIsRaised?.Invoke();
+            RaiseStateChanged();
+
+            return AutoModeStartResult.Started;
+        }
+
+        public bool StopIfSession(int session)
+        {
+            BeforeStopIfSessionDecides?.Invoke();
+
+            if (!IsAutoModeEnabled || CurrentSession != session)
+            {
+                return false;
+            }
+
+            StopFor(AutoModeStopReason.StopRequested);
+
+            return true;
+        }
+
+        public void Start()
+        {
+            if (TryStart() is not (AutoModeStartResult.Started or AutoModeStartResult.AlreadyEnabled))
+            {
+                throw new InvalidOperationException("The fake refused to start.");
+            }
+        }
+
+        public void Stop() => StopFor(AutoModeStopReason.StopRequested);
+
+        /// <summary>Switches the mode off for a reason, as the mode does when a run or the reader ends it, and raises the event.</summary>
+        /// <param name="reason">Why.</param>
+        public void StopFor(AutoModeStopReason reason)
+        {
+            Interlocked.Increment(ref _stopCalls);
+
+            if (!IsAutoModeEnabled)
+            {
+                return;
+            }
+
+            IsAutoModeEnabled = false;
+            LastStopReason = reason;
+            RaiseStateChanged();
+        }
+
+        /// <summary>Raises the state event, on the calling thread, as the real mode does.</summary>
+        public void RaiseStateChanged() => AutoModeStateChangedHandlers?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>Raises the event for a run of the mode, on the calling thread, as the real mode does.</summary>
+        /// <param name="result">The result of the run.</param>
+        public void RaiseRunCompleted(ExecResult result) => AutoModeRunCompletedHandlers?.Invoke(this, result);
     }
-
     /// <summary>Ready-made results.</summary>
     internal static class FakeResults
     {

@@ -255,6 +255,12 @@ namespace RFiDGear.Tests.ExternalControl
 
             public Task<ScanReaderResponse> ScanReader(ScanReaderRequest request) => throw NotUsed(request);
 
+            public Task<StartAutoModeResponse> StartAutoMode(StartAutoModeRequest request) => throw NotUsed(request);
+
+            public Task<StopAutoModeResponse> StopAutoMode(StopAutoModeRequest request) => throw NotUsed(request);
+
+            public Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request) => throw NotUsed(request);
+
             // The methods of the contract that these tests do not call.
             private static NotSupportedException NotUsed(object request)
             {

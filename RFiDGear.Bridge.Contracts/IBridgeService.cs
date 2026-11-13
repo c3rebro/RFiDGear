@@ -81,5 +81,42 @@ namespace RFiDGear.Bridge
         /// <returns>What the reader sees.</returns>
         [Capability(BridgeCapabilities.ReaderScan)]
         Task<ScanReaderResponse> ScanReader(ScanReaderRequest request);
+
+        /// <summary>
+        /// Switches automatic mode on: RFiDGear then runs the task list of the loaded project once for every card that is put on
+        /// the reader, one run per presence of a card, and reports each as <see cref="BridgeEvents.AutoRunCompleted"/> and in
+        /// <see cref="ListRunResults"/>. A run that fails does not stop the mode; a fault, a timeout or a lost reader does, and
+        /// the mode does not guess what a card is in after one.
+        /// <para>
+        /// It is refused when no reader is selected (<see cref="BridgeErrorCodes.NoReader"/>), when the project has no task
+        /// (<see cref="BridgeErrorCodes.NoProjectLoaded"/>), while something else holds the reader or the project
+        /// (<see cref="BridgeErrorCodes.Busy"/>), and when the user already switched it on (<see cref="BridgeErrorCodes.AutoModeActive"/>):
+        /// a client does not take over the mode of the user. While it is on, <see cref="LoadProject"/> and <see cref="StartRun"/> are refused.
+        /// </para>
+        /// </summary>
+        /// <param name="request">Whether the mode ends with the connection.</param>
+        /// <returns>That it is on.</returns>
+        [Capability(BridgeCapabilities.AutoMode)]
+        Task<StartAutoModeResponse> StartAutoMode(StartAutoModeRequest request);
+
+        /// <summary>
+        /// Switches automatic mode off, whoever switched it on. A run that is going on is not interrupted: it ends, its result is
+        /// reported, and nothing follows.
+        /// </summary>
+        /// <param name="request">No parameters yet.</param>
+        /// <returns>Whether the mode was on.</returns>
+        [Capability(BridgeCapabilities.AutoMode)]
+        Task<StopAutoModeResponse> StopAutoMode(StopAutoModeRequest request);
+
+        /// <summary>
+        /// Lists the results of the runs from a number onward: those of the runs this client started and those of automatic
+        /// mode, in the order in which they ended. It is how a client catches up after a lost connection or after events were
+        /// dropped. <see cref="ListRunResultsResponse.Gap"/> says when it cannot, because the history only holds the last
+        /// <see cref="BridgeProtocol.ResultHistory"/>.
+        /// </summary>
+        /// <param name="request">The number of the last result the client has, and how many it wants.</param>
+        /// <returns>The results, whether some are missing, and the number of the latest.</returns>
+        [Capability(BridgeCapabilities.ExecutionResultLog)]
+        Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request);
     }
 }

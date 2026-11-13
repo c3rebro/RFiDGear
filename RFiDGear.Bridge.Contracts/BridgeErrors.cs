@@ -70,6 +70,9 @@ namespace RFiDGear.Bridge
 
         /// <summary>Something went wrong inside RFiDGear; <see cref="BridgeErrorData.ErrorId"/> matches an entry of its log.</summary>
         public const int InternalError = 1016;
+
+        /// <summary>No reader is selected in RFiDGear, so there is nothing for automatic mode to wait on.</summary>
+        public const int NoReader = 1017;
     }
 
     /// <summary>The short names of the errors, carried in <see cref="BridgeErrorData.Kind"/>; they match <see cref="BridgeErrorCodes"/> one to one.</summary>
@@ -123,6 +126,9 @@ namespace RFiDGear.Bridge
 
         /// <summary>See <see cref="BridgeErrorCodes.InternalError"/>.</summary>
         public const string InternalError = "internalError";
+
+        /// <summary>See <see cref="BridgeErrorCodes.NoReader"/>.</summary>
+        public const string NoReader = "noReader";
     }
 
     /// <summary>The structured part of an error (<c>error.data</c>).</summary>

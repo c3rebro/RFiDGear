@@ -37,5 +37,15 @@ namespace RFiDGear.Bridge
         /// <param name="e">The event.</param>
         [Capability(BridgeCapabilities.EventsLifecycle)]
         void ShuttingDown(ShuttingDownEvent e);
+
+        /// <summary>Automatic mode was switched on or off. Never merged, and in the order in which things happened.</summary>
+        /// <param name="e">The event.</param>
+        [Capability(BridgeCapabilities.EventsAutoMode)]
+        void AutoModeChanged(AutoModeChangedEvent e);
+
+        /// <summary>Automatic mode processed a card. Once per run of the mode.</summary>
+        /// <param name="e">The event with the result.</param>
+        [Capability(BridgeCapabilities.EventsAutoMode)]
+        void AutoRunCompleted(AutoRunCompletedEvent e);
     }
 }

@@ -83,19 +83,21 @@ namespace RFiDGear.Tests.ExternalControl
             var (service, name, _) = Start();
             var client = await ConnectAsync(name);
 
-            var hello = await client.HelloAsync(BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged, BridgeEvents.RunStarted);
+            var hello = await client.HelloAsync(BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged, BridgeEvents.RunStarted, BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted);
 
-            // Everything of the contract as it stands: status, project and reader, runs and their lookup, and the events about them.
+            // Everything of the contract as it stands: status, project and reader, runs and their lookup and log, automatic mode, and
+            // the events about them. (The journal needs a folder, which this service has none of.)
             var offered = new[]
             {
                 BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.ProjectLoad, BridgeCapabilities.ReaderScan,
                 BridgeCapabilities.ExecutionRun, BridgeCapabilities.ExecutionCancel, BridgeCapabilities.ExecutionResultLookup,
+                BridgeCapabilities.ExecutionResultLog, BridgeCapabilities.AutoMode,
                 BridgeCapabilities.EventsExecution, BridgeCapabilities.EventsRunning, BridgeCapabilities.EventsProject,
-                BridgeCapabilities.EventsReader, BridgeCapabilities.EventsLifecycle,
+                BridgeCapabilities.EventsReader, BridgeCapabilities.EventsAutoMode, BridgeCapabilities.EventsLifecycle,
             };
             Assert.Equal(BridgeCapabilities.All.Where(offered.Contains).ToList(), hello.Capabilities);
             Assert.Equal(
-                new[] { BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.RunStarted, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged }.OrderBy(n => n),
+                new[] { BridgeEvents.RunningChanged, BridgeEvents.ShuttingDown, BridgeEvents.RunCompleted, BridgeEvents.RunStarted, BridgeEvents.ReaderChanged, BridgeEvents.ProjectChanged, BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted }.OrderBy(n => n),
                 hello.Events.OrderBy(n => n));
             Assert.Equal("2.0.10", hello.AppVersion);
             Assert.Equal(service.InstanceId, hello.InstanceId);
@@ -465,24 +467,28 @@ namespace RFiDGear.Tests.ExternalControl
         public void Disposing_LetsGoOfTheHost_AndOfTheProcessExitHook()
         {
             var (service, _, host) = Start();
-            Assert.Equal(new[] { 1, 1, 1, 1 }, Subscribers(host));
+            // The run state is listened to twice: for the notices of the bridge, and for the run of a mode that a client started.
+            Assert.Equal(new[] { 2, 1, 1, 1, 1, 1 }, Subscribers(host));
             Assert.True(IsHookedToProcessExit(service));
 
             service.Dispose();
             service.Dispose();
 
-            Assert.Equal(new[] { 0, 0, 0, 0 }, Subscribers(host));
+            Assert.Equal(new[] { 0, 0, 0, 0, 0, 0 }, Subscribers(host));
             Assert.False(IsHookedToProcessExit(service));
             Assert.Equal(BridgeServerState.Stopped, service.ServerState);
         }
 
-        // The events of the host the bridge listens to: a run starting or ending, the project, the reader, the end of a run.
+        // The events of the host the bridge listens to: a run starting or ending, the project, the reader, the end of a run, and the
+        // state and the runs of automatic mode.
         private static int[] Subscribers(FakeExtensionHost host) => new[]
         {
             host.ExecutionHost.IsRunningChangedSubscribers,
             host.ProjectHost.ProjectChangedSubscribers,
             host.ReaderHost.ReaderStateChangedSubscribers,
             host.ExecutionHost.ExecutionCompletedSubscribers,
+            host.AutoModeHost.StateSubscribers,
+            host.AutoModeHost.RunSubscribers,
         };
 
         [Fact]
