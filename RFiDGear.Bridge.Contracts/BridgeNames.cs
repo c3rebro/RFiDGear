@@ -42,6 +42,15 @@ namespace RFiDGear.Bridge
         /// <summary>Asking for the result of a run later, for example after a reconnect.</summary>
         public const string ExecutionResultLookup = "execution.resultLookup";
 
+        /// <summary>
+        /// A guarantee, not a method: RFiDGear writes down, before it asks the host to run, that it is about to, and when the run
+        /// ended. After RFiDGear has been restarted, a request id it had admitted is answered as
+        /// <see cref="RunStates.InterruptedByRestart"/> (or as a run that cannot be started again) and never as unknown, and an id
+        /// that it answers as unknown was never started. Without this capability a restart loses that knowledge, and a client that
+        /// did not get an answer before the restart cannot know whether the card was touched.
+        /// </summary>
+        public const string ExecutionJournal = "execution.journal";
+
         /// <summary>Events about a run started over the bridge: started and completed.</summary>
         public const string EventsExecution = "events.execution";
 
@@ -69,12 +78,22 @@ namespace RFiDGear.Bridge
             ExecutionRun,
             ExecutionCancel,
             ExecutionResultLookup,
+            ExecutionJournal,
             EventsExecution,
             EventsRunning,
             EventsReader,
             EventsProject,
             EventsLifecycle,
             ReaderScan,
+        };
+
+        /// <summary>
+        /// Gets the capabilities that are guarantees about the behaviour of the methods and not methods of their own. Every other
+        /// capability is carried by at least one method or event, so that nothing is advertised that does nothing.
+        /// </summary>
+        public static IReadOnlyList<string> Guarantees { get; } = new[]
+        {
+            ExecutionJournal,
         };
     }
 

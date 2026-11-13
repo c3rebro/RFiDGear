@@ -21,9 +21,14 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets the capability of each event of <see cref="IBridgeClientEvents"/>, by its wire name.</summary>
         internal static IReadOnlyDictionary<string, string> EventCapabilities { get; } = Read(typeof(IBridgeClientEvents));
 
-        /// <summary>Gets every capability that a method or an event of the contract carries, in the order of <see cref="BridgeCapabilities.All"/>.</summary>
+        /// <summary>
+        /// Gets every capability that a method or an event of the contract carries, and the guarantees of
+        /// <see cref="BridgeCapabilities.Guarantees"/>, in the order of <see cref="BridgeCapabilities.All"/>.
+        /// </summary>
         internal static IReadOnlyList<string> AllCapabilities { get; } = BridgeCapabilities.All
-            .Where(name => MethodCapabilities.Values.Contains(name, StringComparer.Ordinal) || EventCapabilities.Values.Contains(name, StringComparer.Ordinal))
+            .Where(name => MethodCapabilities.Values.Contains(name, StringComparer.Ordinal)
+                || EventCapabilities.Values.Contains(name, StringComparer.Ordinal)
+                || BridgeCapabilities.Guarantees.Contains(name, StringComparer.Ordinal))
             .ToList();
 
         /// <summary>Makes the wire name of a method: the camel-case of its name, which is also what StreamJsonRpc is told to use.</summary>

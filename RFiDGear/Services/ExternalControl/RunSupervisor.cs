@@ -45,6 +45,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Func<bool> _isShuttingDown;
         private readonly Func<string?> _busyActivity;
         private readonly TimeSpan _admissionTimeout;
+        private readonly IRunJournal? _journal;
         private readonly object _activeGate = new object();
         private readonly List<RunRecord> _active = new List<RunRecord>();
 
@@ -63,6 +64,7 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="isShuttingDown">Says whether RFiDGear is closing.</param>
         /// <param name="busyActivity">Says what the application is busy with, for the hint in a "busy" refusal.</param>
         /// <param name="admissionTimeout">How long to wait for the main window to take a request; five seconds when <see langword="null"/>.</param>
+        /// <param name="journal">Where a run is written down before it is started; <see langword="null"/> when there is none (a restart then forgets the runs).</param>
         internal RunSupervisor(
             IRFiDGearExtensionHost host,
             IPreassignedRunExecution execution,
@@ -71,8 +73,10 @@ namespace RFiDGear.Services.ExternalControl
             Action<string, bool, BridgeEventFactory> publish,
             Func<bool> isShuttingDown,
             Func<string?> busyActivity,
-            TimeSpan? admissionTimeout = null)
+            TimeSpan? admissionTimeout = null,
+            IRunJournal? journal = null)
         {
+            _journal = journal;
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _execution = execution ?? throw new ArgumentNullException(nameof(execution));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
@@ -186,7 +190,9 @@ namespace RFiDGear.Services.ExternalControl
 
             if (!created)
             {
-                if (!string.Equals(record.PayloadHash, plan.PayloadHash, StringComparison.Ordinal))
+                // A request that an earlier RFiDGear started is known by its id only (the journal holds nothing of what was asked
+                // for), so it cannot be compared: it is the same request, and it starts nothing.
+                if (!record.IsRecovered && !string.Equals(record.PayloadHash, plan.PayloadHash, StringComparison.Ordinal))
                 {
                     throw BridgeFault.RequestIdConflict();
                 }
@@ -257,6 +263,9 @@ namespace RFiDGear.Services.ExternalControl
                 case RunRecordState.Completed:
                     return new CancelRunResponse { State = RunStates.Completed, CancelRequested = false };
 
+                case RunRecordState.Interrupted:
+                    return new CancelRunResponse { State = RunStates.InterruptedByRestart, CancelRequested = false };
+
                 case RunRecordState.Pending:
                 case RunRecordState.Admitting:
                 case RunRecordState.Running:
@@ -318,6 +327,7 @@ namespace RFiDGear.Services.ExternalControl
             return state switch
             {
                 RunRecordState.Completed when result != null => new GetRunResultResponse { State = RunStates.Completed, Result = result },
+                RunRecordState.Interrupted => new GetRunResultResponse { State = RunStates.InterruptedByRestart },
                 RunRecordState.Pending or RunRecordState.Admitting or RunRecordState.Running => new GetRunResultResponse { State = RunStates.Running },
                 _ => new GetRunResultResponse { State = RunStates.Unknown },
             };
@@ -449,6 +459,16 @@ namespace RFiDGear.Services.ExternalControl
                 return;
             }
 
+            // Written down, and on the disk, before the host is asked: if RFiDGear is gone a moment later, the next one knows that this
+            // id may have touched the card. A run that cannot be written down is not started: the promise that an id which is
+            // "unknown" was never started would not hold otherwise.
+            if (_journal != null && !_journal.TryRecordStarted(record.RequestId, record.RunId))
+            {
+                Refuse(record, decision, new BridgeFault(BridgeErrorCodes.InternalError, BridgeErrorKinds.InternalError, neverStarted: true));
+
+                return;
+            }
+
             Task<ExecResult> run;
 
             try
@@ -459,6 +479,7 @@ namespace RFiDGear.Services.ExternalControl
             catch (Exception e)
             {
                 Logger.Warning("External control: the host could not be asked to run ({ExceptionType})", e.GetType().FullName);
+                _journal?.RecordRefused(record.RequestId, record.RunId);
                 Refuse(record, decision, new BridgeFault(BridgeErrorCodes.InternalError, BridgeErrorKinds.InternalError));
 
                 return;
@@ -475,6 +496,8 @@ namespace RFiDGear.Services.ExternalControl
 
                 if (cause is InvalidOperationException || cause is ArgumentException)
                 {
+                    // It never ran, so it is not remembered as a run.
+                    _journal?.RecordRefused(record.RequestId, record.RunId);
                     Refuse(
                         record,
                         decision,
@@ -609,6 +632,9 @@ namespace RFiDGear.Services.ExternalControl
                 return;
             }
 
+            // If this cannot be written the run stays "interrupted" for a later RFiDGear, which is the safe way to be wrong.
+            _journal?.RecordEnded(record.RequestId, record.RunId);
+
             Logger.Information(
                 "External control: run {RunId} of request {RequestId} ended as {Status} (result {ResultSeq}, {TotalTasks} tasks, {FailedTasks} failed)",
                 result.RunId, result.RequestId, result.Status, result.ResultSeq, result.TotalTasks, result.FailedTasks);
@@ -622,8 +648,15 @@ namespace RFiDGear.Services.ExternalControl
         {
             RequestId = record.RequestId,
             RunId = record.RunId,
-            State = _registry.Read(record).State == RunRecordState.Completed ? RunStates.Completed : RunStates.Running,
+            State = StateOf(_registry.Read(record).State),
             Duplicate = duplicate,
+        };
+
+        private static string StateOf(RunRecordState state) => state switch
+        {
+            RunRecordState.Completed => RunStates.Completed,
+            RunRecordState.Interrupted => RunStates.InterruptedByRestart,
+            _ => RunStates.Running,
         };
 
         private static void RequestCancellation(RunRecord record)

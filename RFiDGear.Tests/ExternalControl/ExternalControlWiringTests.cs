@@ -63,7 +63,8 @@ namespace RFiDGear.Tests.ExternalControl
                 new FakeProjectBootstrapper(),
                 () => new SettingsReaderWriter(settingsDirectory),
                 () => new DatabaseReaderWriter(new ProjectManager(Path.Combine(tempRoot, "appdata"))),
-                externalControlPipeName: pipeName);
+                externalControlPipeName: pipeName,
+                externalControlJournalDirectory: Path.Combine(tempRoot, "bridge"));
 
             var initialization = viewModel.InitializeAsync();
             bootstrapper.Complete(new SettingsBootstrapResult

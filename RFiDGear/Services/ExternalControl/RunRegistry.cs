@@ -28,6 +28,9 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>The host refused the run.</summary>
         Refused = 5,
+
+        /// <summary>The journal says that an earlier RFiDGear admitted the run and never wrote down that it ended: the restart interrupted it.</summary>
+        Interrupted = 6,
     }
 
     /// <summary>How the host answered a request to run: it admitted it under the id of the record, or it refused.</summary>
@@ -66,10 +69,16 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="requestId">The request id.</param>
         /// <param name="payloadHash">The hash of what the request asked for.</param>
         internal RunRecord(string requestId, string payloadHash)
+            : this(requestId, payloadHash, Guid.NewGuid().ToString("N"), isRecovered: false)
+        {
+        }
+
+        private RunRecord(string requestId, string payloadHash, string runId, bool isRecovered)
         {
             RequestId = requestId;
             PayloadHash = payloadHash;
-            RunId = Guid.NewGuid().ToString("N");
+            RunId = runId;
+            IsRecovered = isRecovered;
         }
 
         /// <summary>Gets the request id the client chose.</summary>
@@ -77,6 +86,30 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets the hash of what the request asked for; a second request with the same id and another hash is a conflict.</summary>
         internal string PayloadHash { get; }
+
+        /// <summary>
+        /// Gets whether the record was read from the journal of an earlier RFiDGear. The journal does not hold what the request
+        /// asked for (it must hold no value of a client), so a later request with the same id cannot be compared with it; it is
+        /// taken for the same request and starts nothing.
+        /// </summary>
+        internal bool IsRecovered { get; }
+
+        /// <summary>Makes the record of a run that an earlier RFiDGear started, from what its journal says.</summary>
+        /// <param name="requestId">The request id.</param>
+        /// <param name="runId">The run id.</param>
+        /// <param name="ended">Whether the journal says that the run ended; if not, the restart interrupted it.</param>
+        /// <returns>The record, final from the start.</returns>
+        internal static RunRecord Recovered(string requestId, string runId, bool ended)
+        {
+            var record = new RunRecord(requestId, string.Empty, runId, isRecovered: true);
+            record._state = (int)(ended ? RunRecordState.Completed : RunRecordState.Interrupted);
+            record.Admission.TrySetResult(AdmissionResult.Accepted());
+            record.Completion.TrySetResult(ended);
+            record.Cancellation.Dispose();
+            record._cancellationDisposed = 1;
+
+            return record;
+        }
 
         /// <summary>Gets the id the run has in its result and in the log. It is made with the record and used only if the run is admitted.</summary>
         internal string RunId { get; }
@@ -156,6 +189,35 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets the number of the latest result, 0 when there is none.</summary>
         internal long LastResultSeq => Interlocked.Read(ref _lastResultSeq);
+
+        /// <summary>
+        /// Takes in what the journal says about the runs of earlier processes, oldest first. Each becomes a record that is final:
+        /// a run that ended is a completed one whose result is gone, one that did not is interrupted. They count towards the
+        /// history like the runs of this process.
+        /// </summary>
+        /// <param name="entries">What the journal held.</param>
+        internal void Recover(IEnumerable<JournalEntry> entries)
+        {
+            ArgumentNullException.ThrowIfNull(entries);
+
+            lock (_gate)
+            {
+                foreach (var entry in entries)
+                {
+                    if (_byRequestId.ContainsKey(entry.RequestId))
+                    {
+                        continue;
+                    }
+
+                    var record = RunRecord.Recovered(entry.RequestId, entry.RunId, entry.State == JournalState.Ended);
+                    _byRequestId[entry.RequestId] = record;
+                    _byRunId[entry.RunId] = record;
+                    _completedOrder.Enqueue(record);
+                }
+
+                Evict();
+            }
+        }
 
         /// <summary>Finds the record of a request id, or makes one.</summary>
         /// <param name="requestId">The request id.</param>
