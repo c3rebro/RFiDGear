@@ -42,6 +42,7 @@
     <ProjectReference Include="..\RFiDGear.Extensions\CardCheckAssistant\RFiDGear.Extensions.CardCheckAssistant.csproj" />
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
     <ProjectReference Include="..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj" />
+    <ProjectReference Include="..\RFiDGear.Bridge.Contracts\RFiDGear.Bridge.Contracts.csproj" />
     <ProjectReference Include="..\RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -58,6 +59,10 @@
     </Content>
     <!-- The approved public surface of RFiDGear.ExtensionSdk, compared by ApiSurface/ExtensionSdkApiSurfaceTests. -->
     <Content Include="ApiSurface\RFiDGear.ExtensionSdk.api.approved">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- The approved public surface of RFiDGear.Bridge.Contracts, compared by ApiSurface/BridgeContractsApiSurfaceTests. -->
+    <Content Include="ApiSurface\RFiDGear.Bridge.Contracts.api.approved">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -176,5 +176,8 @@
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Contracts\RFiDGear.Contracts.csproj" />
     <ProjectReference Include="..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj" />
+    <!-- The client-facing contract of the external control bridge. The installer ships it next to RFiDGear.exe, where an
+         external application takes it from. -->
+    <ProjectReference Include="..\RFiDGear.Bridge.Contracts\RFiDGear.Bridge.Contracts.csproj" />
   </ItemGroup>
 </Project>
