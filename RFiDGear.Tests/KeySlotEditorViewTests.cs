@@ -385,6 +385,124 @@ namespace RFiDGear.Tests
             });
         }
 
+        // ── The tabs in the dialogs they are in ──
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task In_the_desfire_dialog_every_manager_button_and_caption_is_inside_the_visible_tab_area(bool atSmallestSize)
+        {
+            // A tab alone in a window has all of it. In the dialog it has what is left under the task and above the status, and a
+            // button or a caption below that edge is cut off, which a tab in a window of its own cannot show. The smallest size is
+            // the one the dialog declares, so lowering it is a change that this test sees. Every key is named by a reference, which
+            // is the tallest state: the captions are shown.
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var outside = new List<string>();
+                var task = BoundDesfire(TaskType_MifareDesfireTask.PICCMasterKeyChangeover);
+                var window = new MifareDesfireSetupView { DataContext = task, ShowActivated = false, ShowInTaskbar = false };
+                var types = Enum.GetValues<TaskType_MifareDesfireTask>().Select(type => (type.ToString(), (Action)(() => task.SelectedTaskType = type)));
+
+                await CollectOutsideTheTabArea(window, "desfire", atSmallestSize, types, outside);
+
+                Assert.True(outside.Count == 0, Environment.NewLine + string.Join(Environment.NewLine, outside));
+            });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task In_the_classic_dialog_every_manager_button_and_caption_is_inside_the_visible_tab_area(bool atSmallestSize)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var outside = new List<string>();
+                var task = BoundClassic();
+                var window = new MifareClassicSetupView { DataContext = task, ShowActivated = false, ShowInTaskbar = false };
+                var types = Enum.GetValues<TaskType_MifareClassicTask>().Select(type => (type.ToString(), (Action)(() => task.SelectedTaskType = type)));
+
+                await CollectOutsideTheTabArea(window, "classic", atSmallestSize, types, outside);
+
+                Assert.True(outside.Count == 0, Environment.NewLine + string.Join(Environment.NewLine, outside));
+            });
+        }
+
+        // Shows the dialog, and for every task type and every tab that a person can pick lists the manager buttons and the captions
+        // of the references that do not fit where they are shown.
+        private static async Task CollectOutsideTheTabArea(Window window, string label, bool atSmallestSize, IEnumerable<(string Type, Action Select)> types, List<string> outside)
+        {
+            try
+            {
+                if (atSmallestSize)
+                {
+                    window.Width = window.MinWidth;
+                    window.Height = window.MinHeight;
+                }
+
+                window.Show();
+                await Settle(window);
+
+                var tabs = LogicalDescendants(window).OfType<TabControl>().First(candidate => candidate.IsVisible);
+                var host = Assert.IsAssignableFrom<FrameworkElement>(tabs.Template.FindName("PART_SelectedContentHost", tabs));
+
+                foreach (var (type, select) in types)
+                {
+                    select();
+                    await Settle(window);
+
+                    // Every tab that is offered, not only the one the dialog opens on for this task type.
+                    foreach (var item in tabs.Items.OfType<TabItem>().Where(candidate => candidate.Visibility == Visibility.Visible))
+                    {
+                        tabs.SelectedItem = item;
+                        await Settle(window);
+
+                        CollectOutside(window, BoundsIn(host, window), $"{label} {type}, tab {tabs.Items.IndexOf(item)}", outside);
+                    }
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        private static async Task Settle(Window window)
+        {
+            window.UpdateLayout();
+            await Flush();
+            window.UpdateLayout();
+        }
+
+        private static void CollectOutside(Window window, Rect area, string label, List<string> outside)
+        {
+            var parts = LogicalDescendants(window)
+                .OfType<KeyManagerButton>()
+                .Where(button => button.IsVisible)
+                .Select(button => ("button", (FrameworkElement)button))
+                .Concat(EditorsIn(window)
+                    .Where(editor => editor.IsVisible && StateOf(editor).IsReferenceMode)
+                    .Select(editor => ("caption of " + editor.SlotId, (FrameworkElement)editor.FindName("CaptionFrame"))));
+
+            foreach (var (what, part) in parts)
+            {
+                // What a person sees is the part inside the group box of its section, with the space that the part keeps below
+                // and beside it, and the line of the border; the group box itself has to be inside the area of the tab.
+                var section = EditorGroupBox(part);
+                var limit = section == null ? area : BoundsIn(section, window);
+                var box = BoundsIn(part, window);
+                var bottom = box.Bottom + part.Margin.Bottom;
+                var right = box.Right + part.Margin.Right;
+
+                if (bottom > limit.Bottom - 1 + 0.5 || right > limit.Right - 1 + 0.5 || limit.Bottom > area.Bottom + 0.5)
+                {
+                    outside.Add($"{label}: the {what} ends at {right:0}x{bottom:0}, its section at {limit.Right:0}x{limit.Bottom:0}, the tab area at {area.Right:0}x{area.Bottom:0}");
+                }
+            }
+        }
+
+        private static Rect BoundsIn(FrameworkElement element, Visual ancestor) =>
+            element.TransformToAncestor(ancestor).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+
         // Every tab that has keys, as a view and its task: typed, or with every key named by a reference.
         private static (string Name, Func<bool, (FrameworkElement View, object Task)> Make)[] AllTabs() => new (string Name, Func<bool, (FrameworkElement View, object Task)> Make)[]
         {
@@ -426,14 +544,7 @@ namespace RFiDGear.Tests
                                 await Flush();
                                 window.UpdateLayout();
 
-                                var root = (FrameworkElement)VisualTreeHelper.GetChild(window, 0);
-                                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
-                                bitmap.Render(root);
-                                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
-                                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
-
-                                using var file = System.IO.File.Create(System.IO.Path.Combine(folder, "tab-" + name.Replace(' ', '-') + (bound ? "-reference-" : "-typed-") + width + "x" + height + ".png"));
-                                encoder.Save(file);
+                                SavePicture(window, System.IO.Path.Combine(folder, "tab-" + name.Replace(' ', '-') + (bound ? "-reference-" : "-typed-") + width + "x" + height + ".png"));
                             }
                             finally
                             {
@@ -444,6 +555,86 @@ namespace RFiDGear.Tests
                 }
             });
         }
+
+        [Fact]
+        public async Task The_dialogs_are_rendered_to_pictures_when_a_folder_is_given()
+        {
+            // The tab as the person sees it: under the task, above the status, in the dialog and at its smallest size.
+            var folder = Environment.GetEnvironmentVariable("RFIDGEAR_RENDER_DIR");
+
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                return;
+            }
+
+            System.IO.Directory.CreateDirectory(folder);
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                foreach (var atSmallestSize in new[] { true, false })
+                {
+                    var size = atSmallestSize ? "smallest" : "default";
+
+                    foreach (var type in new[] { TaskType_MifareDesfireTask.PICCMasterKeyChangeover, TaskType_MifareDesfireTask.ApplicationKeyChangeover })
+                    {
+                        var window = new MifareDesfireSetupView { DataContext = BoundDesfire(type), ShowActivated = false, ShowInTaskbar = false };
+
+                        await ShowAndSave(window, atSmallestSize, null, System.IO.Path.Combine(folder, "dialog-desfire-" + type + "-" + size + ".png"));
+                    }
+
+                    // The data explorer is the fifth tab; the dialog opens on another one for a task that reads data.
+                    var explorer = new MifareDesfireSetupView { DataContext = BoundDesfire(TaskType_MifareDesfireTask.ReadData), ShowActivated = false, ShowInTaskbar = false };
+
+                    await ShowAndSave(explorer, atSmallestSize, 4, System.IO.Path.Combine(folder, "dialog-desfire-DataExplorer-" + size + ".png"));
+
+                    var classic = new MifareClassicSetupView { DataContext = BoundClassic(), ShowActivated = false, ShowInTaskbar = false };
+
+                    await ShowAndSave(classic, atSmallestSize, null, System.IO.Path.Combine(folder, "dialog-classic-" + size + ".png"));
+                }
+            });
+        }
+
+        private static async Task ShowAndSave(Window window, bool atSmallestSize, int? tab, string path)
+        {
+            try
+            {
+                if (atSmallestSize)
+                {
+                    window.Width = window.MinWidth;
+                    window.Height = window.MinHeight;
+                }
+
+                window.Show();
+                await Settle(window);
+
+                if (tab is { } index)
+                {
+                    LogicalDescendants(window).OfType<TabControl>().First(candidate => candidate.IsVisible).SelectedIndex = index;
+                    await Settle(window);
+                }
+
+                SavePicture(window, path);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        // The root of the window's own visuals, which has the size of the client area; the content alone has a margin that would
+        // put its right and bottom edge outside the picture.
+        private static void SavePicture(Window window, string path)
+        {
+            var root = (FrameworkElement)VisualTreeHelper.GetChild(window, 0);
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(root);
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+
+            using var file = System.IO.File.Create(path);
+            encoder.Save(file);
+        }
+
         private sealed record KeyBounds(double Right, double Width);
 
         private sealed record ButtonBounds(double Right, double Bottom, double Height);
@@ -673,8 +864,13 @@ namespace RFiDGear.Tests
         {
             public List<string[]> Opened { get; } = new List<string[]>();
 
-            public void Show(KeyManagerViewModel viewModel, Window? owner) =>
+            public List<Window?> Owners { get; } = new List<Window?>();
+
+            public void Show(KeyManagerViewModel viewModel, Window? owner)
+            {
+                Owners.Add(owner);
                 Opened.Add(viewModel.Rows.Select(row => row.SlotId).ToArray());
+            }
         }
 
         // A task of which every slot is named by a reference, so that every caption shows.
@@ -690,9 +886,9 @@ namespace RFiDGear.Tests
             return task;
         }
 
-        private static MifareClassicSetupViewModel BoundClassic()
+        private static MifareClassicSetupViewModel BoundClassic(TaskType_MifareClassicTask type = TaskType_MifareClassicTask.ReadData)
         {
-            var task = new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData };
+            var task = new MifareClassicSetupViewModel { SelectedTaskType = type };
 
             foreach (var slot in SecureKeySlots.Classic)
             {
