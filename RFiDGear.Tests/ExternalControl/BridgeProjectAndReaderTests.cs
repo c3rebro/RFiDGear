@@ -100,6 +100,13 @@ namespace RFiDGear.Tests.ExternalControl
         [InlineData("//?/C:/projects/one.rfPrj")]
         [InlineData("//./pipe/x")]
         [InlineData(@"\??\C:\projects\one.rfPrj")]
+        [InlineData(@"\\./pipe/RFiDGear")]
+        [InlineData(@"/\?\C:\projects\one.rfPrj")]
+        [InlineData(@"\/?/C:/projects/one.rfPrj")]
+        [InlineData(@"//.\pipe\RFiDGear")]
+        [InlineData(@"/??/C:\projects\one.rfPrj")]
+        [InlineData(@"\\\.\pipe\RFiDGear")]
+        [InlineData(@"\\\\?\C:\projects\one.rfPrj")]
         [InlineData("C:\\projects\\one\0.rfPrj")]
         public async Task APathThatIsNotAFullPathToAFile_IsRefusedBeforeTheHostSeesIt(string path)
         {

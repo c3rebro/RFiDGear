@@ -39,6 +39,11 @@ namespace RFiDGear.Services.ExternalControl
             var path = ValidatePath(request);
 
             // Replacing the project under a machine that is working through cards would hand it a different job half way.
+            // This is the policy; the exclusion itself is the coordinator's: a load holds its slot, automatic mode cannot be
+            // switched on while the slot is held (TryStart answers busy), and none of its runs can start. So a mode that is
+            // switched on between this check and the admission of the load starts with the new project and has processed
+            // no card with a half-replaced one; the window is too narrow to be worth a lock that every other caller of
+            // LoadAsync (the extensions) would have to share.
             if (_host.AutoMode.IsAutoModeEnabled)
             {
                 throw BridgeFault.AutoModeActive();
@@ -89,12 +94,18 @@ namespace RFiDGear.Services.ExternalControl
             }
         }
 
-        private static bool IsDevicePath(string path) =>
-            path.StartsWith(@"\\?\", StringComparison.Ordinal)
-            || path.StartsWith(@"\\.\", StringComparison.Ordinal)
-            || path.StartsWith("//?/", StringComparison.Ordinal)
-            || path.StartsWith("//./", StringComparison.Ordinal)
-            || path.StartsWith(@"\??\", StringComparison.Ordinal);
+        // Windows takes "/" for "\" and treats the first two characters the same either way, so the separators are made equal
+        // before the prefix is looked at: "\\./pipe/x" is a device path as much as "\\.\pipe\x". Three separators in a row at the
+        // start (an empty server name) are no path of a project either, and are refused rather than guessed at.
+        private static bool IsDevicePath(string path)
+        {
+            var normalised = path.Replace('/', '\\');
+
+            return normalised.StartsWith(@"\\?\", StringComparison.Ordinal)
+                || normalised.StartsWith(@"\\.\", StringComparison.Ordinal)
+                || normalised.StartsWith(@"\??\", StringComparison.Ordinal)
+                || normalised.StartsWith(@"\\\", StringComparison.Ordinal);
+        }
 
         private BridgeFault Refusal(ProjectOpenError error) => error switch
         {
