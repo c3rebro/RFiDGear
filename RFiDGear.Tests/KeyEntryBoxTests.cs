@@ -243,6 +243,43 @@ namespace RFiDGear.Tests
             });
         }
 
+        // ── What stays behind ──
+
+        [Fact]
+        public async Task The_box_that_shows_the_key_keeps_no_undo_history_so_that_cleared_digits_cannot_be_brought_back()
+        {
+            await OnEntry(12, async (window, entry, _, shown, check) =>
+            {
+                check.IsChecked = true;
+                shown.Text = "A1B2C3D4E5F6";
+                await Settle(window);
+
+                entry.Clear();
+                await Settle(window);
+
+                // The person shows the box again and presses Ctrl+Z, to see what was there.
+                check.IsChecked = true;
+                await Settle(window);
+
+                Assert.False(shown.IsUndoEnabled);
+                Assert.False(shown.CanUndo);
+                shown.Undo();
+                Assert.Equal(string.Empty, shown.Text);
+            });
+        }
+
+        [Fact]
+        public async Task The_check_box_has_a_tooltip_with_its_text_when_it_opens()
+        {
+            // A tooltip opens in a popup of its own, which is not in the tree of the box: what it binds to has to be reachable from there.
+            await OnEntry(12, async (window, entry, _, _, check) =>
+            {
+                entry.ShowKeyToolTip = "Shows the digits as you type them.";
+
+                Assert.Equal("Shows the digits as you type them.", await OpenedToolTip.ContentOf(window, check));
+            });
+        }
+
         // ── Enter and names ──
 
         [Theory]

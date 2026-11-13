@@ -64,6 +64,9 @@ namespace RFiDGear.Services.SecureKeys
             RefreshStoredKeys();
         }
 
+        /// <summary>Raised after a new key was stored, so that the other slots can offer it.</summary>
+        internal event EventHandler? KeyStored;
+
         /// <summary>Gets the id of the slot; see <see cref="SecureKeySlots"/>.</summary>
         public string SlotId => _state.SlotId;
 
@@ -247,6 +250,7 @@ namespace RFiDGear.Services.SecureKeys
                     OnPropertyChanged(nameof(NewName));
                     OnPropertyChanged(nameof(CanStoreKey));
                     RefreshStoredKeys();
+                    KeyStored?.Invoke(this, EventArgs.Empty);
                     return true;
                 case KeySlotMessage.KeyNotStored:
                     SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeySlotKeyNotStored"), result.Detail), true);
@@ -274,10 +278,14 @@ namespace RFiDGear.Services.SecureKeys
             if (_state.ProviderOffersStoreKey)
             {
                 var stored = _state.ListStoredKeys();
-                _listError = stored.Error;
-                choices.AddRange(stored.References.Select(reference => new StoredKeyChoice(reference, reference)));
-
                 var current = _state.Reference;
+                _listError = stored.Error;
+
+                // The names in the Credential Manager do not depend on case. A key that the slot names in another case is the key of the
+                // slot: the choice has the spelling of the slot, which is what the list selects by, and the text of the vault.
+                choices.AddRange(stored.References.Select(reference => string.Equals(reference, current, StringComparison.OrdinalIgnoreCase)
+                    ? new StoredKeyChoice(current, reference)
+                    : new StoredKeyChoice(reference, reference)));
 
                 if (current.Length > 0 && !choices.Any(choice => string.Equals(choice.Reference, current, StringComparison.Ordinal)))
                 {

@@ -215,6 +215,31 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task The_greyed_out_box_shows_its_tooltip_while_it_shows_a_reference_and_is_as_it_was_afterwards()
+        {
+            // A control that is disabled shows no tooltip unless it is told to, and this one is disabled while it shows a reference.
+            await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, async (view, _) =>
+            {
+                var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
+                var keyBox = (TextBox)editor.EmbeddedKey;
+                var before = ToolTipService.GetShowOnDisabled(keyBox);
+
+                StateOf(editor).ToggleMode();
+                await Flush();
+                view.UpdateLayout();
+
+                Assert.False(keyBox.IsEnabled);
+                Assert.True(ToolTipService.GetShowOnDisabled(keyBox));
+
+                StateOf(editor).ToggleMode();
+                await Flush();
+                view.UpdateLayout();
+
+                Assert.Equal(before, ToolTipService.GetShowOnDisabled(keyBox));
+            });
+        }
+
+        [Fact]
         public async Task The_text_of_the_box_follows_the_reference_and_is_never_bound_to_a_key_of_the_task()
         {
             await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, task) =>

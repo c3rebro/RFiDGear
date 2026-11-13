@@ -33,7 +33,7 @@ namespace RFiDGear.View
 
         /// <summary>Identifies <see cref="ShowKeyToolTip"/>.</summary>
         public static readonly DependencyProperty ShowKeyToolTipProperty = DependencyProperty.Register(
-            nameof(ShowKeyToolTip), typeof(string), typeof(KeyEntryBox), new PropertyMetadata(string.Empty));
+            nameof(ShowKeyToolTip), typeof(string), typeof(KeyEntryBox), new PropertyMetadata(string.Empty, OnShowKeyToolTipChanged));
 
         /// <summary>Identifies <see cref="IsShown"/>.</summary>
         public static readonly DependencyProperty IsShownProperty = DependencyProperty.Register(
@@ -142,6 +142,24 @@ namespace RFiDGear.View
 
         private static void OnIsShownChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
             ((KeyEntryBox)d).ApplyShown((bool)e.NewValue);
+
+        // A tooltip opens in a popup of its own, which is not in the tree of this control: a binding that finds this control by walking
+        // up from the tooltip finds nothing there, and the tooltip is empty. So the tooltip gets its text, not a binding.
+        private static void OnShowKeyToolTipChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var box = (KeyEntryBox)d;
+
+            if (box.ShowCheck == null)
+            {
+                return;
+            }
+
+            var text = e.NewValue as string;
+
+            box.ShowCheck.ToolTip = string.IsNullOrEmpty(text)
+                ? null
+                : new ToolTip { Style = (Style)box.FindResource("KeySlotToolTipStyle"), Content = text };
+        }
 
         // The digits move from one box to the other, so that they are in one at a time.
         private void ApplyShown(bool shown)

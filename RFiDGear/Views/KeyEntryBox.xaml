@@ -25,10 +25,12 @@
             MaxLength="{Binding HexLength, RelativeSource={RelativeSource AncestorType=UserControl}}"
             PasswordChanged="HiddenBox_PasswordChanged"
             PreviewKeyDown="Box_PreviewKeyDown" />
+        <!-- No undo: a key that was cleared must not come back with Ctrl+Z when the box is shown again. -->
         <TextBox
             x:Name="ShownBox"
             Height="24"
             VerticalContentAlignment="Center"
+            IsUndoEnabled="False"
             AutomationProperties.Name="{Binding Label, RelativeSource={RelativeSource AncestorType=UserControl}}"
             MaxLength="{Binding HexLength, RelativeSource={RelativeSource AncestorType=UserControl}}"
             PreviewKeyDown="Box_PreviewKeyDown"
@@ -41,10 +43,6 @@
             Margin="8,0,0,0"
             VerticalAlignment="Center"
             Content="{Binding ShowKeyText, RelativeSource={RelativeSource AncestorType=UserControl}}"
-            IsChecked="{Binding IsShown, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}">
-            <CheckBox.ToolTip>
-                <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding ShowKeyToolTip, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-            </CheckBox.ToolTip>
-        </CheckBox>
+            IsChecked="{Binding IsShown, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}" />
     </Grid>
 </UserControl>

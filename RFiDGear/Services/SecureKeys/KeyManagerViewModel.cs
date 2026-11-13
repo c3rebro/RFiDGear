@@ -62,6 +62,7 @@ namespace RFiDGear.Services.SecureKeys
             foreach (var row in Rows)
             {
                 row.PropertyChanged += OnRowChanged;
+                row.KeyStored += OnRowKeyStored;
             }
         }
 
@@ -127,6 +128,7 @@ namespace RFiDGear.Services.SecureKeys
             foreach (var row in Rows)
             {
                 row.PropertyChanged -= OnRowChanged;
+                row.KeyStored -= OnRowKeyStored;
                 row.Dispose();
             }
         }
@@ -174,6 +176,15 @@ namespace RFiDGear.Services.SecureKeys
         }
 
         private void OnSupplierChanged(object? sender, EventArgs e) => _post(RefreshSupplierStatus);
+
+        // A key that was made for one slot can be used by any other: every other row reads the stored keys again.
+        private void OnRowKeyStored(object? sender, EventArgs e)
+        {
+            foreach (var other in Rows.Where(row => !ReferenceEquals(row, sender)))
+            {
+                other.RefreshStoredKeys();
+            }
+        }
 
         private void OnRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
             OnPropertyChanged(nameof(ShowSupplierStatus));

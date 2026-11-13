@@ -350,6 +350,31 @@ namespace RFiDGear.Tests
             });
         }
 
+        [Fact]
+        public async Task Every_tooltip_of_the_window_has_its_text_when_it_opens()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, async (window, viewModel) =>
+            {
+                await Toggle(window, 0);
+                var row = viewModel.Rows[0];
+
+                foreach (var (owner, expected) in new (FrameworkElement, string)[]
+                {
+                    (Of<Button>(window, "ModeButton"), row.ModeToolTip),
+                    (Of<ComboBox>(window, "ProviderBox"), row.ProviderToolTip),
+                    (Of<ComboBox>(window, "StoredKeyBox"), row.StoredKeyToolTip),
+                    (Of<TextBox>(window, "ReferenceBox"), row.ReferenceToolTip),
+                    (Of<TextBox>(window, "NewNameBox"), row.ReferenceToolTip),
+                    (Of<Button>(window, "StoreButton"), row.StoreNewToolTip),
+                    (Of<CheckBox>(window, "ShowCheck"), row.ShowKeyToolTip),
+                })
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(expected), owner.Name + " has no text for its tooltip");
+                    Assert.Equal(expected, await OpenedToolTip.ContentOf(window, owner));
+                }
+            });
+        }
+
         // ── Creating a new key ──
 
         [Fact]

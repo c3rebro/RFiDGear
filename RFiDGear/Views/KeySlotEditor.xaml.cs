@@ -169,6 +169,7 @@ namespace RFiDGear.View
                 new SavedValue(box, TextBox.TextProperty),
                 new SavedValue(box, Control.BackgroundProperty),
                 new SavedValue(box, FrameworkElement.ToolTipProperty),
+                new SavedValue(box, ToolTipService.ShowOnDisabledProperty),
             };
 
             // The text of the box is the line that says which key it is. The binding to the key of the task is gone meanwhile, so
@@ -181,6 +182,9 @@ namespace RFiDGear.View
             var tip = new ToolTip { Style = (Style)FindResource("KeySlotToolTipStyle") };
             tip.SetBinding(ContentControl.ContentProperty, new Binding("State.ReferenceDetail") { Source = this, Mode = BindingMode.OneWay });
             box.ToolTip = tip;
+
+            // The box is disabled while it shows a reference, and a disabled control shows no tooltip unless it is told to.
+            ToolTipService.SetShowOnDisabled(box, true);
         }
 
         private void ShowKey()

@@ -479,6 +479,27 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task Every_tooltip_of_the_window_has_its_text_when_it_opens()
+        {
+            await OnWindow(new Setup().WithKeys("cards/a"), async (window, viewModel) =>
+            {
+                foreach (var (owner, expected) in new (FrameworkElement, string)[]
+                {
+                    (Of<Button>(window, "RemoveButton"), viewModel.Keys[0].RemoveToolTip),
+                    (Of<TextBox>(window, "NameBox"), viewModel.NameToolTip),
+                    (Of<ComboBox>(window, "KindBox"), viewModel.KindToolTip),
+                    (Of<Button>(window, "StoreButton"), viewModel.StoreToolTip),
+                    (Of<CheckBox>(window, "ShowCheck"), viewModel.ShowKeyToolTip),
+                    (Of<TextBlock>(window, "ReferenceText"), "cards/a"),
+                })
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(expected), owner.Name + " has no text for its tooltip");
+                    Assert.Equal(expected, await OpenedToolTip.ContentOf(window, owner));
+                }
+            });
+        }
+
+        [Fact]
         public async Task The_buttons_that_remove_a_key_are_told_apart_by_their_accessible_names_which_hold_no_key()
         {
             await OnWindow(new Setup().WithKeys("cards/a", "cards/b"), (window, _) =>

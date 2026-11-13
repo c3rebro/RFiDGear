@@ -347,7 +347,44 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal(new[] { "cards/late" }, rig.Row.StoredKeys.Select(key => key.Reference));
         }
 
+        [Fact]
+        public void A_stored_key_that_differs_from_the_name_of_the_slot_only_in_case_is_the_key_of_the_slot()
+        {
+            using var rig = new Rig(new[] { SecureKeySlots.DesfireRead });
+            rig.Store.Blobs[Prefix + "Cards/Main"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            rig.Host.BindKeySlot(SecureKeySlots.DesfireRead, WindowsCredentialKeyProvider.ProviderId, "cards/main");
+            rig.Row.RefreshStoredKeys();
+
+            // The names in the Credential Manager do not depend on case, so the key exists. The choice has the spelling of the slot,
+            // which is what the list selects by, and the text of the vault.
+            var choice = Assert.Single(rig.Row.StoredKeys);
+            Assert.Equal("cards/main", choice.Reference);
+            Assert.Equal("Cards/Main", choice.Text);
+        }
+
         // ── Creating a new key ──
+
+        [Fact]
+        public void A_key_that_is_created_for_one_slot_is_offered_to_every_other_slot_that_uses_the_credential_manager()
+        {
+            using var rig = new Rig(new[] { SecureKeySlots.DesfireRead, SecureKeySlots.DesfireWrite });
+            var first = rig.ViewModel.Rows[0];
+            var second = rig.ViewModel.Rows[1];
+            first.ToggleModeCommand.Execute(null);
+            second.ToggleModeCommand.Execute(null);
+            second.Reference = "cards/two";
+            first.NewName = "cards/new";
+
+            using (var entered = TestText.Secure("000102030405060708090A0B0C0D0E0F"))
+            {
+                Assert.True(first.StoreEntered(entered));
+            }
+
+            Assert.Contains("cards/new", second.StoredKeys.Select(key => key.Reference));
+
+            // What the other slot names is not the choice of the person who made a key for the first.
+            Assert.Equal("cards/two", second.Reference);
+        }
 
         [Theory]
         [InlineData("cards/main", true)]
