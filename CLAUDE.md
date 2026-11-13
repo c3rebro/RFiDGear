@@ -339,8 +339,9 @@ cleared whatever comes of it; no property of its view models holds a key.
 File > "Key manager..." (`StoredKeysView`, `StoredKeysViewModel`) needs no
 project: it lists the keys under `RFiDGear/key/` by name only
 (`ICredentialStore.Enumerate`, `WindowsCredentialKeyProvider.List`; no secret is
-read to show a list), stores a key through `KeyStorage.Store` and removes one,
-asking before it replaces or removes a key.
+read to show a list, and the ones the vault hands out with it are erased),
+stores a key through `KeyStorage.Store` and removes one, asking before it
+replaces or removes a key, and storing nothing while the list cannot be read.
 
 File > "Move keys of a project..." (`KeyMigration`, `KeyMigrationFlow`) moves
 the typed keys of an existing project into the Credential Manager and writes a

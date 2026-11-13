@@ -4,6 +4,7 @@ using RFiDGear.Services.SecureKeys;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -511,6 +512,81 @@ namespace RFiDGear.Tests.SecureKeys
 
             using var gone = await provider.ResolveAsync(RequestFor(reference), CancellationToken.None);
             Assert.Equal(SecureKeyFailureReason.NotFound, gone.FailureReason);
+        }
+
+        [Fact]
+        public void The_secrets_in_a_listing_are_erased_before_the_memory_of_the_vault_is_given_back()
+        {
+            // CredEnumerate hands out whole credentials, secrets included, in memory that is freed afterwards. Two credentials as
+            // the vault lays them out (an array of pointers to structures that point to the blobs) and one without a blob; a byte
+            // after each blob tells that nothing beyond its size is touched.
+            var sizes = new[] { 24, 0, 12 };
+            var blobs = sizes.Select(size => Marshal.AllocHGlobal(size + 1)).ToArray();
+            var structures = new IntPtr[sizes.Length];
+            var array = Marshal.AllocHGlobal(IntPtr.Size * sizes.Length);
+
+            try
+            {
+                for (var index = 0; index < sizes.Length; index++)
+                {
+                    for (var offset = 0; offset < sizes[index]; offset++)
+                    {
+                        Marshal.WriteByte(blobs[index], offset, 0xAA);
+                    }
+
+                    Marshal.WriteByte(blobs[index], sizes[index], 0xBB);
+
+                    var credential = new NativeCredentialStore.Credential
+                    {
+                        CredentialBlobSize = (uint)sizes[index],
+                        CredentialBlob = sizes[index] == 0 ? IntPtr.Zero : blobs[index],
+                    };
+                    structures[index] = Marshal.AllocHGlobal(Marshal.SizeOf<NativeCredentialStore.Credential>());
+                    Marshal.StructureToPtr(credential, structures[index], false);
+                    Marshal.WriteIntPtr(array, index * IntPtr.Size, structures[index]);
+                }
+
+                NativeCredentialStore.ZeroBlobs(array, (uint)sizes.Length);
+
+                for (var index = 0; index < sizes.Length; index++)
+                {
+                    for (var offset = 0; offset < sizes[index]; offset++)
+                    {
+                        Assert.Equal(0, Marshal.ReadByte(blobs[index], offset));
+                    }
+
+                    Assert.Equal(0xBB, Marshal.ReadByte(blobs[index], sizes[index]));
+                }
+            }
+            finally
+            {
+                Array.ForEach(blobs, Marshal.FreeHGlobal);
+                Array.ForEach(structures, pointer => { if (pointer != IntPtr.Zero) { Marshal.FreeHGlobal(pointer); } });
+                Marshal.FreeHGlobal(array);
+            }
+        }
+
+        [Fact]
+        public async Task A_key_stored_in_the_real_credential_manager_is_listed_by_its_reference_and_still_resolves_afterwards()
+        {
+            // Erasing the memory that a listing hands out must not touch the credential that the vault keeps.
+            var provider = new WindowsCredentialKeyProvider(new NativeCredentialStore());
+            var reference = "tests/" + Guid.NewGuid().ToString("N");
+            var key = Enumerable.Range(0, 6).Select(i => (byte)(0x10 + i)).ToArray();
+
+            try
+            {
+                Assert.Equal(0, provider.Store(reference, key));
+                Assert.Contains(reference, provider.List().References);
+
+                using var answer = await provider.ResolveAsync(RequestFor(reference), CancellationToken.None);
+                Assert.True(answer.IsResolved, $"the real vault answered {answer.FailureReason}");
+                Assert.Equal(key, Assert.IsType<SecureKeyLease>(answer.Key).Key.ToArray());
+            }
+            finally
+            {
+                provider.Remove(reference);
+            }
         }
 
         [Fact]

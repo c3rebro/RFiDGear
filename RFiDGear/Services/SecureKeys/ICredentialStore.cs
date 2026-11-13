@@ -27,8 +27,8 @@ namespace RFiDGear.Services.SecureKeys
         int Delete(string targetName);
 
         /// <summary>
-        /// Lists the target names of the generic credentials that start with a prefix. Only the names are read: no secret is
-        /// looked at, copied or handed out.
+        /// Lists the target names of the generic credentials that start with a prefix. Only the names are handed out: no secret is
+        /// read or copied, and the real vault erases the secrets that it returns with the names before it gives their memory back.
         /// </summary>
         /// <param name="targetPrefix">What the target names start with.</param>
         /// <returns>The error and the names; an empty list, and no error, when there is no such credential.</returns>

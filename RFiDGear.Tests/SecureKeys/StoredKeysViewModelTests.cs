@@ -23,7 +23,12 @@ namespace RFiDGear.Tests.SecureKeys
 
         private sealed class Rig : IDisposable
         {
-            internal Rig(string culture = "en", params string[] stored)
+            internal Rig(params string[] stored)
+                : this("en", stored)
+            {
+            }
+
+            private Rig(string culture, string[] stored)
             {
                 foreach (var name in stored)
                 {
@@ -32,6 +37,8 @@ namespace RFiDGear.Tests.SecureKeys
 
                 ViewModel = StoredKeysViewModel.Create(new WindowsCredentialKeyProvider(Store), Supplier, Dialogs, TestText.In(culture));
             }
+
+            internal static Rig German() => new Rig("de", Array.Empty<string>());
 
             internal FakeCredentialStore Store { get; } = new FakeCredentialStore();
 
@@ -56,7 +63,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void The_stored_keys_are_listed_by_name_in_order_and_no_key_is_read()
         {
-            using var rig = new Rig("en", "cards/b", "Cards/a", "migrated/0123456789abcdef");
+            using var rig = new Rig("cards/b", "Cards/a", "migrated/0123456789abcdef");
 
             Assert.Equal(new[] { "Cards/a", "cards/b", "migrated/0123456789abcdef" }, rig.ViewModel.Keys.Select(row => row.Reference));
             Assert.True(rig.ViewModel.HasKeys);
@@ -109,7 +116,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void A_key_that_is_entered_is_stored_under_the_name_and_the_list_shows_it_afterwards()
         {
-            using var rig = new Rig("en", "cards/other");
+            using var rig = new Rig("cards/other");
             rig.ViewModel.NewName = "cards/main";
             rig.ViewModel.SelectedHexLength = 32;
 
@@ -204,7 +211,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void A_name_that_is_in_use_asks_before_the_key_is_replaced_and_a_refusal_changes_nothing()
         {
-            using var rig = new Rig("en", "cards/main");
+            using var rig = new Rig("cards/main");
             var before = rig.Store.Blobs[Prefix + "cards/main"].ToArray();
             rig.Dialogs.AgreeToReplace = false;
             rig.ViewModel.NewName = "Cards/Main";
@@ -222,7 +229,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void Agreeing_to_replace_stores_the_new_key()
         {
-            using var rig = new Rig("en", "cards/main");
+            using var rig = new Rig("cards/main");
             rig.Dialogs.AgreeToReplace = true;
             rig.ViewModel.NewName = "cards/main";
             rig.ViewModel.SelectedHexLength = 12;
@@ -236,7 +243,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void A_new_name_is_stored_without_a_question()
         {
-            using var rig = new Rig("en", "cards/main");
+            using var rig = new Rig("cards/main");
             rig.Dialogs.AgreeToReplace = false;
             rig.ViewModel.NewName = "cards/second";
             rig.ViewModel.SelectedHexLength = 12;
@@ -246,12 +253,34 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Empty(rig.Dialogs.Replaced);
         }
 
+        [Fact]
+        public void While_the_list_cannot_be_read_nothing_is_stored_because_a_key_that_is_there_would_be_replaced_unasked()
+        {
+            using var rig = new Rig("cards/main");
+            var before = rig.Store.Blobs[Prefix + "cards/main"].ToArray();
+            rig.ViewModel.NewName = "cards/main";
+            rig.ViewModel.SelectedHexLength = 12;
+
+            // From now on the vault refuses to list; the key under the name is there all the same, and an empty list is no proof of
+            // the opposite.
+            rig.Store.EnumerateError = CredentialErrors.AccessDenied;
+
+            // Nothing was tried: the digits stay where the person can still use them, and the error stays in view.
+            Assert.False(rig.Enter("000102030405"));
+
+            Assert.Empty(rig.Store.Writes);
+            Assert.Empty(rig.Dialogs.Replaced);
+            Assert.Equal(before, rig.Store.Blobs[Prefix + "cards/main"]);
+            Assert.True(rig.ViewModel.HasListError);
+            Assert.False(rig.ViewModel.HasResult);
+        }
+
         // ── Removing a key ──
 
         [Fact]
         public void Removing_asks_first_and_a_refusal_removes_nothing()
         {
-            using var rig = new Rig("en", "cards/main");
+            using var rig = new Rig("cards/main");
             rig.Dialogs.AgreeToRemove = false;
 
             rig.ViewModel.Keys.Single().RemoveCommand.Execute(null);
@@ -265,7 +294,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void Removing_deletes_the_credential_the_list_follows_and_the_person_is_told()
         {
-            using var rig = new Rig("en", "cards/main", "cards/other");
+            using var rig = new Rig("cards/main", "cards/other");
             rig.Dialogs.AgreeToRemove = true;
 
             rig.ViewModel.Keys.Single(row => row.Reference == "cards/main").RemoveCommand.Execute(null);
@@ -280,7 +309,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void A_key_that_is_gone_already_counts_as_removed_and_the_list_catches_up()
         {
-            using var rig = new Rig("en", "cards/main");
+            using var rig = new Rig("cards/main");
             rig.Dialogs.AgreeToRemove = true;
             var row = rig.ViewModel.Keys.Single();
 
@@ -295,7 +324,7 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void A_vault_that_refuses_to_remove_says_so_with_its_error_code_and_the_key_stays_in_the_list()
         {
-            using var rig = new Rig("en", "cards/main");
+            using var rig = new Rig("cards/main");
             rig.Dialogs.AgreeToRemove = true;
             rig.Store.DeleteError = CredentialErrors.AccessDenied;
 
@@ -311,8 +340,8 @@ namespace RFiDGear.Tests.SecureKeys
         [Fact]
         public void The_texts_follow_the_language()
         {
-            using var english = new Rig("en");
-            using var german = new Rig("de");
+            using var english = new Rig();
+            using var german = Rig.German();
 
             Assert.NotEqual(english.ViewModel.Title, string.Empty);
             Assert.NotEqual(english.ViewModel.IntroText, german.ViewModel.IntroText);

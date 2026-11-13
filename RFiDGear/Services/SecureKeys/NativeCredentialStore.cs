@@ -23,7 +23,7 @@ namespace RFiDGear.Services.SecureKeys
         // The layout of CREDENTIALW. It is only ever copied to and from the vault, never compared, so IEquatable would be dead code.
         [StructLayout(LayoutKind.Sequential)]
         [SuppressMessage("Major Code Smell", "S3898:Value types should implement IEquatable<T>", Justification = "Interop layout of CREDENTIALW; it is never compared.")]
-        private struct Credential
+        internal struct Credential
         {
             public uint Flags;
             public uint Type;
@@ -137,7 +137,7 @@ namespace RFiDGear.Services.SecureKeys
 
                 for (var index = 0; index < count; index++)
                 {
-                    // Only the target name is looked at: the pointer to the secret in the structure is never followed.
+                    // Only the target name is copied out: the secret in the structure is never read.
                     var credential = Marshal.PtrToStructure<Credential>(Marshal.ReadIntPtr(buffer, index * IntPtr.Size));
 
                     if (credential.Type == CredTypeGeneric && Marshal.PtrToStringUni(credential.TargetName) is { } name)
@@ -150,7 +150,30 @@ namespace RFiDGear.Services.SecureKeys
             }
             finally
             {
+                // The vault hands out whole credentials, secrets included, in memory that CredFree gives back without erasing it.
+                // The secrets are erased here, also when reading a name failed.
+                ZeroBlobs(buffer, count);
                 CredFree(buffer);
+            }
+        }
+
+        /// <summary>
+        /// Erases the secret of every credential in a listing that the vault handed out, and nothing else: the array of pointers to
+        /// the credentials, and the credentials themselves, are left as they are for <c>CredFree</c>.
+        /// </summary>
+        /// <param name="credentials">The array of pointers to credentials that <c>CredEnumerate</c> returned.</param>
+        /// <param name="count">How many credentials there are.</param>
+        internal static void ZeroBlobs(IntPtr credentials, uint count)
+        {
+            for (var index = 0; index < count; index++)
+            {
+                var credential = Marshal.PtrToStructure<Credential>(Marshal.ReadIntPtr(credentials, index * IntPtr.Size));
+                var size = (int)credential.CredentialBlobSize;
+
+                if (size > 0 && credential.CredentialBlob != IntPtr.Zero)
+                {
+                    Marshal.Copy(new byte[size], 0, credential.CredentialBlob, size);
+                }
             }
         }
     }

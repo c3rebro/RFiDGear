@@ -108,7 +108,13 @@ namespace RFiDGear.Services.SecureKeys
         private bool _resultIsError;
         private bool _disposed;
 
-        private StoredKeysViewModel(
+        /// <summary>Creates the view model; <see cref="Create"/> is the way to get one that reads the texts of the application.</summary>
+        /// <param name="keyStore">The Windows Credential Manager provider.</param>
+        /// <param name="supplier">Tells whether a program can supply keys.</param>
+        /// <param name="dialogs">How to ask the person before a key is removed or replaced.</param>
+        /// <param name="text">Gives the text of a resource key.</param>
+        /// <param name="post">Runs an action on the thread of the window; <see langword="null"/> runs it where it is called.</param>
+        internal StoredKeysViewModel(
             WindowsCredentialKeyProvider keyStore,
             IKeySupplierStatus supplier,
             IStoredKeysDialogs dialogs,
@@ -305,6 +311,13 @@ namespace RFiDGear.Services.SecureKeys
 
             // Another program may have stored or removed a key since the list was read; the question is about what is there now.
             Refresh();
+
+            // A list that cannot be read is no proof that the name is free: a key under it would be replaced without the question.
+            // Nothing is tried, the error stays in view and the digits stay in the box.
+            if (HasListError)
+            {
+                return false;
+            }
 
             if (_keys.Any(row => string.Equals(row.Reference, _newName, StringComparison.OrdinalIgnoreCase)) && !_dialogs.ConfirmReplace(_newName))
             {
