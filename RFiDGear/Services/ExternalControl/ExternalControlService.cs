@@ -325,7 +325,7 @@ namespace RFiDGear.Services.ExternalControl
         internal RunningChangedEvent MakeRunningChanged(long seq, string sessionId, DateTimeOffset at, ActiveRunDto? ownWhenItChanged)
         {
             var running = _host.Execution.IsRunning;
-            var owner = ownWhenItChanged != null && running && _supervisor != null && _supervisor.IsHostRunning(ownWhenItChanged.RunId!) ? ownWhenItChanged : null;
+            var owner = ownWhenItChanged != null && _supervisor != null && _supervisor.IsHostRunning(ownWhenItChanged.RunId!) ? ownWhenItChanged : null;
 
             return new RunningChangedEvent { Seq = seq, SessionId = sessionId, At = at, IsRunning = running, OwnRequestId = owner?.RequestId, OwnRunId = owner?.RunId };
         }
