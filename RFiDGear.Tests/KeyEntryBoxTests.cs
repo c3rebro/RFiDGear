@@ -311,6 +311,23 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task The_check_box_has_the_name_the_window_gave_it_and_falls_back_to_its_caption_without_one()
+        {
+            await OnEntry(12, (_, entry, _, _, check) =>
+            {
+                // Without a name of its own it is read by its caption, which is what a single box needs.
+                Assert.Equal(string.Empty, System.Windows.Automation.AutomationProperties.GetName(check));
+
+                entry.ShowKeyLabel = "Application key, current: Show key";
+
+                Assert.Equal("Application key, current: Show key", System.Windows.Automation.AutomationProperties.GetName(check));
+                Assert.Equal("Show key", check.Content);
+
+                return Task.CompletedTask;
+            });
+        }
+
+        [Fact]
         public async Task Both_boxes_and_the_check_box_have_the_name_the_window_gave_the_entry()
         {
             await OnEntry(12, (_, _, hidden, shown, check) =>

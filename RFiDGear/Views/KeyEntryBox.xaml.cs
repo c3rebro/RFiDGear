@@ -31,6 +31,10 @@ namespace RFiDGear.View
         public static readonly DependencyProperty ShowKeyTextProperty = DependencyProperty.Register(
             nameof(ShowKeyText), typeof(string), typeof(KeyEntryBox), new PropertyMetadata(string.Empty));
 
+        /// <summary>Identifies <see cref="ShowKeyLabel"/>.</summary>
+        public static readonly DependencyProperty ShowKeyLabelProperty = DependencyProperty.Register(
+            nameof(ShowKeyLabel), typeof(string), typeof(KeyEntryBox), new PropertyMetadata(string.Empty));
+
         /// <summary>Identifies <see cref="ShowKeyToolTip"/>.</summary>
         public static readonly DependencyProperty ShowKeyToolTipProperty = DependencyProperty.Register(
             nameof(ShowKeyToolTip), typeof(string), typeof(KeyEntryBox), new PropertyMetadata(string.Empty, OnShowKeyToolTipChanged));
@@ -76,6 +80,16 @@ namespace RFiDGear.View
         {
             get => (string)GetValue(ShowKeyTextProperty);
             set => SetValue(ShowKeyTextProperty, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the name that the check box that shows the key has for assistive technology. Several entries in a window have
+        /// the same caption, so a name that says which key it is for tells them apart; without one the caption is read.
+        /// </summary>
+        public string ShowKeyLabel
+        {
+            get => (string)GetValue(ShowKeyLabelProperty);
+            set => SetValue(ShowKeyLabelProperty, value);
         }
 
         /// <summary>Gets or sets the tooltip of the check box that shows the key.</summary>

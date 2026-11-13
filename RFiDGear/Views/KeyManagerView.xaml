@@ -316,6 +316,12 @@
                                                                 <Binding Path="KeyPrompt" />
                                                             </MultiBinding>
                                                         </local:KeyEntryBox.Label>
+                                                        <local:KeyEntryBox.ShowKeyLabel>
+                                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                                <Binding Path="SlotName" />
+                                                                <Binding Path="ShowKeyText" />
+                                                            </MultiBinding>
+                                                        </local:KeyEntryBox.ShowKeyLabel>
                                                     </local:KeyEntryBox>
                                                     <!-- A key is stored when the name is valid and the box says that the key is one. -->
                                                     <Button

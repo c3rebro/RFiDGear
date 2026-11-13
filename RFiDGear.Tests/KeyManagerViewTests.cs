@@ -609,7 +609,7 @@ namespace RFiDGear.Tests
                     {
                         Of<Button>(window, "ModeButton", row), Of<ComboBox>(window, "ProviderBox", row), Of<ComboBox>(window, "StoredKeyBox", row),
                         Of<TextBox>(window, "ReferenceBox", row), Of<TextBox>(window, "NewNameBox", row), Hidden(window, row), Shown(window, row),
-                        Of<Button>(window, "StoreButton", row),
+                        Of<CheckBox>(window, "ShowCheck", row), Of<Button>(window, "StoreButton", row),
                     })
                     {
                         var accessibleName = System.Windows.Automation.AutomationProperties.GetName(control);

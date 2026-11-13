@@ -40,6 +40,7 @@
         <CheckBox
             x:Name="ShowCheck"
             Grid.Column="1"
+            AutomationProperties.Name="{Binding ShowKeyLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
             Margin="8,0,0,0"
             VerticalAlignment="Center"
             Content="{Binding ShowKeyText, RelativeSource={RelativeSource AncestorType=UserControl}}"
