@@ -668,7 +668,7 @@ namespace RFiDGear.Tests.ExternalControl
             };
 
             using var interactive = await Ask(registry, interactive: true);
-            using var unattended = await Ask(registry, interactive: false);
+            using var unattended = await Ask(registry);
 
             Assert.True(interactive.IsResolved);
             Assert.Equal(SecureKeyFailureReason.Timeout, unattended.FailureReason);
