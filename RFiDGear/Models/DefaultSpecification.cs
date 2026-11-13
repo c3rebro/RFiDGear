@@ -38,6 +38,7 @@ namespace RFiDGear.Models
             defaultAutoPerformTasksEnabled = runtimeDefaults.DefaultAutoPerformTasksEnabled;
             autoCheckForUpdates = runtimeDefaults.AutoCheckForUpdates;
             _autoLoadProjectOnStart = runtimeDefaults.AutoLoadProjectOnStart;
+            enableExternalControl = runtimeDefaults.EnableExternalControl;
             _lastUsedProjectPath = runtimeDefaults.LastUsedProjectPath;
             LastUsedComPort = runtimeDefaults.LastUsedComPort;
             LastUsedBaudRate = runtimeDefaults.LastUsedBaudRate;
@@ -96,6 +97,18 @@ namespace RFiDGear.Models
             set => autoCheckForUpdates = value;
         }
         private bool autoCheckForUpdates;
+
+        /// <summary>
+        /// Gets or sets whether RFiDGear opens the named pipe through which another program of the same Windows user can drive
+        /// it (the external control bridge). Off by default; a change takes effect after a restart. The start-up argument
+        /// <c>EXTERNALCONTROL=1</c> switches it on for one run without changing this value.
+        /// </summary>
+        public bool EnableExternalControl
+        {
+            get => enableExternalControl;
+            set => enableExternalControl = value;
+        }
+        private bool enableExternalControl;
 
         /// <summary>
         ///

@@ -39,6 +39,8 @@ namespace RFiDGear.Models
         public bool AutoLoadProjectOnStart { get; set; }
             = false;
 
+        public bool EnableExternalControl { get; set; }
+
         public string LastUsedProjectPath { get; set; } = string.Empty;
 
         public string LastUsedComPort { get; set; } = "USB";

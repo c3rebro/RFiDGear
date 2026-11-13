@@ -100,6 +100,13 @@ namespace RFiDGear.Services.ExternalControl
                 }
             }
         }
+
+        /// <summary>
+        /// Raised, on whichever thread it happens, when a client connects or leaves or the server stops or fails. Handlers must
+        /// be quick and must not throw; one that does is logged and ignored.
+        /// </summary>
+        internal event EventHandler? StateChanged;
+
         /// <summary>Gets whether a client is connected.</summary>
         internal bool HasSession => State == BridgeServerState.SessionActive;
 
@@ -161,6 +168,34 @@ namespace RFiDGear.Services.ExternalControl
             }
         }
 
+        /// <summary>
+        /// Waits, for at most the given time, until what was published has been handed to the client that is connected. It blocks
+        /// the calling thread (the one that is about to end the process) and nothing else; it gives up silently.
+        /// </summary>
+        /// <param name="timeout">The longest time to wait.</param>
+        /// <returns><see langword="true"/> when nothing is left to send.</returns>
+        internal bool TryFlush(TimeSpan timeout)
+        {
+            var until = DateTime.UtcNow + timeout;
+
+            while (true)
+            {
+                var session = ActiveSession;
+
+                if (session == null || session.Events.IsDrained)
+                {
+                    return true;
+                }
+
+                if (DateTime.UtcNow >= until)
+                {
+                    return false;
+                }
+
+                Thread.Sleep(5);
+            }
+        }
+
         /// <summary>Stops listening and ends the connection that is open.</summary>
         internal void Stop()
         {
@@ -183,6 +218,7 @@ namespace RFiDGear.Services.ExternalControl
             _stop.Cancel();
             session?.Abort();
             waiting?.Dispose();
+            RaiseStateChanged();
         }
 
         /// <inheritdoc />
@@ -267,6 +303,8 @@ namespace RFiDGear.Services.ExternalControl
                         _state = BridgeServerState.SessionActive;
                     }
 
+                    RaiseStateChanged();
+
                     try
                     {
                         await session.RunAsync().ConfigureAwait(false);
@@ -283,6 +321,8 @@ namespace RFiDGear.Services.ExternalControl
                     session.Dispose();
                 }
 
+                bool listening;
+
                 lock (_gate)
                 {
                     _session = null;
@@ -293,13 +333,32 @@ namespace RFiDGear.Services.ExternalControl
                     }
 
                     // The next instance. In the moment between the two there is no pipe, and a client that retries finds it.
-                    if (!TryCreatePipe())
-                    {
-                        return;
-                    }
+                    listening = TryCreatePipe();
 
-                    _state = BridgeServerState.Listening;
+                    if (listening)
+                    {
+                        _state = BridgeServerState.Listening;
+                    }
                 }
+
+                RaiseStateChanged();
+
+                if (!listening)
+                {
+                    return;
+                }
+            }
+        }
+
+        private void RaiseStateChanged()
+        {
+            try
+            {
+                StateChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception e)
+            {
+                Logger.Warning("External control: a handler of the state of the server failed ({ExceptionType})", e.GetType().FullName);
             }
         }
     }

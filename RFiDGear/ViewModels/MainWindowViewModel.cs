@@ -29,6 +29,7 @@ using RedCell.Diagnostics.Update;
 using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.AutoMode;
+using RFiDGear.Services.ExternalControl;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
@@ -79,6 +80,9 @@ namespace RFiDGear.ViewModel
         private readonly IMenuInitializer menuInitializer;
 
         private HeadlessExtensionHost extensionHost;
+        private ExternalControlService externalControl;
+        private readonly string externalControlPipeName;
+        private readonly OnceGate startupOnce = new OnceGate();
         private ExtensionOperationCoordinator _coordinator;
         private AutoModeController _autoMode;
         private Dispatcher uiDispatcher;
@@ -86,6 +90,9 @@ namespace RFiDGear.ViewModel
 
         /// <summary>The gate that lets one party at a time read a card: the reads of this window and the scans of extensions.</summary>
         internal ReaderAccessGate ReaderGate => _readerGate;
+
+        /// <summary>The external control bridge, or <see langword="null"/> when it is off (the setting and the start-up argument both say no, or the pipe could not be opened).</summary>
+        internal ExternalControlService ExternalControl => externalControl;
 
         /// <summary>The state machine of automatic mode: the menu toggle, the start-up argument and the host all drive it.</summary>
         internal AutoModeController AutoMode => _autoMode;
@@ -143,8 +150,11 @@ namespace RFiDGear.ViewModel
             IProjectBootstrapper projectBootstrapper,
             Func<SettingsReaderWriter> settingsReaderWriterFactory = null,
             Func<DatabaseReaderWriter> databaseReaderWriterFactory = null,
-            IApplicationExtensionLauncher applicationExtensionLauncher = null)
+            IApplicationExtensionLauncher applicationExtensionLauncher = null,
+            string externalControlPipeName = null)
         {
+            // Tests that switch the bridge on give it a pipe of their own; the application uses the one of the user.
+            this.externalControlPipeName = externalControlPipeName;
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
             this.contextMenuBuilder = contextMenuBuilder ?? throw new ArgumentNullException(nameof(contextMenuBuilder));
@@ -301,6 +311,9 @@ namespace RFiDGear.ViewModel
             // stay disabled until now.
             NotifyApplicationExtensionCommandsCanExecuteChanged();
 
+            // As soon as the host exists: a program that waits for RFiDGear can connect and ask how far start-up is.
+            StartExternalControl(bootstrapResult);
+
             var deleteSelectedCommand = new RelayCommand(() => TryDeleteSelectedTask());
 
             var menuInitialization = menuInitializer.Initialize(
@@ -336,8 +349,120 @@ namespace RFiDGear.ViewModel
                 {
                     LoadCompleted(mainWindow, EventArgs.Empty);
                 }
+                else
+                {
+                    // Does nothing unless the bridge is on.
+                    ArmStartupFallback(
+                        () => mainWindow.IsVisible,
+                        handler => mainWindow.ContentRendered += handler,
+                        handler => mainWindow.ContentRendered -= handler,
+                        () => LoadCompleted(mainWindow, EventArgs.Empty));
+                }
             }
         }
+
+        /// <summary>
+        /// Opens the pipe of the external control bridge when the settings or the start-up argument ask for it. A bridge that
+        /// cannot start (the pipe name is taken, access is denied) is logged and left off: it never keeps RFiDGear from starting.
+        /// </summary>
+        /// <param name="bootstrapResult">What the settings said.</param>
+        private void StartExternalControl(SettingsBootstrapResult bootstrapResult)
+        {
+            if (!bootstrapResult.EnableExternalControl && !StartupArgumentProcessor.IsExternalControlRequested(args))
+            {
+                return;
+            }
+
+            var dispatcher = uiDispatcher;
+
+            try
+            {
+                var service = new ExternalControlService(
+                    extensionHost,
+                    action => dispatcher.InvokeAsync(action).Task,
+                    () => IsReaderInitializing,
+                    string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build),
+                    externalControlPipeName ?? PipeNames.ForCurrentUser());
+
+                // The status bar shows whether a program is connected; the server raises the change on its own threads.
+                service.ConnectionChanged += (_, _) =>
+                {
+                    if (!dispatcher.HasShutdownStarted)
+                    {
+                        dispatcher.InvokeAsync(() => IsExternalControlConnected = service.IsConnected);
+                    }
+                };
+
+                if (service.Start())
+                {
+                    externalControl = service;
+                }
+                else
+                {
+                    service.Dispose();
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<MainWindowViewModel>().Warning("External control could not be started and stays off ({ExceptionType})", e.GetType().FullName);
+            }
+        }
+
+        /// <summary>
+        /// A window that is started in the background may never be activated, and the whole start-up (the reader monitor, the
+        /// project that is loaded at start) waits for that. A program that waits for RFiDGear would wait with it, so when the
+        /// bridge is on the start-up also runs a moment after the window has been drawn. The first of the two triggers wins.
+        /// </summary>
+        /// <param name="isDrawn">Says whether the window has been drawn already.</param>
+        /// <param name="subscribeDrawn">Subscribes to the event that is raised when the window has been drawn.</param>
+        /// <param name="unsubscribeDrawn">Takes the subscription back.</param>
+        /// <param name="run">Starts the start-up; it goes through the same gate as the activation, so it runs only if nothing else did.</param>
+        /// <param name="delay">How long after the window was drawn to wait for the activation; 1.5 seconds when <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> when the fallback was armed; <see langword="false"/> when the bridge is off (nothing waits for the start-up, so nothing changes).</returns>
+        internal bool ArmStartupFallback(Func<bool> isDrawn, Action<EventHandler> subscribeDrawn, Action<EventHandler> unsubscribeDrawn, Action run, TimeSpan? delay = null)
+        {
+            if (externalControl == null)
+            {
+                return false;
+            }
+
+            var wait = delay ?? StartupFallbackDelay;
+
+            void Arm()
+            {
+                Task.Delay(wait).ContinueWith(
+                    _ => uiDispatcher.InvokeAsync(() =>
+                    {
+                        if (startupOnce.HasEntered)
+                        {
+                            return;
+                        }
+
+                        Log.ForContext<MainWindowViewModel>().Information("Start-up was run by the fallback: the main window was drawn but never activated");
+                        run();
+                    }),
+                    TaskScheduler.Default);
+            }
+
+            if (isDrawn())
+            {
+                Arm();
+
+                return true;
+            }
+
+            EventHandler drawn = null;
+            drawn = (_, _) =>
+            {
+                unsubscribeDrawn(drawn);
+                Arm();
+            };
+            subscribeDrawn(drawn);
+
+            return true;
+        }
+
+        private static readonly TimeSpan StartupFallbackDelay = TimeSpan.FromMilliseconds(1500);
 
         #endregion Constructors
 
@@ -1751,6 +1876,9 @@ namespace RFiDGear.ViewModel
                             || (sender.SelectedReader == ReaderTypes.Elatec
                                 && !string.Equals(currentSettings.LastUsedComPort, sender.ComPort, StringComparison.Ordinal));
 
+                        // The pipe is opened or not at start-up only, so a change needs a restart.
+                        var externalControlChanged = currentSettings.EnableExternalControl != sender.EnableExternalControl;
+
                         currentSettings.DefaultReaderProvider = sender.SelectedReader;
                         currentSettings.DefaultReaderName = sender.SelectedReader == ReaderTypes.PCSC
                             ? sender.SelectedReaderName
@@ -1759,10 +1887,11 @@ namespace RFiDGear.ViewModel
                         currentSettings.LastUsedComPort = sender.ComPort;
                         currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
                         currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
+                        currentSettings.EnableExternalControl = sender.EnableExternalControl;
 
                         settings.DefaultSpecification = currentSettings;
 
-                        sender.SaveSettings.ExecuteAsync(null);
+                        var saveTask = sender.SaveSettings.ExecuteAsync(null);
 
                         // Switch the provider first: setting the name announces the change to extensions, and they read
                         // the connection and card state of whichever provider is current when that happens.
@@ -1782,6 +1911,14 @@ namespace RFiDGear.ViewModel
                         sender.Close();
 
                         IsReaderBusy = false;
+
+                        // Not for settings that did not pass the check of the dialog: nothing was saved, so there is nothing to restart for.
+                        if (externalControlChanged && sender.IsValidClassicKeysText != false)
+                        {
+                            // The same notice as for the language: the software must be restarted for the change to apply.
+                            // Accepting it ends the process, so it is offered only after the write has finished.
+                            _ = RestartNotice.OfferWhenSavedAsync(saveTask, OnNewLanguageChangedDialog);
+                        }
                     },
 
                     OnConnect = (sender) =>
@@ -2223,6 +2360,7 @@ namespace RFiDGear.ViewModel
         public ICommand CloseApplication => new RelayCommand(OnCloseRequest);
         private void OnCloseRequest()
         {
+            externalControl?.Shutdown(RFiDGear.Bridge.ShutdownReasons.UserClose);
             Environment.Exit(0);
         }
 
@@ -2382,6 +2520,21 @@ namespace RFiDGear.ViewModel
             }
         }
         private bool isRdpWarningVisible;
+
+        /// <summary>
+        /// Gets whether a program is connected to the external control bridge; shows the item in the status bar. Set on the
+        /// UI thread.
+        /// </summary>
+        public bool IsExternalControlConnected
+        {
+            get => isExternalControlConnected;
+            set
+            {
+                isExternalControlConnected = value;
+                OnPropertyChanged(nameof(IsExternalControlConnected));
+            }
+        }
+        private bool isExternalControlConnected;
 
         /// <summary>
         /// 
@@ -2661,10 +2814,42 @@ namespace RFiDGear.ViewModel
 
         private void CloseThreads(object sender, CancelEventArgs e)
         {
+            externalControl?.Shutdown(RFiDGear.Bridge.ShutdownReasons.UserClose);
             Environment.Exit(0);
         }
 
-        private async void LoadCompleted(object sender, EventArgs e)
+        /// <summary>
+        /// Runs the start-up once, whichever trigger comes first (the window being activated, or the fallback of the external
+        /// control bridge), and tells the bridge when it is over, however it ended.
+        /// </summary>
+        private async void LoadCompleted(object sender, EventArgs e) => await RunStartupOnceAsync(RunStartupAsync);
+
+        /// <summary>
+        /// Runs <paramref name="startup"/> unless an earlier trigger already did, and tells the bridge when it is over,
+        /// whether it succeeded or threw: a program that waits for RFiDGear must not wait for ever for a start-up that failed.
+        /// </summary>
+        /// <param name="startup">The start-up.</param>
+        /// <returns><see langword="true"/> when this call ran the start-up; <see langword="false"/> when another had.</returns>
+        internal async Task<bool> RunStartupOnceAsync(Func<Task> startup)
+        {
+            if (!startupOnce.TryEnter())
+            {
+                return false;
+            }
+
+            try
+            {
+                await startup();
+            }
+            finally
+            {
+                externalControl?.MarkStartupComplete();
+            }
+
+            return true;
+        }
+
+        private async Task RunStartupAsync()
         {
             Application.Current.MainWindow.Activated -= new EventHandler(LoadCompleted);
 

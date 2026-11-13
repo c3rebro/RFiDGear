@@ -162,6 +162,7 @@ namespace RFiDGear.Services.ExternalControl
                 {
                     if (!Service.IsEventEnabled(pending.Name))
                     {
+                        Events.MarkSent();
                         continue;
                     }
 
@@ -178,6 +179,7 @@ namespace RFiDGear.Services.ExternalControl
                     }
 
                     await send.ConfigureAwait(false);
+                    Events.MarkSent();
                 }
             }
             catch (OperationCanceledException)

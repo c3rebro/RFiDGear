@@ -30,11 +30,21 @@
                 VerticalAlignment="Stretch"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelCheckForUpdatesOnStart, Converter={StaticResource Localization}}"
                 IsChecked="{Binding CheckOnStart, Mode=TwoWay}"/>
+            <CheckBox
+                Grid.Row="2"
+                Grid.ColumnSpan="2"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Content="{Binding LocalizationResourceSet, ConverterParameter=labelEnableExternalControl, Converter={StaticResource Localization}}"
+                ToolTip="{Binding LocalizationResourceSet, ConverterParameter=toolTipEnableExternalControl, Converter={StaticResource Localization}}"
+                IsChecked="{Binding EnableExternalControl, Mode=TwoWay}"/>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="213" />
                 <ColumnDefinition Width="0.5*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="*" />

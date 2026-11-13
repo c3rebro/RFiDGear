@@ -428,6 +428,97 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(BridgeProtocol.Product, (await next.HelloAsync()).Product);
         }
 
+        // ── Start-up and shutdown ──
+
+        [Fact]
+        public async Task UntilStartupIsComplete_OnlyHelloAndGetStatusAreServed_EverythingElseIsNotReady()
+        {
+            var complete = false;
+            var options = new BridgeServiceOptions
+            {
+                InstanceId = "instance-1",
+                Capabilities = new HashSet<string> { BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.ProjectLoad },
+                IsStartupComplete = () => complete,
+                GetStatus = () => Task.FromResult(new StatusResponse { InstanceId = "instance-1", StartupComplete = complete }),
+            };
+            var (_, name) = StartServer(options);
+            using var client = await ConnectAsync(name);
+            await client.HelloAsync();
+
+            var status = await client.Service.GetStatus(new GetStatusRequest());
+            var notReady = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\a.rfPrj" }));
+
+            Assert.False(status.StartupComplete);
+            Assert.Equal(BridgeErrorCodes.NotReady, notReady.ErrorCode);
+            var data = BridgeTestClient.DataOf(notReady)!;
+            Assert.Equal("startup", data.Details!["reason"]);
+            Assert.True(data.NeverStarted);
+
+            // Once start-up is over the same call reaches the method itself (which this slice has not filled in).
+            complete = true;
+            var later = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\a.rfPrj" }));
+            Assert.Equal(BridgeErrorCodes.InternalError, later.ErrorCode);
+            Assert.True((await client.Service.GetStatus(new GetStatusRequest())).StartupComplete);
+        }
+
+        [Fact]
+        public async Task Flush_WaitsUntilTheNoticeHasLeft_AndStopEndsTheConnection()
+        {
+            var (server, name) = StartServer(Offering(BridgeCapabilities.EventsLifecycle));
+            using var client = await ConnectAsync(name);
+            await client.HelloAsync(BridgeEvents.ShuttingDown);
+
+            server.Publish(BridgeEvents.ShuttingDown, durable: true, (seq, session, at) => new ShuttingDownEvent { Seq = seq, SessionId = session, At = at });
+
+            Assert.True(server.TryFlush(TimeSpan.FromSeconds(5)));
+            Assert.Single(await client.WaitForEventsAsync(1));
+        }
+
+        [Fact]
+        public async Task Flush_WithAClientThatStoppedReading_GivesUpAfterTheTimeAndStopStillReturns()
+        {
+            var (server, name) = StartServer(Offering(BridgeCapabilities.EventsExecution), new BridgeServerTimings { SendWatchdog = TimeSpan.FromSeconds(30) });
+            using var raw = await RawAsync(name);
+            var hello = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"hello\",\"params\":[{\"clientName\":\"t\",\"clientVersion\":\"1\",\"protocolMajorMin\":1,\"protocolMajorMax\":1,\"events\":[\"runCompleted\"]}]}";
+            await raw.WriteAsync(Encoding.UTF8.GetBytes($"Content-Length: {Encoding.UTF8.GetByteCount(hello)}\r\n\r\n{hello}"));
+            await WaitUntilAsync(() => server.ActiveSession?.Service.HelloDone == true);
+            var big = Enumerable.Range(0, 3000).Select(i => new TaskOutcomeDto { Position = i, ProjectTaskIndex = i.ToString(), TaskTypeName = "Task", NormalizedErrorCode = "NoError" }).ToList();
+            server.Publish(BridgeEvents.RunCompleted, durable: true, (seq, session, at) => new RunCompletedEvent { Seq = seq, SessionId = session, At = at, Result = new RunResultDto { RunId = "r", TaskOutcomes = big } });
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var flushed = server.TryFlush(TimeSpan.FromMilliseconds(300));
+            server.Stop();
+
+            Assert.False(flushed);
+            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(3), "The flush or the stop waited for a client that does not read.");
+            Assert.Equal(BridgeServerState.Stopped, server.State);
+        }
+
+        [Fact]
+        public async Task TheStateOfTheServer_IsAnnounced_WhenAClientComesAndGoes()
+        {
+            var (server, name) = StartServer();
+            var changes = 0;
+            server.StateChanged += (_, _) => Interlocked.Increment(ref changes);
+
+            var client = await ConnectAsync(name);
+            await client.HelloAsync();
+            await WaitUntilAsync(() => Volatile.Read(ref changes) >= 1);
+            client.Dispose();
+            await WaitUntilAsync(() => Volatile.Read(ref changes) >= 2 && server.State == BridgeServerState.Listening);
+        }
+
+        [Fact]
+        public async Task AHandlerOfTheServerState_ThatThrows_DoesNotBreakTheServer()
+        {
+            var (server, name) = StartServer();
+            server.StateChanged += (_, _) => throw new InvalidOperationException("The handler is broken.");
+
+            using var client = await ConnectAsync(name);
+
+            Assert.Equal(BridgeProtocol.Product, (await client.HelloAsync()).Product);
+        }
+
         // ── Events ──
 
         [Fact]
