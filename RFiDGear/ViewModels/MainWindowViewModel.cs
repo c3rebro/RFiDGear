@@ -382,7 +382,8 @@ namespace RFiDGear.ViewModel
                     action => dispatcher.InvokeAsync(action).Task,
                     () => IsReaderInitializing,
                     string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build),
-                    externalControlPipeName ?? PipeNames.ForCurrentUser());
+                    externalControlPipeName ?? PipeNames.ForCurrentUser(),
+                    busyActivity: () => ExternalControlService.ActivityOf(_coordinator));
 
                 // The status bar shows whether a program is connected; the server raises the change on its own threads.
                 service.ConnectionChanged += (_, _) =>

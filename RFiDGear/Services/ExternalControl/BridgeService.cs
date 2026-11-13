@@ -36,6 +36,12 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets what <c>getStatus</c> answers with; a host that offers the <c>status</c> capability sets it.</summary>
         internal Func<Task<StatusResponse>>? GetStatus { get; init; }
+
+        /// <summary>Gets what <c>loadProject</c> does; a host that offers the <c>project.load</c> capability sets it.</summary>
+        internal Func<LoadProjectRequest, Task<LoadProjectResponse>>? LoadProject { get; init; }
+
+        /// <summary>Gets what <c>scanReader</c> does; a host that offers the <c>reader.scan</c> capability sets it.</summary>
+        internal Func<Task<ScanReaderResponse>>? ScanReader { get; init; }
     }
 
     /// <summary>
@@ -80,7 +86,8 @@ namespace RFiDGear.Services.ExternalControl
             Run(BridgeMethods.GetStatus, () => (_options.GetStatus ?? throw new NotSupportedException())());
 
         /// <inheritdoc />
-        public Task<LoadProjectResponse> LoadProject(LoadProjectRequest request) => Run<LoadProjectResponse>(BridgeMethods.LoadProject, () => throw new NotSupportedException());
+        public Task<LoadProjectResponse> LoadProject(LoadProjectRequest request) =>
+            Run(BridgeMethods.LoadProject, () => (_options.LoadProject ?? throw new NotSupportedException())(request));
 
         /// <inheritdoc />
         public Task<StartRunResponse> StartRun(StartRunRequest request) => Run<StartRunResponse>(BridgeMethods.StartRun, () => throw new NotSupportedException());
@@ -92,7 +99,8 @@ namespace RFiDGear.Services.ExternalControl
         public Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request) => Run<GetRunResultResponse>(BridgeMethods.GetRunResult, () => throw new NotSupportedException());
 
         /// <inheritdoc />
-        public Task<ScanReaderResponse> ScanReader(ScanReaderRequest request) => Run<ScanReaderResponse>(BridgeMethods.ScanReader, () => throw new NotSupportedException());
+        public Task<ScanReaderResponse> ScanReader(ScanReaderRequest request) =>
+            Run(BridgeMethods.ScanReader, () => (_options.ScanReader ?? throw new NotSupportedException())());
 
         private async Task<T> Run<T>(string wireName, Func<Task<T>> body)
         {

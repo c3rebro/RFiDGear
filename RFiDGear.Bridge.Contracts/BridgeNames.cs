@@ -248,4 +248,24 @@ namespace RFiDGear.Bridge
         /// <summary>The updater is replacing RFiDGear.</summary>
         public const string Update = "update";
     }
+
+    /// <summary>The values of <c>details.activity</c> of <see cref="BridgeErrorCodes.Busy"/>: what RFiDGear is busy with.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
+    public static class BusyActivities
+    {
+        /// <summary>A task run is going on.</summary>
+        public const string Run = "run";
+
+        /// <summary>A project is being loaded.</summary>
+        public const string Load = "load";
+
+        /// <summary>The project is being edited or saved.</summary>
+        public const string Edit = "edit";
+
+        /// <summary>The reader is being scanned.</summary>
+        public const string Scan = "scan";
+
+        /// <summary>Something else holds the project or the reader; RFiDGear cannot say what.</summary>
+        public const string Other = "other";
+    }
 }

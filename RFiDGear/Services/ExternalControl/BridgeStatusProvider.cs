@@ -79,7 +79,7 @@ namespace RFiDGear.Services.ExternalControl
                 Stale = !responsive,
                 Project = ui?.Project ?? new ProjectStatusDto(),
                 IsRunning = _host.Execution.IsRunning,
-                Reader = BridgeMapper.ToDto(_host.Reader.CurrentSnapshot),
+                Reader = BridgeMapper.ReadReader(_host.Reader),
                 LastResultSeq = _lastResultSeq(),
             };
         }

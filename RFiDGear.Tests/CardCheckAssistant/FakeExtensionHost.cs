@@ -516,7 +516,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
     internal sealed class FakeAutoModeHost : IAutoModeHost
     {
-        public bool IsAutoModeEnabled => false;
+        /// <summary>Whether the mode is on; a test sets it.</summary>
+        public bool IsAutoModeEnabled { get; set; }
 
         public event EventHandler AutoModeStateChanged
         {

@@ -80,6 +80,29 @@ namespace RFiDGear.Services.ExternalControl
         internal static BridgeFault NotReady(string reason) =>
             new BridgeFault(BridgeErrorCodes.NotReady, BridgeErrorKinds.NotReady, neverStarted: true, details: new Dictionary<string, string> { ["reason"] = reason });
 
+        /// <summary>A run, a project load, an edit or a reader scan is in the way.</summary>
+        /// <param name="activity">What RFiDGear is busy with, one of <see cref="BusyActivities"/>.</param>
+        /// <returns>The fault; the call did nothing, so it is marked as never started.</returns>
+        internal static BridgeFault Busy(string activity) =>
+            new BridgeFault(BridgeErrorCodes.Busy, BridgeErrorKinds.Busy, neverStarted: true, details: new Dictionary<string, string> { ["activity"] = activity });
+
+        /// <summary>Automatic mode is on.</summary>
+        /// <returns>The fault; the call did nothing, so it is marked as never started.</returns>
+        internal static BridgeFault AutoModeActive() =>
+            new BridgeFault(BridgeErrorCodes.AutoModeActive, BridgeErrorKinds.AutoModeActive, neverStarted: true);
+
+        /// <summary>The project file does not exist.</summary>
+        /// <returns>The fault.</returns>
+        internal static BridgeFault ProjectNotFound() => new BridgeFault(BridgeErrorCodes.ProjectNotFound, BridgeErrorKinds.ProjectNotFound);
+
+        /// <summary>The file is not a project this version can open.</summary>
+        /// <returns>The fault.</returns>
+        internal static BridgeFault ProjectUnsupportedFormat() => new BridgeFault(BridgeErrorCodes.ProjectUnsupportedFormat, BridgeErrorKinds.ProjectUnsupportedFormat);
+
+        /// <summary>The project could not be loaded for another reason.</summary>
+        /// <returns>The fault.</returns>
+        internal static BridgeFault ProjectLoadFailed() => new BridgeFault(BridgeErrorCodes.ProjectLoadFailed, BridgeErrorKinds.ProjectLoadFailed);
+
         /// <summary>Turns the fault into the error of the wire.</summary>
         /// <returns>The exception that StreamJsonRpc answers with.</returns>
         internal LocalRpcException ToRpc() => new LocalRpcException(Kind)
