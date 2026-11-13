@@ -127,25 +127,22 @@ namespace RFiDGear.Tests
         // ── What the editor shows (the choice is made in the key manager; the state does what the manager does) ──
 
         [Fact]
-        public async Task A_slot_named_by_a_reference_greys_out_its_key_box_and_shows_the_caption_and_back()
+        public async Task A_slot_named_by_a_reference_shows_the_reference_in_its_key_box_greyed_out_and_the_key_when_it_is_typed_again()
         {
             // A task type enables the group of the keys; without one the whole group is disabled and says nothing about the slot.
             await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, async (view, task) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicBCurrent);
                 var keyBox = (TextBox)editor.EmbeddedKey;
-                var caption = (TextBlock)editor.FindName("CaptionRow");
+                var keyBinding = BindingPath(keyBox, TextBox.TextProperty);
+                var keyToolTip = keyBox.ToolTip;
 
-                // The frame of the line is what collapses; the line inside keeps the size it last had.
-                var frame = (FrameworkElement)editor.FindName("CaptionFrame");
-
-                // The box is covered by a plain grey field while the slot has a reference: the box is empty then, which the view would show as red.
-                var cover = (FrameworkElement)editor.FindName("ReferenceCover");
-
+                // Nothing lies over the box and nothing is added below it: the box is the field, and the field shows the reference.
+                Assert.Null(editor.FindName("ReferenceCover"));
+                Assert.Null(editor.FindName("CaptionFrame"));
+                Assert.Null(editor.FindName("CaptionRow"));
                 Assert.True(keyBox.IsEnabled);
-                Assert.False(cover.IsVisible);
-                Assert.False(caption.IsVisible);
-                Assert.Equal(0, frame.ActualHeight);
+                Assert.Equal("ClassicKeyBKeyCurrent", keyBinding);
 
                 StateOf(editor).ToggleMode();
                 await Flush();
@@ -154,19 +151,53 @@ namespace RFiDGear.Tests
                 Assert.True(task.IsKeyBound(SecureKeySlots.ClassicBCurrent));
                 Assert.True(keyBox.IsVisible);
                 Assert.False(keyBox.IsEnabled);
-                Assert.True(cover.IsVisible);
-                Assert.True(caption.IsVisible);
-                Assert.True(frame.ActualHeight > 0);
+                Assert.Equal("State.ReferenceCaption", BindingPath(keyBox, TextBox.TextProperty));
+                Assert.Equal(StateOf(editor).ReferenceCaption, keyBox.Text);
+                Assert.NotEmpty(keyBox.Text);
+
+                // The box is not red for the key that is not there: the key is not meant to be.
+                Assert.Same(SystemColors.ControlBrush, keyBox.Background);
 
                 StateOf(editor).ToggleMode();
                 await Flush();
                 view.UpdateLayout();
 
+                // The box is what the view made it again: its binding to the key of the task, its colours (which its own style gives it
+                // for the key it holds, none now) and its tooltip.
                 Assert.False(task.IsKeyBound(SecureKeySlots.ClassicBCurrent));
                 Assert.True(keyBox.IsEnabled);
-                Assert.False(cover.IsVisible);
-                Assert.False(caption.IsVisible);
-                Assert.Equal(0, frame.ActualHeight);
+                Assert.Equal(keyBinding, BindingPath(keyBox, TextBox.TextProperty));
+                Assert.NotSame(SystemColors.ControlBrush, keyBox.Background);
+                Assert.Equal(keyToolTip, keyBox.ToolTip);
+
+                // And it edits the key of the task again.
+                keyBox.Text = "A1B2C3D4E5F6";
+                Assert.Equal("A1B2C3D4E5F6", task.ClassicKeyBKeyCurrent);
+            });
+        }
+
+        [Fact]
+        public async Task While_a_reference_is_shown_the_box_has_a_wrapping_tooltip_with_the_key_store_and_the_name()
+        {
+            await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, async (view, _) =>
+            {
+                var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
+                var keyBox = (TextBox)editor.EmbeddedKey;
+
+                StateOf(editor).ToggleMode();
+                StateOf(editor).Reference = "cards/main";
+                await Flush();
+                view.UpdateLayout();
+
+                var tip = Assert.IsType<ToolTip>(keyBox.ToolTip);
+                var style = (Style)editor.FindResource("KeySlotToolTipStyle");
+
+                Assert.Same(style, tip.Style);
+                Assert.Equal("State.ReferenceDetail", System.Windows.Data.BindingOperations.GetBinding(tip, ContentControl.ContentProperty)?.Path.Path);
+                Assert.Contains("cards/main", StateOf(editor).ReferenceDetail);
+
+                // WPF reads the duration from the control that owns the tooltip, so the owner is asked.
+                Assert.True(ToolTipService.GetShowDuration(keyBox) >= 20000, "the box shows its tooltip for " + ToolTipService.GetShowDuration(keyBox) + " ms");
             });
         }
 
@@ -184,20 +215,27 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task The_caption_is_bound_to_the_editor_and_never_to_a_key_of_the_task()
+        public async Task The_text_of_the_box_follows_the_reference_and_is_never_bound_to_a_key_of_the_task()
         {
             await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, task) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
-                var caption = (TextBlock)editor.FindName("CaptionRow");
+                var keyBox = (TextBox)editor.EmbeddedKey;
                 StateOf(editor).ToggleMode();
                 StateOf(editor).Reference = "cards/main";
                 await Flush();
                 view.UpdateLayout();
 
-                Assert.Equal("State.ReferenceCaption", BindingPath(caption, TextBlock.TextProperty));
-                Assert.Contains("cards/main", caption.Text);
+                Assert.Equal("State.ReferenceCaption", BindingPath(keyBox, TextBox.TextProperty));
+                Assert.Contains("cards/main", keyBox.Text);
                 Assert.Equal("cards/main", task.GetKeyBinding(SecureKeySlots.ClassicACurrent).Reference);
+
+                StateOf(editor).Reference = "cards/other";
+                await Flush();
+                view.UpdateLayout();
+
+                Assert.Contains("cards/other", keyBox.Text);
+                Assert.DoesNotContain("cards/main", keyBox.Text);
 
                 // The key of the task stays what the binding made it: nothing.
                 Assert.True(string.IsNullOrEmpty(task.ClassicKeyAKeyCurrent));
@@ -231,7 +269,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task A_task_that_is_already_bound_is_shown_with_its_reference_below_the_greyed_out_key_box()
+        public async Task A_task_that_is_already_bound_is_shown_with_its_reference_in_the_greyed_out_key_box()
         {
             await OnClassicTab(
                 () =>
@@ -243,19 +281,17 @@ namespace RFiDGear.Tests
                 },
                 (view, _) =>
                 {
-                    var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
-                    var caption = (TextBlock)editor.FindName("CaptionRow");
+                    var keyBox = (TextBox)EditorOf(view, SecureKeySlots.ClassicACurrent).EmbeddedKey;
 
-                    Assert.False(((TextBox)editor.EmbeddedKey).IsEnabled);
-                    Assert.True(caption.IsVisible);
-                    Assert.Contains("cards/main", caption.Text);
+                    Assert.False(keyBox.IsEnabled);
+                    Assert.Contains("cards/main", keyBox.Text);
 
                     return Task.CompletedTask;
                 });
         }
 
         [Fact]
-        public async Task No_caption_is_blank_while_slots_show_a_reference()
+        public async Task No_key_box_is_blank_while_slots_show_a_reference()
         {
             await OnDesfireTab<TabPageMifareDesfireApplicationMasteringView>(
                 () =>
@@ -267,7 +303,10 @@ namespace RFiDGear.Tests
                 },
                 (view, _) =>
                 {
-                    Assert.Empty(BlankCaptions(view));
+                    var shown = EditorsIn(view).Where(editor => StateOf(editor).IsReferenceMode).ToList();
+
+                    Assert.NotEmpty(shown);
+                    Assert.All(shown, editor => Assert.False(string.IsNullOrWhiteSpace(((TextBox)editor.EmbeddedKey).Text), editor.SlotId));
 
                     return Task.CompletedTask;
                 });
@@ -276,30 +315,91 @@ namespace RFiDGear.Tests
         // ── The layout does not move ──
 
         [Fact]
-        public async Task A_reference_adds_the_caption_below_the_key_box_and_moves_nothing_else()
+        public async Task A_reference_changes_nothing_in_the_layout_even_with_the_longest_name()
         {
             await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, _) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
-                var host = (FrameworkElement)editor.FindName("EmbeddedHost");
-                var caption = (FrameworkElement)editor.FindName("CaptionFrame");
-                var widthBefore = editor.ActualWidth;
-                var boxBefore = (host.ActualWidth, host.ActualHeight);
-                var heightBefore = editor.ActualHeight;
+                var keyBox = (FrameworkElement)editor.EmbeddedKey;
+                var before = (editor.ActualWidth, editor.ActualHeight, keyBox.ActualWidth, keyBox.ActualHeight);
 
                 StateOf(editor).ToggleMode();
 
-                // The longest name there is: a caption that ran on would push the columns apart.
+                // The longest name there is: a text that ran on would push the columns apart.
                 StateOf(editor).Reference = new string('a', SecureKeySyntax.MaxReferenceLength);
                 await Flush();
                 view.UpdateLayout();
 
-                Assert.Equal(widthBefore, editor.ActualWidth);
-                Assert.Equal(boxBefore, (host.ActualWidth, host.ActualHeight));
+                Assert.Equal(before, (editor.ActualWidth, editor.ActualHeight, keyBox.ActualWidth, keyBox.ActualHeight));
+            });
+        }
 
-                // Taller by the caption and no more than its height and the margin below it.
-                Assert.True(editor.ActualHeight > heightBefore, "the caption has no height");
-                Assert.True(editor.ActualHeight - heightBefore <= caption.ActualHeight + caption.Margin.Bottom + 0.5, "the editor grew by " + (editor.ActualHeight - heightBefore));
+        // ── The height of the box ──
+
+        [Fact]
+        public async Task The_key_of_the_card_mastering_tab_is_26_high_like_the_key_type_and_the_version_below_it_whatever_the_slot_shows()
+        {
+            // The box has no height of its own: it stretches to the row, which the label beside it makes 26 high. It does so only when the
+            // editor around it lets it fill the cell, which is what an editor that was two rows high did not.
+            await OnDesfireTab<TabPageMifareDesfireCardMasteringView>(() => new MifareDesfireSetupViewModel { SelectedTaskType = TaskType_MifareDesfireTask.PICCMasterKeyChangeover }, async (view, _) =>
+            {
+                var editor = EditorOf(view, SecureKeySlots.DesfirePiccCurrent);
+                var keyBox = (TextBox)editor.EmbeddedKey;
+                var below = LogicalDescendants(view).OfType<ComboBox>().First(box => box.IsVisible && Grid.GetRow(box) == 1 && Grid.GetColumn(box) == 1 && box.Height == 26);
+
+                Assert.Equal(26, keyBox.ActualHeight, 0.5);
+                Assert.Equal(below.ActualHeight, keyBox.ActualHeight, 0.5);
+
+                StateOf(editor).ToggleMode();
+                await Flush();
+                view.UpdateLayout();
+
+                Assert.Equal(26, keyBox.ActualHeight, 0.5);
+            });
+        }
+
+        [Fact]
+        public async Task Every_key_box_that_stretches_fills_its_cell_typed_or_with_a_reference()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var checkedBoxes = 0;
+
+                foreach (var (name, make) in AllTabs())
+                {
+                    foreach (var bound in new[] { false, true })
+                    {
+                        var (tab, task) = make(bound);
+                        tab.DataContext = task;
+                        var window = new Window { Content = tab, Width = 1200, Height = 800, ShowActivated = false, ShowInTaskbar = false };
+
+                        try
+                        {
+                            window.Show();
+                            window.UpdateLayout();
+                            await Flush();
+                            window.UpdateLayout();
+
+                            var editors = EditorsIn(tab).Where(editor => editor.IsVisible && editor.EmbeddedKey is FrameworkElement { VerticalAlignment: VerticalAlignment.Stretch, Height: double.NaN }).ToList();
+
+                            foreach (var editor in editors)
+                            {
+                                var box = (FrameworkElement)editor.EmbeddedKey;
+                                var expected = editor.ActualHeight - box.Margin.Top - box.Margin.Bottom;
+
+                                Assert.True(Math.Abs(box.ActualHeight - expected) <= 0.5, $"{name} {editor.SlotId} {(bound ? "bound" : "typed")}: the box is {box.ActualHeight} high in a cell of {expected}");
+                                checkedBoxes++;
+                            }
+                        }
+                        finally
+                        {
+                            window.Close();
+                        }
+                    }
+                }
+
+                // The boxes that stretch are the ones of the DESFire tabs; the test is empty if none was looked at.
+                Assert.True(checkedBoxes >= 8, "only " + checkedBoxes + " boxes were looked at");
             });
         }
 
@@ -390,12 +490,11 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task In_the_desfire_dialog_every_manager_button_and_caption_is_inside_the_visible_tab_area(bool atSmallestSize)
+        public async Task In_the_desfire_dialog_every_manager_button_is_inside_the_visible_tab_area(bool atSmallestSize)
         {
             // A tab alone in a window has all of it. In the dialog it has what is left under the task and above the status, and a
-            // button or a caption below that edge is cut off, which a tab in a window of its own cannot show. The smallest size is
-            // the one the dialog declares, so lowering it is a change that this test sees. Every key is named by a reference, which
-            // is the tallest state: the captions are shown.
+            // button below that edge is cut off, which a tab in a window of its own cannot show. The smallest size is the one the
+            // dialog declares, so lowering it is a change that this test sees. Every key is named by a reference, as in the pictures.
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 var outside = new List<string>();
@@ -412,7 +511,7 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task In_the_classic_dialog_every_manager_button_and_caption_is_inside_the_visible_tab_area(bool atSmallestSize)
+        public async Task In_the_classic_dialog_every_manager_button_is_inside_the_visible_tab_area(bool atSmallestSize)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
@@ -427,8 +526,8 @@ namespace RFiDGear.Tests
             });
         }
 
-        // Shows the dialog, and for every task type and every tab that a person can pick lists the manager buttons and the captions
-        // of the references that do not fit where they are shown.
+        // Shows the dialog, and for every task type and every tab that a person can pick lists the manager buttons that do not fit
+        // where they are shown.
         private static async Task CollectOutsideTheTabArea(Window window, string label, bool atSmallestSize, IEnumerable<(string Type, Action Select)> types, List<string> outside)
         {
             try
@@ -478,10 +577,7 @@ namespace RFiDGear.Tests
             var parts = LogicalDescendants(window)
                 .OfType<KeyManagerButton>()
                 .Where(button => button.IsVisible)
-                .Select(button => ("button", (FrameworkElement)button))
-                .Concat(EditorsIn(window)
-                    .Where(editor => editor.IsVisible && StateOf(editor).IsReferenceMode)
-                    .Select(editor => ("caption of " + editor.SlotId, (FrameworkElement)editor.FindName("CaptionFrame"))));
+                .Select(button => ("button", (FrameworkElement)button));
 
             foreach (var (what, part) in parts)
             {

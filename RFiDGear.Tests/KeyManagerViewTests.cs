@@ -20,13 +20,16 @@ using static RFiDGear.Tests.RenderedTab;
 namespace RFiDGear.Tests
 {
     /// <summary>
-    /// The key manager window, rendered for real: a row for each slot, a typed key or a reference, the key store with a tooltip
-    /// for each entry, a box in which a key is entered hidden and cleared after it was stored, the status of the supplier, and
-    /// the way out. Controls are found by their names in the template of a row.
+    /// The key manager window of a task, rendered for real: a row for each slot, a typed key or a reference, the key store with a
+    /// tooltip for each entry, the keys that are stored to choose from by name, a group of its own in which a new key is created
+    /// (a box in which a key is entered hidden or shown, checked while it is typed, and cleared after it was stored), the status of
+    /// the supplier, and the way out. Controls are found by their names in the template of a row.
     /// </summary>
     [Collection("WpfBindingTrace")]
     public class KeyManagerViewTests
     {
+        private const string Prefix = WindowsCredentialKeyProvider.TargetPrefix;
+
         private static readonly SecureKeyProviderInfo CredentialManager = new SecureKeyProviderInfo(WindowsCredentialKeyProvider.ProviderId, "Windows Credential Manager");
         private static readonly SecureKeyProviderInfo ExternalApplication = new SecureKeyProviderInfo(BridgeKeyProvider.ProviderId, "Connected external application");
 
@@ -39,6 +42,16 @@ namespace RFiDGear.Tests
             internal FakeSupplierStatus Supplier { get; } = new FakeSupplierStatus();
 
             internal string Culture { get; set; } = "en";
+
+            internal Setup WithKeys(params string[] names)
+            {
+                foreach (var name in names)
+                {
+                    Store.Blobs[Prefix + name] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+                }
+
+                return this;
+            }
 
             internal KeyManagerViewModel Create(params string[] slots) => KeyManagerViewModel.Create(
                 Host,
@@ -60,9 +73,7 @@ namespace RFiDGear.Tests
                 try
                 {
                     window.Show();
-                    window.UpdateLayout();
-                    await Flush();
-                    window.UpdateLayout();
+                    await Settle(window);
 
                     await inspect(window, viewModel);
                 }
@@ -74,6 +85,13 @@ namespace RFiDGear.Tests
                     }
                 }
             });
+        }
+
+        private static async Task Settle(Window window)
+        {
+            window.UpdateLayout();
+            await Flush();
+            window.UpdateLayout();
         }
 
         // ── Finding things ──
@@ -102,13 +120,43 @@ namespace RFiDGear.Tests
         private static T Of<T>(DependencyObject root, string name, int row = 0)
             where T : FrameworkElement => All<T>(root, name).ElementAt(row);
 
+        // The box that holds the key of a row while it is hidden; the entry around it is the control called KeyBox.
+        private static PasswordBox Hidden(DependencyObject window, int row = 0) => Of<PasswordBox>(window, "HiddenBox", row);
+
+        private static TextBox Shown(DependencyObject window, int row = 0) => Of<TextBox>(window, "ShownBox", row);
+
         private static async Task Toggle(KeyManagerView window, int row)
         {
             Of<Button>(window, "ModeButton", row).Command.Execute(null);
-            window.UpdateLayout();
-            await Flush();
-            window.UpdateLayout();
+            await Settle(window);
         }
+
+        private static async Task Click(KeyManagerView window, string button, int row = 0)
+        {
+            Of<Button>(window, button, row).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            await Settle(window);
+        }
+
+        private static bool WrapsAt(ToolTip tip, double width) =>
+            tip.Style is { } style && style.Setters.OfType<Setter>().Any(setter => setter.Property == FrameworkElement.MaxWidthProperty && Equals(setter.Value, width));
+
+        private static System.Windows.Input.KeyEventArgs PressEnter(UIElement target)
+        {
+            var args = new System.Windows.Input.KeyEventArgs(
+                System.Windows.Input.Keyboard.PrimaryDevice,
+                PresentationSource.FromVisual(target),
+                0,
+                System.Windows.Input.Key.Enter)
+            {
+                RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent,
+            };
+
+            target.RaiseEvent(args);
+
+            return args;
+        }
+
+        private const string Key32 = "000102030405060708090a0b0c0d0e0f";
 
         // ── The rows ──
 
@@ -141,7 +189,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task Using_a_reference_shows_the_key_store_the_name_and_the_box_for_a_key_and_the_slot_is_bound()
+        public async Task Using_a_reference_with_the_credential_manager_offers_the_stored_keys_and_a_group_in_which_a_new_key_is_created()
         {
             var setup = new Setup();
 
@@ -157,10 +205,105 @@ namespace RFiDGear.Tests
                 Assert.Equal(2, providers.Items.Count);
                 Assert.Equal(WindowsCredentialKeyProvider.ProviderId, providers.SelectedValue);
 
-                // The key can be stored for the Credential Manager, and the box takes a key of any length: a limit would
-                // silently cut a pasted key that is too long.
-                Assert.True(Of<StackPanel>(window, "StorePanel").IsVisible);
-                Assert.Equal(0, Of<PasswordBox>(window, "KeyBox").MaxLength);
+                // The key store is a list of the keys that exist, and a new key is another thing, in a group of its own.
+                Assert.True(Of<StackPanel>(window, "StoredKeyPanel").IsVisible);
+                Assert.True(Of<ComboBox>(window, "StoredKeyBox").IsVisible);
+                Assert.False(Of<Grid>(window, "FreeReferencePanel").IsVisible);
+                var group = Of<GroupBox>(window, "NewKeyGroup");
+                Assert.True(group.IsVisible);
+                Assert.Equal("Create a new key", group.Header);
+
+                // The box takes no more characters than the key has digits, and the name of a new key has the limit of a name.
+                Assert.Equal(32, Hidden(window).MaxLength);
+                Assert.Equal(32, Shown(window).MaxLength);
+                Assert.Equal(SecureKeySyntax.MaxReferenceLength, Of<TextBox>(window, "NewNameBox").MaxLength);
+                Assert.True(Of<CheckBox>(window, "ShowCheck").IsVisible);
+            });
+        }
+
+        [Fact]
+        public async Task The_stored_keys_are_offered_by_name_and_choosing_one_binds_the_slot_to_it()
+        {
+            var setup = new Setup().WithKeys("cards/b", "cards/a");
+
+            await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+
+                var list = Of<ComboBox>(window, "StoredKeyBox");
+                Assert.Equal(new[] { "cards/a", "cards/b" }, list.Items.Cast<StoredKeyChoice>().Select(choice => choice.Reference));
+                Assert.False(Of<TextBlock>(window, "NoStoredKeysText").IsVisible);
+
+                list.SelectedValue = "cards/b";
+                await Settle(window);
+
+                Assert.Equal($"bind {SecureKeySlots.DesfireRead} {WindowsCredentialKeyProvider.ProviderId} 'cards/b'", setup.Host.Calls.Last());
+                Assert.Equal("cards/b", setup.Host.GetKeyBinding(SecureKeySlots.DesfireRead)?.Reference);
+                Assert.Empty(setup.Store.Reads);
+            });
+        }
+
+        [Fact]
+        public async Task Without_a_stored_key_the_window_says_to_create_one()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+
+                Assert.Empty(Of<ComboBox>(window, "StoredKeyBox").Items);
+                Assert.True(Of<TextBlock>(window, "NoStoredKeysText").IsVisible);
+                Assert.Equal("No key is stored yet. Create one below.", Of<TextBlock>(window, "NoStoredKeysText").Text);
+            });
+        }
+
+        [Fact]
+        public async Task A_list_that_cannot_be_read_says_why_and_not_that_no_key_is_stored()
+        {
+            var setup = new Setup();
+            setup.Store.EnumerateError = CredentialErrors.AccessDenied;
+
+            await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+
+                Assert.True(Of<TextBlock>(window, "StoredKeysErrorText").IsVisible);
+                Assert.Equal("The stored keys could not be listed (error 5).", Of<TextBlock>(window, "StoredKeysErrorText").Text);
+                Assert.False(Of<TextBlock>(window, "NoStoredKeysText").IsVisible);
+            });
+        }
+
+        [Fact]
+        public async Task A_slot_that_names_a_key_that_is_not_stored_shows_the_name_in_the_list_and_says_so()
+        {
+            var setup = new Setup().WithKeys("cards/a");
+            setup.Host.BindKeySlot(SecureKeySlots.DesfireRead, WindowsCredentialKeyProvider.ProviderId, "gone/key");
+            setup.Host.Calls.Clear();
+
+            await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, (window, _) =>
+            {
+                var list = Of<ComboBox>(window, "StoredKeyBox");
+
+                Assert.Equal("gone/key", list.SelectedValue);
+                Assert.Equal("gone/key (not stored)", Assert.IsType<StoredKeyChoice>(list.SelectedItem).Text);
+
+                // Showing the window did not change what the slot names.
+                Assert.Empty(setup.Host.Calls);
+
+                return Task.CompletedTask;
+            });
+        }
+
+        [Fact]
+        public async Task Another_key_store_takes_the_name_as_text_and_has_no_list_and_no_group_for_a_new_key()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                Of<ComboBox>(window, "ProviderBox").SelectedValue = BridgeKeyProvider.ProviderId;
+                await Settle(window);
+
+                Assert.False(Of<StackPanel>(window, "StoredKeyPanel").IsVisible);
+                Assert.True(Of<Grid>(window, "FreeReferencePanel").IsVisible);
                 Assert.Equal(SecureKeySyntax.MaxReferenceLength, Of<TextBox>(window, "ReferenceBox").MaxLength);
             });
         }
@@ -177,58 +320,66 @@ namespace RFiDGear.Tests
 
                 foreach (var owner in new FrameworkElement[]
                 {
-                    Of<Button>(window, "ModeButton"), Of<ComboBox>(window, "ProviderBox"),
-                    Of<TextBox>(window, "ReferenceBox"), Of<Button>(window, "StoreButton"),
+                    Of<Button>(window, "ModeButton"), Of<ComboBox>(window, "ProviderBox"), Of<ComboBox>(window, "StoredKeyBox"),
+                    Of<TextBox>(window, "ReferenceBox"), Of<TextBox>(window, "NewNameBox"), Of<Button>(window, "StoreButton"),
+                    Of<CheckBox>(window, "ShowCheck"),
                 })
                 {
-                    Assert.Same(style, Assert.IsType<ToolTip>(owner.ToolTip).Style);
+                    var tip = Assert.IsType<ToolTip>(owner.ToolTip);
+
+                    // The box for the key has its own copy of the style, which wraps in the same way.
+                    Assert.True(ReferenceEquals(style, tip.Style) || WrapsAt(tip, 380), owner.Name + " has a tooltip that does not wrap");
 
                     // The duration is read from the owner of a tooltip: asked here for each of them, not for the window.
                     Assert.True(ToolTipService.GetShowDuration(owner) >= 20000, owner.Name + " shows its tooltip for " + ToolTipService.GetShowDuration(owner) + " ms");
                 }
 
-                // The key can only be stored under a valid name; the button says why while it is disabled.
+                // The key can only be stored under a valid name and as a key; the button says why while it is disabled.
                 Assert.True(ToolTipService.GetShowOnDisabled(Of<Button>(window, "StoreButton")));
 
                 // The entries of the list: instantiate the template of an item, as the list does for each one.
                 var providers = Of<ComboBox>(window, "ProviderBox");
                 var item = Assert.IsType<Grid>(providers.ItemTemplate.LoadContent());
                 item.DataContext = providers.Items[0];
-                var tip = Assert.IsType<ToolTip>(item.ToolTip);
+                var itemTip = Assert.IsType<ToolTip>(item.ToolTip);
 
-                Assert.Same(style, tip.Style);
+                Assert.Same(style, itemTip.Style);
 
                 // Its text is the tooltip of the entry the template is made for, not one text for all of them.
-                Assert.Equal(nameof(KeySlotProviderItem.ToolTip), System.Windows.Data.BindingOperations.GetBinding(tip, ContentControl.ContentProperty)?.Path.Path);
+                Assert.Equal(nameof(KeySlotProviderItem.ToolTip), System.Windows.Data.BindingOperations.GetBinding(itemTip, ContentControl.ContentProperty)?.Path.Path);
             });
         }
 
-        // ── Storing a key ──
+        // ── Creating a new key ──
 
         [Fact]
-        public async Task A_key_that_is_entered_is_stored_under_the_name_and_the_box_is_cleared()
+        public async Task A_new_key_is_stored_under_the_new_name_the_slot_uses_it_the_list_shows_it_and_the_box_is_cleared()
         {
-            var setup = new Setup();
+            var setup = new Setup().WithKeys("cards/other");
 
             await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
             {
                 await Toggle(window, 0);
-                Of<TextBox>(window, "ReferenceBox").Text = "cards/main";
-                var box = Of<PasswordBox>(window, "KeyBox");
-                box.Password = "000102030405060708090a0b0c0d0e0f";
-                window.UpdateLayout();
-                await Flush();
+                Of<TextBox>(window, "NewNameBox").Text = "cards/main";
+                var box = Hidden(window);
+                box.Password = Key32;
+                await Settle(window);
 
                 var button = Of<Button>(window, "StoreButton");
                 Assert.True(button.IsEnabled);
-                button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-                window.UpdateLayout();
-                await Flush();
+                await Click(window, "StoreButton");
 
                 Assert.Equal(
                     Encoding.Unicode.GetBytes("000102030405060708090A0B0C0D0E0F"),
-                    setup.Store.Blobs[WindowsCredentialKeyProvider.TargetPrefix + "cards/main"]);
+                    setup.Store.Blobs[Prefix + "cards/main"]);
                 Assert.Equal(string.Empty, box.Password);
+
+                // The slot names the key that was made for it, and the list has it, selected.
+                var list = Of<ComboBox>(window, "StoredKeyBox");
+                Assert.Equal("cards/main", setup.Host.GetKeyBinding(SecureKeySlots.DesfireRead)?.Reference);
+                Assert.Equal(new[] { "cards/main", "cards/other" }, list.Items.Cast<StoredKeyChoice>().Select(choice => choice.Reference));
+                Assert.Equal("cards/main", list.SelectedValue);
+                Assert.Equal(string.Empty, Of<TextBox>(window, "NewNameBox").Text);
 
                 var result = Of<TextBlock>(window, "ResultText");
                 Assert.True(result.IsVisible);
@@ -237,70 +388,120 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task A_key_of_the_wrong_length_is_not_stored_and_the_box_is_cleared_all_the_same()
+        public async Task A_key_can_be_shown_while_it_is_entered_and_is_stored_from_the_box_that_shows_it()
         {
             var setup = new Setup();
 
             await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
             {
                 await Toggle(window, 0);
-                Of<TextBox>(window, "ReferenceBox").Text = "cards/main";
-                var box = Of<PasswordBox>(window, "KeyBox");
-                box.Password = "0102";
-                window.UpdateLayout();
-                await Flush();
+                Of<TextBox>(window, "NewNameBox").Text = "cards/main";
+                Hidden(window).Password = Key32;
+                await Settle(window);
 
-                Of<Button>(window, "StoreButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-                window.UpdateLayout();
-                await Flush();
+                Of<CheckBox>(window, "ShowCheck").IsChecked = true;
+                await Settle(window);
+
+                Assert.True(Shown(window).IsVisible);
+                Assert.Equal(Key32, Shown(window).Text);
+
+                await Click(window, "StoreButton");
+
+                Assert.Equal(Encoding.Unicode.GetBytes("000102030405060708090A0B0C0D0E0F"), setup.Store.Blobs[Prefix + "cards/main"]);
+                Assert.Equal(string.Empty, Shown(window).Text);
+                Assert.False(Shown(window).IsVisible);
+            });
+        }
+
+        [Fact]
+        public async Task The_box_turns_green_for_a_key_and_red_for_anything_else_and_the_store_button_waits_for_a_key()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                Of<TextBox>(window, "NewNameBox").Text = "cards/main";
+                var box = Hidden(window);
+                var button = Of<Button>(window, "StoreButton");
+
+                box.Password = "0102";
+                await Settle(window);
+                Assert.False(Of<KeyEntryBox>(window, "KeyBox").IsKeyValid);
+                Assert.Equal(Colors.Red, ((SolidColorBrush)box.Background).Color);
+                Assert.False(button.IsEnabled);
+
+                box.Password = Key32;
+                await Settle(window);
+                Assert.True(Of<KeyEntryBox>(window, "KeyBox").IsKeyValid);
+                Assert.Equal(Colors.White, ((SolidColorBrush)box.Background).Color);
+                Assert.Equal(Colors.Green, ((SolidColorBrush)box.Foreground).Color);
+                Assert.True(button.IsEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task The_name_of_a_new_key_is_not_coloured_while_it_is_typed_but_the_store_button_still_waits_for_a_valid_one()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                var name = Of<TextBox>(window, "NewNameBox");
+                var plain = name.Background;
+                Hidden(window).Password = Key32;
+
+                foreach (var typed in new[] { string.Empty, "not a name", "cards/main" })
+                {
+                    name.Text = typed;
+                    await Settle(window);
+
+                    Assert.Equal(plain, name.Background);
+                    Assert.NotEqual(Brushes.Green, name.Foreground);
+                    Assert.Equal(typed == "cards/main", Of<Button>(window, "StoreButton").IsEnabled);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task A_name_that_is_stored_already_is_not_written_to_the_window_points_to_the_list_and_the_digits_stay()
+        {
+            var setup = new Setup().WithKeys("cards/main");
+
+            await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                Of<TextBox>(window, "NewNameBox").Text = "cards/main";
+                var box = Hidden(window);
+                box.Password = Key32;
+                await Settle(window);
+
+                await Click(window, "StoreButton");
 
                 Assert.Empty(setup.Store.Writes);
-                Assert.Equal(string.Empty, box.Password);
+                Assert.Equal(Key32, box.Password);
                 Assert.True(Of<TextBlock>(window, "ResultText").IsVisible);
+                Assert.Contains("stored already", Of<TextBlock>(window, "ResultText").Text);
             });
         }
 
         [Fact]
-        public async Task A_key_that_was_entered_and_not_stored_does_not_stay_in_the_window_when_it_closes()
-        {
-            // Close, Escape and the title bar all end in the same place; rows that are collapsed have their boxes too.
-            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead, SecureKeySlots.DesfireWrite }, async (window, _) =>
-            {
-                await Toggle(window, 0);
-                var shown = Of<PasswordBox>(window, "KeyBox", 0);
-                var collapsed = Of<PasswordBox>(window, "KeyBox", 1);
-                shown.Password = "0001";
-                collapsed.Password = "0002";
-
-                window.Close();
-                await Flush();
-
-                Assert.Equal(string.Empty, shown.Password);
-                Assert.Equal(string.Empty, collapsed.Password);
-            });
-        }
-
-        [Fact]
-        public async Task Enter_in_the_box_of_a_key_stores_it_and_never_closes_the_window()
+        public async Task Enter_in_the_box_of_the_key_stores_it_and_never_closes_the_window()
         {
             var setup = new Setup();
 
             await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
             {
                 await Toggle(window, 0);
-                Of<TextBox>(window, "ReferenceBox").Text = "cards/main";
-                var box = Of<PasswordBox>(window, "KeyBox");
-                box.Password = "000102030405060708090a0b0c0d0e0f";
+                Of<TextBox>(window, "NewNameBox").Text = "cards/main";
+                var box = Hidden(window);
+                box.Password = Key32;
 
                 var args = PressEnter(box);
-                window.UpdateLayout();
-                await Flush();
+                await Settle(window);
 
                 Assert.True(args.Handled);
                 Assert.True(window.IsVisible);
                 Assert.Equal(
                     Encoding.Unicode.GetBytes("000102030405060708090A0B0C0D0E0F"),
-                    setup.Store.Blobs[WindowsCredentialKeyProvider.TargetPrefix + "cards/main"]);
+                    setup.Store.Blobs[Prefix + "cards/main"]);
                 Assert.Equal(string.Empty, box.Password);
             });
         }
@@ -313,17 +514,44 @@ namespace RFiDGear.Tests
             await OnWindow(setup, new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
             {
                 await Toggle(window, 0);
-                var box = Of<PasswordBox>(window, "KeyBox");
+                var box = Hidden(window);
                 box.Password = "0001";
 
-                // No name yet: nothing can be stored. The digits stay where the person can still finish them.
+                // No name yet and not a key: nothing can be stored. The digits stay where the person can still finish them.
                 var args = PressEnter(box);
-                await Flush();
+                await Settle(window);
 
                 Assert.True(args.Handled);
                 Assert.True(window.IsVisible);
                 Assert.Empty(setup.Store.Writes);
                 Assert.Equal("0001", box.Password);
+            });
+        }
+
+        [Fact]
+        public async Task A_key_that_was_entered_and_not_stored_does_not_stay_in_the_window_when_it_closes()
+        {
+            // Close, Escape and the title bar all end in the same place; a row that was switched back to a typed key is collapsed
+            // and has its boxes still, with whatever was typed into them.
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead, SecureKeySlots.DesfireWrite }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                await Toggle(window, 1);
+                var hidden = Hidden(window, 0);
+                var collapsed = Hidden(window, 1);
+                hidden.Password = "0001";
+                collapsed.Password = "0002";
+                Of<CheckBox>(window, "ShowCheck", 1).IsChecked = true;
+                Shown(window, 1).Text = "0003";
+                await Toggle(window, 1);
+                Assert.False(Shown(window, 1).IsVisible);
+
+                window.Close();
+                await Flush();
+
+                Assert.Equal(string.Empty, hidden.Password);
+                Assert.Equal(string.Empty, collapsed.Password);
+                Assert.Equal(string.Empty, Shown(window, 1).Text);
             });
         }
 
@@ -348,14 +576,15 @@ namespace RFiDGear.Tests
             {
                 await Toggle(window, 0);
                 await Toggle(window, 1);
-                Of<PasswordBox>(window, "KeyBox", 0).Password = "A1B2C3";
+                Hidden(window, 0).Password = "A1B2C3";
 
-                foreach (var (name, slotName) in new[] { (0, "Application key, current"), (1, "Application key, new") })
+                foreach (var (row, slotName) in new[] { (0, "Application key, current"), (1, "Application key, new") })
                 {
                     foreach (var control in new FrameworkElement[]
                     {
-                        Of<Button>(window, "ModeButton", name), Of<ComboBox>(window, "ProviderBox", name),
-                        Of<TextBox>(window, "ReferenceBox", name), Of<PasswordBox>(window, "KeyBox", name), Of<Button>(window, "StoreButton", name),
+                        Of<Button>(window, "ModeButton", row), Of<ComboBox>(window, "ProviderBox", row), Of<ComboBox>(window, "StoredKeyBox", row),
+                        Of<TextBox>(window, "ReferenceBox", row), Of<TextBox>(window, "NewNameBox", row), Hidden(window, row), Shown(window, row),
+                        Of<Button>(window, "StoreButton", row),
                     })
                     {
                         var accessibleName = System.Windows.Automation.AutomationProperties.GetName(control);
@@ -367,42 +596,8 @@ namespace RFiDGear.Tests
 
                 // The same control in two rows is told apart by its name.
                 Assert.NotEqual(
-                    System.Windows.Automation.AutomationProperties.GetName(Of<PasswordBox>(window, "KeyBox", 0)),
-                    System.Windows.Automation.AutomationProperties.GetName(Of<PasswordBox>(window, "KeyBox", 1)));
-            });
-        }
-
-        // Presses Enter in a control the way the keyboard does, as far as the window can tell.
-        private static System.Windows.Input.KeyEventArgs PressEnter(UIElement target)
-        {
-            var args = new System.Windows.Input.KeyEventArgs(
-                System.Windows.Input.Keyboard.PrimaryDevice,
-                PresentationSource.FromVisual(target),
-                0,
-                System.Windows.Input.Key.Enter)
-            {
-                RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent,
-            };
-
-            target.RaiseEvent(args);
-
-            return args;
-        }
-
-        [Fact]
-        public async Task The_store_button_waits_for_a_valid_name()
-        {
-            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, async (window, _) =>
-            {
-                await Toggle(window, 0);
-
-                Assert.False(Of<Button>(window, "StoreButton").IsEnabled);
-
-                Of<TextBox>(window, "ReferenceBox").Text = "cards/main";
-                window.UpdateLayout();
-                await Flush();
-
-                Assert.True(Of<Button>(window, "StoreButton").IsEnabled);
+                    System.Windows.Automation.AutomationProperties.GetName(Hidden(window, 0)),
+                    System.Windows.Automation.AutomationProperties.GetName(Hidden(window, 1)));
             });
         }
 
@@ -419,18 +614,16 @@ namespace RFiDGear.Tests
                 Assert.False(Of<TextBlock>(window, "SupplierStatus").IsVisible);
 
                 Of<ComboBox>(window, "ProviderBox").SelectedValue = BridgeKeyProvider.ProviderId;
-                window.UpdateLayout();
-                await Flush();
+                await Settle(window);
 
                 var status = Of<TextBlock>(window, "SupplierStatus");
                 Assert.True(status.IsVisible);
                 Assert.Contains("not running", status.Text);
-                Assert.False(Of<StackPanel>(window, "StorePanel").IsVisible);
+                Assert.False(Of<StackPanel>(window, "StoredKeyPanel").IsVisible);
 
                 setup.Supplier.Current = KeySupplierAvailability.Connected;
                 viewModel.RefreshSupplierStatus();
-                window.UpdateLayout();
-                await Flush();
+                await Settle(window);
 
                 Assert.Equal("A connected program supplies keys.", status.Text);
             });
@@ -461,7 +654,7 @@ namespace RFiDGear.Tests
         [InlineData("de")]
         public async Task The_window_fits_its_content_in_both_languages_without_the_buttons_leaving_it(string culture)
         {
-            var setup = new Setup { Culture = culture };
+            var setup = new Setup { Culture = culture }.WithKeys("cards/a-rather-long-name-of-a-key", "cards/b");
 
             await OnWindow(setup, SecureKeySlots.Classic.Take(4).ToArray(), async (window, _) =>
             {
@@ -471,9 +664,14 @@ namespace RFiDGear.Tests
                 Assert.True(window.ActualWidth >= 460);
                 Assert.True(window.ActualHeight <= 780);
 
-                var close = Of<Button>(window, "CloseButton");
-                var position = close.TransformToAncestor(window).Transform(new Point(0, 0));
-                Assert.True(position.X + close.ActualWidth <= window.ActualWidth + 0.5, "the close button is outside the window");
+                foreach (var button in new[] { Of<Button>(window, "CloseButton"), Of<Button>(window, "StoreButton", 0), Of<Button>(window, "StoreButton", 1) })
+                {
+                    var position = button.TransformToAncestor(window).Transform(new Point(0, 0));
+                    Assert.True(position.X + button.ActualWidth <= window.ActualWidth + 0.5, button.Name + " is outside the window");
+                }
+
+                var check = Of<CheckBox>(window, "ShowCheck", 0);
+                Assert.True(check.TransformToAncestor(window).Transform(new Point(check.ActualWidth, 0)).X <= window.ActualWidth + 0.5, "the check box is outside the window");
             });
         }
 
@@ -494,22 +692,23 @@ namespace RFiDGear.Tests
 
             foreach (var culture in new[] { "en", "de" })
             {
-                var setup = new Setup { Culture = culture };
+                var setup = new Setup { Culture = culture }.WithKeys("cards/application-main", "orders/4711", "migrated/0123456789abcdef");
                 setup.Host.EmbeddedKeys[SecureKeySlots.DesfirePiccCurrent] = "0000";
 
                 await OnWindow(setup, new[] { SecureKeySlots.DesfirePiccCurrent, SecureKeySlots.DesfireAppCurrent, SecureKeySlots.DesfireAppNew }, async (window, viewModel) =>
                 {
-                    // The controls are counted over all rows, the typed one and the collapsed ones included: the index is the row.
+                    // The plain controls of a row exist for every row, whether it is shown or not, so the index is the row. The group in
+                    // which a key is created is only built for a row that was shown: the first one that was is index 0.
                     await Toggle(window, 1);
-                    Of<TextBox>(window, "ReferenceBox", 1).Text = "cards/application-main";
+                    Of<ComboBox>(window, "StoredKeyBox", 1).SelectedValue = "cards/application-main";
+                    Of<TextBox>(window, "NewNameBox", 0).Text = "cards/new";
+                    Hidden(window, 0).Password = "0001020304050607";
                     await Toggle(window, 2);
                     Of<ComboBox>(window, "ProviderBox", 2).SelectedValue = BridgeKeyProvider.ProviderId;
                     Of<TextBox>(window, "ReferenceBox", 2).Text = "orders/4711";
                     setup.Supplier.Current = KeySupplierAvailability.NoSupplier;
                     viewModel.RefreshSupplierStatus();
-                    window.UpdateLayout();
-                    await Flush();
-                    window.UpdateLayout();
+                    await Settle(window);
 
                     // The root of the window's own visuals, which has the size of the client area; the content alone has a margin that
                     // would put its right and bottom edge outside the picture.

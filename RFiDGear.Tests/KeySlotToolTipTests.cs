@@ -10,7 +10,8 @@ namespace RFiDGear.Tests
 {
     /// <summary>
     /// The tooltips of the key slot controls wrap. A tooltip given as text is one line, and a long text ran off the screen
-    /// and could not be read. The tooltips of the editor are elements with the wrapping style, which has a maximum width.
+    /// and could not be read. The tooltips of the key manager are elements with the wrapping style, which has a maximum width;
+    /// the tooltip that the box of a key shows for a reference is checked with the tabs, which hold the boxes.
     /// </summary>
     [Collection("WpfBindingTrace")]
     public class KeySlotToolTipTests
@@ -50,32 +51,6 @@ namespace RFiDGear.Tests
                 var plain = Measured(new ToolTip { Content = LongText });
 
                 Assert.True(plain.Width > 900, "the plain tooltip is only " + plain.Width + " px wide");
-            });
-        }
-
-        [Fact]
-        public async Task The_tooltip_of_the_editor_is_an_element_with_the_wrapping_style()
-        {
-            // The editor has one tooltip: the line below the key box, which says the key store and the name in full. The choices
-            // are made in the key manager, whose tooltips are checked with its window.
-            await OnSta((editor, style) =>
-            {
-                var caption = (FrameworkElement)editor.FindName("CaptionRow");
-                var tip = Assert.IsType<ToolTip>(caption.ToolTip);
-
-                Assert.Same(style, tip.Style);
-            });
-        }
-
-        [Fact]
-        public async Task The_tooltip_of_the_editor_stays_open_long_enough_to_be_read()
-        {
-            await OnSta((editor, _) =>
-            {
-                // WPF reads the duration from the control that owns the tooltip, so the owner is asked, not the editor.
-                var owner = (FrameworkElement)editor.FindName("CaptionRow");
-
-                Assert.True(ToolTipService.GetShowDuration(owner) >= 20000, "the caption shows its tooltip for " + ToolTipService.GetShowDuration(owner) + " ms");
             });
         }
 

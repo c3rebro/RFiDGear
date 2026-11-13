@@ -109,6 +109,12 @@ namespace RFiDGear.Tests
         private static T Of<T>(DependencyObject root, string name, int row = 0)
             where T : FrameworkElement => All<T>(root, name).ElementAt(row);
 
+        private static bool WrapsAt(ToolTip tip, double width) =>
+            tip.Style is { } style && style.Setters.OfType<Setter>().Any(setter => setter.Property == FrameworkElement.MaxWidthProperty && Equals(setter.Value, width));
+
+        // The box that holds the key while it is hidden; the entry around it is the control called KeyBox.
+        private static PasswordBox Hidden(DependencyObject window) => Of<PasswordBox>(window, "HiddenBox");
+
         private static System.Windows.Input.KeyEventArgs PressEnter(UIElement target)
         {
             var args = new System.Windows.Input.KeyEventArgs(
@@ -198,7 +204,7 @@ namespace RFiDGear.Tests
             {
                 Of<TextBox>(window, "NameBox").Text = "cards/main";
                 Of<ComboBox>(window, "KindBox").SelectedValue = 12;
-                var box = Of<PasswordBox>(window, "KeyBox");
+                var box = Hidden(window);
                 box.Password = "a1b2c3d4e5f6";
                 await Settle(window);
 
@@ -215,23 +221,107 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task A_key_of_the_wrong_length_is_not_stored_and_the_box_is_cleared_all_the_same()
+        public async Task A_key_of_the_wrong_length_waits_in_the_box_the_store_button_is_disabled_and_enter_does_nothing()
         {
             var setup = new Setup();
 
             await OnWindow(setup, async (window, _) =>
             {
                 Of<TextBox>(window, "NameBox").Text = "cards/main";
-                var box = Of<PasswordBox>(window, "KeyBox");
+                var box = Hidden(window);
                 box.Password = "0102";
                 await Settle(window);
+
+                // The box says so with its colour, the button waits, and nothing the person typed is thrown away.
+                Assert.False(Of<KeyEntryBox>(window, "KeyBox").IsKeyValid);
+                Assert.False(Of<Button>(window, "StoreButton").IsEnabled);
+
+                var args = PressEnter(box);
+                await Settle(window);
+
+                Assert.True(args.Handled);
+                Assert.Empty(setup.Store.Writes);
+                Assert.Equal("0102", box.Password);
+
+                box.Password = "0102030405060708090a0b0c0d0e0f10";
+                await Settle(window);
+
+                Assert.True(Of<KeyEntryBox>(window, "KeyBox").IsKeyValid);
+                Assert.True(Of<Button>(window, "StoreButton").IsEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task A_key_can_be_shown_while_it_is_entered_and_is_stored_from_the_box_that_shows_it()
+        {
+            var setup = new Setup();
+
+            await OnWindow(setup, async (window, _) =>
+            {
+                Of<TextBox>(window, "NameBox").Text = "cards/main";
+                Of<ComboBox>(window, "KindBox").SelectedValue = 12;
+                Hidden(window).Password = "a1b2c3d4e5f6";
+                await Settle(window);
+
+                var check = Of<CheckBox>(window, "ShowCheck");
+                Assert.Equal("Show key", check.Content);
+                check.IsChecked = true;
+                await Settle(window);
+
+                var shown = Of<TextBox>(window, "ShownBox");
+                Assert.True(shown.IsVisible);
+                Assert.Equal("a1b2c3d4e5f6", shown.Text);
+                Assert.True(Of<Button>(window, "StoreButton").IsEnabled);
 
                 Of<Button>(window, "StoreButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
                 await Settle(window);
 
-                Assert.Empty(setup.Store.Writes);
-                Assert.Equal(string.Empty, box.Password);
-                Assert.True(Of<TextBlock>(window, "ResultText").IsVisible);
+                // Stored, and the box is empty and hidden again.
+                Assert.Equal(Encoding.Unicode.GetBytes("A1B2C3D4E5F6"), setup.Store.Blobs[Prefix + "cards/main"]);
+                Assert.Equal(string.Empty, shown.Text);
+                Assert.False(shown.IsVisible);
+                Assert.False(Of<KeyEntryBox>(window, "KeyBox").IsShown);
+            });
+        }
+
+        [Fact]
+        public async Task The_box_takes_no_more_characters_than_the_kind_of_key_has_digits()
+        {
+            await OnWindow(new Setup(), async (window, _) =>
+            {
+                var kinds = Of<ComboBox>(window, "KindBox");
+
+                foreach (var hexLength in new[] { 12, 32, 48 })
+                {
+                    kinds.SelectedValue = hexLength;
+                    await Settle(window);
+
+                    Assert.Equal(hexLength, Hidden(window).MaxLength);
+                    Assert.Equal(hexLength, Of<TextBox>(window, "ShownBox").MaxLength);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task The_name_of_a_new_key_is_not_coloured_while_it_is_typed_but_the_store_button_still_waits_for_a_valid_one()
+        {
+            await OnWindow(new Setup(), async (window, _) =>
+            {
+                var name = Of<TextBox>(window, "NameBox");
+                var plain = name.Background;
+
+                foreach (var typed in new[] { string.Empty, "not a name", "cards/main" })
+                {
+                    name.Text = typed;
+                    await Settle(window);
+
+                    Assert.Equal(plain, name.Background);
+                    Assert.NotEqual(Brushes.Green, name.Foreground);
+                }
+
+                name.Text = "not a name";
+                await Settle(window);
+                Assert.False(Of<Button>(window, "StoreButton").IsEnabled);
             });
         }
 
@@ -244,7 +334,7 @@ namespace RFiDGear.Tests
             {
                 Of<TextBox>(window, "NameBox").Text = "cards/main";
                 Of<ComboBox>(window, "KindBox").SelectedValue = 12;
-                var box = Of<PasswordBox>(window, "KeyBox");
+                var box = Hidden(window);
                 box.Password = "A1B2C3D4E5F6";
 
                 var args = PressEnter(box);
@@ -264,7 +354,7 @@ namespace RFiDGear.Tests
 
             await OnWindow(setup, async (window, _) =>
             {
-                var box = Of<PasswordBox>(window, "KeyBox");
+                var box = Hidden(window);
                 box.Password = "0001";
 
                 var args = PressEnter(box);
@@ -287,7 +377,7 @@ namespace RFiDGear.Tests
             {
                 Of<TextBox>(window, "NameBox").Text = "cards/main";
                 Of<ComboBox>(window, "KindBox").SelectedValue = 12;
-                var box = Of<PasswordBox>(window, "KeyBox");
+                var box = Hidden(window);
                 box.Password = "000102030405";
 
                 Of<Button>(window, "StoreButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
@@ -304,28 +394,40 @@ namespace RFiDGear.Tests
         {
             await OnWindow(new Setup(), async (window, _) =>
             {
-                var box = Of<PasswordBox>(window, "KeyBox");
+                var box = Hidden(window);
                 box.Password = "0001";
+                Of<CheckBox>(window, "ShowCheck").IsChecked = true;
+                Of<TextBox>(window, "ShownBox").Text = "0002";
 
                 window.Close();
                 await Flush();
 
                 Assert.Equal(string.Empty, box.Password);
+                Assert.Equal(string.Empty, Of<TextBox>(window, "ShownBox").Text);
             });
         }
 
         [Fact]
-        public async Task The_store_button_waits_for_a_valid_name_and_the_name_box_shows_whether_it_is_valid()
+        public async Task The_store_button_waits_for_a_valid_name_and_for_a_key()
         {
             await OnWindow(new Setup(), async (window, _) =>
             {
-                Assert.False(Of<Button>(window, "StoreButton").IsEnabled);
+                var button = Of<Button>(window, "StoreButton");
+                Assert.False(button.IsEnabled);
 
+                // A name alone is not enough: the box that holds the key says that what is in it is not one.
                 Of<TextBox>(window, "NameBox").Text = "cards/main";
                 await Settle(window);
+                Assert.False(button.IsEnabled);
 
-                Assert.True(Of<Button>(window, "StoreButton").IsEnabled);
-                Assert.Equal(Brushes.Green.Color, ((SolidColorBrush)Of<TextBox>(window, "NameBox").Foreground).Color);
+                Hidden(window).Password = "000102030405060708090a0b0c0d0e0f";
+                await Settle(window);
+                Assert.True(button.IsEnabled);
+
+                // And a key alone is not enough.
+                Of<TextBox>(window, "NameBox").Text = "not a name";
+                await Settle(window);
+                Assert.False(button.IsEnabled);
             });
         }
 
@@ -360,10 +462,13 @@ namespace RFiDGear.Tests
                 foreach (var owner in new FrameworkElement[]
                 {
                     Of<TextBlock>(window, "ReferenceText"), Of<Button>(window, "RemoveButton"), Of<TextBox>(window, "NameBox"),
-                    Of<ComboBox>(window, "KindBox"), Of<Button>(window, "StoreButton"),
+                    Of<ComboBox>(window, "KindBox"), Of<Button>(window, "StoreButton"), Of<CheckBox>(window, "ShowCheck"),
                 })
                 {
-                    Assert.Same(style, Assert.IsType<ToolTip>(owner.ToolTip).Style);
+                    var tip = Assert.IsType<ToolTip>(owner.ToolTip);
+
+                    // The box for the key has its own copy of the style, which wraps in the same way.
+                    Assert.True(ReferenceEquals(style, tip.Style) || WrapsAt(tip, 380), owner.Name + " has a tooltip that does not wrap");
                     Assert.True(ToolTipService.GetShowDuration(owner) >= 20000, owner.Name + " shows its tooltip for " + ToolTipService.GetShowDuration(owner) + " ms");
                 }
 

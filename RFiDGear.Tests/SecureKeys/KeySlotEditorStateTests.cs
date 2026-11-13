@@ -195,38 +195,37 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.True(NewState(new FakeHost(), new ScriptedDialogs(), providers: new[] { CredentialManager, OtherVault }).ShowProviderChoice);
         }
 
-        // ── Storing a key ──
+        // ── Storing a new key ──
 
         [Theory]
-        [InlineData(true, "cards/main", true)]
-        [InlineData(true, "", false)]
-        [InlineData(false, "cards/main", false)]
-        public void A_key_can_be_stored_only_for_the_credential_manager_under_a_valid_reference(bool credentialManager, string reference, bool expected)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void A_new_key_can_be_stored_only_for_the_credential_manager(bool credentialManager)
         {
-            var host = new FakeHost();
             var providers = credentialManager ? new[] { CredentialManager } : new[] { OtherVault };
-            var state = NewState(host, new ScriptedDialogs(), providers: providers);
+            var state = NewState(new FakeHost(), new ScriptedDialogs(), providers: providers);
             state.ToggleMode();
-            state.Reference = reference;
 
-            Assert.Equal(expected, state.CanStoreKey);
             Assert.Equal(credentialManager, state.ProviderOffersStoreKey);
         }
 
         [Fact]
-        public void A_key_that_is_entered_is_stored_under_the_reference_and_the_state_says_what_came_of_it()
+        public void A_new_key_is_stored_under_the_new_name_and_the_slot_uses_it()
         {
             var host = new FakeHost { HexLength = 32 };
             var store = new FakeCredentialStore();
             var state = NewState(host, new ScriptedDialogs(), store: store);
             state.ToggleMode();
-            state.Reference = "cards/main";
 
             using var entered = TestText.Secure("000102030405060708090A0B0C0D0E0F");
-            var result = state.StoreEntered(entered);
+            var result = state.StoreNewKey("cards/new", entered);
 
             Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyStored, 0), result);
-            Assert.Equal(Encoding.Unicode.GetBytes("000102030405060708090A0B0C0D0E0F"), store.Blobs[Prefix + "cards/main"]);
+            Assert.Equal(Encoding.Unicode.GetBytes("000102030405060708090A0B0C0D0E0F"), store.Blobs[Prefix + "cards/new"]);
+
+            // The key was made for this slot: it names it now.
+            Assert.Equal("cards/new", state.Reference);
+            Assert.Equal($"bind {WindowsCredentialKeyProvider.ProviderId} 'cards/new'", host.Calls.Last());
         }
 
         [Fact]
@@ -235,36 +234,81 @@ namespace RFiDGear.Tests.SecureKeys
             var store = new FakeCredentialStore();
             var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
             state.ToggleMode();
-            state.Reference = "cards/main";
 
             using var entered = TestText.Secure("a1b2c3d4e5f6");
-            state.StoreEntered(entered);
+            state.StoreNewKey("cards/new", entered);
 
-            Assert.Equal(Encoding.Unicode.GetBytes("A1B2C3D4E5F6"), store.Blobs[Prefix + "cards/main"]);
+            Assert.Equal(Encoding.Unicode.GetBytes("A1B2C3D4E5F6"), store.Blobs[Prefix + "cards/new"]);
         }
 
         [Fact]
-        public void An_impossible_store_is_not_tried_and_a_refusing_vault_is_reported_with_its_code()
+        public void A_name_that_is_in_use_stores_nothing_whatever_its_case_and_the_slot_keeps_its_reference()
         {
             var store = new FakeCredentialStore();
-            var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
+            store.Blobs[Prefix + "Cards/Main"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            var host = new FakeHost { HexLength = 12 };
+            var state = NewState(host, new ScriptedDialogs(), store: store);
+            state.ToggleMode();
+            state.Reference = "cards/other";
 
-            using (var early = TestText.Secure("a1b2c3d4e5f6"))
-            {
-                // No reference yet: nothing can be stored, and nothing is tried.
-                Assert.Null(state.StoreEntered(early));
-            }
+            using var entered = TestText.Secure("000102030405");
+
+            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.NameInUse, 0), state.StoreNewKey("cards/main", entered));
+            Assert.Empty(store.Writes);
+            Assert.Equal("cards/other", state.Reference);
+        }
+
+        [Fact]
+        public void A_list_that_cannot_be_read_stores_nothing_because_the_name_may_be_in_use()
+        {
+            var store = new FakeCredentialStore { EnumerateError = CredentialErrors.AccessDenied };
+            var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
+            state.ToggleMode();
+
+            using var entered = TestText.Secure("000102030405");
+
+            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.ListUnreadable, CredentialErrors.AccessDenied), state.StoreNewKey("cards/new", entered));
+            Assert.Empty(store.Writes);
+        }
+
+        [Fact]
+        public void An_impossible_store_is_not_tried()
+        {
+            var store = new FakeCredentialStore();
+            var host = new FakeHost { HexLength = 12 };
+            var state = NewState(host, new ScriptedDialogs(), store: store);
+            using var entered = TestText.Secure("a1b2c3d4e5f6");
+
+            // The slot holds a typed key: there is nothing to bind the new key to.
+            Assert.Null(state.StoreNewKey("cards/new", entered));
 
             state.ToggleMode();
-            state.Reference = "cards/main";
-            store.WriteError = CredentialErrors.AccessDenied;
 
-            using (var refused = TestText.Secure("A1B2C3D4E5F6"))
-            {
-                Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyNotStored, CredentialErrors.AccessDenied), state.StoreEntered(refused));
-            }
+            // A name that no key store would be asked for.
+            Assert.Null(state.StoreNewKey("not a name", entered));
+            Assert.Null(state.StoreNewKey(string.Empty, entered));
 
+            // A key store that does not take keys from here.
+            var other = NewState(new FakeHost(), new ScriptedDialogs(), providers: new[] { OtherVault }, store: store);
+            other.ToggleMode();
+            Assert.Null(other.StoreNewKey("cards/new", entered));
+
+            Assert.Empty(store.Writes);
+        }
+
+        [Fact]
+        public void A_refusing_vault_is_reported_with_its_code_and_the_slot_keeps_its_reference()
+        {
+            var store = new FakeCredentialStore { WriteError = CredentialErrors.AccessDenied };
+            var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
+            state.ToggleMode();
+            state.Reference = "cards/other";
+
+            using var entered = TestText.Secure("A1B2C3D4E5F6");
+
+            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyNotStored, CredentialErrors.AccessDenied), state.StoreNewKey("cards/new", entered));
             Assert.Empty(store.Blobs);
+            Assert.Equal("cards/other", state.Reference);
         }
 
         [Theory]
@@ -277,12 +321,28 @@ namespace RFiDGear.Tests.SecureKeys
             var store = new FakeCredentialStore();
             var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
             state.ToggleMode();
-            state.Reference = "cards/main";
+            state.Reference = "cards/other";
 
             using var entered = TestText.Secure(entry);
 
-            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyInvalid, 12), state.StoreEntered(entered));
+            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyInvalid, 12), state.StoreNewKey("cards/new", entered));
             Assert.Empty(store.Writes);
+            Assert.Equal("cards/other", state.Reference);
+        }
+
+        [Fact]
+        public void The_keys_that_are_stored_are_listed_by_name_and_no_key_is_read()
+        {
+            var store = new FakeCredentialStore();
+            store.Blobs[Prefix + "cards/b"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            store.Blobs[Prefix + "cards/a"] = Encoding.Unicode.GetBytes("A1B2C3D4E5F6");
+            var state = NewState(new FakeHost(), new ScriptedDialogs(), store: store);
+
+            var list = state.ListStoredKeys();
+
+            Assert.Equal(0, list.Error);
+            Assert.Equal(new[] { "cards/a", "cards/b" }, list.References);
+            Assert.Empty(store.Reads);
         }
 
         [Fact]

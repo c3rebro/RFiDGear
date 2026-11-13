@@ -171,7 +171,8 @@ namespace RFiDGear.Tests.SecureKeys
             rig.ViewModel.NewName = "cards/main";
             rig.ViewModel.SelectedHexLength = 12;
 
-            Assert.True(rig.Enter(entry));
+            // Not stored and not thrown away: the person can correct it, which is what the colour of the box is for.
+            Assert.False(rig.Enter(entry));
 
             Assert.Empty(rig.Store.Writes);
             Assert.True(rig.ViewModel.ResultIsError);
@@ -352,6 +353,20 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void The_intro_says_that_a_project_holds_the_name_only_once_and_does_not_repeat_it_as_the_list_showing_names_only()
+        {
+            using var english = new Rig();
+            using var german = Rig.German();
+
+            // The key that is entered can be shown, so "a key is never shown" is not even true, and the sentence before it said it.
+            Assert.DoesNotContain("never shown", english.ViewModel.IntroText);
+            Assert.DoesNotContain("nie angezeigt", german.ViewModel.IntroText);
+            Assert.Equal(2, english.ViewModel.IntroText.Split(". ").Length);
+            Assert.Equal(2, german.ViewModel.IntroText.Split(". ").Length);
+            Assert.Contains("nie selbst", german.ViewModel.IntroText);
+        }
+
+        [Fact]
         public void The_status_of_the_supplier_follows_it_and_a_disposed_window_listens_no_more()
         {
             using var rig = new Rig();
@@ -402,6 +417,7 @@ namespace RFiDGear.Tests.SecureKeys
                 nameof(StoredKeysViewModel.NameLabel), nameof(StoredKeysViewModel.NameToolTip), nameof(StoredKeysViewModel.NewName),
                 nameof(StoredKeysViewModel.KindLabel), nameof(StoredKeysViewModel.KindToolTip), nameof(StoredKeysViewModel.KeyPrompt),
                 nameof(StoredKeysViewModel.StoreButtonText), nameof(StoredKeysViewModel.StoreToolTip), nameof(StoredKeysViewModel.ResultText),
+                nameof(StoredKeysViewModel.ShowKeyText), nameof(StoredKeysViewModel.ShowKeyToolTip),
                 nameof(StoredKeysViewModel.CloseText), nameof(StoredKeysViewModel.SupplierStatusText),
             };
 

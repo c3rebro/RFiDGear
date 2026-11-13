@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Security;
 using System.Windows.Input;
 
@@ -11,9 +12,28 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace RFiDGear.Services.SecureKeys
 {
+    /// <summary>A key in the list of the keys that are stored: its name, and what the person reads for it.</summary>
+    internal sealed class StoredKeyChoice
+    {
+        /// <summary>Creates the choice.</summary>
+        /// <param name="reference">The name of the key.</param>
+        /// <param name="text">What the person reads.</param>
+        internal StoredKeyChoice(string reference, string text)
+        {
+            Reference = reference;
+            Text = text;
+        }
+
+        /// <summary>Gets the name of the key in the Credential Manager, without the prefix.</summary>
+        public string Reference { get; }
+
+        /// <summary>Gets what the person reads for the key.</summary>
+        public string Text { get; }
+    }
+
     /// <summary>
     /// One slot in the key manager: whether its key is typed into the task or named by a reference, the key store and the name
-    /// of the key, and storing a key under that name. It is a thin face on the <see cref="KeySlotEditorState"/> of the slot,
+    /// of the key (chosen from the keys that are stored, for the Credential Manager), and creating a new key under a new name. It is a thin face on the <see cref="KeySlotEditorState"/> of the slot,
     /// so the manager decides exactly what the editor decided (asking before a typed key is discarded, binding through the task).
     /// It holds no key: a key that is stored is read from the entry that the window hands in, and the window clears that entry.
     /// </summary>
@@ -23,6 +43,9 @@ namespace RFiDGear.Services.SecureKeys
         private readonly Func<string, string> _text;
         private string _resultText = string.Empty;
         private bool _resultIsError;
+        private string _newName = string.Empty;
+        private IReadOnlyList<StoredKeyChoice> _storedKeys = Array.Empty<StoredKeyChoice>();
+        private int _listError;
 
         /// <summary>Creates the row of a slot.</summary>
         /// <param name="state">What decides for the slot.</param>
@@ -38,6 +61,7 @@ namespace RFiDGear.Services.SecureKeys
 
             ToggleModeCommand = new RelayCommand(OnToggleMode, () => _state.ToggleModeCommand.CanExecute(null));
             _state.PropertyChanged += OnStateChanged;
+            RefreshStoredKeys();
         }
 
         /// <summary>Gets the id of the slot; see <see cref="SecureKeySlots"/>.</summary>
@@ -63,6 +87,7 @@ namespace RFiDGear.Services.SecureKeys
             {
                 _state.ProviderId = value;
                 ClearResult();
+                RefreshStoredKeys();
             }
         }
 
@@ -72,6 +97,13 @@ namespace RFiDGear.Services.SecureKeys
             get => _state.Reference;
             set
             {
+                // A list box that is emptied while its items are replaced reports no choice at all. That is not the person's choice,
+                // and the binding of the slot is not touched by it.
+                if (value == null)
+                {
+                    return;
+                }
+
                 _state.Reference = value;
                 ClearResult();
             }
@@ -86,8 +118,45 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>Gets whether a key can be stored from here in the key store of the slot: the Credential Manager takes keys.</summary>
         public bool ProviderOffersStoreKey => _state.ProviderOffersStoreKey;
 
-        /// <summary>Gets whether a key can be stored now: the key store takes keys and the name is valid.</summary>
-        public bool CanStoreKey => _state.CanStoreKey;
+        /// <summary>Gets whether the slot names a key by choosing it from the stored keys: its key store is the Credential Manager.</summary>
+        public bool ShowStoredKeyChoice => _state.ProviderOffersStoreKey;
+
+        /// <summary>Gets whether the slot names a key by a name that is typed: it is named by another key store.</summary>
+        public bool UsesFreeTextReference => _state.IsReferenceMode && !_state.ProviderOffersStoreKey;
+
+        /// <summary>Gets the keys that are stored in the Credential Manager, to choose from, and the key that the slot names if it is not among them.</summary>
+        public IReadOnlyList<StoredKeyChoice> StoredKeys => _storedKeys;
+
+        /// <summary>Gets whether no key is stored yet.</summary>
+        public bool HasNoStoredKeys => _listError == 0 && _storedKeys.Count == 0;
+
+        /// <summary>Gets whether the stored keys could not be listed.</summary>
+        public bool HasStoredKeysError => _listError != 0;
+
+        /// <summary>Gets the sentence that says why the stored keys could not be listed.</summary>
+        public string StoredKeysErrorText => _listError != 0
+            ? string.Format(CultureInfo.CurrentCulture, _text("messageStoredKeysListFailed"), _listError)
+            : string.Empty;
+
+        /// <summary>Gets or sets the name that a new key is stored under.</summary>
+        public string NewName
+        {
+            get => _newName;
+            set
+            {
+                if (SetProperty(ref _newName, value ?? string.Empty))
+                {
+                    ClearResult();
+                    OnPropertyChanged(nameof(CanStoreKey));
+                }
+            }
+        }
+
+        /// <summary>Gets whether a new key can be stored: the key store takes keys and the new name is valid. No live check colours the name.</summary>
+        public bool CanStoreKey => _state.ProviderOffersStoreKey && SecureKeySyntax.IsValidReference(_newName);
+
+        /// <summary>Gets how many hexadecimal digits the key of the slot has now.</summary>
+        public int KeyHexLength => _state.ExpectedKeyHexLength;
 
         /// <summary>Gets whether the slot is named in the key store of the connected external application.</summary>
         public bool UsesExternalApplication =>
@@ -123,8 +192,26 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>Gets the text of the button that stores the entered key.</summary>
         public string StoreButtonText => _text("buttonContentKeyManagerStoreKey");
 
-        /// <summary>Gets the tooltip of the button that stores the entered key.</summary>
-        public string StoreToolTip => _text("toolTipKeySlotStoreKey");
+        /// <summary>Gets the tooltip of the button that stores a new key for this slot.</summary>
+        public string StoreNewToolTip => _text("toolTipKeyManagerStoreNew");
+
+        /// <summary>Gets the label of the choice of a stored key.</summary>
+        public string StoredKeyLabel => _text("labelKeyManagerStoredKey");
+
+        /// <summary>Gets the tooltip of the choice of a stored key.</summary>
+        public string StoredKeyToolTip => _text("toolTipKeyManagerStoredKey");
+
+        /// <summary>Gets the sentence for the choice of a stored key when no key is stored yet.</summary>
+        public string NoStoredKeysText => _text("labelKeyManagerNoStoredKeys");
+
+        /// <summary>Gets the header of the group in which a new key is created.</summary>
+        public string NewKeyHeader => _text("labelKeyManagerNewKey");
+
+        /// <summary>Gets the text of the check box that shows the key that is entered.</summary>
+        public string ShowKeyText => _text("labelKeyManagerShowKey");
+
+        /// <summary>Gets the tooltip of the check box that shows the key that is entered.</summary>
+        public string ShowKeyToolTip => _text("toolTipKeyManagerShowKey");
 
         /// <summary>Gets what became of the last key that was stored, or empty.</summary>
         public string ResultText => _resultText;
@@ -136,29 +223,80 @@ namespace RFiDGear.Services.SecureKeys
         public bool ResultIsError => _resultIsError;
 
         /// <summary>
-        /// Stores the key that was entered under the name of the slot and says what came of it. The key is read from the entry
-        /// and erased; the entry is the caller's to dispose and to clear.
+        /// Stores the key that was entered as a new key under the new name, and the slot uses it from then on. The key is read from the
+        /// entry and erased; the entry is the caller's to dispose and to clear when this says that the key was tried.
         /// </summary>
         /// <param name="entered">The digits as they were entered.</param>
-        internal void StoreEntered(SecureString entered)
+        /// <returns>
+        /// <see langword="true"/> when a key was tried and the digits are no longer needed; <see langword="false"/> when nothing was
+        /// stored and the digits are kept while the person goes on: no key can be stored under this name, the name is in use, the
+        /// list could not be read, or the entry is not a key.
+        /// </returns>
+        internal bool StoreEntered(SecureString entered)
         {
-            if (_state.StoreEntered(entered) is not { } result)
+            if (_state.StoreNewKey(_newName, entered) is not { } result)
             {
-                return;
+                return false;
             }
 
             switch (result.Message)
             {
                 case KeySlotMessage.KeyStored:
                     SetResult(_text("messageKeySlotKeyStored"), false);
-                    break;
+                    _newName = string.Empty;
+                    OnPropertyChanged(nameof(NewName));
+                    OnPropertyChanged(nameof(CanStoreKey));
+                    RefreshStoredKeys();
+                    return true;
                 case KeySlotMessage.KeyNotStored:
                     SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeySlotKeyNotStored"), result.Detail), true);
-                    break;
+                    return true;
+                case KeySlotMessage.NameInUse:
+                    SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeyManagerNameInUse"), _newName), true);
+                    return false;
+                case KeySlotMessage.ListUnreadable:
+                    SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeyManagerListUnreadable"), result.Detail), true);
+                    return false;
                 default:
                     SetResult(string.Format(CultureInfo.CurrentCulture, _text("messageKeySlotKeyInvalid"), result.Detail), true);
-                    break;
+                    return false;
             }
+        }
+
+        /// <summary>
+        /// Reads the stored keys again. The key that the slot names is in the list even when it is not stored (and says so), so that
+        /// the choice shows what the slot does, and a key that is gone is seen as gone.
+        /// </summary>
+        internal void RefreshStoredKeys()
+        {
+            var choices = new List<StoredKeyChoice>();
+
+            if (_state.ProviderOffersStoreKey)
+            {
+                var stored = _state.ListStoredKeys();
+                _listError = stored.Error;
+                choices.AddRange(stored.References.Select(reference => new StoredKeyChoice(reference, reference)));
+
+                var current = _state.Reference;
+
+                if (current.Length > 0 && !choices.Any(choice => string.Equals(choice.Reference, current, StringComparison.Ordinal)))
+                {
+                    choices.Insert(0, new StoredKeyChoice(current, string.Format(CultureInfo.CurrentCulture, _text("labelKeyManagerStoredKeyMissing"), current)));
+                }
+            }
+            else
+            {
+                _listError = 0;
+            }
+
+            _storedKeys = choices;
+            OnPropertyChanged(nameof(StoredKeys));
+            OnPropertyChanged(nameof(HasNoStoredKeys));
+            OnPropertyChanged(nameof(HasStoredKeysError));
+            OnPropertyChanged(nameof(StoredKeysErrorText));
+
+            // The choice shows the name of the slot again after its items were replaced.
+            OnPropertyChanged(nameof(Reference));
         }
 
         /// <inheritdoc />
@@ -172,6 +310,7 @@ namespace RFiDGear.Services.SecureKeys
         {
             ClearResult();
             _state.ToggleMode();
+            RefreshStoredKeys();
         }
 
         private void OnStateChanged(object? sender, PropertyChangedEventArgs e)
