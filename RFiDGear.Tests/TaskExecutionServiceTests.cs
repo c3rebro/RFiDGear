@@ -5,11 +5,13 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Models;
 using RFiDGear.Services.TaskExecution;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -956,6 +958,130 @@ namespace RFiDGear.Tests
             Assert.Equal(0, recoveryRan);
             Assert.Equal(1, service.CurrentTaskIndex);   // only the task's own increment, not moved by routing
             Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
+        [Fact]
+        public async Task AWatchdogThatFiresDuringThePauseBetweenTasks_StartsNoFurtherTask()
+        {
+            // The pause between two tasks is where the loop waits with no task running. The watchdog of the task before
+            // can fire there, and the next task is a new card operation: it must not start once the run is given up.
+            var logger = new CapturingTaskExecutionLogger();
+            var service = BuildService(logger);
+            var first = new StubTaskModel { CurrentTaskIndex = "10" };
+            var secondRan = 0;
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, first, ct =>
+                {
+                    first.IsTaskCompletedSuccessfully = true;
+
+                    // Queued on the dispatcher, so it runs as soon as the loop waits for the pause.
+                    Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(service.AbandonRun));
+                    return Task.CompletedTask;
+                }),
+                new TaskDescriptor(1, new StubTaskModel { CurrentTaskIndex = "11" }, ct => { secondRan++; return Task.CompletedTask; })
+            };
+
+            TaskExecutionResult? result = null;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await service.ExecuteOnceAsync(BuildRequest(descriptors));
+            });
+
+            Assert.NotNull(result);
+            Assert.Equal(0, secondRan);
+            Assert.True(result.Abandoned);
+            Assert.Equal(1, service.CurrentTaskIndex);   // the task that never started was not reached
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Abandoned"));
+        }
+
+        [Fact]
+        public async Task ATaskTheLoopOnlyStepsOverAfterABackwardJump_KeepsItsOutcome()
+        {
+            // A task of the list that is done is not done again when a jump back passes it: the loop steps over it. That
+            // is bookkeeping and no skip, so it must not replace what the task really did with a "Skipped" entry.
+            var observations = new List<TaskExecutionObservation>();
+            var attempts = 0;
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using (ReaderDeviceScope.Use(new FakeAppSettingsProvider()))
+                {
+                    var program = new CommonTaskViewModel
+                    {
+                        SelectedTaskType = TaskType_CommonTask.ExecuteProgram,
+                        CurrentTaskIndex = "0",
+                        ProgramToExecute = "no program here"
+                    };
+                    var routed = new StubTaskModel { CurrentTaskIndex = "1" };
+                    var handler = new ChipTaskHandlerModel();
+                    handler.TaskCollection.Add(program);
+
+                    var request = new TaskExecutionRequest
+                    {
+                        TaskHandler = handler,
+                        TaskDescriptors = new List<TaskDescriptor>
+                        {
+                            new TaskDescriptor(0, program),
+                            new TaskDescriptor(1, routed, ct =>
+                            {
+                                // The first attempt is routed back to the first task, the second one goes well.
+                                attempts++;
+                                routed.CurrentTaskErrorLevel = attempts == 1 ? ERROR.AuthFailure : ERROR.NoError;
+                                routed.IsTaskCompletedSuccessfully = attempts > 1;
+                                return Task.CompletedTask;
+                            })
+                        },
+                        VariablesFromArgs = new Dictionary<string, string>(),
+                        Timeouts = TaskExecutionTimeouts.Default,
+                        ErrorRouting = new Dictionary<ERROR, string> { [ERROR.AuthFailure] = "0" },
+                        Observations = observations
+                    };
+
+                    using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                    await new TaskExecutionService(new ReaderDeviceProvider(), new StubDispatcherTimerAdapter(), new StubDispatcherTimerAdapter())
+                        .ExecuteOnceAsync(request, limit.Token);
+                }
+            });
+
+            Assert.Equal(2, attempts);
+            Assert.DoesNotContain(observations, observation => observation.Decision == "Skipped");
+            Assert.Equal(new[] { 0, 1, 1 }, observations.Select(observation => observation.TaskPosition));
+        }
+
+        [Theory]
+        [InlineData(ERROR.IsNotTrue)]
+        [InlineData(ERROR.IsNotFalse)]
+        public async Task AnAbandonedLastTask_ThatAnswersNo_EndsAsFailureAndNotAsAnIntentionalOne(ERROR answer)
+        {
+            // A check that answers no is a result and no fault, so the evaluator accepts it. A task the watchdog gave up
+            // on has no answer: whatever it reports when it finally returns, the run did not complete.
+            var logger = new CapturingTaskExecutionLogger();
+            var service = BuildService(logger);
+            var task = new StubTaskModel { CurrentTaskIndex = "10" };
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, task, ct =>
+                {
+                    service.AbandonRun();
+                    task.CurrentTaskErrorLevel = answer;
+                    task.IsTaskCompletedSuccessfully = false;
+                    return Task.CompletedTask;
+                })
+            };
+
+            TaskExecutionResult? result = null;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await service.ExecuteOnceAsync(BuildRequest(descriptors));
+            });
+
+            Assert.NotNull(result);
+            Assert.True(result.Abandoned);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
+            Assert.Equal(nameof(TaskLoopTerminalStatus.Failure), GetStringProperty(summary.DetailsJson, "TerminalStatus"));
         }
 
         [Fact]

@@ -559,6 +559,12 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
+        // The one line that says a run was given up; the loop leaves at two places, and both write it.
+        private void LogAbandoned(string runId, int taskPosition)
+        {
+            logger.LogInformation("TaskLoop.Abandoned", new { RunId = runId, TaskPosition = taskPosition, Timestamp = DateTimeOffset.UtcNow });
+        }
+
         private IReadOnlyList<TaskDescriptor> BuildTaskDescriptors(TaskExecutionRequest request)
         {
             if (request.TaskDescriptors != null && request.TaskDescriptors.Count > 0)
@@ -724,6 +730,7 @@ namespace RFiDGear.Services.TaskExecution
             var loggedTaskPositions = new HashSet<int>();
             var observations = new List<TaskExecutionObservation>();
             TaskLoopRunResult taskLoopResult = null;
+            var terminalStatus = TaskLoopTerminalStatus.Failure;
 
             try
             {
@@ -731,6 +738,15 @@ namespace RFiDGear.Services.TaskExecution
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     await Task.Delay(50, cancellationToken);
+
+                    // The watchdog of the task before may have fired while the loop waited. Nothing awaits between this
+                    // look and the start of the next task, so the watchdog cannot fire in between: a task that starts
+                    // here starts before the run is given up, never after.
+                    if (abandoned)
+                    {
+                        LogAbandoned(runId, CurrentTaskIndex);
+                        break;
+                    }
 
                     if (request.RunSelectedOnly && request.TaskHandler.TaskCollection != null)
                     {
@@ -745,6 +761,10 @@ namespace RFiDGear.Services.TaskExecution
                     var taskPosition = CurrentTaskIndex;
                     var descriptor = descriptors[taskPosition];
                     var taskModel = descriptor.Task ?? request.TaskHandler?.TaskCollection?[taskPosition] as IGenericTask;
+
+                    // A task of the list that is done is not done again when a jump back passes it: the handlers only step
+                    // over it. That visit is bookkeeping and no skip, so it records nothing and its outcome stands.
+                    var alreadyCompleted = taskModel?.ExecutionState == TaskExecutionState.Completed;
 
                     request.ConfigureTaskStrategy?.Invoke(
                         taskModel,
@@ -852,7 +872,7 @@ namespace RFiDGear.Services.TaskExecution
                             loggedTaskPositions.RemoveWhere(position => position >= CurrentTaskIndex);
                         }
                     }
-                    else if (!executedTask && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
+                    else if (!executedTask && !alreadyCompleted && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
                     {
                         var skipReason = GetSkipReason(taskModel);
                         RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Skipped", null, skipReason));
@@ -867,7 +887,7 @@ namespace RFiDGear.Services.TaskExecution
 
                     if (abandoned)
                     {
-                        logger.LogInformation("TaskLoop.Abandoned", new { RunId = runId, TaskPosition = taskPosition, Timestamp = DateTimeOffset.UtcNow });
+                        LogAbandoned(runId, taskPosition);
                         break;
                     }
 
@@ -891,6 +911,11 @@ namespace RFiDGear.Services.TaskExecution
                     request?.ErrorRouting,
                     selectedTaskOnly: request?.RunSelectedOnly ?? false);
 
+                // A run the watchdog gave up did not complete. The evaluator accepts a task that ended with IsNotTrue or
+                // IsNotFalse as the answer of a check, but a task that was given up has given no answer, so the status
+                // is not left to it.
+                terminalStatus = abandoned ? TaskLoopTerminalStatus.Failure : taskLoopResult.TerminalStatus;
+
                 // The status is judged on the tasks up to the exit, but the summary accounts for the whole project: the tasks
                 // after the exit were not started either.
                 var tasksAfterProjectExit = endedByProjectAt >= 0 ? (descriptors?.Count ?? 0) - endedByProjectAt - 1 : 0;
@@ -908,12 +933,12 @@ namespace RFiDGear.Services.TaskExecution
                     taskLoopResult.UnhandledFailures,
                     taskLoopResult.InvalidSkips,
                     NotReached = taskLoopResult.NotReached + tasksAfterProjectExit,
-                    TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
+                    TerminalStatus = terminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });
             }
 
-            return taskLoopResult.TerminalStatus;
+            return terminalStatus;
         }
 
         /// <summary>
