@@ -271,8 +271,14 @@
                             </ctl:KeySlotEditor>
                         </Grid>
                     </GroupBox>
+                    <ctl:KeyManagerButton
+                        Grid.Row="4"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="4"
+                        Margin="8,0,8,8" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="4.5" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -369,6 +375,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Label
                         Grid.Row="0"
@@ -494,7 +501,7 @@
                     </TextBox>
 
                     <GroupBox
-                            Grid.Row="3"
+                            Grid.Row="2"
                             Grid.Column="0"
                             Grid.ColumnSpan="2"
                             Margin="8,8,7,8"
@@ -595,7 +602,7 @@
                     </GroupBox>
 
                     <GroupBox
-                            Grid.Row="3"
+                            Grid.Row="2"
                             Grid.Column="2"
                         Grid.ColumnSpan="2"
                             Margin="8,8,8,8"
@@ -692,6 +699,11 @@
                             </ctl:KeySlotEditor>
                         </Grid>
                     </GroupBox>
+                    <ctl:KeyManagerButton
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="4"
+                        Margin="8,0,8,8" />
                 </Grid>
             </GroupBox>
         </Grid>

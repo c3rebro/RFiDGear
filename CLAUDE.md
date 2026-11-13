@@ -325,10 +325,16 @@ Views are organized under `Views/` by task category: `CommonTask/`,
 message boxes and file pickers.
 
 Every box in which a card key is typed is wrapped by `KeySlotEditor`
-(`Views/KeySlotEditor.xaml`), which lets a person name the key by a reference
-to a secure key provider instead. Its decisions are in `KeySlotEditorState`;
-the task view models implement `IKeySlotHost`. A new key box needs the wrapper
-and a slot id (see `DEVELOPER_NOTES.md`).
+(`Views/KeySlotEditor.xaml`), which shows that a slot names its key by a
+reference to a secure key provider instead of holding it: the box is greyed and
+a line below it says the name. The choice is made in the key manager
+(`KeyManagerView`, `KeyManagerViewModel`), which the `KeyManagerButton` at the
+bottom of each section of keys opens. The decisions are in
+`KeySlotEditorState`, which the editor and the manager both show; the task view
+models implement `IKeySlotHost`. A new key box needs the wrapper, a slot id, a
+name for the slot and a `KeyManagerButton` in its section (see
+`DEVELOPER_NOTES.md`). The key manager takes a key in a password box that is
+cleared whatever comes of it; no property of its view models holds a key.
 
 File > "Move keys of a project..." (`KeyMigration`, `KeyMigrationFlow`) moves
 the typed keys of an existing project into the Credential Manager and writes a

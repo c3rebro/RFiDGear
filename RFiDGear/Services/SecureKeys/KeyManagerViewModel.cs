@@ -157,16 +157,14 @@ namespace RFiDGear.Services.SecureKeys
             // A text is read from the resources once for the life of the manager. The resources are read from the settings on every
             // lookup, and a change of a name makes every row ask for all its texts again; the language cannot change while the
             // window is open (it needs a restart).
-            var source = text ?? ResourceLoader.GetResource;
-            var cache = new System.Collections.Concurrent.ConcurrentDictionary<string, string>(StringComparer.Ordinal);
-            Func<string, string> resolve = key => cache.GetOrAdd(key, source);
+            var resolve = CachedText.Of(text ?? ResourceLoader.GetResource);
             var catalog = new KeySlotProviderCatalog(resolve);
             var items = catalog.Describe(providers);
 
             var rows = slotIds
                 .Distinct(StringComparer.Ordinal)
                 .Select(slotId => new KeyManagerSlotRow(
-                    new KeySlotEditorState(host, slotId, providers, dialogs, keyStore),
+                    new KeySlotEditorState(host, slotId, providers, dialogs, keyStore, resolve),
                     KeySlotNames.For(slotId, resolve),
                     items,
                     resolve))

@@ -4,119 +4,75 @@
     x:Name="Self"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:local="clr-namespace:RFiDGear.View"
     ToolTipService.ShowDuration="30000">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="KeySlotStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <dal:ResourceLoader x:Key="Localization" />
             <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <!-- The key as it always was: the box that the view brings. It keeps its own data context, the task. -->
-        <Border
-            x:Name="EmbeddedHost"
-            Grid.Column="0"
-            Visibility="{Binding State.IsEmbeddedMode, ElementName=Self, Converter={StaticResource BoolToVisConv}, FallbackValue=Visible}" />
-
-        <!-- The key as a reference. Its data context is the state of the editor, never the task, so that nothing in here
-             can reach a key setter. -->
-        <DockPanel
-            x:Name="ReferencePanel"
-            Grid.Column="0"
-            Height="{Binding EmbeddedHeight, ElementName=Self}"
-            Margin="{Binding EmbeddedMargin, ElementName=Self}"
-            DataContext="{Binding State, ElementName=Self}"
-            Visibility="{Binding IsReferenceMode, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}">
-            <Button
-                x:Name="StoreKeyButton"
-                Margin="4,0,0,0"
-                Padding="6,2"
-                DockPanel.Dock="Right"
-                Command="{Binding StoreKeyCommand}"
-                Content="{Binding Converter={StaticResource Localization}, ConverterParameter=buttonContentKeySlotStoreKey}"
-                ToolTipService.ShowOnDisabled="True"
-                Visibility="{Binding ProviderOffersStoreKey, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}">
-                <Button.ToolTip>
-                    <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotStoreKey}" />
-                </Button.ToolTip>
-            </Button>
-            <ComboBox
-                x:Name="ProviderBox"
-                MinWidth="120"
-                Margin="0,0,4,0"
-                DockPanel.Dock="Left"
-                DisplayMemberPath="DisplayName"
-                ItemsSource="{Binding Providers}"
-                SelectedValue="{Binding ProviderId, Mode=TwoWay}"
-                SelectedValuePath="Id"
-                Visibility="{Binding ShowProviderChoice, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}">
-                <ComboBox.ToolTip>
-                    <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotProvider}" />
-                </ComboBox.ToolTip>
-            </ComboBox>
-            <TextBox
-                x:Name="ReferenceBox"
-                VerticalContentAlignment="Center"
-                Text="{Binding Reference, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                <TextBox.ToolTip>
-                    <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotReference}" />
-                </TextBox.ToolTip>
-                <TextBox.Resources>
-                    <Style TargetType="TextBox">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsReferenceValid}" Value="True">
-                                <Setter Property="Foreground" Value="Green" />
-                                <Setter Property="Background" Value="White" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsReferenceValid}" Value="False">
-                                <Setter Property="Foreground" Value="Black" />
-                                <Setter Property="Background" Value="Red" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBox.Resources>
-            </TextBox>
-        </DockPanel>
-
-        <!-- The switch between the two. It is the same button in both modes and names the mode it leads to. -->
-        <Button
-            x:Name="ModeButton"
-            Grid.Column="1"
-            Height="{Binding EmbeddedHeight, ElementName=Self}"
-            Margin="{Binding SwitchMargin, ElementName=Self}"
-            Padding="6,2"
-            VerticalAlignment="Center"
-            Command="{Binding State.ToggleModeCommand, ElementName=Self}"
-            DataContext="{Binding State, ElementName=Self}">
-            <Button.ToolTip>
-                <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding Converter={StaticResource Localization}, ConverterParameter=toolTipKeySlotMode}" />
-            </Button.ToolTip>
-            <Button.Style>
-                <Style TargetType="Button">
+        <!-- The key as it always was: the box that the view brings, with its own margins and its own data context, the task.
+             While the slot is named by a reference nothing can be typed into it: the slot never uses its key. -->
+        <Border x:Name="EmbeddedHost" Grid.Row="0">
+            <Border.Style>
+                <Style TargetType="Border">
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding State, ElementName=Self}" Value="{x:Null}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                        <DataTrigger Binding="{Binding State.IsReferenceMode, ElementName=Self}" Value="True">
+                            <Setter Property="IsEnabled" Value="False" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </Button.Style>
-            <Grid>
-                <TextBlock
-                    Text="{Binding Converter={StaticResource Localization}, ConverterParameter=buttonContentKeySlotUseReference}"
-                    Visibility="{Binding IsEmbeddedMode, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
-                <TextBlock
-                    Text="{Binding Converter={StaticResource Localization}, ConverterParameter=buttonContentKeySlotUseKey}"
-                    Visibility="{Binding IsReferenceMode, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
-            </Grid>
-        </Button>
+            </Border.Style>
+        </Border>
+
+        <!-- Over the box while the slot is named by a reference. The box is empty then, which the view colours red as an invalid
+             key; a plain grey field in its place says that the key is not typed here. It lies exactly over the box. -->
+        <Border
+            x:Name="ReferenceCover"
+            Grid.Row="0"
+            Margin="{Binding CoverMargin, ElementName=Self}"
+            Background="#F0F0F0"
+            BorderBrush="#C4C4C4"
+            BorderThickness="1"
+            IsHitTestVisible="False"
+            Visibility="{Binding State.IsReferenceMode, ElementName=Self, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}" />
+
+        <!-- Where the key comes from: the key store and the name. Only while a reference is used; collapsed it has no height, so a
+             slot with a typed key looks exactly as it always did. The key manager is where it is chosen. The line takes the width of
+             the key box and asks for none of its own: a column that is as wide as its content (the data explorer has such) must not
+             grow with a long name. -->
+        <local:LineWithoutWidth
+            x:Name="CaptionFrame"
+            Grid.Row="1"
+            Margin="{Binding CaptionMargin, ElementName=Self}"
+            Visibility="{Binding State.IsReferenceMode, ElementName=Self, Converter={StaticResource BoolToVisConv}, FallbackValue=Collapsed}">
+            <TextBlock
+                x:Name="CaptionRow"
+                Text="{Binding State.ReferenceCaption, ElementName=Self}"
+                TextTrimming="CharacterEllipsis">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <!-- A text does not grey itself out with the group that it is in, as the labels beside it do. -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="Gray" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+                <TextBlock.ToolTip>
+                    <ToolTip Style="{StaticResource KeySlotToolTipStyle}" Content="{Binding State.ReferenceDetail, ElementName=Self}" />
+                </TextBlock.ToolTip>
+            </TextBlock>
+        </local:LineWithoutWidth>
     </Grid>
 </UserControl>

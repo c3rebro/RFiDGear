@@ -29,28 +29,18 @@ namespace RFiDGear.Services.SecureKeys
     /// <param name="Detail">The error code of the key store or the number of digits that were needed; <c>0</c> otherwise.</param>
     internal readonly record struct KeySlotStoreResult(KeySlotMessage Message, int Detail);
 
-    /// <summary>The questions the editor asks the person. The control answers them with windows, the tests with a script.</summary>
+    /// <summary>The question the editor asks the person. The control answers it with a message box, the tests with a script.</summary>
     internal interface IKeySlotEditorDialogs
     {
         /// <summary>Asks whether the key that the task holds may be discarded in favour of a reference.</summary>
         /// <returns><c>true</c> when the person agrees.</returns>
         bool ConfirmReplaceKey();
-
-        /// <summary>Asks for a key to store, with the digits hidden.</summary>
-        /// <param name="hexLength">How many digits the key has.</param>
-        /// <returns>The digits as they were entered, which the caller disposes; <c>null</c> when the person cancelled.</returns>
-        SecureString? AskForKey(int hexLength);
-
-        /// <summary>Tells the person what happened.</summary>
-        /// <param name="message">What happened.</param>
-        /// <param name="detail">The error code of the key store or the number of digits that were needed; <c>0</c> otherwise.</param>
-        void Show(KeySlotMessage message, int detail);
     }
 
     /// <summary>
     /// What one key slot editor shows and does for one slot of a task: whether the key is typed into the task or named by a
-    /// reference to a key store, the reference itself, and storing a key under it. It holds no key. The embedded key stays
-    /// in the control that the editor wraps; this class only decides when it is discarded.
+    /// reference to a key store, the reference itself, a line that says so, and storing a key under the reference. It holds no
+    /// key. The embedded key stays in the control that the editor wraps; this class only decides when it is discarded.
     /// </summary>
     internal sealed class KeySlotEditorState : ObservableObject, IDisposable
     {
@@ -59,28 +49,33 @@ namespace RFiDGear.Services.SecureKeys
         private readonly IReadOnlyList<SecureKeyProviderInfo> _providers;
         private readonly IKeySlotEditorDialogs _dialogs;
         private readonly WindowsCredentialKeyProvider _keyStore;
+        private readonly Func<string, string> _text;
+        private readonly KeySlotProviderCatalog _catalog;
 
         /// <summary>Creates the state of the editor of one slot.</summary>
         /// <param name="host">The task.</param>
         /// <param name="slotId">The slot.</param>
         /// <param name="providers">The providers a slot can be bound to.</param>
-        /// <param name="dialogs">How to ask and tell the person.</param>
+        /// <param name="dialogs">How to ask the person.</param>
         /// <param name="keyStore">The Windows Credential Manager provider, to store a key with.</param>
+        /// <param name="text">Gives the text of a resource key; <see langword="null"/> for the resources of the application.</param>
         internal KeySlotEditorState(
             IKeySlotHost host,
             string slotId,
             IReadOnlyList<SecureKeyProviderInfo> providers,
             IKeySlotEditorDialogs dialogs,
-            WindowsCredentialKeyProvider keyStore)
+            WindowsCredentialKeyProvider keyStore,
+            Func<string, string>? text = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _slotId = slotId ?? throw new ArgumentNullException(nameof(slotId));
             _providers = providers ?? throw new ArgumentNullException(nameof(providers));
             _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
             _keyStore = keyStore ?? throw new ArgumentNullException(nameof(keyStore));
+            _text = CachedText.Of(text ?? RFiDGear.Infrastructure.ResourceLoader.GetResource);
+            _catalog = new KeySlotProviderCatalog(_text);
 
             ToggleModeCommand = new RelayCommand(ToggleMode, () => IsReferenceMode || CanUseReference);
-            StoreKeyCommand = new RelayCommand(StoreKey, () => CanStoreKey);
             _host.PropertyChanged += OnHostPropertyChanged;
         }
 
@@ -144,8 +139,25 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>Gets the command that switches between the key in the task and a reference.</summary>
         public ICommand ToggleModeCommand { get; }
 
-        /// <summary>Gets the command that stores a key under the reference.</summary>
-        public ICommand StoreKeyCommand { get; }
+        /// <summary>Gets the name of the key store of the binding in the language of the application; its id for a key store that is not listed.</summary>
+        public string ProviderName =>
+            _catalog.Describe(_providers).FirstOrDefault(item => item.Id == ProviderId)?.DisplayName ?? ProviderId;
+
+        /// <summary>
+        /// Gets the line below the key box that says which key the slot uses: the name of the key, which is what a person looks
+        /// for. It is short on purpose, because the boxes of some tabs are narrow. Empty while the key is typed into the task,
+        /// which is when the row has no height.
+        /// </summary>
+        public string ReferenceCaption => IsReferenceMode
+            ? string.Format(System.Globalization.CultureInfo.CurrentCulture, _text("labelKeySlotReferenceCaption"), NameOfReference)
+            : string.Empty;
+
+        /// <summary>Gets the whole of it for a tooltip: the key store and the name. Empty while the key is typed into the task.</summary>
+        public string ReferenceDetail => IsReferenceMode
+            ? string.Format(System.Globalization.CultureInfo.CurrentCulture, _text("labelKeySlotReferenceDetail"), ProviderName, NameOfReference)
+            : string.Empty;
+
+        private string NameOfReference => Reference.Length > 0 ? Reference : _text("labelKeySlotReferenceNoName");
 
         private string DefaultProviderId =>
             _providers.Any(provider => provider.Id == WindowsCredentialKeyProvider.ProviderId)
@@ -180,32 +192,9 @@ namespace RFiDGear.Services.SecureKeys
         }
 
         /// <summary>
-        /// Asks for a key and stores it under the reference in the Credential Manager. The key is read from the entry
-        /// without becoming a string and is erased afterwards; it is not shown again.
-        /// </summary>
-        internal void StoreKey()
-        {
-            if (!CanStoreKey)
-            {
-                return;
-            }
-
-            using var entered = _dialogs.AskForKey(ExpectedKeyHexLength);
-
-            if (entered == null)
-            {
-                return;
-            }
-
-            if (StoreEntered(entered) is { } result)
-            {
-                _dialogs.Show(result.Message, result.Detail);
-            }
-        }
-
-        /// <summary>
-        /// Stores a key that was entered, without asking for it: the caller owns the entry (the key manager has a box of its own
-        /// for it) and disposes it. The key is read from the entry without becoming a string and is erased afterwards.
+        /// Stores a key that was entered under the reference in the Credential Manager. The caller owns the entry (the key manager
+        /// has a box of its own for it) and disposes it. The key is read from the entry without becoming a string and is erased
+        /// afterwards; it is not shown again.
         /// </summary>
         /// <param name="entered">The digits as they were entered.</param>
         /// <returns>What came of it, or <see langword="null"/> when nothing was tried because no key can be stored under this reference.</returns>
@@ -252,7 +241,6 @@ namespace RFiDGear.Services.SecureKeys
             {
                 OnPropertyChanged(string.Empty);
                 (ToggleModeCommand as RelayCommand)?.NotifyCanExecuteChanged();
-                (StoreKeyCommand as RelayCommand)?.NotifyCanExecuteChanged();
             }
         }
     }

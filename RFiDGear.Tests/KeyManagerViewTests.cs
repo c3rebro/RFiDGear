@@ -182,7 +182,13 @@ namespace RFiDGear.Tests
                 })
                 {
                     Assert.Same(style, Assert.IsType<ToolTip>(owner.ToolTip).Style);
+
+                    // The duration is read from the owner of a tooltip: asked here for each of them, not for the window.
+                    Assert.True(ToolTipService.GetShowDuration(owner) >= 20000, owner.Name + " shows its tooltip for " + ToolTipService.GetShowDuration(owner) + " ms");
                 }
+
+                // The key can only be stored under a valid name; the button says why while it is disabled.
+                Assert.True(ToolTipService.GetShowOnDisabled(Of<Button>(window, "StoreButton")));
 
                 // The entries of the list: instantiate the template of an item, as the list does for each one.
                 var providers = Of<ComboBox>(window, "ProviderBox");

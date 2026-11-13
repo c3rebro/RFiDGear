@@ -1945,12 +1945,6 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusFileSettingNameChange" xml:space="preserve">
     <value>right to change the access rights</value>
   </data>
-  <data name="buttonContentKeySlotUseReference" xml:space="preserve">
-    <value>Use reference...</value>
-  </data>
-  <data name="buttonContentKeySlotUseKey" xml:space="preserve">
-    <value>Use key</value>
-  </data>
   <data name="toolTipKeySlotMode" xml:space="preserve">
     <value>Type the key here and save it in the project, or name a key in a key store. With a name, the project saves only the name.</value>
   </data>
@@ -1959,9 +1953,6 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="toolTipKeySlotProvider" xml:space="preserve">
     <value>The key store that the reference points into.</value>
-  </data>
-  <data name="buttonContentKeySlotStoreKey" xml:space="preserve">
-    <value>Store key...</value>
   </data>
   <data name="toolTipKeySlotStoreKey" xml:space="preserve">
     <value>Stores a key in the Windows Credential Manager under this reference. The key is typed hidden and is never shown again.</value>
@@ -1972,17 +1963,8 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageKeySlotReplaceKey" xml:space="preserve">
     <value>The key typed in this task will be removed from it and replaced by a reference. It is not saved anywhere else. Continue?</value>
   </data>
-  <data name="windowTitleKeySlotStoreKey" xml:space="preserve">
-    <value>Store key</value>
-  </data>
   <data name="labelKeySlotStoreKeyPrompt" xml:space="preserve">
     <value>Key as {0} hexadecimal digits (0-9, A-F), without spaces:</value>
-  </data>
-  <data name="buttonContentKeySlotStoreKeyOk" xml:space="preserve">
-    <value>Store</value>
-  </data>
-  <data name="buttonContentKeySlotStoreKeyCancel" xml:space="preserve">
-    <value>Cancel</value>
   </data>
   <data name="messageKeySlotKeyStored" xml:space="preserve">
     <value>The key was stored under the reference.</value>
@@ -2097,6 +2079,15 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="keySlotNameClassicMadBTarget" xml:space="preserve">
     <value>MAD key B, new</value>
+  </data>
+  <data name="labelKeySlotReferenceCaption" xml:space="preserve">
+    <value>Reference: {0}</value>
+  </data>
+  <data name="labelKeySlotReferenceDetail" xml:space="preserve">
+    <value>Key store: {0}. Name of the key: {1}</value>
+  </data>
+  <data name="labelKeySlotReferenceNoName" xml:space="preserve">
+    <value>(no name yet)</value>
   </data>
   <data name="menuItemMigrateProjectKeys" xml:space="preserve">
     <value>Move keys of a project to the Credential Manager...</value>

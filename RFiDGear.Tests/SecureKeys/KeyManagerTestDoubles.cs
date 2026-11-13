@@ -57,7 +57,7 @@ namespace RFiDGear.Tests.SecureKeys
         }
     }
 
-    /// <summary>The person, scripted: whether they agree to discard a typed key. The manager asks for no key by dialog.</summary>
+    /// <summary>The person, scripted: whether they agree to discard a typed key.</summary>
     internal sealed class ScriptedKeyDialogs : IKeySlotEditorDialogs
     {
         public bool Confirm { get; set; } = true;
@@ -70,11 +70,6 @@ namespace RFiDGear.Tests.SecureKeys
 
             return Confirm;
         }
-
-        public SecureString? AskForKey(int hexLength) => throw new InvalidOperationException("The key manager has a box for the key; it never asks for it in a dialog.");
-
-        public void Show(KeySlotMessage message, int detail) =>
-            throw new InvalidOperationException("The key manager says what happened in its own window; it shows no message box.");
     }
 
     /// <summary>A supplier status that the test drives, and that counts who listens.</summary>

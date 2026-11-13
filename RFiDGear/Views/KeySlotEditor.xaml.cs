@@ -9,10 +9,39 @@ using RFiDGear.Services.SecureKeys;
 namespace RFiDGear.View
 {
     /// <summary>
-    /// Wraps the box in which a key is typed and adds the choice to name the key instead: a reference to a key in a key
-    /// store, which the task looks up when it runs. In the first mode the wrapped box is shown and works as it always did.
-    /// In the second the project holds only the reference, a box for it takes the place of the key, and the key can be
-    /// stored under that reference (for the Windows Credential Manager) without ever being shown.
+    /// A frame for one line of text that takes the width it is given and never asks for any. A column that is as wide as its
+    /// content (the data explorer has such) would otherwise grow with a long name; here the text is cut short with an ellipsis
+    /// instead. Its height is the height of the line.
+    /// </summary>
+    internal sealed class LineWithoutWidth : Decorator
+    {
+        /// <inheritdoc />
+        protected override Size MeasureOverride(Size constraint)
+        {
+            if (Child == null)
+            {
+                return new Size(0, 0);
+            }
+
+            Child.Measure(constraint);
+
+            return new Size(0, Child.DesiredSize.Height);
+        }
+
+        /// <inheritdoc />
+        protected override Size ArrangeOverride(Size arrangeSize)
+        {
+            Child?.Arrange(new Rect(0, 0, arrangeSize.Width, Child.DesiredSize.Height));
+
+            return arrangeSize;
+        }
+    }
+
+    /// <summary>
+    /// Wraps the box in which a key is typed. While the slot is named by a reference to a key in a key store (which the task looks
+    /// up when it runs) the box is greyed out and a line below it says which key store and which name; the choice itself is made
+    /// in the key manager, which a button at the bottom of the section opens. With a typed key the control is only a frame around
+    /// the box and has no height of its own.
     /// <para>
     /// The control needs the task (<see cref="Host"/>, usually <c>{Binding}</c>) and the slot of the task (<see cref="SlotId"/>);
     /// without a task that can be edited it is only a frame around the box.
@@ -38,25 +67,18 @@ namespace RFiDGear.View
         public static readonly DependencyProperty StateProperty = DependencyProperty.Register(
             nameof(State), typeof(object), typeof(KeySlotEditor), new PropertyMetadata(null));
 
-        /// <summary>Identifies <see cref="EmbeddedMargin"/>.</summary>
-        public static readonly DependencyProperty EmbeddedMarginProperty = DependencyProperty.Register(
-            nameof(EmbeddedMargin), typeof(Thickness), typeof(KeySlotEditor), new PropertyMetadata(new Thickness(0)));
+        /// <summary>Identifies <see cref="CaptionMargin"/>.</summary>
+        public static readonly DependencyProperty CaptionMarginProperty = DependencyProperty.Register(
+            nameof(CaptionMargin), typeof(Thickness), typeof(KeySlotEditor), new PropertyMetadata(new Thickness(0)));
 
-        /// <summary>Identifies <see cref="SwitchMargin"/>.</summary>
-        public static readonly DependencyProperty SwitchMarginProperty = DependencyProperty.Register(
-            nameof(SwitchMargin), typeof(Thickness), typeof(KeySlotEditor), new PropertyMetadata(new Thickness(0)));
-
-        /// <summary>Identifies <see cref="EmbeddedHeight"/>.</summary>
-        public static readonly DependencyProperty EmbeddedHeightProperty = DependencyProperty.Register(
-            nameof(EmbeddedHeight), typeof(double), typeof(KeySlotEditor), new PropertyMetadata(double.NaN));
+        /// <summary>Identifies <see cref="CoverMargin"/>.</summary>
+        public static readonly DependencyProperty CoverMarginProperty = DependencyProperty.Register(
+            nameof(CoverMargin), typeof(Thickness), typeof(KeySlotEditor), new PropertyMetadata(new Thickness(0)));
 
         /// <summary>Creates the control.</summary>
         public KeySlotEditor()
         {
             InitializeComponent();
-
-            // Here and not in the markup: x:Static does not reach a constant of an internal class.
-            ReferenceBox.MaxLength = SecureKeySyntax.MaxReferenceLength;
 
             Loaded += (_, _) =>
             {
@@ -84,7 +106,7 @@ namespace RFiDGear.View
             set => SetValue(HostProperty, value);
         }
 
-        /// <summary>Gets or sets the box in which the key is typed; it is shown while the slot has no reference.</summary>
+        /// <summary>Gets or sets the box in which the key is typed; it is greyed out while the slot has a reference.</summary>
         public UIElement EmbeddedKey
         {
             get => (UIElement)GetValue(EmbeddedKeyProperty);
@@ -92,8 +114,8 @@ namespace RFiDGear.View
         }
 
         /// <summary>
-        /// Gets what the editor shows and does for the slot; <see langword="null"/> without an editable task. It is an object
-        /// so that the window can bind to it without making the type public.
+        /// Gets what the editor shows for the slot; <see langword="null"/> without an editable task. It is an object so that the
+        /// window can bind to it without making the type public.
         /// </summary>
         public object State
         {
@@ -101,25 +123,21 @@ namespace RFiDGear.View
             private set => SetValue(StateProperty, value);
         }
 
-        /// <summary>Gets the margin of the wrapped box, which the box for the reference takes over.</summary>
-        public Thickness EmbeddedMargin
+        /// <summary>
+        /// Gets the margin of the line below the key box: it starts under the text of the box and ends where the box ends, and it
+        /// moves up into the margin below the box so that it belongs to the box.
+        /// </summary>
+        public Thickness CaptionMargin
         {
-            get => (Thickness)GetValue(EmbeddedMarginProperty);
-            private set => SetValue(EmbeddedMarginProperty, value);
+            get => (Thickness)GetValue(CaptionMarginProperty);
+            private set => SetValue(CaptionMarginProperty, value);
         }
 
-        /// <summary>Gets the margin of the button that switches the mode.</summary>
-        public Thickness SwitchMargin
+        /// <summary>Gets the margin of the box that the key box's own margin gives it, which the cover over it takes over.</summary>
+        public Thickness CoverMargin
         {
-            get => (Thickness)GetValue(SwitchMarginProperty);
-            private set => SetValue(SwitchMarginProperty, value);
-        }
-
-        /// <summary>Gets the height of the wrapped box, which the box for the reference and the button take over; NaN is as high as needed.</summary>
-        public double EmbeddedHeight
-        {
-            get => (double)GetValue(EmbeddedHeightProperty);
-            private set => SetValue(EmbeddedHeightProperty, value);
+            get => (Thickness)GetValue(CoverMarginProperty);
+            private set => SetValue(CoverMarginProperty, value);
         }
 
         private static void OnSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
@@ -132,9 +150,8 @@ namespace RFiDGear.View
 
             if (e.NewValue is FrameworkElement box)
             {
-                editor.EmbeddedMargin = box.Margin;
-                editor.EmbeddedHeight = box.Height;
-                editor.SwitchMargin = new Thickness(0, box.Margin.Top, box.Margin.Right, box.Margin.Bottom);
+                editor.CoverMargin = box.Margin;
+                editor.CaptionMargin = new Thickness(box.Margin.Left + 2, -Math.Min(box.Margin.Bottom, 4), box.Margin.Right, box.Margin.Bottom);
             }
         }
 

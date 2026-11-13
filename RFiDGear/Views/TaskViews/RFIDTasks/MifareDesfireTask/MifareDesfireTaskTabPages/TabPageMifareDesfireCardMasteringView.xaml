@@ -351,6 +351,12 @@
                         Command="{Binding ChangeMasterCardKeyCommand}"
                         Visibility="{Binding ShowPiccMasterKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireChangePICCMasterKey'}" />
+                    <ctl:KeyManagerButton
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,0,8,8"
+                        Visibility="{Binding ShowPiccMasterKeyTargetInputs, Converter={StaticResource BoolToVisConv}}" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
@@ -511,11 +517,17 @@
                             VerticalAlignment="Bottom"
                             Command="{Binding AuthenticateToCardMasterApplicationCommand}"
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAuthenticateWithCurrentKey'}" />
+                        <ctl:KeyManagerButton
+                            Grid.Row="6"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Margin="8,3,8,8" />
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
+                            <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                         </Grid.RowDefinitions>
@@ -670,6 +682,11 @@
                             VerticalAlignment="Bottom"
                             Command="{Binding AuthenticateToCardApplicationCommand}"
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeAuthenticate'}" />
+                        <ctl:KeyManagerButton
+                            Grid.Row="7"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Margin="8,3,8,8" />
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
@@ -677,6 +694,7 @@
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
+                            <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>

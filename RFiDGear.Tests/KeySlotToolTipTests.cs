@@ -54,34 +54,28 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task Every_tooltip_of_the_editor_is_an_element_with_the_wrapping_style()
+        public async Task The_tooltip_of_the_editor_is_an_element_with_the_wrapping_style()
         {
+            // The editor has one tooltip: the line below the key box, which says the key store and the name in full. The choices
+            // are made in the key manager, whose tooltips are checked with its window.
             await OnSta((editor, style) =>
             {
-                foreach (var name in new[] { "ModeButton", "ProviderBox", "ReferenceBox", "StoreKeyButton" })
-                {
-                    var element = (FrameworkElement)editor.FindName(name);
-                    var tip = Assert.IsType<ToolTip>(element.ToolTip);
+                var caption = (FrameworkElement)editor.FindName("CaptionRow");
+                var tip = Assert.IsType<ToolTip>(caption.ToolTip);
 
-                    Assert.Same(style, tip.Style);
-                }
+                Assert.Same(style, tip.Style);
             });
         }
 
         [Fact]
-        public async Task The_tooltips_of_the_editor_stay_open_long_enough_to_be_read_and_show_on_the_disabled_store_button()
+        public async Task The_tooltip_of_the_editor_stays_open_long_enough_to_be_read()
         {
             await OnSta((editor, _) =>
             {
-                // WPF reads the duration from the control that owns the tooltip, so each owner is asked, not the editor.
-                foreach (var name in new[] { "ModeButton", "ProviderBox", "ReferenceBox", "StoreKeyButton" })
-                {
-                    var owner = (FrameworkElement)editor.FindName(name);
+                // WPF reads the duration from the control that owns the tooltip, so the owner is asked, not the editor.
+                var owner = (FrameworkElement)editor.FindName("CaptionRow");
 
-                    Assert.True(ToolTipService.GetShowDuration(owner) >= 20000, name + " shows its tooltip for " + ToolTipService.GetShowDuration(owner) + " ms");
-                }
-
-                Assert.True(ToolTipService.GetShowOnDisabled((FrameworkElement)editor.FindName("StoreKeyButton")));
+                Assert.True(ToolTipService.GetShowDuration(owner) >= 20000, "the caption shows its tooltip for " + ToolTipService.GetShowDuration(owner) + " ms");
             });
         }
 
