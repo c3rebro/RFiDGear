@@ -751,14 +751,15 @@ namespace RFiDGear.Services.TaskExecution
                         int? timedPosition = taskTimeout.Tag is int tag ? tag : (int?)null;
 
                         // AbandonRun marked that task failed in its model, though it had finished. If it ran, its recorded
-                        // outcome says the same now and the evaluator counts it as given up, as at the end of a task.
+                        // outcome says the same now (corrected in place: it is no second attempt) and the evaluator counts
+                        // it as given up, as at the end of a task.
                         if (timedPosition is int position &&
                             position < descriptors.Count &&
                             observations.Any(observation => observation.TaskPosition == position && observation.Decision == "Executed"))
                         {
                             var timedDescriptor = descriptors[position];
                             var timedModel = timedDescriptor.Task ?? request.TaskHandler?.TaskCollection?[position] as IGenericTask;
-                            RecordObservation(observations, request, CreateTaskObservation(position, timedDescriptor, timedModel, "Executed", false));
+                            ReviseObservation(observations, request, CreateTaskObservation(position, timedDescriptor, timedModel, "Executed", false));
                             abandonedAt = position;
                         }
 
@@ -985,6 +986,42 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             request.Observations?.Add(observation);
+        }
+
+        /// <summary>
+        /// Corrects the outcome of the latest attempt of a task, in the loop's own list and in the caller's: no attempt is
+        /// added, so a task that ran once still has one entry in each.
+        /// </summary>
+        private static void ReviseObservation(
+            List<TaskExecutionObservation> evaluated,
+            TaskExecutionRequest request,
+            TaskExecutionObservation observation)
+        {
+            var earlier = evaluated.FindIndex(item => item.TaskPosition == observation.TaskPosition);
+            if (earlier >= 0)
+            {
+                evaluated[earlier] = observation;
+            }
+            else
+            {
+                evaluated.Add(observation);
+            }
+
+            var sink = request.Observations;
+            if (sink == null)
+            {
+                return;
+            }
+
+            var latest = sink.FindLastIndex(item => item.TaskPosition == observation.TaskPosition);
+            if (latest >= 0)
+            {
+                sink[latest] = observation;
+            }
+            else
+            {
+                sink.Add(observation);
+            }
         }
 
         private static TaskExecutionObservation CreateTaskObservation(

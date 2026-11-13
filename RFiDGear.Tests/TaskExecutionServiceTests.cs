@@ -995,8 +995,11 @@ namespace RFiDGear.Tests
             Assert.Equal(0, secondRan);
 
             // AbandonRun marked the task the watchdog was timing as failed, though it had finished; what the loop recorded
-            // for it and what the summary counts say the same.
-            Assert.False(observations.Last(observation => observation.TaskPosition == 0).WasSuccessful);
+            // for it and what the summary counts say the same. The task ran once, so the caller's list still has one
+            // entry for it (a second one would give a two-task run three outcomes) and that entry is the corrected one.
+            var recorded = Assert.Single(observations);
+            Assert.Equal(0, recorded.TaskPosition);
+            Assert.False(recorded.WasSuccessful);
             var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
             Assert.Equal(1, GetIntProperty(summary.DetailsJson, "UnhandledFailures"));
             Assert.True(result.Abandoned);
