@@ -281,7 +281,11 @@ namespace RFiDGear.Tests.ExternalControl
             public void Unsubscribe(EventHandler handler)
             {
                 Unsubscriptions++;
-                Handler = null;
+
+                if (ReferenceEquals(Handler, handler))
+                {
+                    Handler = null;
+                }
             }
 
             public void RaiseDrawn() => Handler?.Invoke(this, EventArgs.Empty);
