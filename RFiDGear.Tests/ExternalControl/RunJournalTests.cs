@@ -145,6 +145,111 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public void ARunThatIsWrittenAndThenRefused_DoesNotPushAnOlderIdOutForGood()
+        {
+            var folder = NewFolder();
+            var first = Open(folder, out _, maxEntries: 3);
+            var runs = Enumerable.Range(1, 3).Select(_ => NewRunId()).ToList();
+
+            for (var i = 0; i < 3; i++)
+            {
+                Assert.True(first.TryRecordStarted("r-" + (i + 1), runs[i]));
+                first.RecordEnded("r-" + (i + 1), runs[i]);
+            }
+
+            // The history is full. A fourth request is written down before the host is asked, and the host refuses it.
+            var provisional = NewRunId();
+            Assert.True(first.TryRecordStarted("r-4", provisional));
+            first.RecordRefused("r-4", provisional);
+            first.Dispose();
+
+            Open(folder, out var recovered, maxEntries: 3);
+
+            // Nothing that the registry still remembers is lost to a request that never ran.
+            Assert.Equal(new[] { "r-1", "r-2", "r-3" }, recovered.Select(e => e.RequestId));
+        }
+
+        // A file that fails when written to: the first write that is armed leaves half a line and throws, as a full disk would.
+        private sealed class FailingFile : FileStream
+        {
+            public FailingFile(string path)
+                : base(path, FileMode.Append, FileAccess.Write, FileShare.Read, 4096, FileOptions.WriteThrough)
+            {
+            }
+
+            public bool FailTheNextWrite { get; set; }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                if (FailTheNextWrite)
+                {
+                    FailTheNextWrite = false;
+                    base.Write(buffer, offset, count / 2);
+                    Flush(true);
+
+                    throw new IOException("There is not enough space on the disk.");
+                }
+
+                base.Write(buffer, offset, count);
+            }
+        }
+
+        [Fact]
+        public void AWriteThatFailedHalfWay_DoesNotSwallowTheLinesThatFollow()
+        {
+            var folder = NewFolder();
+            var files = new List<FailingFile>();
+            var journal = RunJournal.TryOpen(folder, "instance", out _, openForAppend: path =>
+            {
+                var file = new FailingFile(path);
+                files.Add(file);
+
+                return file;
+            });
+            _journals.Add(journal!);
+            var (lost, kept) = (NewRunId(), NewRunId());
+            files[0].FailTheNextWrite = true;
+
+            var first = journal!.TryRecordStarted("r-1", lost);
+            var second = journal.TryRecordStarted("r-2", kept);
+            journal.Dispose();
+            RunJournal.TryOpen(folder, "instance", out var recovered)!.Dispose();
+
+            // The run that could not be written down is refused, and the one after it is not joined to what the failure left.
+            Assert.False(first);
+            Assert.True(second);
+            Assert.Equal(new[] { new JournalEntry("r-2", kept, JournalState.Started) }, recovered);
+            Assert.Equal(2, files.Count);
+        }
+
+        [Fact]
+        public void AJournalThatCannotBeRepairedAfterAFailure_StaysClosed()
+        {
+            var folder = NewFolder();
+            var opened = 0;
+            FailingFile? first = null;
+            var journal = RunJournal.TryOpen(folder, "instance", out _, openForAppend: path =>
+            {
+                if (++opened > 1)
+                {
+                    throw new IOException("The file cannot be opened.");
+                }
+
+                first = new FailingFile(path);
+
+                return first;
+            });
+            _journals.Add(journal!);
+            first!.FailTheNextWrite = true;
+
+            Assert.False(journal!.TryRecordStarted("r-1", NewRunId()));
+
+            // Nobody is told that a run was written down when the journal cannot be trusted any more.
+            Assert.False(journal.TryRecordStarted("r-2", NewRunId()));
+            Assert.False(journal.TryRecordStarted("r-3", NewRunId()));
+        }
+
+        [Fact]
         public void AFileWithDamage_IsReadAsFarAsItIsGood_AndNeverTrustedBeyondThat()
         {
             var folder = NewFolder();

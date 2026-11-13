@@ -189,7 +189,11 @@ namespace RFiDGear.Bridge
         [JsonPropertyName("state")]
         public string State { get; init; } = RunStates.Unknown;
 
-        /// <summary>Gets the result, when <see cref="State"/> is <see cref="RunStates.Completed"/>.</summary>
+        /// <summary>
+        /// Gets the result, when <see cref="State"/> is <see cref="RunStates.Completed"/> and the result is still held. A run that
+        /// ended but whose result has been dropped (the history is limited) or lost in a restart answers
+        /// <see cref="RunStates.Completed"/> without one.
+        /// </summary>
         [JsonPropertyName("result")]
         public RunResultDto? Result { get; init; }
     }

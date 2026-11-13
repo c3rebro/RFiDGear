@@ -81,13 +81,19 @@ namespace RFiDGear.Services.ExternalControl
         private long _seq;
         private int _lines;
 
-        private RunJournal(string path, string instanceId, int maxEntries, int maxLines)
+        private readonly Func<string, FileStream> _openForAppend;
+
+        private RunJournal(string path, string instanceId, int maxEntries, int maxLines, Func<string, FileStream>? openForAppend)
         {
             _path = path;
             _instanceId = instanceId;
             _maxEntries = maxEntries;
             _maxLines = maxLines;
+            _openForAppend = openForAppend ?? OpenForAppend;
         }
+
+        private static FileStream OpenForAppend(string path) =>
+            new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, 4096, FileOptions.WriteThrough);
 
         /// <summary>Gets the folder the journal lives in unless a test gives another.</summary>
         internal static string DefaultDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", "bridge");
@@ -102,15 +108,16 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="recovered">What the file held: the runs of earlier processes, oldest first. Empty when the journal is off.</param>
         /// <param name="maxEntries">How many request ids are kept.</param>
         /// <param name="maxLines">After how many lines the file is rewritten.</param>
+        /// <param name="openForAppend">How the file is opened for appending; a test gives a file that fails.</param>
         /// <returns>The journal, or <see langword="null"/> when it cannot be used.</returns>
-        internal static RunJournal? TryOpen(string directory, string instanceId, out IReadOnlyList<JournalEntry> recovered, int maxEntries = BridgeProtocol.RequestIdHistory, int maxLines = 4 * BridgeProtocol.RequestIdHistory)
+        internal static RunJournal? TryOpen(string directory, string instanceId, out IReadOnlyList<JournalEntry> recovered, int maxEntries = BridgeProtocol.RequestIdHistory, int maxLines = 4 * BridgeProtocol.RequestIdHistory, Func<string, FileStream>? openForAppend = null)
         {
             recovered = Array.Empty<JournalEntry>();
 
             try
             {
                 Directory.CreateDirectory(directory);
-                var journal = new RunJournal(Path.Combine(directory, FileName), instanceId, maxEntries, maxLines);
+                var journal = new RunJournal(Path.Combine(directory, FileName), instanceId, maxEntries, maxLines, openForAppend);
                 journal.Load();
                 journal.Rewrite();
                 recovered = journal.Snapshot();
@@ -209,7 +216,12 @@ namespace RFiDGear.Services.ExternalControl
 
                     break;
             }
+        }
 
+        // Keeps the most recent ids, the same number the registry remembers. Done when the file is rewritten and not on every line:
+        // a run that is written down and then refused must not have pushed an older id out for good.
+        private void Trim()
+        {
             while (_index.Count > _maxEntries)
             {
                 _index.Remove(_index.OrderBy(pair => pair.Value.Seq).First().Key);
@@ -225,6 +237,7 @@ namespace RFiDGear.Services.ExternalControl
         {
             _stream?.Dispose();
             _stream = null;
+            Trim();
 
             var temp = _path + ".tmp";
             var builder = new StringBuilder();
@@ -234,10 +247,18 @@ namespace RFiDGear.Services.ExternalControl
                 builder.Append(Serialize(entry.State == JournalState.Started ? "started" : "ended", entry.RequestId, entry.RunId)).Append('\n');
             }
 
-            File.WriteAllText(temp, builder.ToString(), new UTF8Encoding(false));
+            // On the disk before it replaces the file that is: if the machine dies right after the replacement, the new file must
+            // not be an empty one that stands in for the journal.
+            using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+            {
+                var bytes = new UTF8Encoding(false).GetBytes(builder.ToString());
+                file.Write(bytes, 0, bytes.Length);
+                file.Flush(true);
+            }
+
             File.Move(temp, _path, overwrite: true);
             _lines = _index.Count;
-            _stream = new FileStream(_path, FileMode.Append, FileAccess.Write, FileShare.Read, 4096, FileOptions.WriteThrough);
+            _stream = _openForAppend(_path);
         }
 
         private string Serialize(string state, string requestId, string runId) =>
@@ -265,6 +286,7 @@ namespace RFiDGear.Services.ExternalControl
                 catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is ObjectDisposedException || e is NotSupportedException)
                 {
                     Logger.Warning("External control: a line could not be written to the run journal ({ExceptionType})", e.GetType().FullName);
+                    Heal();
 
                     return false;
                 }
@@ -275,6 +297,34 @@ namespace RFiDGear.Services.ExternalControl
                 }
 
                 return true;
+            }
+        }
+
+        // A write failed, and may have left a fragment of a line at the end of the file; the next line would be joined to it and be
+        // lost when the file is read, which would let a run that touched the card be forgotten. So the stream is never used
+        // again: the file is written anew from what is known (the fragment is not part of that), or, if that fails too, the
+        // journal stays closed and the runs are refused instead of started without a record.
+        private void Heal()
+        {
+            try
+            {
+                _stream?.Dispose();
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is ObjectDisposedException)
+            {
+                // Closing a stream that failed may fail again; it is not used anyway.
+            }
+
+            _stream = null;
+
+            try
+            {
+                Rewrite();
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is NotSupportedException)
+            {
+                Logger.Warning("External control: the run journal could not be repaired and is closed ({ExceptionType})", e.GetType().FullName);
+                _stream = null;
             }
         }
 
@@ -293,7 +343,7 @@ namespace RFiDGear.Services.ExternalControl
                 try
                 {
                     _stream?.Dispose();
-                    _stream = new FileStream(_path, FileMode.Append, FileAccess.Write, FileShare.Read, 4096, FileOptions.WriteThrough);
+                    _stream = _openForAppend(_path);
                 }
                 catch (Exception reopen) when (reopen is IOException || reopen is UnauthorizedAccessException)
                 {

@@ -667,11 +667,14 @@ namespace RFiDGear.Tests.ExternalControl
                 await ResultOf(h, "r-" + i);
             }
 
-            // Results: the last two are kept. Ids: the last three are remembered.
+            // Results: the last two are kept. Ids: the last three are remembered. A run whose id is remembered but whose result is
+            // gone is still a run that ended: "unknown" is for an id nobody remembers.
             Assert.Equal(RunStates.Unknown, (await ResultOf(h, "r-1", 0)).State);
-            Assert.Equal(RunStates.Unknown, (await ResultOf(h, "r-2", 0)).State);
-            Assert.Equal(RunStates.Completed, (await ResultOf(h, "r-3", 0)).State);
-            Assert.Equal(RunStates.Completed, (await ResultOf(h, "r-4", 0)).State);
+            var dropped = await ResultOf(h, "r-2", 0);
+            Assert.Equal(RunStates.Completed, dropped.State);
+            Assert.Null(dropped.Result);
+            Assert.NotNull((await ResultOf(h, "r-3", 0)).Result);
+            Assert.NotNull((await ResultOf(h, "r-4", 0)).Result);
 
             // r-2 is still remembered as a request: sending it again does not start a second run.
             var remembered = await h.Supervisor.StartAsync(Request("r-2"));

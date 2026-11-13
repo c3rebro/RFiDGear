@@ -209,8 +209,9 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(RunStates.Completed, again.State);
             Assert.Empty(after.Host.ExecutionHost.Requests);
 
-            // The result was never written down (it holds the outcomes of the tasks): it is "older than the history".
-            Assert.Equal(RunStates.Unknown, lookup.State);
+            // The result was never written down (it holds the outcomes of the tasks): the run ended, and that is all that is known.
+            Assert.Equal(RunStates.Completed, lookup.State);
+            Assert.Null(lookup.Result);
             Assert.Equal(RunStates.Completed, cancel.State);
         }
 
@@ -283,11 +284,26 @@ namespace RFiDGear.Tests.ExternalControl
 
             public string? StateWhenTheEndWasWritten { get; private set; }
 
-            public bool TryRecordStarted(string requestId, string runId) => requestId.Length > 0;
+            public bool TryRecordStarted(string requestId, string runId)
+            {
+                Check(requestId, runId);
 
-            public void RecordRefused(string requestId, string runId) => ArgumentException.ThrowIfNullOrEmpty(requestId);
+                return true;
+            }
 
-            public void RecordEnded(string requestId, string runId) => StateWhenTheEndWasWritten = StateAtTheEnd?.Invoke();
+            public void RecordRefused(string requestId, string runId) => Check(requestId, runId);
+
+            public void RecordEnded(string requestId, string runId)
+            {
+                Check(requestId, runId);
+                StateWhenTheEndWasWritten = StateAtTheEnd?.Invoke();
+            }
+
+            private static void Check(string requestId, string runId)
+            {
+                ArgumentException.ThrowIfNullOrEmpty(requestId);
+                ArgumentException.ThrowIfNullOrEmpty(runId);
+            }
         }
 
         [Fact]
@@ -307,11 +323,22 @@ namespace RFiDGear.Tests.ExternalControl
 
         private sealed class BrokenJournal : IRunJournal
         {
-            public bool TryRecordStarted(string requestId, string runId) => requestId.Length < 0;
+            public bool TryRecordStarted(string requestId, string runId)
+            {
+                Check(requestId, runId);
 
-            public void RecordRefused(string requestId, string runId) => ArgumentException.ThrowIfNullOrEmpty(requestId);
+                return false;
+            }
 
-            public void RecordEnded(string requestId, string runId) => ArgumentException.ThrowIfNullOrEmpty(requestId);
+            public void RecordRefused(string requestId, string runId) => Check(requestId, runId);
+
+            public void RecordEnded(string requestId, string runId) => Check(requestId, runId);
+
+            private static void Check(string requestId, string runId)
+            {
+                ArgumentException.ThrowIfNullOrEmpty(requestId);
+                ArgumentException.ThrowIfNullOrEmpty(runId);
+            }
         }
 
         [Fact]

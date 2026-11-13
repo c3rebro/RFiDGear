@@ -327,6 +327,10 @@ namespace RFiDGear.Services.ExternalControl
             return state switch
             {
                 RunRecordState.Completed when result != null => new GetRunResultResponse { State = RunStates.Completed, Result = result },
+
+                // The run ended, but its result is no longer held: dropped by the history, or taken by a restart. It is still a run
+                // that ended; "unknown" would say that nothing is known of the id.
+                RunRecordState.Completed => new GetRunResultResponse { State = RunStates.Completed },
                 RunRecordState.Interrupted => new GetRunResultResponse { State = RunStates.InterruptedByRestart },
                 RunRecordState.Pending or RunRecordState.Admitting or RunRecordState.Running => new GetRunResultResponse { State = RunStates.Running },
                 _ => new GetRunResultResponse { State = RunStates.Unknown },
