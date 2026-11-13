@@ -255,6 +255,26 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task A_key_that_was_entered_and_not_stored_does_not_stay_in_the_window_when_it_closes()
+        {
+            // Close, Escape and the title bar all end in the same place; rows that are collapsed have their boxes too.
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead, SecureKeySlots.DesfireWrite }, async (window, _) =>
+            {
+                await Toggle(window, 0);
+                var shown = Of<PasswordBox>(window, "KeyBox", 0);
+                var collapsed = Of<PasswordBox>(window, "KeyBox", 1);
+                shown.Password = "0001";
+                collapsed.Password = "0002";
+
+                window.Close();
+                await Flush();
+
+                Assert.Equal(string.Empty, shown.Password);
+                Assert.Equal(string.Empty, collapsed.Password);
+            });
+        }
+
+        [Fact]
         public async Task The_store_button_waits_for_a_valid_name()
         {
             await OnWindow(new Setup(), new[] { SecureKeySlots.DesfireRead }, async (window, _) =>

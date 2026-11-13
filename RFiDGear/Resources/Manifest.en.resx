@@ -2021,7 +2021,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Key manager</value>
   </data>
   <data name="labelKeyManagerIntro" xml:space="preserve">
-    <value>Each key is typed into the task, or named by a reference to a key store that is asked when the task runs. The project saves only the name, never the key.</value>
+    <value>Each key is either typed into the task, which saves it in the project, or named by a reference to a key store that is asked when the task runs. With a reference, the project saves only the name, never the key.</value>
   </data>
   <data name="labelKeyManagerKeyStore" xml:space="preserve">
     <value>Key store</value>

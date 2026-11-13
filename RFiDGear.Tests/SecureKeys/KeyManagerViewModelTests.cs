@@ -103,6 +103,19 @@ namespace RFiDGear.Tests.SecureKeys
             }
         }
 
+        [Theory]
+        [InlineData("en", "saves it in the project", "The project saves only the name, never the key.")]
+        [InlineData("de", "im Projekt gespeichert", "Das Projekt speichert nur den Namen, nie den Schlüssel.")]
+        public void The_intro_says_that_a_typed_key_is_saved_in_the_project_and_only_a_reference_is_not(string culture, string typedKeyIsSaved, string claimOfAnyKey)
+        {
+            // A key that is typed into the task is serialized with it. Only a reference keeps the key out of the project, and the text
+            // must not promise that for every key.
+            var intro = TestText.In(culture)("labelKeyManagerIntro");
+
+            Assert.Contains(typedKeyIsSaved, intro);
+            Assert.DoesNotContain(claimOfAnyKey, intro);
+        }
+
         [Fact]
         public void The_texts_come_in_the_language_of_the_application()
         {
