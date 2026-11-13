@@ -80,6 +80,18 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheEndOfTheConnection_IsSeenByTheClient_WhenRFiDGearCloses()
+        {
+            var (service, pipe, _, _) = Start();
+            var client = await ConnectAsync(pipe);
+            Assert.False(client.Completion.IsCompleted);
+
+            service.Dispose();
+
+            Assert.Same(client.Completion, await Task.WhenAny(client.Completion, Task.Delay(5000)));
+        }
+
+        [Fact]
         public async Task Connecting_MakesTheHandshake_AndTheClientDecidesFromTheCapabilities()
         {
             var (service, pipe, _, _) = Start();
@@ -264,11 +276,9 @@ namespace RFiDGear.Tests.ExternalControl
             var client = await ConnectAsync(pipe);
             var key = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
 
-            // The client serves its own references, and says "not authorized" for everything else.
-            client.KeyVault = (request, _) => Task.FromResult(
-                request.Reference == "orders/4711"
-                    ? new ResolveKeyResponse { Result = KeyResolveResults.Resolved, Key = Convert.ToBase64String(key) }
-                    : new ResolveKeyResponse { Result = KeyResolveResults.NotAuthorized });
+            // The client serves its own reference, and says "not authorized" for everything else.
+            using var vault = new SampleVault("orders/4711", key);
+            client.KeyVault = vault.ResolveAsync;
             var registered = await client.RegisterKeyProviderAsync();
             using var served = await registry.ResolveAsync(registered.ProviderId, Request("orders/4711"), CancellationToken.None);
             using var refused = await registry.ResolveAsync(registered.ProviderId, Request("somebody/elses"), CancellationToken.None);
@@ -276,6 +286,41 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(BridgeKeyProvider.ProviderId, registered.ProviderId);
             Assert.Equal(key, Assert.IsType<SecureKeyLease>(served.Key).Key.ToArray());
             Assert.Equal(SecureKeyFailureReason.NotAuthorized, refused.FailureReason);
+            Assert.Equal(1, vault.Served);
+        }
+
+        [Fact]
+        public async Task TheSampleVault_ServesOneReference_RefusesTheRest_AndForgetsTheKeyWhenDisposed()
+        {
+            var key = new byte[] { 1, 2, 3, 4, 5, 6 };
+            var vault = new SampleVault("orders/4711", key);
+
+            var served = await vault.ResolveAsync(new ResolveKeyRequest { Reference = "orders/4711" }, CancellationToken.None);
+            var other = await vault.ResolveAsync(new ResolveKeyRequest { Reference = "orders/4712" }, CancellationToken.None);
+            var differentCase = await vault.ResolveAsync(new ResolveKeyRequest { Reference = "ORDERS/4711" }, CancellationToken.None);
+            vault.Dispose();
+            vault.Dispose();
+            var afterwards = await vault.ResolveAsync(new ResolveKeyRequest { Reference = "orders/4711" }, CancellationToken.None);
+
+            Assert.Equal(KeyResolveResults.Resolved, served.Result);
+            Assert.Equal(key, Convert.FromBase64String(served.Key!));
+            Assert.Equal(KeyResolveResults.NotAuthorized, other.Result);
+            Assert.Null(other.Key);
+            Assert.Equal(KeyResolveResults.NotAuthorized, differentCase.Result);
+            Assert.Equal(KeyResolveResults.NotAuthorized, afterwards.Result);
+            Assert.Null(afterwards.Key);
+            Assert.Equal(1, vault.Served);
+            await Assert.ThrowsAsync<OperationCanceledException>(() => new SampleVault("r", key).ResolveAsync(new ResolveKeyRequest { Reference = "r" }, new CancellationToken(true)));
+        }
+
+        [Fact]
+        public void TheSampleVault_RefusesWhatIsNoKeyOrNoReference()
+        {
+            Assert.Throws<ArgumentException>(() => new SampleVault(string.Empty, new byte[] { 1 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SampleVault("r", ReadOnlySpan<byte>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SampleVault("r", new byte[BridgeProtocol.MaxKeyBytes + 1]));
+            using var longest = new SampleVault("r", new byte[BridgeProtocol.MaxKeyBytes]);
+            Assert.NotNull(longest);
         }
 
         [Fact]

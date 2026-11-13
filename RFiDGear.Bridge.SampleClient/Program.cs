@@ -1,8 +1,8 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +22,8 @@ namespace RFiDGear.Bridge.SampleClient
             "RFiDGear.Bridge.SampleClient run <requestId> [<project.rfPrj>] [$NAME=value ...]\n" +
             "RFiDGear.Bridge.SampleClient result <requestId>\n" +
             "RFiDGear.Bridge.SampleClient results [<afterResultSeq>]\n" +
-            "RFiDGear.Bridge.SampleClient auto";
+            "RFiDGear.Bridge.SampleClient auto\n" +
+            "RFiDGear.Bridge.SampleClient keys <reference>";
 
         private static async Task<int> Main(string[] args)
         {
@@ -49,6 +50,7 @@ namespace RFiDGear.Bridge.SampleClient
                     "result" when args.Length == 2 => await ResultAsync(args[1], stop.Token),
                     "results" => await ResultsAsync(args.Length > 1 ? long.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 0, stop.Token),
                     "auto" => await AutoAsync(stop.Token),
+                    "keys" when args.Length == 2 => await KeysAsync(args[1], stop.Token),
                     _ => Fail(Usage),
                 };
             }
@@ -148,16 +150,97 @@ namespace RFiDGear.Bridge.SampleClient
             await client.Service.StartAutoMode(new StartAutoModeRequest());
             Console.WriteLine("automatic mode is on; Ctrl+C ends it");
 
+            if (await WaitUntilEndedAsync(client, cancellationToken))
+            {
+                Console.WriteLine("RFiDGear closed the connection; the mode ends with it");
+
+                return 0;
+            }
+
+            await client.Service.StopAutoMode(new StopAutoModeRequest());
+
+            return 0;
+        }
+
+        // Waits for Ctrl+C or for the end of the connection, whichever comes first.
+        private static async Task<bool> WaitUntilEndedAsync(BridgeSampleClient client, CancellationToken cancellationToken)
+        {
+            var interrupted = Task.Delay(Timeout.Infinite, cancellationToken);
+            var finished = await Task.WhenAny(interrupted, client.Completion);
+
+            return finished == client.Completion;
+        }
+
+        // Serves one reference with a key that is typed at a prompt that does not show it: a key does not belong in an argument, a
+        // file or an environment variable. The key is erased when the command ends.
+        private static async Task<int> KeysAsync(string reference, CancellationToken cancellationToken)
+        {
+            var key = ReadKey();
+
             try
             {
-                await Task.Delay(Timeout.Infinite, cancellationToken);
+                using var vault = new SampleVault(reference, key);
+                await using var client = await BridgeSampleClient.ConnectAsync(cancellationToken: cancellationToken);
+                client.KeyVault = vault.ResolveAsync;
+                var registered = await client.RegisterKeyProviderAsync();
+                Console.WriteLine("registered as the supplier of keys; name the provider \"" + registered.ProviderId + "\" and the reference \"" + reference + "\" in a task");
+                Console.WriteLine("every other reference is refused; Ctrl+C ends it");
+
+                var lost = await WaitUntilEndedAsync(client, cancellationToken);
+                Console.WriteLine((lost ? "RFiDGear closed the connection; " : string.Empty) + "keys handed out: " + vault.Served);
             }
-            catch (OperationCanceledException)
+            finally
             {
-                await client.Service.StopAutoMode(new StopAutoModeRequest());
+                CryptographicOperations.ZeroMemory(key);
             }
 
             return 0;
+        }
+
+        private static byte[] ReadKey()
+        {
+            var digits = new char[2 * BridgeProtocol.MaxKeyBytes];
+            var count = 0;
+
+            try
+            {
+                Console.Write("Key as hexadecimal digits (not shown), then Enter: ");
+
+                while (true)
+                {
+                    var pressed = Console.ReadKey(intercept: true);
+
+                    if (pressed.Key == ConsoleKey.Enter)
+                    {
+                        break;
+                    }
+
+                    if (count < digits.Length && Uri.IsHexDigit(pressed.KeyChar))
+                    {
+                        digits[count++] = pressed.KeyChar;
+                    }
+                }
+
+                Console.WriteLine();
+
+                if (count == 0 || count % 2 != 0)
+                {
+                    throw new FormatException("A key is an even number of hexadecimal digits.");
+                }
+
+                var key = new byte[count / 2];
+
+                for (var i = 0; i < key.Length; i++)
+                {
+                    key[i] = (byte)((Uri.FromHex(digits[2 * i]) << 4) | Uri.FromHex(digits[(2 * i) + 1]));
+                }
+
+                return key;
+            }
+            finally
+            {
+                Array.Clear(digits);
+            }
         }
 
         private static int Print(RunOutcome outcome)

@@ -69,6 +69,9 @@ namespace RFiDGear.Bridge.SampleClient
         /// <summary>Gets the calls the host offers. Use the methods of this class where they exist; they hold the rules.</summary>
         public IBridgeService Service { get; }
 
+        /// <summary>Gets a task that ends when the connection ends, for whatever reason (RFiDGear closed, the pipe broke, this client was disposed).</summary>
+        public Task Completion => _rpc.Completion;
+
         /// <summary>Gets the answer to the handshake: the capabilities, the id of this RFiDGear process and the limits.</summary>
         public HelloResponse Hello { get; private set; } = new HelloResponse();
 
