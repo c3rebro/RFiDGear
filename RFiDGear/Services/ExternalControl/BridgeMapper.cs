@@ -70,8 +70,9 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="runId">The id the bridge gave the run.</param>
         /// <param name="requestId">The request id of the client that started it.</param>
         /// <param name="resultSeq">The number of the result in the order in which results were completed.</param>
+        /// <param name="source">Who started the run, one of <see cref="RunSources"/>.</param>
         /// <returns>The result as the wire has it.</returns>
-        internal static RunResultDto ToDto(ExecResult result, string runId, string? requestId, long resultSeq)
+        internal static RunResultDto ToDto(ExecResult result, string runId, string? requestId, long resultSeq, string source = RunSources.Bridge)
         {
             System.ArgumentNullException.ThrowIfNull(result);
 
@@ -100,7 +101,7 @@ namespace RFiDGear.Services.ExternalControl
             {
                 RequestId = requestId,
                 RunId = runId,
-                Source = RunSources.Bridge,
+                Source = source,
                 Status = status,
                 FailureReason = reason,
                 TotalTasks = result.TotalTasks,
@@ -176,6 +177,20 @@ namespace RFiDGear.Services.ExternalControl
                     return RunStatuses.Failure;
             }
         }
+
+        /// <summary>Maps the reason automatic mode last stopped to a constant of <see cref="AutoModeStopReasons"/>.</summary>
+        /// <param name="reason">The reason.</param>
+        /// <returns>The wire name; <see cref="AutoModeStopReasons.Unknown"/> for a reason the mapper does not know.</returns>
+        internal static string ToWire(AutoModeStopReason reason) => reason switch
+        {
+            AutoModeStopReason.None => AutoModeStopReasons.None,
+            AutoModeStopReason.StopRequested => AutoModeStopReasons.StopRequested,
+            AutoModeStopReason.ReaderLost => AutoModeStopReasons.ReaderLost,
+            AutoModeStopReason.ReaderChanged => AutoModeStopReasons.ReaderChanged,
+            AutoModeStopReason.RunAborted => AutoModeStopReasons.RunAborted,
+            AutoModeStopReason.RunTimedOut => AutoModeStopReasons.RunTimedOut,
+            _ => AutoModeStopReasons.Unknown,
+        };
 
         /// <summary>Maps the state of a reader scan to a constant of <see cref="ReaderStates"/>.</summary>
         /// <param name="state">The state.</param>

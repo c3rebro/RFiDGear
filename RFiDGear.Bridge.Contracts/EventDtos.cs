@@ -100,4 +100,35 @@ namespace RFiDGear.Bridge
         [JsonPropertyName("runInFlight")]
         public bool RunInFlight { get; init; }
     }
+
+    /// <summary>
+    /// Automatic mode was switched on or off. It is never merged with another notice and arrives in the order in which things
+    /// happened: when the last run of the mode fails and stops it, <see cref="AutoRunCompletedEvent"/> comes first and this after.
+    /// </summary>
+    public sealed record AutoModeChangedEvent : BridgeEvent
+    {
+        /// <summary>Gets whether the mode is on now.</summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; init; }
+
+        /// <summary>Gets who switched it on while it is on, one of <see cref="RunSources"/>; nothing while it is off.</summary>
+        [JsonPropertyName("startedBy")]
+        public string? StartedBy { get; init; }
+
+        /// <summary>Gets why the mode last stopped, one of <see cref="AutoModeStopReasons"/>.</summary>
+        [JsonPropertyName("lastStopReason")]
+        public string LastStopReason { get; init; } = AutoModeStopReasons.None;
+
+        /// <summary>Gets the number of the latest result when this happened, so that a client sees at once whether it has them all.</summary>
+        [JsonPropertyName("lastResultSeq")]
+        public long LastResultSeq { get; init; }
+    }
+
+    /// <summary>Automatic mode processed a card. Sent exactly once for every run of the mode, and every one of them is also kept for <c>listRunResults</c>.</summary>
+    public sealed record AutoRunCompletedEvent : BridgeEvent
+    {
+        /// <summary>Gets the result of the run; <see cref="RunResultDto.Source"/> is <see cref="RunSources.AutoMode"/> and <see cref="RunResultDto.CardUid"/> names the card.</summary>
+        [JsonPropertyName("result")]
+        public RunResultDto Result { get; init; } = new RunResultDto();
+    }
 }

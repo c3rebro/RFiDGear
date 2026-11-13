@@ -48,6 +48,25 @@ namespace RFiDGear.Tests.ExternalControl
             },
         };
 
+        /// <summary>Gets the result of a run of automatic mode: no request id, the card it processed.</summary>
+        public static RunResultDto AutoResult { get; } = new RunResultDto
+        {
+            RunId = "b2c3d4e5f60718293a4b5c6d7e8f90a1",
+            Source = RunSources.AutoMode,
+            Status = RunStatuses.Success,
+            FailureReason = FailureReasons.None,
+            TotalTasks = 1,
+            FailedTasks = 0,
+            StartedAt = Start,
+            CompletedAt = Start.AddSeconds(2),
+            CardUid = "04A1B2C3D4E5F6",
+            ResultSeq = 8,
+            TaskOutcomes = new[]
+            {
+                new TaskOutcomeDto { Position = 0, ProjectTaskIndex = "0", TaskTypeName = "MifareDesfireSetupViewModel", IsSuccess = true, NormalizedErrorCode = "Empty" },
+            },
+        };
+
         /// <summary>Gets every sample, by name. The name is the key of the golden form.</summary>
         public static IReadOnlyDictionary<string, object> All { get; } = new Dictionary<string, object>
         {
@@ -95,6 +114,7 @@ namespace RFiDGear.Tests.ExternalControl
                 ActiveRun = new ActiveRunDto { RequestId = "r-1", RunId = "a1b2", Source = RunSources.Bridge, StartedAt = Start },
                 Reader = Reader,
                 LastResultSeq = 7,
+                AutoMode = new AutoModeStatusDto { Enabled = true, StartedBy = RunSources.Bridge, StopOnDisconnect = true, LastStopReason = AutoModeStopReasons.RunAborted },
             },
             ["LoadProjectRequest"] = new LoadProjectRequest { Path = @"C:\Projects\order.rfPrj" },
             ["LoadProjectResponse"] = new LoadProjectResponse { Path = @"C:\Projects\order.rfPrj", TaskCount = 3 },
@@ -118,6 +138,20 @@ namespace RFiDGear.Tests.ExternalControl
             ["ReaderChangedEvent"] = new ReaderChangedEvent { Seq = 4, SessionId = "s1", At = Start, Reader = Reader },
             ["ProjectChangedEvent"] = new ProjectChangedEvent { Seq = 5, SessionId = "s1", At = Start, Path = @"C:\Projects\order.rfPrj", TaskCount = 3 },
             ["ShuttingDownEvent"] = new ShuttingDownEvent { Seq = 6, SessionId = "s1", At = Start, Reason = ShutdownReasons.UserClose, RunInFlight = true },
+            ["StartAutoModeRequest"] = new StartAutoModeRequest { StopOnDisconnect = false },
+            ["StartAutoModeResponse"] = new StartAutoModeResponse { Enabled = true, AlreadyEnabled = false, StopOnDisconnect = false },
+            ["StopAutoModeRequest"] = new StopAutoModeRequest(),
+            ["StopAutoModeResponse"] = new StopAutoModeResponse { WasEnabled = true },
+            ["ListRunResultsRequest"] = new ListRunResultsRequest { AfterResultSeq = 6, Limit = 10 },
+            ["ListRunResultsResponse"] = new ListRunResultsResponse
+            {
+                InstanceId = "9f8e7d6c5b4a39281706f5e4d3c2b1a0",
+                Results = new[] { Result, AutoResult },
+                Gap = false,
+                LastResultSeq = 8,
+            },
+            ["AutoModeChangedEvent"] = new AutoModeChangedEvent { Seq = 7, SessionId = "s1", At = Start, Enabled = false, StartedBy = null, LastStopReason = AutoModeStopReasons.ReaderLost, LastResultSeq = 8 },
+            ["AutoRunCompletedEvent"] = new AutoRunCompletedEvent { Seq = 8, SessionId = "s1", At = Start.AddSeconds(2), Result = AutoResult },
             ["BridgeErrorData"] = new BridgeErrorData
             {
                 Kind = BridgeErrorKinds.Busy,

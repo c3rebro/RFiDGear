@@ -196,6 +196,122 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Throws<ArgumentNullException>(() => registry.Recover(null!));
         }
 
+        // â”€â”€ The log of results â”€â”€
+
+        private static RunResultDto Unrequested(long seq) => new RunResultDto { RunId = "auto-" + seq, Source = RunSources.AutoMode, ResultSeq = seq };
+
+        [Fact]
+        public void TheResultsOfClientsAndOfTheMode_ShareOneSequence_AndAreListedInTheOrderTheyEnded()
+        {
+            var registry = new RunRegistry();
+            var record = Running(registry, "r-1");
+
+            var viaClient = registry.Complete(record, seq => Result(record, seq));
+            var viaMode = registry.RecordUnrequested(Unrequested);
+            var (all, gap, last, future) = registry.ListResults(0, 0);
+
+            Assert.Equal(1, viaClient!.ResultSeq);
+            Assert.Equal(2, viaMode.ResultSeq);
+            Assert.Equal(new[] { 1L, 2L }, all.Select(r => r.ResultSeq));
+            Assert.Same(viaMode, all[1]);
+            Assert.False(gap);
+            Assert.False(future);
+            Assert.Equal(2, last);
+            Assert.Equal(2, registry.LastResultSeq);
+        }
+
+        [Fact]
+        public void AListStartsAfterTheNumberAsked_AndALimitCutsItButNotTheNumberOfTheLatest()
+        {
+            var registry = new RunRegistry();
+
+            for (var i = 0; i < 5; i++)
+            {
+                registry.RecordUnrequested(Unrequested);
+            }
+
+            var (rest, restGap, restLast, _) = registry.ListResults(3, 0);
+            var (cut, cutGap, cutLast, _) = registry.ListResults(1, 2);
+            var (none, noneGap, noneLast, noneFuture) = registry.ListResults(5, 0);
+
+            Assert.Equal(new[] { 4L, 5L }, rest.Select(r => r.ResultSeq));
+            Assert.False(restGap);
+            Assert.Equal(5, restLast);
+            Assert.Equal(new[] { 2L, 3L }, cut.Select(r => r.ResultSeq));
+            Assert.False(cutGap);
+            Assert.Equal(5, cutLast);
+
+            // Up to date: nothing after the latest, which is no gap and no error.
+            Assert.Empty(none);
+            Assert.False(noneGap);
+            Assert.False(noneFuture);
+            Assert.Equal(5, noneLast);
+        }
+
+        [Fact]
+        public void WhenTheHistoryDroppedResultsTheClientHasNotSeen_TheListSaysSo()
+        {
+            var registry = new RunRegistry(resultHistory: 3);
+
+            for (var i = 0; i < 6; i++)
+            {
+                registry.RecordUnrequested(Unrequested);
+            }
+
+            var (all, allGap, _, _) = registry.ListResults(0, 0);
+            var (fromTheEdge, edgeGap, _, _) = registry.ListResults(3, 0);
+            var (fromInside, insideGap, _, _) = registry.ListResults(4, 0);
+            var (tooOld, oldGap, _, _) = registry.ListResults(1, 0);
+
+            // 4, 5 and 6 are held. Asking after 3 loses nothing; asking after 0, 1 or 2 does.
+            Assert.Equal(new[] { 4L, 5L, 6L }, all.Select(r => r.ResultSeq));
+            Assert.True(allGap);
+            Assert.False(edgeGap);
+            Assert.Equal(new[] { 4L, 5L, 6L }, fromTheEdge.Select(r => r.ResultSeq));
+            Assert.False(insideGap);
+            Assert.Equal(new[] { 5L, 6L }, fromInside.Select(r => r.ResultSeq));
+            Assert.True(oldGap);
+            Assert.Equal(new[] { 4L, 5L, 6L }, tooOld.Select(r => r.ResultSeq));
+        }
+
+        [Fact]
+        public void ANumberThatHasNotBeenGivenOut_IsReportedAsFromAnotherProcess_NotAsUpToDate()
+        {
+            var registry = new RunRegistry();
+            registry.RecordUnrequested(Unrequested);
+
+            var (results, gap, last, future) = registry.ListResults(7, 0);
+
+            Assert.True(future);
+            Assert.Empty(results);
+            Assert.False(gap);
+            Assert.Equal(1, last);
+        }
+
+        [Fact]
+        public void AnEmptyRegistry_ListsNothing_AndNoGap()
+        {
+            var (results, gap, last, future) = new RunRegistry().ListResults(0, 0);
+
+            Assert.Empty(results);
+            Assert.False(gap);
+            Assert.False(future);
+            Assert.Equal(0, last);
+        }
+
+        [Fact]
+        public void AResultOfTheModeNumbersItself_UnderTheLock_AlsoWhenManyEndAtOnce()
+        {
+            var registry = new RunRegistry(resultHistory: 1000);
+
+            System.Threading.Tasks.Parallel.For(0, 200, _ => registry.RecordUnrequested(Unrequested));
+
+            var (all, _, last, _) = registry.ListResults(0, 0);
+
+            // Each number once, and the log in the order of the numbers.
+            Assert.Equal(200, last);
+            Assert.Equal(Enumerable.Range(1, 200).Select(i => (long)i), all.Select(r => r.ResultSeq));
+        }
         [Fact]
         public void TheSourceOfTheCancellationToken_IsDisposedOnce()
         {

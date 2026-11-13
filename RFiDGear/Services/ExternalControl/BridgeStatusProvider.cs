@@ -26,6 +26,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly TimeSpan _uiTimeout;
         private readonly Func<long> _lastResultSeq;
         private readonly Func<ActiveRunDto?> _activeRun;
+        private readonly Func<AutoModeStatusDto?> _autoMode;
         private readonly object _gate = new object();
         private UiValues? _lastUi;
         private Task? _outstandingRead;
@@ -39,6 +40,7 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="uiTimeout">How long to wait for the main window.</param>
         /// <param name="lastResultSeq">The number of the latest result the host holds; 0 when there is none.</param>
         /// <param name="activeRun">The run a client started that is in flight, or <see langword="null"/>.</param>
+        /// <param name="autoMode">What automatic mode is doing; <see langword="null"/> (the default) for a host that does not offer it.</param>
         internal BridgeStatusProvider(
             IRFiDGearExtensionHost host,
             string instanceId,
@@ -47,9 +49,11 @@ namespace RFiDGear.Services.ExternalControl
             Func<Action, Task> dispatchToUi,
             TimeSpan uiTimeout,
             Func<long>? lastResultSeq = null,
-            Func<ActiveRunDto?>? activeRun = null)
+            Func<ActiveRunDto?>? activeRun = null,
+            Func<AutoModeStatusDto?>? autoMode = null)
         {
             _activeRun = activeRun ?? (() => null);
+            _autoMode = autoMode ?? (() => null);
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = instanceId ?? throw new ArgumentNullException(nameof(instanceId));
             _isStartupComplete = isStartupComplete ?? throw new ArgumentNullException(nameof(isStartupComplete));
@@ -86,6 +90,7 @@ namespace RFiDGear.Services.ExternalControl
                 ActiveRun = _activeRun(),
                 Reader = BridgeMapper.ReadReader(_host.Reader),
                 LastResultSeq = _lastResultSeq(),
+                AutoMode = _autoMode(),
             };
         }
 

@@ -128,5 +128,9 @@ namespace RFiDGear.Bridge
         /// <summary>Gets the sequence number of the latest result the host holds, 0 when there is none. It lets a client see after a reconnect whether it missed one.</summary>
         [JsonPropertyName("lastResultSeq")]
         public long LastResultSeq { get; init; }
+
+        /// <summary>Gets what automatic mode is doing; nothing when this RFiDGear does not offer the <see cref="BridgeCapabilities.AutoMode"/> capability.</summary>
+        [JsonPropertyName("autoMode")]
+        public AutoModeStatusDto? AutoMode { get; init; }
     }
 }

@@ -43,6 +43,18 @@ namespace RFiDGear.Bridge
         public const string ExecutionResultLookup = "execution.resultLookup";
 
         /// <summary>
+        /// Reading the results of all runs in the order in which they ended, those of automatic mode as well, from a number onward,
+        /// and being told when some were dropped from the history in between.
+        /// </summary>
+        public const string ExecutionResultLog = "execution.resultLog";
+
+        /// <summary>Switching the continuous processing of cards on and off, and reading what it did.</summary>
+        public const string AutoMode = "autoMode";
+
+        /// <summary>The events about automatic mode: it was switched on or off, and a card was processed.</summary>
+        public const string EventsAutoMode = "events.autoMode";
+
+        /// <summary>
         /// A guarantee, not a method: RFiDGear writes down, before it asks the host to run, that it is about to, and when the run
         /// ended. After RFiDGear has been restarted, a request id it had admitted is still known, as long as it is among the
         /// last <see cref="BridgeProtocol.RequestIdHistory"/> request ids: <c>startRun</c> with it never starts a second run
@@ -86,11 +98,14 @@ namespace RFiDGear.Bridge
             ExecutionRun,
             ExecutionCancel,
             ExecutionResultLookup,
+            ExecutionResultLog,
             ExecutionJournal,
+            AutoMode,
             EventsExecution,
             EventsRunning,
             EventsReader,
             EventsProject,
+            EventsAutoMode,
             EventsLifecycle,
             ReaderScan,
         };
@@ -129,6 +144,15 @@ namespace RFiDGear.Bridge
 
         /// <summary>Scans the reader.</summary>
         public const string ScanReader = "scanReader";
+
+        /// <summary>Switches automatic mode on.</summary>
+        public const string StartAutoMode = "startAutoMode";
+
+        /// <summary>Switches automatic mode off.</summary>
+        public const string StopAutoMode = "stopAutoMode";
+
+        /// <summary>Lists the results of the runs from a number onward.</summary>
+        public const string ListRunResults = "listRunResults";
     }
 
     /// <summary>The names of the notifications the host sends, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
@@ -153,6 +177,12 @@ namespace RFiDGear.Bridge
         /// <summary>RFiDGear is closing. Best effort: its absence proves nothing.</summary>
         public const string ShuttingDown = "shuttingDown";
 
+        /// <summary>Automatic mode was switched on or off.</summary>
+        public const string AutoModeChanged = "autoModeChanged";
+
+        /// <summary>Automatic mode processed a card. Sent exactly once per run of the mode.</summary>
+        public const string AutoRunCompleted = "autoRunCompleted";
+
         /// <summary>Gets every event name of version 1.</summary>
         public static IReadOnlyList<string> All { get; } = new[]
         {
@@ -162,7 +192,35 @@ namespace RFiDGear.Bridge
             ReaderChanged,
             ProjectChanged,
             ShuttingDown,
+            AutoModeChanged,
+            AutoRunCompleted,
         };
+    }
+
+    /// <summary>The values of <see cref="AutoModeStatusDto.LastStopReason"/>: why automatic mode last stopped.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
+    public static class AutoModeStopReasons
+    {
+        /// <summary>It has not stopped since RFiDGear started, or it is on.</summary>
+        public const string None = "none";
+
+        /// <summary>Somebody switched it off: the user, an extension or a client.</summary>
+        public const string StopRequested = "stopRequested";
+
+        /// <summary>The reader was lost.</summary>
+        public const string ReaderLost = "readerLost";
+
+        /// <summary>Another reader was selected.</summary>
+        public const string ReaderChanged = "readerChanged";
+
+        /// <summary>A run ended in a fault or was cancelled, which leaves the card in a state nobody knows.</summary>
+        public const string RunAborted = "runAborted";
+
+        /// <summary>A run did not end in time.</summary>
+        public const string RunTimedOut = "runTimedOut";
+
+        /// <summary>RFiDGear reported a reason this protocol does not know.</summary>
+        public const string Unknown = "unknown";
     }
 
     /// <summary>The values of <see cref="RunResultDto.Status"/>: how a run ended, as one word.</summary>

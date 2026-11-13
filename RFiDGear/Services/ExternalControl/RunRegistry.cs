@@ -176,6 +176,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Dictionary<string, RunRecord> _byRunId = new Dictionary<string, RunRecord>(StringComparer.Ordinal);
         private readonly Queue<RunRecord> _completedOrder = new Queue<RunRecord>();
         private readonly Queue<RunRecord> _withResult = new Queue<RunRecord>();
+        private readonly Queue<RunResultDto> _log = new Queue<RunResultDto>();
         private long _lastResultSeq;
 
         /// <summary>Creates the registry.</summary>
@@ -308,12 +309,102 @@ namespace RFiDGear.Services.ExternalControl
                 record.Result = result;
                 _withResult.Enqueue(record);
                 _completedOrder.Enqueue(record);
+                Append(result);
                 Evict();
             }
 
             record.Completion.TrySetResult(true);
 
             return result;
+        }
+
+        /// <summary>
+        /// Keeps the result of a run that no client asked for (a run of automatic mode): it gets the next number of the same
+        /// sequence as the runs of clients, and is held for <see cref="ListResults"/> like theirs. It has no record, so it cannot be
+        /// looked up by an id; the list is how it is found.
+        /// </summary>
+        /// <param name="build">Makes the result for a number.</param>
+        /// <returns>The result.</returns>
+        internal RunResultDto RecordUnrequested(Func<long, RunResultDto> build)
+        {
+            ArgumentNullException.ThrowIfNull(build);
+
+            lock (_gate)
+            {
+                var seq = Interlocked.Increment(ref _lastResultSeq);
+                var result = build(seq);
+                Append(result);
+
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Lists the results that were completed after a number, oldest first, whoever started the run. A result that the history
+        /// has dropped cannot be listed; the answer says so instead of leaving a hole that looks like nothing happened.
+        /// </summary>
+        /// <param name="afterSeq">The number of the last result the caller has; 0 for all that are held.</param>
+        /// <param name="limit">The most results to return; 0 or less for all that are held.</param>
+        /// <returns>
+        /// The results; whether numbers after <paramref name="afterSeq"/> are missing from the history; the number of the latest
+        /// result; and whether <paramref name="afterSeq"/> is a number this registry has not given out yet (it belongs to another
+        /// process, or is made up).
+        /// </returns>
+        internal (IReadOnlyList<RunResultDto> Results, bool Gap, long LastResultSeq, bool FromTheFuture) ListResults(long afterSeq, int limit)
+        {
+            lock (_gate)
+            {
+                var last = Interlocked.Read(ref _lastResultSeq);
+
+                if (afterSeq > last)
+                {
+                    return (Array.Empty<RunResultDto>(), false, last, true);
+                }
+
+                var results = new List<RunResultDto>();
+                var gap = false;
+
+                foreach (var result in _log)
+                {
+                    if (result.ResultSeq <= afterSeq)
+                    {
+                        continue;
+                    }
+
+                    // The first result after the number asked for: if it is not the next number, some were dropped.
+                    if (results.Count == 0 && result.ResultSeq > afterSeq + 1)
+                    {
+                        gap = true;
+                    }
+
+                    if (limit > 0 && results.Count >= limit)
+                    {
+                        break;
+                    }
+
+                    results.Add(result);
+                }
+
+                // Nothing is held after the number, yet newer ones were given out: all of them were dropped (or the number is the
+                // latest, which is no gap).
+                if (results.Count == 0 && afterSeq < last)
+                {
+                    gap = true;
+                }
+
+                return (results, gap, last, false);
+            }
+        }
+
+        // Called under the lock.
+        private void Append(RunResultDto result)
+        {
+            _log.Enqueue(result);
+
+            while (_log.Count > _resultHistory)
+            {
+                _log.Dequeue();
+            }
         }
 
         // Called under the lock.
