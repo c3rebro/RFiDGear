@@ -275,6 +275,10 @@ namespace RFiDGear.Tests.ExternalControl
             h.Host.ExecutionHost.ThrowOnExecute = new InvalidOperationException("An execution is already in progress.");
             var refused = await RefusalOf(() => h.Supervisor.StartAsync(Request("r-1")));
 
+            // A run that was refused is not a run in flight: the application may close, and the status shows none.
+            Assert.False(h.Supervisor.HasActiveRun);
+            Assert.Null(h.Supervisor.ActiveRun);
+
             h.Host.ExecutionHost.ThrowOnExecute = null;
             var retry = await h.Supervisor.StartAsync(Request("r-1"));
 
