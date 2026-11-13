@@ -36,7 +36,7 @@ namespace RFiDGear.Tests.ExternalControl
 
         private static string NewPipeName() => "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
 
-        private static async Task<MainWindowViewModel> InitializeAsync(string pipeName, bool setting, params string[] arguments)
+        internal static async Task<MainWindowViewModel> InitializeAsync(string pipeName, bool setting, params string[] arguments)
         {
             var tempRoot = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
             var settingsDirectory = Path.Combine(tempRoot, "settings");

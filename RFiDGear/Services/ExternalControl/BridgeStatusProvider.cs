@@ -25,6 +25,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Func<Action, Task> _dispatchToUi;
         private readonly TimeSpan _uiTimeout;
         private readonly Func<long> _lastResultSeq;
+        private readonly Func<ActiveRunDto?> _activeRun;
         private readonly object _gate = new object();
         private UiValues? _lastUi;
         private Task? _outstandingRead;
@@ -37,6 +38,7 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="dispatchToUi">Runs an action on the thread of the main window.</param>
         /// <param name="uiTimeout">How long to wait for the main window.</param>
         /// <param name="lastResultSeq">The number of the latest result the host holds; 0 when there is none.</param>
+        /// <param name="activeRun">The run a client started that is in flight, or <see langword="null"/>.</param>
         internal BridgeStatusProvider(
             IRFiDGearExtensionHost host,
             string instanceId,
@@ -44,8 +46,10 @@ namespace RFiDGear.Services.ExternalControl
             Func<bool> isReaderInitializing,
             Func<Action, Task> dispatchToUi,
             TimeSpan uiTimeout,
-            Func<long>? lastResultSeq = null)
+            Func<long>? lastResultSeq = null,
+            Func<ActiveRunDto?>? activeRun = null)
         {
+            _activeRun = activeRun ?? (() => null);
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = instanceId ?? throw new ArgumentNullException(nameof(instanceId));
             _isStartupComplete = isStartupComplete ?? throw new ArgumentNullException(nameof(isStartupComplete));
@@ -79,6 +83,7 @@ namespace RFiDGear.Services.ExternalControl
                 Stale = !responsive,
                 Project = ui?.Project ?? new ProjectStatusDto(),
                 IsRunning = _host.Execution.IsRunning,
+                ActiveRun = _activeRun(),
                 Reader = BridgeMapper.ReadReader(_host.Reader),
                 LastResultSeq = _lastResultSeq(),
             };

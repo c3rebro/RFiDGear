@@ -30,6 +30,7 @@ namespace RFiDGear.Services.ExternalControl
 
         private readonly IRFiDGearExtensionHost _host;
         private readonly BridgeServer _server;
+        private readonly RunSupervisor? _supervisor;
         private readonly string _instanceId;
         private int _startupComplete;
         private int _started;
@@ -45,6 +46,7 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="timings">The time limits of a connection; the defaults when <see langword="null"/>.</param>
         /// <param name="uiTimeout">How long <c>getStatus</c> waits for the main window; two seconds when <see langword="null"/>.</param>
         /// <param name="busyActivity">Says what the application is busy with (one of <see cref="BusyActivities"/>), for the hint in a "busy" error; may return <see langword="null"/>.</param>
+        /// <param name="admissionTimeout">How long <c>startRun</c> waits for the main window to take a request; five seconds when <see langword="null"/>.</param>
         internal ExternalControlService(
             IRFiDGearExtensionHost host,
             Func<Action, Task> dispatchToUi,
@@ -53,43 +55,75 @@ namespace RFiDGear.Services.ExternalControl
             string pipeName,
             BridgeServerTimings? timings = null,
             TimeSpan? uiTimeout = null,
-            Func<string?>? busyActivity = null)
+            Func<string?>? busyActivity = null,
+            TimeSpan? admissionTimeout = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = Guid.NewGuid().ToString("N");
 
+            // Runs can only be offered when the execution host can start a run under an id the bridge chose.
+            if (host.Execution is IPreassignedRunExecution execution)
+            {
+                _supervisor = new RunSupervisor(
+                    host,
+                    execution,
+                    new RunRegistry(),
+                    dispatchToUi,
+                    (name, durable, create) => _server!.Publish(name, durable, create),
+                    () => Volatile.Read(ref _shutdown) != 0,
+                    () => busyActivity?.Invoke(),
+                    admissionTimeout);
+            }
+
+            var supervisor = _supervisor;
             var status = new BridgeStatusProvider(
                 host,
                 _instanceId,
                 () => IsStartupComplete,
                 isReaderInitializing,
                 dispatchToUi,
-                uiTimeout ?? TimeSpan.FromSeconds(2));
+                uiTimeout ?? TimeSpan.FromSeconds(2),
+                () => supervisor?.LastResultSeq ?? 0,
+                () => supervisor?.ActiveRun);
             var operations = new BridgeHostOperations(host, busyActivity);
 
             // What the host offers in this version of the bridge; a capability appears only when everything behind it is there.
+            var capabilities = new HashSet<string>(StringComparer.Ordinal)
+            {
+                BridgeCapabilities.Session,
+                BridgeCapabilities.Status,
+                BridgeCapabilities.ProjectLoad,
+                BridgeCapabilities.ReaderScan,
+                BridgeCapabilities.EventsRunning,
+                BridgeCapabilities.EventsProject,
+                BridgeCapabilities.EventsReader,
+                BridgeCapabilities.EventsLifecycle,
+            };
+
+            if (supervisor != null)
+            {
+                capabilities.Add(BridgeCapabilities.ExecutionRun);
+                capabilities.Add(BridgeCapabilities.ExecutionCancel);
+                capabilities.Add(BridgeCapabilities.ExecutionResultLookup);
+                capabilities.Add(BridgeCapabilities.EventsExecution);
+            }
+
             var options = new BridgeServiceOptions
             {
                 AppVersion = appVersion ?? string.Empty,
                 InstanceId = _instanceId,
-                Capabilities = new HashSet<string>(StringComparer.Ordinal)
-                {
-                    BridgeCapabilities.Session,
-                    BridgeCapabilities.Status,
-                    BridgeCapabilities.ProjectLoad,
-                    BridgeCapabilities.ReaderScan,
-                    BridgeCapabilities.EventsRunning,
-                    BridgeCapabilities.EventsProject,
-                    BridgeCapabilities.EventsReader,
-                    BridgeCapabilities.EventsLifecycle,
-                },
+                Capabilities = capabilities,
                 IsStartupComplete = () => IsStartupComplete,
                 GetStatus = status.GetStatusAsync,
                 LoadProject = operations.LoadProjectAsync,
                 ScanReader = operations.ScanReaderAsync,
+                StartRun = supervisor == null ? null : supervisor.StartAsync,
+                CancelRun = supervisor == null ? null : request => Task.FromResult(supervisor.Cancel(request)),
+                GetRunResult = supervisor == null ? null : supervisor.GetResultAsync,
             };
 
             _server = new BridgeServer(pipeName, options, timings);
+            RunInFlight = () => supervisor?.HasActiveRun ?? false;
         }
 
         /// <summary>Raised when a client connects or leaves, or the server stops. Any thread.</summary>
@@ -108,10 +142,10 @@ namespace RFiDGear.Services.ExternalControl
         internal bool IsStartupComplete => Volatile.Read(ref _startupComplete) != 0;
 
         /// <summary>
-        /// Gets or sets whether a run that a client started is in flight; the shutdown notice says so. Nothing starts runs over
-        /// the bridge yet, so it is always <see langword="false"/> until the execution slice sets it.
+        /// Gets or sets whether a run that a client started is in flight: the shutdown notice says so, and the application asks
+        /// before it closes while one is. It reads the supervisor of the runs; a test may replace it.
         /// </summary>
-        internal Func<bool> RunInFlight { get; set; } = () => false;
+        internal Func<bool> RunInFlight { get; set; }
 
         /// <summary>
         /// Opens the pipe and subscribes to the host. If the pipe cannot be created (the name is taken, access is denied) the
@@ -272,7 +306,13 @@ namespace RFiDGear.Services.ExternalControl
             _server.Publish(
                 BridgeEvents.RunningChanged,
                 durable: false,
-                (seq, sessionId, at) => new RunningChangedEvent { Seq = seq, SessionId = sessionId, At = at, IsRunning = _host.Execution.IsRunning });
+                (seq, sessionId, at) =>
+                {
+                    // The picture of the moment of sending: is a run going on, and is it one this client's side started.
+                    var own = _supervisor?.ActiveRun;
+
+                    return new RunningChangedEvent { Seq = seq, SessionId = sessionId, At = at, IsRunning = _host.Execution.IsRunning, OwnRequestId = own?.RequestId, OwnRunId = own?.RunId };
+                });
 
         private void OnServerStateChanged(object? sender, EventArgs e) => ConnectionChanged?.Invoke(this, EventArgs.Empty);
     }
