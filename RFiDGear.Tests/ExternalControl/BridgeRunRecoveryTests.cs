@@ -277,6 +277,34 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Contains("\"state\":\"ended\"", string.Join("\n", LinesOf(process.Journal!)), StringComparison.Ordinal);
         }
 
+        private sealed class OrderSpy : IRunJournal
+        {
+            public Func<string>? StateAtTheEnd { get; set; }
+
+            public string? StateWhenTheEndWasWritten { get; private set; }
+
+            public bool TryRecordStarted(string requestId, string runId) => requestId.Length > 0;
+
+            public void RecordRefused(string requestId, string runId) => ArgumentException.ThrowIfNullOrEmpty(requestId);
+
+            public void RecordEnded(string requestId, string runId) => StateWhenTheEndWasWritten = StateAtTheEnd?.Invoke();
+        }
+
+        [Fact]
+        public async Task TheEndOfARunIsWrittenDown_BeforeAnybodyCanReadItsResult()
+        {
+            var spy = new OrderSpy();
+            var process = new Process(NewFolder(), journalOverride: spy);
+            spy.StateAtTheEnd = () => process.Supervisor.GetResultAsync(new GetRunResultRequest { RequestId = "r-1" }).GetAwaiter().GetResult().State;
+
+            await process.Supervisor.StartAsync(Request("r-1"));
+            await ResultOf(process, "r-1");
+
+            // While the line was written the run was still in flight for everybody who asked: a client that has read the result is
+            // never contradicted by a restart that finds the run unfinished.
+            Assert.Equal(RunStates.Running, spy.StateWhenTheEndWasWritten);
+        }
+
         private sealed class BrokenJournal : IRunJournal
         {
             public bool TryRecordStarted(string requestId, string runId) => requestId.Length < 0;

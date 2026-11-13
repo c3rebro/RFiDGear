@@ -613,6 +613,11 @@ namespace RFiDGear.Services.ExternalControl
                 Logger.Error("External control: run {RunId} ended without a result of the host ({ExceptionType})", record.RunId, task.Exception?.GetBaseException().GetType().FullName ?? "cancelled");
             }
 
+            // Written down before anybody can be told that the run has ended: a client that has read the result must not be
+            // contradicted by a restart that finds the run unfinished. If this cannot be written the run stays "interrupted" for a
+            // later RFiDGear, which is the safe way to be wrong.
+            _journal?.RecordEnded(record.RequestId, record.RunId);
+
             var startedAt = record.StartedAt ?? DateTimeOffset.UtcNow;
             var result = _registry.Complete(
                 record,
@@ -631,9 +636,6 @@ namespace RFiDGear.Services.ExternalControl
             {
                 return;
             }
-
-            // If this cannot be written the run stays "interrupted" for a later RFiDGear, which is the safe way to be wrong.
-            _journal?.RecordEnded(record.RequestId, record.RunId);
 
             Logger.Information(
                 "External control: run {RunId} of request {RequestId} ended as {Status} (result {ResultSeq}, {TotalTasks} tasks, {FailedTasks} failed)",
