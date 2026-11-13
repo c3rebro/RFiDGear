@@ -201,6 +201,32 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task ANoticeIsMadeWhenItIsSent_AndNamesTheOwnerOnlyWhileTheHostStillRunsThatRun()
+        {
+            var (service, pipe, host) = Start();
+            host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            host.ExecutionHost.SimulateRunningState = true;
+            var client = await ConnectAsync(pipe);
+            var response = await client.Service.StartRun(Request("r-1"));
+            var ownWhenItChanged = (await client.Service.GetStatus(new GetStatusRequest())).ActiveRun;
+
+            var whileItRuns = service.MakeRunningChanged(1, "session", DateTimeOffset.UtcNow, ownWhenItChanged);
+            var nobody = service.MakeRunningChanged(2, "session", DateTimeOffset.UtcNow, null);
+
+            // The host gives up the run, and somebody else is running when the notice that was made for the start is sent.
+            host.ExecutionHost.RaiseExecutionCompleted(FakeResults.Success(2) with { RunId = response.RunId });
+            host.ExecutionHost.SetRunningQuietly(true);
+            var afterwards = service.MakeRunningChanged(3, "session", DateTimeOffset.UtcNow, ownWhenItChanged);
+
+            Assert.Equal(("r-1", response.RunId, true), (whileItRuns.OwnRequestId, whileItRuns.OwnRunId, whileItRuns.IsRunning));
+            Assert.Null(nobody.OwnRequestId);
+            Assert.True(afterwards.IsRunning);
+            Assert.Null(afterwards.OwnRequestId);
+            Assert.Null(afterwards.OwnRunId);
+            host.ExecutionHost.RunGate.SetResult(true);
+        }
+
+        [Fact]
         public async Task ARunOfSomeoneElse_IsShownAsRunning_ButHasNoOwnerHere_AndNeverANotice()
         {
             var (_, pipe, host) = Start();

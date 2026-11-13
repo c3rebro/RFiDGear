@@ -310,17 +310,24 @@ namespace RFiDGear.Services.ExternalControl
             // while someone else already runs.
             var own = _supervisor?.OwnerOfThisRaise();
 
-            _server.Publish(
-                BridgeEvents.RunningChanged,
-                durable: false,
-                (seq, sessionId, at) =>
-                {
-                    // The picture of the moment of sending: is a run going on, and is it still the one that was started by the bridge.
-                    var running = _host.Execution.IsRunning;
-                    var owner = own != null && running && _supervisor!.IsHostRunning(own.RunId!) ? own : null;
+            _server.Publish(BridgeEvents.RunningChanged, durable: false, (seq, sessionId, at) => MakeRunningChanged(seq, sessionId, at, own));
+        }
 
-                    return new RunningChangedEvent { Seq = seq, SessionId = sessionId, At = at, IsRunning = running, OwnRequestId = owner?.RequestId, OwnRunId = owner?.RunId };
-                });
+        /// <summary>
+        /// Makes the notice at the moment of sending: is a run going on, and is it still the one the bridge started when the state
+        /// changed. A run of the bridge that the host has since reported as ended is not the owner of what runs now.
+        /// </summary>
+        /// <param name="seq">The number of the notice.</param>
+        /// <param name="sessionId">The id of the connection.</param>
+        /// <param name="at">When it is sent.</param>
+        /// <param name="ownWhenItChanged">The run of the bridge that caused the change, as seen on the thread that raised it, or <see langword="null"/>.</param>
+        /// <returns>The notice.</returns>
+        internal RunningChangedEvent MakeRunningChanged(long seq, string sessionId, DateTimeOffset at, ActiveRunDto? ownWhenItChanged)
+        {
+            var running = _host.Execution.IsRunning;
+            var owner = ownWhenItChanged != null && running && _supervisor != null && _supervisor.IsHostRunning(ownWhenItChanged.RunId!) ? ownWhenItChanged : null;
+
+            return new RunningChangedEvent { Seq = seq, SessionId = sessionId, At = at, IsRunning = running, OwnRequestId = owner?.RequestId, OwnRunId = owner?.RunId };
         }
 
         private void OnServerStateChanged(object? sender, EventArgs e) => ConnectionChanged?.Invoke(this, EventArgs.Empty);
