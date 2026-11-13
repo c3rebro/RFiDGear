@@ -26,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Contracts", "RFiDG
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Bridge.Contracts", "RFiDGear.Bridge.Contracts\RFiDGear.Bridge.Contracts.csproj", "{FB941F53-F01D-4C5C-B945-E8A7053F60B2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Bridge.SampleClient", "RFiDGear.Bridge.SampleClient\RFiDGear.Bridge.SampleClient.csproj", "{39D46B3C-5A20-4E03-A02B-E6A79E29D878}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.ExtensionSdk", "RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj", "{87025BBF-C676-4046-8EA5-C7FBB3051D33}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.ExtensionLibraries.CardCheck", "RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj", "{1DE12B36-2393-4224-9180-CC0AFDBDC56F}"
@@ -191,6 +193,24 @@ Global
 		{FB941F53-F01D-4C5C-B945-E8A7053F60B2}.Release|x64.Build.0 = Release|x64
 		{FB941F53-F01D-4C5C-B945-E8A7053F60B2}.Release|x86.ActiveCfg = Release|x86
 		{FB941F53-F01D-4C5C-B945-E8A7053F60B2}.Release|x86.Build.0 = Release|x86
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug(without args)|Any CPU.ActiveCfg = Debug|Any CPU
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug(without args)|Any CPU.Build.0 = Debug|Any CPU
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug(without args)|x64.ActiveCfg = Debug|x64
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug(without args)|x64.Build.0 = Debug|x64
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug(without args)|x86.ActiveCfg = Debug|x86
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug(without args)|x86.Build.0 = Debug|x86
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug|x64.ActiveCfg = Debug|x64
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug|x64.Build.0 = Debug|x64
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug|x86.ActiveCfg = Debug|x86
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Debug|x86.Build.0 = Debug|x86
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Release|x64.ActiveCfg = Release|x64
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Release|x64.Build.0 = Release|x64
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Release|x86.ActiveCfg = Release|x86
+		{39D46B3C-5A20-4E03-A02B-E6A79E29D878}.Release|x86.Build.0 = Release|x86
 		{87025BBF-C676-4046-8EA5-C7FBB3051D33}.Debug(without args)|Any CPU.ActiveCfg = Debug|Any CPU
 		{87025BBF-C676-4046-8EA5-C7FBB3051D33}.Debug(without args)|Any CPU.Build.0 = Debug|Any CPU
 		{87025BBF-C676-4046-8EA5-C7FBB3051D33}.Debug(without args)|x64.ActiveCfg = Debug|x64

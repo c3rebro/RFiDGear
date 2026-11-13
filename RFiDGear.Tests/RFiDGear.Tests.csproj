@@ -43,6 +43,7 @@
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
     <ProjectReference Include="..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj" />
     <ProjectReference Include="..\RFiDGear.Bridge.Contracts\RFiDGear.Bridge.Contracts.csproj" />
+    <ProjectReference Include="..\RFiDGear.Bridge.SampleClient\RFiDGear.Bridge.SampleClient.csproj" />
     <ProjectReference Include="..\RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj" />
   </ItemGroup>
   <ItemGroup>
