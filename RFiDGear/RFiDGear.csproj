@@ -41,6 +41,9 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <!-- StreamJsonRpc and Microsoft.VisualStudio.Threading each ship satellite assemblies for 13 languages that the WiX
+         harvest of this folder would put into the installer. RFiDGear itself speaks English and German. -->
+    <SatelliteResourceLanguages>en;de</SatelliteResourceLanguages>
     <SignAssembly>False</SignAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
@@ -123,6 +126,8 @@
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <!-- The JSON-RPC library of the external control bridge (named pipe, RFiDGear/Services/ExternalControl). -->
+    <PackageReference Include="StreamJsonRpc" Version="2.26.150" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.ComponentModel.Composition" Version="10.0.1" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />

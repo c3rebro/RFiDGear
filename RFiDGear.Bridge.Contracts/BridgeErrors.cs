@@ -18,10 +18,17 @@ namespace RFiDGear.Bridge
         /// <summary>No protocol major version is supported by both sides.</summary>
         public const int IncompatibleProtocol = 1002;
 
-        /// <summary>The method belongs to a capability this host does not offer.</summary>
+        /// <summary>
+        /// The method belongs to a capability this host does not offer. A host that does not know the method at all (an older
+        /// version) answers the JSON-RPC code -32601 (method not found); a client treats both as this error.
+        /// </summary>
         public const int CapabilityNotSupported = 1003;
 
-        /// <summary>A request is malformed or over a limit; <c>details.field</c> names the field, never its value.</summary>
+        /// <summary>
+        /// A request is over a limit or breaks a rule; <c>details.field</c> names the field, never its value. A request that is
+        /// not even readable (an unknown member, a value of the wrong type) is answered by the JSON-RPC library itself with its
+        /// code -32602 (invalid params) before any code of RFiDGear runs; a client treats both as this error.
+        /// </summary>
         public const int InvalidRequest = 1004;
 
         /// <summary>RFiDGear is still starting; only <c>hello</c> and <c>getStatus</c> work yet.</summary>
