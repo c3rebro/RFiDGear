@@ -1342,13 +1342,9 @@ namespace RFiDGear.ViewModel
         /// Removes the selected task from the task list, if no run, load or other edit is in progress. Otherwise the
         /// user is told and nothing is removed.
         /// </summary>
-        /// <returns><c>true</c> when the task was removed.</returns>
+        /// <returns><c>true</c> when the task was removed; <c>false</c> when the edit was refused or the selection is not in the list.</returns>
         internal bool TryDeleteSelectedTask() =>
-            taskListEditGate.TryEdit(() =>
-            {
-                taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
-                return true;
-            });
+            taskListEditGate.TryEdit(() => taskHandler.TaskCollection.Remove(SelectedSetupViewModel));
 
         /// <summary>
         /// Runs a change of the task list, or of the state of its tasks, while the coordinator's project-edit slot
