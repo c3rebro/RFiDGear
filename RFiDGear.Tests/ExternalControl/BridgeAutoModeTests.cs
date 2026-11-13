@@ -242,6 +242,25 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(2, client.Events.Count);
         }
 
+        [Fact]
+        public async Task QuickSwitchingOnAndOff_GivesOneNoticePerSwitch_NeverMergedIntoOne()
+        {
+            var (_, pipe, host) = Start();
+            var client = await ConnectAsync(pipe, BridgeEvents.AutoModeChanged);
+
+            // Faster than the connection sends: a notice about a state would be merged with the next one, a notice about a switch must not be.
+            for (var i = 0; i < 10; i++)
+            {
+                host.AutoModeHost.TryStart();
+                host.AutoModeHost.StopFor(AutoModeStopReason.StopRequested);
+            }
+
+            var events = await client.WaitForEventsAsync(20);
+            await Task.Delay(200);
+
+            Assert.Equal(20, client.Events.Count);
+            Assert.Equal(Enumerable.Range(0, 20).Select(i => i % 2 == 0), events.Cast<AutoModeChangedEvent>().Select(e => e.Enabled));
+        }
         [Theory]
         [InlineData(AutoModeStopReason.ReaderLost, AutoModeStopReasons.ReaderLost)]
         [InlineData(AutoModeStopReason.ReaderChanged, AutoModeStopReasons.ReaderChanged)]

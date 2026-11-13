@@ -385,13 +385,6 @@ namespace RFiDGear.Services.ExternalControl
                     results.Add(result);
                 }
 
-                // Nothing is held after the number, yet newer ones were given out: all of them were dropped (or the number is the
-                // latest, which is no gap).
-                if (results.Count == 0 && afterSeq < last)
-                {
-                    gap = true;
-                }
-
                 return (results, gap, last, false);
             }
         }
