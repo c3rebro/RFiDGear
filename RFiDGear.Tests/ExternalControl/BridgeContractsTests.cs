@@ -57,11 +57,25 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
-        public void EveryCapability_IsUsedByAMethod_SoNothingIsAdvertisedThatDoesNothing()
+        public void EveryCapability_IsUsedByAMethod_OrIsAGuaranteeThatSaysSo_SoNothingIsAdvertisedThatDoesNothing()
         {
             var used = AllMethods().Select(m => m.GetCustomAttribute<CapabilityAttribute>()!.Name).ToHashSet(StringComparer.Ordinal);
 
-            Assert.Equal(BridgeCapabilities.All.OrderBy(n => n, StringComparer.Ordinal), used.OrderBy(n => n, StringComparer.Ordinal));
+            // A guarantee is about how the methods behave and has none of its own; it must say so by being listed as one.
+            var accountedFor = used.Concat(BridgeCapabilities.Guarantees).ToHashSet(StringComparer.Ordinal);
+
+            Assert.Equal(BridgeCapabilities.All.OrderBy(n => n, StringComparer.Ordinal), accountedFor.OrderBy(n => n, StringComparer.Ordinal));
+        }
+
+        [Fact]
+        public void AGuarantee_IsListedAmongTheCapabilities_AndIsCarriedByNoMethod()
+        {
+            var used = AllMethods().Select(m => m.GetCustomAttribute<CapabilityAttribute>()!.Name).ToHashSet(StringComparer.Ordinal);
+
+            Assert.NotEmpty(BridgeCapabilities.Guarantees);
+            Assert.All(BridgeCapabilities.Guarantees, name => Assert.Contains(name, BridgeCapabilities.All));
+            Assert.All(BridgeCapabilities.Guarantees, name => Assert.DoesNotContain(name, used));
+            Assert.Contains(BridgeCapabilities.ExecutionJournal, BridgeCapabilities.Guarantees);
         }
 
         [Fact]

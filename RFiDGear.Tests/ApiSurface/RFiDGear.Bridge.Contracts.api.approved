@@ -15,6 +15,7 @@ public static class RFiDGear.Bridge.BridgeCapabilities
     public const string EventsReader = "events.reader"
     public const string EventsRunning = "events.running"
     public const string ExecutionCancel = "execution.cancel"
+    public const string ExecutionJournal = "execution.journal"
     public const string ExecutionResultLookup = "execution.resultLookup"
     public const string ExecutionRun = "execution.run"
     public const string ProjectLoad = "project.load"
@@ -22,6 +23,7 @@ public static class RFiDGear.Bridge.BridgeCapabilities
     public const string Session = "session"
     public const string Status = "status"
     public static System.Collections.Generic.IReadOnlyList<string> All { get; }
+    public static System.Collections.Generic.IReadOnlyList<string> Guarantees { get; }
 
 public static class RFiDGear.Bridge.BridgeErrorCodes
     public const int AutoModeActive = 1007

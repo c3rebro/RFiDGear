@@ -82,6 +82,7 @@ namespace RFiDGear.ViewModel
         private HeadlessExtensionHost extensionHost;
         private ExternalControlService externalControl;
         private readonly string externalControlPipeName;
+        private readonly string externalControlJournalDirectory;
         private readonly OnceGate startupOnce = new OnceGate();
         private ExtensionOperationCoordinator _coordinator;
         private AutoModeController _autoMode;
@@ -151,10 +152,13 @@ namespace RFiDGear.ViewModel
             Func<SettingsReaderWriter> settingsReaderWriterFactory = null,
             Func<DatabaseReaderWriter> databaseReaderWriterFactory = null,
             IApplicationExtensionLauncher applicationExtensionLauncher = null,
-            string externalControlPipeName = null)
+            string externalControlPipeName = null,
+            string externalControlJournalDirectory = null)
         {
-            // Tests that switch the bridge on give it a pipe of their own; the application uses the one of the user.
+            // Tests that switch the bridge on give it a pipe and a journal folder of their own; the application uses the pipe of
+            // the user and the folder below %LocalAppData%.
             this.externalControlPipeName = externalControlPipeName;
+            this.externalControlJournalDirectory = externalControlJournalDirectory;
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
             this.contextMenuBuilder = contextMenuBuilder ?? throw new ArgumentNullException(nameof(contextMenuBuilder));
@@ -383,7 +387,8 @@ namespace RFiDGear.ViewModel
                     () => IsReaderInitializing,
                     string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build),
                     externalControlPipeName ?? PipeNames.ForCurrentUser(),
-                    busyActivity: () => ExternalControlService.ActivityOf(_coordinator));
+                    busyActivity: () => ExternalControlService.ActivityOf(_coordinator),
+                    journalDirectory: externalControlJournalDirectory ?? RunJournal.DefaultDirectory);
 
                 // The status bar shows whether a program is connected; the server raises the change on its own threads.
                 service.ConnectionChanged += (_, _) =>

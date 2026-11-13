@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Linq;
 
 using RFiDGear.Bridge;
 using RFiDGear.Services.ExternalControl;
@@ -147,6 +148,52 @@ namespace RFiDGear.Tests.ExternalControl
 
             Assert.Same(inFlight, registry.Find("going", null));
             Assert.Equal(RunRecordState.Running, registry.Read(inFlight).State);
+        }
+
+        [Fact]
+        public void WhatTheJournalHolds_BecomesFinalRecords_ThatAreKnownByTheirIds()
+        {
+            var registry = new RunRegistry();
+            var (endedRun, interruptedRun) = (Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
+
+            registry.Recover(new[] { new JournalEntry("r-1", endedRun, JournalState.Ended), new JournalEntry("r-2", interruptedRun, JournalState.Started) });
+
+            var ended = registry.Find("r-1", null)!;
+            var interrupted = registry.Find(null, interruptedRun)!;
+            Assert.Equal(new[] { RunRecordState.Completed, RunRecordState.Interrupted }, new[] { ended.State, interrupted.State });
+            Assert.All(new[] { ended, interrupted }, record => Assert.True(record.IsRecovered));
+            Assert.All(new[] { ended, interrupted }, record => Assert.Null(registry.Read(record).Result));
+            Assert.All(new[] { ended, interrupted }, record => Assert.True(record.Admission.Task.IsCompletedSuccessfully && record.Admission.Task.Result.Refusal == null));
+            Assert.Equal(new[] { endedRun, interruptedRun }, new[] { ended.RunId, interrupted.RunId });
+            Assert.Equal(0, registry.LastResultSeq);
+        }
+
+        [Fact]
+        public void ARecoveredRecord_IsNotACompetitorOfANewRequest_AndNeverOverridesOne()
+        {
+            var registry = new RunRegistry();
+            var (live, _) = registry.GetOrCreate("r-1", "hash");
+
+            registry.Recover(new[] { new JournalEntry("r-1", Guid.NewGuid().ToString("N"), JournalState.Started) });
+
+            Assert.Same(live, registry.Find("r-1", null));
+            Assert.False(live.IsRecovered);
+        }
+
+        [Fact]
+        public void RecoveredIdsCountTowardsTheHistory_LikeThoseOfThisProcess()
+        {
+            var registry = new RunRegistry(resultHistory: 2, requestIdHistory: 3);
+            var entries = Enumerable.Range(1, 5).Select(i => new JournalEntry("r-" + i, Guid.NewGuid().ToString("N"), JournalState.Ended)).ToList();
+
+            registry.Recover(entries);
+
+            Assert.Null(registry.Find("r-1", null));
+            Assert.Null(registry.Find("r-2", null));
+            Assert.NotNull(registry.Find("r-3", null));
+            Assert.NotNull(registry.Find("r-5", null));
+            Assert.Null(registry.Find(null, entries[0].RunId));
+            Assert.Throws<ArgumentNullException>(() => registry.Recover(null!));
         }
 
         [Fact]

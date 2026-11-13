@@ -42,6 +42,23 @@ namespace RFiDGear.Bridge
         /// <summary>Asking for the result of a run later, for example after a reconnect.</summary>
         public const string ExecutionResultLookup = "execution.resultLookup";
 
+        /// <summary>
+        /// A guarantee, not a method: RFiDGear writes down, before it asks the host to run, that it is about to, and when the run
+        /// ended. After RFiDGear has been restarted, a request id it had admitted is still known, as long as it is among the
+        /// last <see cref="BridgeProtocol.RequestIdHistory"/> request ids: <c>startRun</c> with it never starts a second run
+        /// (<see cref="StartRunResponse.Duplicate"/> is set), and a lookup answers <see cref="RunStates.InterruptedByRestart"/>
+        /// for a run that was in flight, or <see cref="RunStates.Completed"/> without a result for one that had ended, whose
+        /// result the restart took. Without this capability a restart forgets all of that, and a client that did not get an answer
+        /// before the restart cannot know whether the card was touched.
+        /// <para>
+        /// What it does not promise: <see cref="RunStates.Unknown"/> does not prove that nothing was started. An id is forgotten
+        /// when more than <see cref="BridgeProtocol.RequestIdHistory"/> newer ids have been seen, and the journal cannot be
+        /// written at all on a machine whose disk refuses it (the capability is then not offered). A client that must not repeat
+        /// a card operation asks about the id soon after the doubt arises, and does not send the same job under a new id.
+        /// </para>
+        /// </summary>
+        public const string ExecutionJournal = "execution.journal";
+
         /// <summary>Events about a run started over the bridge: started and completed.</summary>
         public const string EventsExecution = "events.execution";
 
@@ -69,12 +86,22 @@ namespace RFiDGear.Bridge
             ExecutionRun,
             ExecutionCancel,
             ExecutionResultLookup,
+            ExecutionJournal,
             EventsExecution,
             EventsRunning,
             EventsReader,
             EventsProject,
             EventsLifecycle,
             ReaderScan,
+        };
+
+        /// <summary>
+        /// Gets the capabilities that are guarantees about the behaviour of the methods and not methods of their own. Every other
+        /// capability is carried by at least one method or event, so that nothing is advertised that does nothing.
+        /// </summary>
+        public static IReadOnlyList<string> Guarantees { get; } = new[]
+        {
+            ExecutionJournal,
         };
     }
 
@@ -188,10 +215,18 @@ namespace RFiDGear.Bridge
         /// <summary>The run was admitted and is in flight.</summary>
         public const string Running = "running";
 
-        /// <summary>The run ended; its result is available.</summary>
+        /// <summary>
+        /// The run ended. Its result is in the answer while the history holds it (the last <see cref="BridgeProtocol.ResultHistory"/>
+        /// results of this process); a run whose result is no longer held, or was taken by a restart, is still <c>completed</c>
+        /// and has no result.
+        /// </summary>
         public const string Completed = "completed";
 
-        /// <summary>The host does not know the id. It was never started, or it is older than the history that is kept.</summary>
+        /// <summary>
+        /// The host does not know the id. It was never started, or it is older than the history of ids that is kept (the last
+        /// <see cref="BridgeProtocol.RequestIdHistory"/>), or an RFiDGear without the journal was restarted since. It is not a
+        /// proof that nothing was started.
+        /// </summary>
         public const string Unknown = "unknown";
 
         /// <summary>RFiDGear restarted while the run was in flight; what the card went through is not known.</summary>

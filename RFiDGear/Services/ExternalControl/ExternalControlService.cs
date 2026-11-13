@@ -31,6 +31,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly IRFiDGearExtensionHost _host;
         private readonly BridgeServer _server;
         private readonly RunSupervisor? _supervisor;
+        private readonly RunJournal? _journal;
         private readonly string _instanceId;
         private int _startupComplete;
         private int _started;
@@ -47,6 +48,12 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="uiTimeout">How long <c>getStatus</c> waits for the main window; two seconds when <see langword="null"/>.</param>
         /// <param name="busyActivity">Says what the application is busy with (one of <see cref="BusyActivities"/>), for the hint in a "busy" error; may return <see langword="null"/>.</param>
         /// <param name="admissionTimeout">How long <c>startRun</c> waits for the main window to take a request; five seconds when <see langword="null"/>.</param>
+        /// <param name="journalDirectory">
+        /// The folder of the run journal (<see cref="RunJournal.DefaultDirectory"/> in the application), or <see langword="null"/> for
+        /// none. With a journal the runs of an earlier RFiDGear are known by their ids, and the guarantee
+        /// <see cref="BridgeCapabilities.ExecutionJournal"/> is offered; if the folder cannot be used the journal is off and the
+        /// guarantee is not offered.
+        /// </param>
         internal ExternalControlService(
             IRFiDGearExtensionHost host,
             Func<Action, Task> dispatchToUi,
@@ -56,7 +63,8 @@ namespace RFiDGear.Services.ExternalControl
             BridgeServerTimings? timings = null,
             TimeSpan? uiTimeout = null,
             Func<string?>? busyActivity = null,
-            TimeSpan? admissionTimeout = null)
+            TimeSpan? admissionTimeout = null,
+            string? journalDirectory = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = Guid.NewGuid().ToString("N");
@@ -64,15 +72,24 @@ namespace RFiDGear.Services.ExternalControl
             // Runs can only be offered when the execution host can start a run under an id the bridge chose.
             if (host.Execution is IPreassignedRunExecution execution)
             {
+                var registry = new RunRegistry();
+
+                if (journalDirectory != null)
+                {
+                    _journal = RunJournal.TryOpen(journalDirectory, _instanceId, out var recovered);
+                    registry.Recover(recovered);
+                }
+
                 _supervisor = new RunSupervisor(
                     host,
                     execution,
-                    new RunRegistry(),
+                    registry,
                     dispatchToUi,
                     (name, durable, create) => _server!.Publish(name, durable, create),
                     () => Volatile.Read(ref _shutdown) != 0,
                     () => busyActivity?.Invoke(),
-                    admissionTimeout);
+                    admissionTimeout,
+                    _journal);
             }
 
             var supervisor = _supervisor;
@@ -106,6 +123,11 @@ namespace RFiDGear.Services.ExternalControl
                 capabilities.Add(BridgeCapabilities.ExecutionCancel);
                 capabilities.Add(BridgeCapabilities.ExecutionResultLookup);
                 capabilities.Add(BridgeCapabilities.EventsExecution);
+            }
+
+            if (_journal != null)
+            {
+                capabilities.Add(BridgeCapabilities.ExecutionJournal);
             }
 
             var options = new BridgeServiceOptions
@@ -268,6 +290,7 @@ namespace RFiDGear.Services.ExternalControl
             _supervisor?.Detach();
             _server.StateChanged -= OnServerStateChanged;
             _server.Dispose();
+            _journal?.Dispose();
         }
 
         // Raised on the thread that changed the project (the window's), after the change: the path and the count are read
