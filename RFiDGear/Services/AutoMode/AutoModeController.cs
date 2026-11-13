@@ -229,12 +229,31 @@ namespace RFiDGear.Services.AutoMode
         /// <param name="requireReady">Also refuse when no reader is selected or the project has no task.</param>
         /// <param name="keepApplicationOpen">Whether a program task <c>%EXIT</c> ends the run of a card instead of closing the application.</param>
         /// <returns>What came of it; only <see cref="AutoModeStartResult.Started"/> changed anything.</returns>
-        internal AutoModeStartResult TryStart(bool requireReady, bool keepApplicationOpen)
+        internal AutoModeStartResult TryStart(bool requireReady, bool keepApplicationOpen) =>
+            TryStart(requireReady, keepApplicationOpen, out _);
+
+        /// <summary>
+        /// Turns automatic mode on, like <see cref="TryStart(bool, bool)"/>, and says which start it is. A caller that must
+        /// later stop exactly the mode it started, and not one that the user switched on after it ended, keeps the number
+        /// (see <see cref="StopIfSession"/>).
+        /// </summary>
+        /// <param name="requireReady">Also refuse when no reader is selected or the project has no task.</param>
+        /// <param name="keepApplicationOpen">Whether a program task <c>%EXIT</c> ends the run of a card instead of closing the application.</param>
+        /// <param name="session">
+        /// The number of the start that the mode is in: the new one when the mode was started, the running one when it was on
+        /// already, 0 when nothing was started and nothing is on.
+        /// </param>
+        /// <returns>What came of it; only <see cref="AutoModeStartResult.Started"/> changed anything.</returns>
+        internal AutoModeStartResult TryStart(bool requireReady, bool keepApplicationOpen, out int session)
         {
+            session = 0;
+
             // The readiness checks look at the reader and the project, so they run outside the lock; the cheap
             // conditions are checked again inside it, where they decide.
             if (IsEnabled)
             {
+                session = CurrentSession;
+
                 return AutoModeStartResult.AlreadyEnabled;
             }
 
@@ -260,6 +279,8 @@ namespace RFiDGear.Services.AutoMode
             {
                 if (_enabled)
                 {
+                    session = _session;
+
                     return AutoModeStartResult.AlreadyEnabled;
                 }
 
@@ -270,6 +291,7 @@ namespace RFiDGear.Services.AutoMode
 
                 _enabled = true;
                 _session++;
+                session = _session;
                 _stopReason = AutoModeStopReason.None;
                 _keepApplicationOpen = keepApplicationOpen;
                 _readerSeen = false;
@@ -288,13 +310,36 @@ namespace RFiDGear.Services.AutoMode
         /// in progress is not interrupted: it ends, its result is reported, and nothing follows.
         /// </summary>
         /// <param name="reason">Why; the caller's own stop is <see cref="AutoModeStopReason.StopRequested"/>.</param>
-        internal void Stop(AutoModeStopReason reason = AutoModeStopReason.StopRequested)
+        internal void Stop(AutoModeStopReason reason = AutoModeStopReason.StopRequested) => StopCore(null, reason);
+
+        /// <summary>
+        /// Turns automatic mode off only if it is still the start the caller means, as one step that no other change of the
+        /// state can come in between. A mode that was stopped and started again since (by the menu or by an extension) is a
+        /// different one and is left alone. Never throws and never waits.
+        /// </summary>
+        /// <param name="session">The number of the start (see <see cref="TryStart(bool, bool, out int)"/>).</param>
+        /// <returns><see langword="true"/> when this call switched the mode off.</returns>
+        internal bool StopIfSession(int session) => StopCore(session, AutoModeStopReason.StopRequested);
+
+        /// <summary>Gets the number of the latest start, 0 if there was none. It grows with every start, so two starts are never confused.</summary>
+        internal int CurrentSession
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _session;
+                }
+            }
+        }
+
+        private bool StopCore(int? onlyIfSession, AutoModeStopReason reason)
         {
             lock (_sync)
             {
-                if (!_enabled)
+                if (!_enabled || (onlyIfSession.HasValue && onlyIfSession.Value != _session))
                 {
-                    return;
+                    return false;
                 }
 
                 _enabled = false;
@@ -304,6 +349,8 @@ namespace RFiDGear.Services.AutoMode
             Logger.Information("Automatic mode stopped. Reason: {Reason}", reason);
             SyncClock();
             RaiseStateChanged();
+
+            return true;
         }
 
         /// <summary>

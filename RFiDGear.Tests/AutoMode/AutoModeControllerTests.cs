@@ -405,6 +405,59 @@ namespace RFiDGear.Tests.AutoMode
             }
         }
 
+        // â”€â”€ Which start a mode is â”€â”€
+
+        [Fact]
+        public void EveryStartHasItsOwnNumber_AndAStartThatChangesNothingSaysWhichOneIsRunning()
+        {
+            var rig = new Rig();
+
+            rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false, out var first);
+            var again = rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false, out var same);
+            rig.Controller.Stop();
+            rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false, out var second);
+
+            Assert.Equal(1, first);
+            Assert.Equal(AutoModeStartResult.AlreadyEnabled, again);
+            Assert.Equal(first, same);
+            Assert.Equal(2, second);
+            Assert.Equal(2, rig.Controller.CurrentSession);
+        }
+
+        [Fact]
+        public void ARefusedStart_SaysNoStart_AndLeavesTheNumberAlone()
+        {
+            var rig = new Rig { ReaderSelected = false };
+
+            var result = rig.Controller.TryStart(requireReady: true, keepApplicationOpen: false, out var session);
+
+            Assert.Equal(AutoModeStartResult.NoReader, result);
+            Assert.Equal(0, session);
+            Assert.Equal(0, rig.Controller.CurrentSession);
+            Assert.False(rig.Controller.IsEnabled);
+        }
+
+        [Fact]
+        public void StopIfSession_StopsThatStartOnly_AsOneStepAgainstEveryOtherChange()
+        {
+            var rig = new Rig();
+            rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false, out var first);
+            rig.Controller.Stop();
+            rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false, out var second);
+
+            var oldOne = rig.Controller.StopIfSession(first);
+            var stillOn = rig.Controller.IsEnabled;
+            var current = rig.Controller.StopIfSession(second);
+            var again = rig.Controller.StopIfSession(second);
+
+            Assert.False(oldOne);
+            Assert.True(stillOn);
+            Assert.True(current);
+            Assert.False(again);
+            Assert.False(rig.Controller.IsEnabled);
+            Assert.Equal(AutoModeStopReason.StopRequested, rig.Controller.LastStopReason);
+            Assert.Equal(new[] { "on", "off:StopRequested", "on", "off:StopRequested" }, rig.Events);
+        }
         [Fact]
         public void StartAndStop_AreIdempotent_AndEachRealChangeRaisesOneEvent()
         {

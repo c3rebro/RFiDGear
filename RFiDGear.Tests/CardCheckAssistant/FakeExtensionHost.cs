@@ -576,6 +576,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         private int _startCalls;
         private int _stopCalls;
         private int _lastStopReason;
+        private int _session;
 
         /// <summary>Gets or sets whether the mode is on; a test sets it, and no event is raised for that.</summary>
         public bool IsAutoModeEnabled
@@ -622,12 +623,25 @@ namespace RFiDGear.Tests.CardCheckAssistant
         /// <summary>Gets how many subscribers the run event has.</summary>
         public int RunSubscribers => AutoModeRunCompletedHandlers?.GetInvocationList().Length ?? 0;
 
-        public AutoModeStartResult TryStart()
+        /// <summary>Gets or sets what runs after the mode was switched on and before its event is raised, as another thread could come in there.</summary>
+        public Action? BeforeStartEventIsRaised { get; set; }
+
+        /// <summary>Gets or sets what runs after a stop for a start was asked for and before it decides, as another thread could come in there.</summary>
+        public Action? BeforeStopIfSessionDecides { get; set; }
+
+        public int CurrentSession => Volatile.Read(ref _session);
+
+        public AutoModeStartResult TryStart() => TryStart(out _);
+
+        public AutoModeStartResult TryStart(out int session)
         {
             Interlocked.Increment(ref _startCalls);
+            session = 0;
 
             if (IsAutoModeEnabled)
             {
+                session = CurrentSession;
+
                 return AutoModeStartResult.AlreadyEnabled;
             }
 
@@ -638,9 +652,25 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             IsAutoModeEnabled = true;
             LastStopReason = AutoModeStopReason.None;
+            session = Interlocked.Increment(ref _session);
+            BeforeStartEventIsRaised?.Invoke();
             RaiseStateChanged();
 
             return AutoModeStartResult.Started;
+        }
+
+        public bool StopIfSession(int session)
+        {
+            BeforeStopIfSessionDecides?.Invoke();
+
+            if (!IsAutoModeEnabled || CurrentSession != session)
+            {
+                return false;
+            }
+
+            StopFor(AutoModeStopReason.StopRequested);
+
+            return true;
         }
 
         public void Start()

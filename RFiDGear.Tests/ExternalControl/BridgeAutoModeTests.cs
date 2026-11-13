@@ -65,9 +65,9 @@ namespace RFiDGear.Tests.ExternalControl
             return client;
         }
 
-        private static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 5000)
+        private static async Task WaitUntilAsync(Func<bool> condition)
         {
-            var until = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            var until = DateTime.UtcNow.AddSeconds(5);
 
             while (!condition())
             {
@@ -416,7 +416,7 @@ namespace RFiDGear.Tests.ExternalControl
             }
 
             // Well before the watchdog of a stalled write (ten seconds) would let it go: it is the pile of results that ends the connection.
-            await WaitUntilAsync(() => !service.IsConnected, 5_000);
+            await WaitUntilAsync(() => !service.IsConnected);
             var client = await ConnectAsync(pipe);
             var status = await client.Service.GetStatus(new GetStatusRequest());
             var all = await client.Service.ListRunResults(new ListRunResultsRequest { Limit = 3 });
@@ -549,7 +549,7 @@ namespace RFiDGear.Tests.ExternalControl
                 host,
                 host.AutoModeHost,
                 new RunRegistry(),
-                (name, durable, create) => published.Add(name),
+                (name, _, _) => published.Add(name),
                 isShuttingDown ?? (() => false),
                 () => null);
             bridge.Attach();
@@ -602,6 +602,112 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(0, host.AutoModeHost.RunSubscribers);
             Assert.Single(published);
         }
+        // â”€â”€ A run that goes on when the mode is stopped, and a stop that must hit the start it means â”€â”€
+
+        [Fact]
+        public async Task ARunThatGoesOnWhenTheModeIsStopped_IsStillTheClientsUntilItEnds()
+        {
+            var (service, pipe, host) = Start();
+            var client = await ConnectAsync(pipe);
+            await client.Service.StartAutoMode(new StartAutoModeRequest());
+            host.ExecutionHost.SetRunning(true);
+
+            // The user stops the mode while the card is being written: the run is not interrupted, and closing must still ask.
+            host.AutoModeHost.StopFor(AutoModeStopReason.StopRequested);
+            var whileItGoesOn = service.RunInFlight();
+            host.ExecutionHost.SetRunning(false);
+            var afterIt = service.RunInFlight();
+
+            // A later run of somebody else is not the client's: the claim ended with the run that was going on.
+            host.ExecutionHost.SetRunning(true);
+            var laterRun = service.RunInFlight();
+
+            Assert.True(whileItGoesOn);
+            Assert.False(afterIt);
+            Assert.False(laterRun);
+        }
+
+        [Fact]
+        public async Task AClientThatLeavesWhileARunGoesOn_EndsTheMode_ButTheRunIsStillItsUntilItEnds()
+        {
+            var (service, pipe, host) = Start();
+            var client = await ConnectAsync(pipe);
+            await client.Service.StartAutoMode(new StartAutoModeRequest());
+            host.ExecutionHost.SetRunning(true);
+
+            client.Dispose();
+            await WaitUntilAsync(() => !host.AutoModeHost.IsAutoModeEnabled);
+            var whileItGoesOn = service.RunInFlight();
+            host.ExecutionHost.SetRunning(false);
+
+            Assert.True(whileItGoesOn);
+            Assert.False(service.RunInFlight());
+        }
+
+        [Fact]
+        public async Task ARunThatStartsAfterTheModeWasStopped_IsNotTheClients()
+        {
+            var (service, pipe, host) = Start();
+            var client = await ConnectAsync(pipe);
+            await client.Service.StartAutoMode(new StartAutoModeRequest());
+            host.AutoModeHost.StopFor(AutoModeStopReason.StopRequested);
+
+            host.ExecutionHost.SetRunning(true);
+
+            Assert.False(service.RunInFlight());
+        }
+
+        [Fact]
+        public void AModeTheUserSwitchedOnWhileTheStopForTheClientWasPending_IsNotStopped()
+        {
+            var (bridge, host, _) = Direct();
+            bridge.Start("session-1", new StartAutoModeRequest());
+
+            // Between the decision to stop the client's mode and the stop, the user stops it and switches on another one.
+            host.AutoModeHost.BeforeStopIfSessionDecides = () =>
+            {
+                host.AutoModeHost.StopFor(AutoModeStopReason.StopRequested);
+                host.AutoModeHost.TryStart();
+            };
+            bridge.OnSessionEnded("session-1");
+
+            Assert.True(host.AutoModeHost.IsAutoModeEnabled);
+            Assert.Equal(2, host.AutoModeHost.CurrentSession);
+        }
+
+        [Fact]
+        public void TheNoticeOfAClientsStartThatArrivesAfterTheUserRestarted_DoesNotMakeTheUsersModeTheClients()
+        {
+            var (bridge, host, _) = Direct();
+
+            // The client's start has switched the mode on but its notice is not raised yet; on another thread the user stops the mode and
+            // starts it again, and only then does the notice of the client's start come.
+            host.AutoModeHost.BeforeStartEventIsRaised = () =>
+            {
+                host.AutoModeHost.BeforeStartEventIsRaised = null;
+                Task.Run(() =>
+                {
+                    host.AutoModeHost.StopFor(AutoModeStopReason.StopRequested);
+                    host.AutoModeHost.TryStart();
+                }).Wait();
+            };
+
+            var response = bridge.Start("session-1", new StartAutoModeRequest());
+            var status = bridge.GetStatus();
+            host.ExecutionHost.SetRunning(true);
+            var inFlight = bridge.HasRunInFlight;
+            var again = Assert.Throws<BridgeFault>(() => bridge.Start("session-2", new StartAutoModeRequest()));
+            bridge.OnSessionEnded("session-1");
+
+            Assert.True(response.Enabled);
+            Assert.Equal(2, host.AutoModeHost.CurrentSession);
+            Assert.True(status.Enabled);
+            Assert.Equal(RunSources.Other, status.StartedBy);
+            Assert.False(status.StopOnDisconnect);
+            Assert.False(inFlight);
+            Assert.Equal(BridgeErrorCodes.AutoModeActive, again.Code);
+            Assert.True(host.AutoModeHost.IsAutoModeEnabled);
+        }
         /// <summary>A host whose automatic mode is the plain public one: it cannot say why a start was refused.</summary>
         private sealed class HostWithPlainAutoMode : IRFiDGearExtensionHost
         {
@@ -617,27 +723,30 @@ namespace RFiDGear.Tests.ExternalControl
 
             public IAppContext AppContext => _inner.AppContext;
 
+            // The public interface only: what the application's own mode offers to an extension, without the internal extras.
             private sealed class PlainAutoMode : IAutoModeHost
             {
-                public bool IsAutoModeEnabled => false;
+                private readonly FakeAutoModeHost _inner = new FakeAutoModeHost();
 
-                public AutoModeStopReason LastStopReason => AutoModeStopReason.None;
+                public bool IsAutoModeEnabled => _inner.IsAutoModeEnabled;
 
-                public event EventHandler? AutoModeStateChanged
+                public AutoModeStopReason LastStopReason => _inner.LastStopReason;
+
+                public event EventHandler AutoModeStateChanged
                 {
-                    add { }
-                    remove { }
+                    add => _inner.AutoModeStateChanged += value;
+                    remove => _inner.AutoModeStateChanged -= value;
                 }
 
-                public event EventHandler<ExecResult>? AutoModeRunCompleted
+                public event EventHandler<ExecResult> AutoModeRunCompleted
                 {
-                    add { }
-                    remove { }
+                    add => _inner.AutoModeRunCompleted += value;
+                    remove => _inner.AutoModeRunCompleted -= value;
                 }
 
-                public void Start() => throw new NotSupportedException();
+                public void Start() => _inner.Start();
 
-                public void Stop() => throw new NotSupportedException();
+                public void Stop() => _inner.Stop();
             }
         }
     }

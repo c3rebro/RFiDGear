@@ -56,7 +56,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <inheritdoc/>
         public void Start()
         {
-            switch (TryStart())
+            switch (TryStart(out _))
             {
                 case AutoModeStartResult.Started:
                 case AutoModeStartResult.AlreadyEnabled:
@@ -76,10 +76,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         }
 
         /// <inheritdoc/>
-        public AutoModeStartResult TryStart() =>
+        public AutoModeStartResult TryStart(out int session) =>
             // A start from the host insists on a reader and a project with a task (the menu does not), and a program task
             // %EXIT ends the run of one card instead of closing the application the extension lives in.
-            _controller.TryStart(requireReady: true, keepApplicationOpen: true);
+            _controller.TryStart(requireReady: true, keepApplicationOpen: true, out session);
+
+        /// <inheritdoc/>
+        public int CurrentSession => _controller.CurrentSession;
+
+        /// <inheritdoc/>
+        public bool StopIfSession(int session) => _controller.StopIfSession(session);
 
         /// <inheritdoc/>
         public void Stop() => _controller.Stop();

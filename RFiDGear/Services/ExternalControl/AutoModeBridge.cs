@@ -18,19 +18,21 @@ namespace RFiDGear.Services.ExternalControl
     /// did, and turns what the mode reports into results and events.
     /// <list type="bullet">
     /// <item>A client does not take over the mode of the user: a start while it was switched on by somebody else is refused.</item>
+    /// <item>What a client has is a claim on <em>one start</em> of the mode (its number), not on "the mode": a mode that was
+    /// stopped and started again, by anyone, is another start and not the client's, however the notices of the two arrive.</item>
     /// <item>The result of every run of the mode is numbered in the same sequence as the runs clients start, kept for
     /// <c>listRunResults</c>, and sent once as <c>autoRunCompleted</c>; none is lost with an event that was dropped.</item>
     /// <item>The result of the run that stops the mode comes before the notice that the mode stopped: the host raises them in
     /// that order on one thread, and the events keep it.</item>
-    /// <item>A mode that a client started with <c>stopOnDisconnect</c> ends with the connection that started it.</item>
+    /// <item>A mode that a client started with <c>stopOnDisconnect</c> ends with the connection that started it, and only that
+    /// start: the stop is one step of the state machine that checks the number.</item>
+    /// <item>A run that is going on when the mode is stopped goes on and is still the client's: closing the application asks
+    /// about it until it has ended.</item>
     /// </list>
     /// </summary>
     internal sealed class AutoModeBridge
     {
         private static ILogger Logger => Log.ForContext<AutoModeBridge>();
-
-        // The start of a client that is in effect: which connection, and what it agreed for the end of that connection.
-        private sealed record ClientStart(string SessionId, bool StopOnDisconnect);
 
         // The start that this thread is making, for the length of the call. The host raises "state changed" synchronously inside
         // the call, on this thread, so a handler can tell the start of a client from a start of the user that happens at the same
@@ -44,13 +46,17 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Action<string, bool, BridgeEventFactory> _publish;
         private readonly Func<bool> _isShuttingDown;
         private readonly Func<string?> _busyActivity;
+        private readonly EventHandler _stateChangedHandler;
+        private readonly EventHandler _runningChangedHandler;
+        private readonly EventHandler<ExecResult> _runCompletedHandler;
         private readonly object _gate = new object();
         private ClientStart? _clientStart;
+        private bool _drainingClientRun;
         private int _attached;
 
         /// <summary>Creates the bridge of automatic mode.</summary>
         /// <param name="host">The host service of RFiDGear.</param>
-        /// <param name="control">The same automatic mode host, as the one that says why a start was refused.</param>
+        /// <param name="control">The same automatic mode host, as the one that says why a start was refused and which start it is.</param>
         /// <param name="registry">The table that numbers and keeps the results, which outlives the connections.</param>
         /// <param name="publish">Hands an event to the client that is connected (name, whether it is durable, the maker of the event).</param>
         /// <param name="isShuttingDown">Says whether RFiDGear is closing.</param>
@@ -69,11 +75,32 @@ namespace RFiDGear.Services.ExternalControl
             _publish = publish ?? throw new ArgumentNullException(nameof(publish));
             _isShuttingDown = isShuttingDown ?? throw new ArgumentNullException(nameof(isShuttingDown));
             _busyActivity = busyActivity ?? throw new ArgumentNullException(nameof(busyActivity));
+            _stateChangedHandler = (_, _) => OnStateChanged();
+            _runningChangedHandler = (_, _) => OnRunningChanged();
+            _runCompletedHandler = (_, result) => OnRunCompleted(result);
+        }
+
+        // What a client has: the claim on one start of the mode. Generation is the number of that start, which is only known
+        // once the start has returned (0 until then).
+        private sealed class ClientStart
+        {
+            internal ClientStart(string sessionId, bool stopOnDisconnect)
+            {
+                SessionId = sessionId;
+                StopOnDisconnect = stopOnDisconnect;
+            }
+
+            internal string SessionId { get; }
+
+            internal bool StopOnDisconnect { get; }
+
+            internal int Generation { get; set; }
         }
 
         /// <summary>
-        /// Gets whether a run is going on in a mode that a client switched on. The application asks before it closes while one is,
-        /// and the shutdown notice says so.
+        /// Gets whether a run is going on that a client's mode started: while the mode is on, and still after it was stopped (by
+        /// the user, by the end of the connection) until the run that was going on then has ended. The application asks before it
+        /// closes while one is, and the shutdown notice says so.
         /// </summary>
         internal bool HasRunInFlight
         {
@@ -81,7 +108,7 @@ namespace RFiDGear.Services.ExternalControl
             {
                 lock (_gate)
                 {
-                    return _clientStart != null && _host.AutoMode.IsAutoModeEnabled && _host.Execution.IsRunning;
+                    return _host.Execution.IsRunning && (_drainingClientRun || ClaimOnTheRunningMode() != null);
                 }
             }
         }
@@ -94,9 +121,10 @@ namespace RFiDGear.Services.ExternalControl
                 return;
             }
 
-            // The host raises both synchronously, on the thread that made the change: the handlers only number, queue and return.
-            _host.AutoMode.AutoModeStateChanged += OnStateChanged;
-            _host.AutoMode.AutoModeRunCompleted += OnRunCompleted;
+            // The host raises all of them synchronously, on the thread that made the change: the handlers only number, queue and return.
+            _host.AutoMode.AutoModeStateChanged += _stateChangedHandler;
+            _host.AutoMode.AutoModeRunCompleted += _runCompletedHandler;
+            _host.Execution.IsRunningChanged += _runningChangedHandler;
         }
 
         /// <summary>Stops listening to the host.</summary>
@@ -107,8 +135,9 @@ namespace RFiDGear.Services.ExternalControl
                 return;
             }
 
-            _host.AutoMode.AutoModeStateChanged -= OnStateChanged;
-            _host.AutoMode.AutoModeRunCompleted -= OnRunCompleted;
+            _host.AutoMode.AutoModeStateChanged -= _stateChangedHandler;
+            _host.AutoMode.AutoModeRunCompleted -= _runCompletedHandler;
+            _host.Execution.IsRunningChanged -= _runningChangedHandler;
         }
 
         /// <summary>Switches automatic mode on for a client.</summary>
@@ -129,21 +158,29 @@ namespace RFiDGear.Services.ExternalControl
 
             var mine = new ClientStart(sessionId, request.StopOnDisconnect);
             AutoModeStartResult result;
+            int generation;
 
-            s_starting = mine;
+            MarkStarting(mine);
 
             try
             {
-                result = _control.TryStart();
+                result = _control.TryStart(out generation);
             }
             finally
             {
-                s_starting = null;
+                MarkStarting(null);
             }
 
             switch (result)
             {
                 case AutoModeStartResult.Started:
+                    lock (_gate)
+                    {
+                        // The notice of the start made this the claim. If another change of the state came in and ended it since, it is
+                        // no longer the claim and this changes nothing: the mode that is on now is not known to be the client's.
+                        mine.Generation = generation;
+                    }
+
                     Logger.Information("External control: automatic mode was switched on by a client (stopOnDisconnect {StopOnDisconnect})", mine.StopOnDisconnect);
 
                     return new StartAutoModeResponse { Enabled = true, AlreadyEnabled = false, StopOnDisconnect = mine.StopOnDisconnect };
@@ -151,13 +188,14 @@ namespace RFiDGear.Services.ExternalControl
                 case AutoModeStartResult.AlreadyEnabled:
                     lock (_gate)
                     {
-                        // The user's mode is the user's. Only a mode that a client switched on can be agreed on again, by whichever
+                        // The user's mode is the user's. Only the start that a client switched on can be agreed on again, by whichever
                         // client asks now: the agreement for its end then belongs to that client.
-                        if (_clientStart == null)
+                        if (_clientStart == null || _clientStart.Generation != generation)
                         {
                             throw BridgeFault.AutoModeActive();
                         }
 
+                        mine.Generation = generation;
                         _clientStart = mine;
                     }
 
@@ -192,7 +230,7 @@ namespace RFiDGear.Services.ExternalControl
             lock (_gate)
             {
                 var enabled = _host.AutoMode.IsAutoModeEnabled;
-                var client = enabled ? _clientStart : null;
+                var client = ClaimOnTheRunningMode();
 
                 return new AutoModeStatusDto
                 {
@@ -206,26 +244,43 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>
         /// A connection ended. A mode that this connection switched on, and agreed to end with it, is switched off: nobody is
-        /// there to look at what it does. A mode that the user switched on, or that a client left running on purpose, is not touched.
+        /// there to look at what it does. A mode that the user switched on, or that a client left running on purpose, is not
+        /// touched, and neither is one that the user switched on again after the client's was stopped.
         /// </summary>
         /// <param name="sessionId">The connection that ended.</param>
         internal void OnSessionEnded(string sessionId)
         {
+            int generation;
+
             lock (_gate)
             {
-                if (_clientStart == null || !_clientStart.StopOnDisconnect || !string.Equals(_clientStart.SessionId, sessionId, StringComparison.Ordinal))
+                var claim = ClaimOnTheRunningMode();
+
+                if (claim == null || !claim.StopOnDisconnect || !string.Equals(claim.SessionId, sessionId, StringComparison.Ordinal))
                 {
                     return;
                 }
+
+                generation = claim.Generation;
             }
 
-            Logger.Information("External control: the client that switched automatic mode on has gone; the mode is switched off");
-            _host.AutoMode.Stop();
+            // Not "stop the mode": the user may have stopped this start and switched on another one since the lock was left, and
+            // only the state machine can decide that and stop in one step.
+            if (_control.StopIfSession(generation))
+            {
+                Logger.Information("External control: the client that switched automatic mode on has gone; the mode was switched off");
+            }
         }
+
+        private static void MarkStarting(ClientStart? start) => s_starting = start;
+
+        // The claim of a client, if the mode that is on is the start the claim is about. Call under the lock.
+        private ClientStart? ClaimOnTheRunningMode() =>
+            _clientStart != null && _clientStart.Generation == _control.CurrentSession && _host.AutoMode.IsAutoModeEnabled ? _clientStart : null;
 
         // Raised synchronously by whoever switched the mode on or off, on that thread: the notice is made here, at that moment, so
         // that a quick switch on and off gives two notices and not one that says "off" twice.
-        private void OnStateChanged(object? sender, EventArgs e)
+        private void OnStateChanged()
         {
             var starting = s_starting;
             bool enabled;
@@ -235,7 +290,13 @@ namespace RFiDGear.Services.ExternalControl
                 // A raise made inside the start of a client is that start. Every other raise (the user, an extension, a stop of a client, a
                 // fault of the mode) ends the claim of a client: a mode that is on afterwards is not the client's, and a mode that
                 // is off has nobody to be stopped for. Where it is unclear the mode is taken as not the client's, which never stops a
-                // mode that the user may have switched on.
+                // mode that the user may have switched on. (Should the raise of a client's start arrive after the user stopped
+                // and started again, the claim is made here, but its number is the old start's, so it is not the claim on the mode
+                // that is on.)
+                var hadClaim = starting == null && _clientStart != null && _clientStart.Generation == _control.CurrentSession;
+
+                // A run that is going on when the client's mode is stopped is still the client's until it ends.
+                _drainingClientRun = hadClaim && _host.Execution.IsRunning;
                 _clientStart = starting;
                 enabled = starting != null || _host.AutoMode.IsAutoModeEnabled;
             }
@@ -259,8 +320,22 @@ namespace RFiDGear.Services.ExternalControl
                 });
         }
 
+        // The run that was going on when the mode was stopped has ended.
+        private void OnRunningChanged()
+        {
+            if (_host.Execution.IsRunning)
+            {
+                return;
+            }
+
+            lock (_gate)
+            {
+                _drainingClientRun = false;
+            }
+        }
+
         // Raised synchronously by the mode for every run it started, after the run has ended and before the mode stops because of it.
-        private void OnRunCompleted(object? sender, ExecResult result)
+        private void OnRunCompleted(ExecResult result)
         {
             if (result == null)
             {

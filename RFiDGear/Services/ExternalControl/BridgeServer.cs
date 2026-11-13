@@ -111,7 +111,7 @@ namespace RFiDGear.Services.ExternalControl
         /// Raised, on whichever thread it happens, when a connection has ended, with the id of the connection. Handlers must be
         /// quick and must not throw; one that does is logged and ignored.
         /// </summary>
-        internal event EventHandler<string>? SessionEnded;
+        internal event Action<string>? SessionEnded;
 
         /// <summary>Gets whether a client is connected.</summary>
         internal bool HasSession => State == BridgeServerState.SessionActive;
@@ -361,7 +361,7 @@ namespace RFiDGear.Services.ExternalControl
         {
             try
             {
-                SessionEnded?.Invoke(this, sessionId);
+                SessionEnded?.Invoke(sessionId);
             }
             catch (Exception e)
             {

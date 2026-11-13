@@ -389,6 +389,6 @@ namespace RFiDGear.Services.ExternalControl
         private void OnServerStateChanged(object? sender, EventArgs e) => ConnectionChanged?.Invoke(this, EventArgs.Empty);
 
         // A mode that a client switched on for as long as it is connected ends with the connection.
-        private void OnSessionEnded(object? sender, string sessionId) => _autoMode?.OnSessionEnded(sessionId);
+        private void OnSessionEnded(string sessionId) => _autoMode?.OnSessionEnded(sessionId);
     }
 }
