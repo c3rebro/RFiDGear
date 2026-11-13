@@ -203,7 +203,7 @@ namespace RFiDGear.Tests.ExternalControl
         {
             // The window of the application fails in a way nobody foresaw: the answer is an internal error, which does not promise that
             // the card was left alone. The client must not take it for "never started".
-            var (_, pipe, host, _) = Start(_ => throw new ApplicationException("the window failed"));
+            var (_, pipe, host, _) = Start(_ => throw new FormatException("the window failed"));
             var client = await ConnectAsync(pipe);
 
             var outcome = await client.RunOnceAsync("job-1", NoVariables);

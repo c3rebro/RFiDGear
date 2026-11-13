@@ -274,28 +274,28 @@ namespace RFiDGear.Bridge.SampleClient
         }
 
         /// <inheritdoc />
-        public void RunStarted(RunStartedEvent e) => EventReceived?.Invoke(e);
+        public void RunStarted(RunStartedEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void RunCompleted(RunCompletedEvent e) => EventReceived?.Invoke(e);
+        public void RunCompleted(RunCompletedEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void RunningChanged(RunningChangedEvent e) => EventReceived?.Invoke(e);
+        public void RunningChanged(RunningChangedEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void ReaderChanged(ReaderChangedEvent e) => EventReceived?.Invoke(e);
+        public void ReaderChanged(ReaderChangedEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void ProjectChanged(ProjectChangedEvent e) => EventReceived?.Invoke(e);
+        public void ProjectChanged(ProjectChangedEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void ShuttingDown(ShuttingDownEvent e) => EventReceived?.Invoke(e);
+        public void ShuttingDown(ShuttingDownEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void AutoModeChanged(AutoModeChangedEvent e) => EventReceived?.Invoke(e);
+        public void AutoModeChanged(AutoModeChangedEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void AutoRunCompleted(AutoRunCompletedEvent e) => EventReceived?.Invoke(e);
+        public void AutoRunCompleted(AutoRunCompletedEvent e) => Raise(e);
 
         /// <inheritdoc />
         public async Task<ResolveKeyResponse> ResolveKey(ResolveKeyRequest request, CancellationToken cancellationToken)
@@ -315,6 +315,16 @@ namespace RFiDGear.Bridge.SampleClient
         {
             _rpc.Dispose();
             await _pipe.DisposeAsync().ConfigureAwait(false);
+        }
+
+        private void Raise(BridgeEvent e)
+        {
+            var handler = EventReceived;
+
+            if (handler != null)
+            {
+                handler(e);
+            }
         }
 
         private static bool IsLostConnection(Exception failure) =>

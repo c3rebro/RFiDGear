@@ -135,14 +135,13 @@ namespace RFiDGear.Bridge.SampleClient
             await using var client = await BridgeSampleClient.ConnectAsync(events: events, cancellationToken: cancellationToken);
             client.EventReceived += e =>
             {
-                switch (e)
+                if (e is AutoModeChangedEvent changed)
                 {
-                    case AutoModeChangedEvent changed:
-                        Console.WriteLine("automatic mode " + (changed.Enabled ? "on" : "off (" + changed.LastStopReason + ")"));
-                        break;
-                    case AutoRunCompletedEvent completed:
-                        Console.WriteLine("card processed: #" + completed.Result.ResultSeq + " " + completed.Result.Status);
-                        break;
+                    Console.WriteLine("automatic mode " + (changed.Enabled ? "on" : "off (" + changed.LastStopReason + ")"));
+                }
+                else if (e is AutoRunCompletedEvent completed)
+                {
+                    Console.WriteLine("card processed: #" + completed.Result.ResultSeq + " " + completed.Result.Status);
                 }
             };
 
