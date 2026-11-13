@@ -993,7 +993,10 @@ namespace RFiDGear.Tests
             Assert.True(result.Abandoned);
             Assert.Equal(1, service.CurrentTaskIndex);   // the task that never started was not reached
             Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
-            Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Abandoned"));
+
+            // The event names the task the watchdog was timing, not the one that never started.
+            var abandoned = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Abandoned"));
+            Assert.Equal(0, GetIntProperty(abandoned.DetailsJson, "TaskPosition"));
         }
 
         [Fact]
@@ -1001,32 +1004,67 @@ namespace RFiDGear.Tests
         {
             // A task of the list that is done is not done again when a jump back passes it: the loop steps over it. That
             // is bookkeeping and no skip, so it must not replace what the task really did with a "Skipped" entry.
+            var (observations, attempts) = await RunWithAJumpBackToTheFirstTaskAsync(
+                new FakeAppSettingsProvider(),
+                () => new CommonTaskViewModel
+                {
+                    SelectedTaskType = TaskType_CommonTask.ExecuteProgram,
+                    CurrentTaskIndex = "0",
+                    ProgramToExecute = "no program here"
+                });
+
+            Assert.Equal(2, attempts);
+            Assert.DoesNotContain(observations, observation => observation.Decision == "Skipped");
+            Assert.Equal(new[] { 0, 1, 1 }, observations.Select(observation => observation.TaskPosition));
+        }
+
+        [Fact]
+        public async Task AChipCheckTheLoopOnlyStepsOverAfterABackwardJump_KeepsItsOutcome()
+        {
+            // The chip checks do not mark a task as done by its state but by its error level, so the state cannot tell the
+            // loop that a visit after a jump back only steps over such a task. The outcome must stand all the same.
+            var chip = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102);
+            var (observations, attempts) = await RunWithAJumpBackToTheFirstTaskAsync(
+                new RFiDGear.Tests.Reader.ScriptedReadProvider { GenericChip = chip, Card = chip },
+                () => new GenericChipTaskViewModel
+                {
+                    SelectedTaskType = TaskType_GenericChipTask.ChipIsOfType,
+                    SelectedChipType = CARD_TYPE.EM4102,
+                    CurrentTaskIndex = "0"
+                });
+
+            Assert.Equal(2, attempts);
+            Assert.DoesNotContain(observations, observation => observation.Decision == "Skipped");
+            Assert.Equal(new[] { 0, 1, 1 }, observations.Select(observation => observation.TaskPosition));
+        }
+
+        // Runs a list of two tasks: a first one that a handler of the service runs, and a second one that is routed back
+        // to the first once and goes well on its second attempt. Returns what the loop recorded for every attempt and how
+        // often the second task ran.
+        private static async Task<(List<TaskExecutionObservation> Observations, int Attempts)> RunWithAJumpBackToTheFirstTaskAsync(
+            RFiDGear.Infrastructure.ReaderProviders.ReaderDevice reader,
+            Func<IGenericTask> createFirstTask)
+        {
             var observations = new List<TaskExecutionObservation>();
             var attempts = 0;
 
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                using (ReaderDeviceScope.Use(new FakeAppSettingsProvider()))
+                using (ReaderDeviceScope.Use(reader))
                 {
-                    var program = new CommonTaskViewModel
-                    {
-                        SelectedTaskType = TaskType_CommonTask.ExecuteProgram,
-                        CurrentTaskIndex = "0",
-                        ProgramToExecute = "no program here"
-                    };
+                    var first = createFirstTask();
                     var routed = new StubTaskModel { CurrentTaskIndex = "1" };
                     var handler = new ChipTaskHandlerModel();
-                    handler.TaskCollection.Add(program);
+                    handler.TaskCollection.Add(first);
 
                     var request = new TaskExecutionRequest
                     {
                         TaskHandler = handler,
                         TaskDescriptors = new List<TaskDescriptor>
                         {
-                            new TaskDescriptor(0, program),
+                            new TaskDescriptor(0, first),
                             new TaskDescriptor(1, routed, ct =>
                             {
-                                // The first attempt is routed back to the first task, the second one goes well.
                                 attempts++;
                                 routed.CurrentTaskErrorLevel = attempts == 1 ? ERROR.AuthFailure : ERROR.NoError;
                                 routed.IsTaskCompletedSuccessfully = attempts > 1;
@@ -1040,14 +1078,12 @@ namespace RFiDGear.Tests
                     };
 
                     using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                    await new TaskExecutionService(new ReaderDeviceProvider(), new StubDispatcherTimerAdapter(), new StubDispatcherTimerAdapter())
+                    await new TaskExecutionService(new FixedReaderDeviceProvider(reader), new StubDispatcherTimerAdapter(), new StubDispatcherTimerAdapter())
                         .ExecuteOnceAsync(request, limit.Token);
                 }
             });
 
-            Assert.Equal(2, attempts);
-            Assert.DoesNotContain(observations, observation => observation.Decision == "Skipped");
-            Assert.Equal(new[] { 0, 1, 1 }, observations.Select(observation => observation.TaskPosition));
+            return (observations, attempts);
         }
 
         [Theory]
@@ -1082,6 +1118,10 @@ namespace RFiDGear.Tests
             Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
             var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
             Assert.Equal(nameof(TaskLoopTerminalStatus.Failure), GetStringProperty(summary.DetailsJson, "TerminalStatus"));
+
+            // The counts of the summary say the same as the status: the task gave no answer, it failed.
+            Assert.Equal(0, GetIntProperty(summary.DetailsJson, "AcceptedFailures"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "UnhandledFailures"));
         }
 
         [Fact]

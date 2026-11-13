@@ -135,6 +135,10 @@ namespace RFiDGear.Services.TaskExecution
         /// <see langword="true"/> when the run was asked to execute only the selected task, so the other tasks are
         /// not expected to be reached.
         /// </param>
+        /// <param name="abandonedAt">
+        /// The position of the task the per-task watchdog gave up, or <see langword="null"/> when none was. Its failure is
+        /// counted as unhandled, whatever error level it ended with.
+        /// </param>
         /// <returns>
         /// A <see cref="TaskLoopRunResult"/> with the derived <see cref="TaskLoopTerminalStatus"/>
         /// and non-secret aggregate counts.
@@ -151,12 +155,16 @@ namespace RFiDGear.Services.TaskExecution
             int totalTasks,
             IReadOnlyCollection<TaskExecutionObservation> observations,
             IDictionary<ERROR, string> errorRouting = null,
-            bool selectedTaskOnly = false)
+            bool selectedTaskOnly = false,
+            int? abandonedAt = null)
         {
             var items = observations?.ToList() ?? new List<TaskExecutionObservation>();
             var executed = items.Where(item => string.Equals(item.Decision, ExecutedDecision, StringComparison.Ordinal)).ToList();
             var failed = executed.Where(item => item.WasSuccessful == false).ToList();
-            var acceptedFailures = failed.Count(item => IsLogicAnswer(item) || IsFailureConsumed(item, executed, errorRouting));
+
+            // The task the watchdog gave up has given no answer, and no downstream task handled it: its failure is never accepted.
+            var acceptedFailures = failed.Count(item =>
+                item.TaskPosition != abandonedAt && (IsLogicAnswer(item) || IsFailureConsumed(item, executed, errorRouting)));
             var skipped = items.Where(item => string.Equals(item.Decision, SkippedDecision, StringComparison.Ordinal)).ToList();
             var unknown = executed.Count(item => !item.WasSuccessful.HasValue);
             var invalidSkips = skipped.Count(item => !IsPermittedConditionalSkip(item, items));
