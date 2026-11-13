@@ -520,6 +520,69 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.False(service.RunInFlight());
         }
 
+        // â”€â”€ The bridge of the mode on its own â”€â”€
+
+        private static (AutoModeBridge Bridge, FakeExtensionHost Host, List<string> Published) Direct(Func<bool>? isShuttingDown = null)
+        {
+            var host = new FakeExtensionHost();
+            var published = new List<string>();
+            var bridge = new AutoModeBridge(
+                host,
+                host.AutoModeHost,
+                new RunRegistry(),
+                (name, durable, create) => published.Add(name),
+                isShuttingDown ?? (() => false),
+                () => null);
+            bridge.Attach();
+
+            return (bridge, host, published);
+        }
+
+        [Fact]
+        public void AConnectionThatDidNotStartTheMode_CannotEndIt_OnlyTheOneThatAgreedToCan()
+        {
+            var (bridge, host, _) = Direct();
+            bridge.Start("session-1", new StartAutoModeRequest());
+
+            bridge.OnSessionEnded("session-2");
+            var stillOn = host.AutoModeHost.IsAutoModeEnabled;
+            bridge.OnSessionEnded("session-1");
+
+            Assert.True(stillOn);
+            Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+        }
+
+        [Fact]
+        public void AStartWhileTheApplicationCloses_IsRefusedBeforeTheHostIsAsked_AndANullRequestIsInvalid()
+        {
+            var (bridge, host, _) = Direct(isShuttingDown: () => true);
+
+            var closing = Assert.Throws<BridgeFault>(() => bridge.Start("session-1", new StartAutoModeRequest()));
+            var invalid = Assert.Throws<BridgeFault>(() => bridge.Start("session-1", null!));
+
+            Assert.Equal(BridgeErrorCodes.ShuttingDown, closing.Code);
+            Assert.Equal(BridgeErrorCodes.InvalidRequest, invalid.Code);
+            Assert.Equal(0, host.AutoModeHost.StartCalls);
+        }
+
+        [Fact]
+        public void AfterDetaching_NothingOfTheHostIsHeardAnyMore_AndAttachingTwiceListensOnce()
+        {
+            var (bridge, host, published) = Direct();
+            bridge.Attach();
+
+            host.AutoModeHost.TryStart();
+            Assert.Equal(1, host.AutoModeHost.StateSubscribers);
+            Assert.Single(published);
+            bridge.Detach();
+            bridge.Detach();
+            host.AutoModeHost.StopFor(AutoModeStopReason.StopRequested);
+            host.AutoModeHost.RaiseRunCompleted(AResult("run-a"));
+
+            Assert.Equal(0, host.AutoModeHost.StateSubscribers);
+            Assert.Equal(0, host.AutoModeHost.RunSubscribers);
+            Assert.Single(published);
+        }
         /// <summary>A host whose automatic mode is the plain public one: it cannot say why a start was refused.</summary>
         private sealed class HostWithPlainAutoMode : IRFiDGearExtensionHost
         {
