@@ -1,4 +1,4 @@
-﻿/// <summary>
+/// <summary>
 /// Main application view model that orchestrates startup, UI binding, reader monitoring,
 /// and task execution lifecycles. Instances are exported via MEF under the name
 /// <c>"MainWin"</c> so XAML bindings can resolve this view model from the shared locator.
@@ -388,7 +388,8 @@ namespace RFiDGear.ViewModel
                     string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build),
                     externalControlPipeName ?? PipeNames.ForCurrentUser(),
                     busyActivity: () => ExternalControlService.ActivityOf(_coordinator),
-                    journalDirectory: externalControlJournalDirectory ?? RunJournal.DefaultDirectory);
+                    journalDirectory: externalControlJournalDirectory ?? RunJournal.DefaultDirectory,
+                    keyProvider: BridgeKeyProvider.Shared);
 
                 // The status bar shows whether a program is connected; the server raises the change on its own threads.
                 service.ConnectionChanged += (_, _) =>

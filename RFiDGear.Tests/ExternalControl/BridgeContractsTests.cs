@@ -25,14 +25,14 @@ namespace RFiDGear.Tests.ExternalControl
 
         public static IEnumerable<object[]> ContractMethods()
         {
-            foreach (var method in typeof(IBridgeService).GetMethods().Concat(typeof(IBridgeClientEvents).GetMethods()))
+            foreach (var method in typeof(IBridgeService).GetMethods().Concat(typeof(IBridgeClientEvents).GetMethods()).Concat(typeof(IBridgeClientKeys).GetMethods()))
             {
                 yield return new object[] { method.DeclaringType!.Name + "." + method.Name };
             }
         }
 
         private static IEnumerable<MethodInfo> AllMethods() =>
-            typeof(IBridgeService).GetMethods().Concat(typeof(IBridgeClientEvents).GetMethods());
+            typeof(IBridgeService).GetMethods().Concat(typeof(IBridgeClientEvents).GetMethods()).Concat(typeof(IBridgeClientKeys).GetMethods());
 
         private static string CamelCase(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
@@ -121,6 +121,38 @@ namespace RFiDGear.Tests.ExternalControl
                 Assert.EndsWith("Request", parameter.ParameterType.Name, StringComparison.Ordinal);
                 Assert.EndsWith("Response", response.Name, StringComparison.Ordinal);
             }
+        }
+
+        [Fact]
+        public void TheCallsToTheClient_AreNamedLikeTheirMethods_AndTakeOneRequestAndAToken()
+        {
+            // The host calls these on the client: one request object, a token that cancels the call on the wire, one response object.
+            var methods = typeof(IBridgeClientKeys).GetMethods();
+
+            Assert.Equal(methods.Select(m => CamelCase(m.Name)).OrderBy(n => n, StringComparer.Ordinal), ConstantsOf(typeof(BridgeClientMethods)).OrderBy(n => n, StringComparer.Ordinal));
+
+            foreach (var method in methods)
+            {
+                var parameters = method.GetParameters();
+                Assert.Equal(2, parameters.Length);
+                Assert.True(parameters[0].ParameterType.Assembly == Bridge && parameters[0].ParameterType.IsSealed && parameters[0].ParameterType.Name.EndsWith("Request", StringComparison.Ordinal));
+                Assert.Equal(typeof(System.Threading.CancellationToken), parameters[1].ParameterType);
+                Assert.True(method.ReturnType.IsGenericType && method.ReturnType.GetGenericTypeDefinition() == typeof(Task<>));
+                var response = method.ReturnType.GetGenericArguments()[0];
+                Assert.True(response.Assembly == Bridge && response.IsSealed && response.Name.EndsWith("Response", StringComparison.Ordinal));
+            }
+        }
+
+        [Fact]
+        public void WhatCarriesAKey_SaysNothingOfItInItsTextForm()
+        {
+            var request = (ResolveKeyRequest)BridgeSamples.All["ResolveKeyRequest"];
+            var response = (ResolveKeyResponse)BridgeSamples.All["ResolveKeyResponse"];
+
+            // A failed assertion, a log line written with the object and a debugger all use this text.
+            Assert.DoesNotContain(request.Reference, request.ToString(), StringComparison.Ordinal);
+            Assert.DoesNotContain(request.CardUid!, request.ToString(), StringComparison.Ordinal);
+            Assert.DoesNotContain(response.Key!, response.ToString(), StringComparison.Ordinal);
         }
 
         [Fact]

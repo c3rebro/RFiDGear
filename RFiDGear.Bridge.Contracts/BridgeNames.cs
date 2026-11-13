@@ -55,6 +55,12 @@ namespace RFiDGear.Bridge
         public const string EventsAutoMode = "events.autoMode";
 
         /// <summary>
+        /// Supplying card keys from the client's own vault: the client registers, and RFiDGear asks it for the key of a task that
+        /// names one by reference (see <see cref="IBridgeClientKeys"/>), so that no key is ever stored in a project, a file or a command line.
+        /// </summary>
+        public const string KeysProvider = "keys.provider";
+
+        /// <summary>
         /// A guarantee, not a method: RFiDGear writes down, before it asks the host to run, that it is about to, and when the run
         /// ended. After RFiDGear has been restarted, a request id it had admitted is still known, as long as it is among the
         /// last <see cref="BridgeProtocol.RequestIdHistory"/> request ids: <c>startRun</c> with it never starts a second run
@@ -106,6 +112,7 @@ namespace RFiDGear.Bridge
             EventsReader,
             EventsProject,
             EventsAutoMode,
+            KeysProvider,
             EventsLifecycle,
             ReaderScan,
         };
@@ -153,6 +160,17 @@ namespace RFiDGear.Bridge
 
         /// <summary>Lists the results of the runs from a number onward.</summary>
         public const string ListRunResults = "listRunResults";
+
+        /// <summary>Registers the client as the supplier of card keys for the life of the connection.</summary>
+        public const string RegisterKeyProvider = "registerKeyProvider";
+    }
+
+    /// <summary>The names of the calls the host makes on the client, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
+    public static class BridgeClientMethods
+    {
+        /// <summary>Asks the client for a card key.</summary>
+        public const string ResolveKey = "resolveKey";
     }
 
     /// <summary>The names of the notifications the host sends, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
@@ -195,6 +213,60 @@ namespace RFiDGear.Bridge
             AutoModeChanged,
             AutoRunCompleted,
         };
+    }
+
+    /// <summary>The values of <see cref="ResolveKeyRequest.Algorithm"/>: what kind of key is asked for.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
+    public static class KeyAlgorithms
+    {
+        /// <summary>Single DES, 8 bytes.</summary>
+        public const string Des = "des";
+
+        /// <summary>Two-key triple DES, 16 bytes.</summary>
+        public const string TripleDes2K = "tripleDes2K";
+
+        /// <summary>Three-key triple DES, 24 bytes.</summary>
+        public const string TripleDes3K = "tripleDes3K";
+
+        /// <summary>AES-128, 16 bytes.</summary>
+        public const string Aes128 = "aes128";
+
+        /// <summary>A MIFARE Classic key, 6 bytes.</summary>
+        public const string Classic6Byte = "classic6Byte";
+    }
+
+    /// <summary>The values of <see cref="ResolveKeyRequest.Usage"/>: what the key is for.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
+    public static class KeyUsages
+    {
+        /// <summary>To authenticate to the card.</summary>
+        public const string Authenticate = "authenticate";
+
+        /// <summary>The key that is on the card now, used to authorise changing a key.</summary>
+        public const string ChangeKeyCurrent = "changeKeyCurrent";
+
+        /// <summary>The key that is to be written to the card.</summary>
+        public const string ChangeKeyNew = "changeKeyNew";
+    }
+
+    /// <summary>The values of <see cref="ResolveKeyResponse.Result"/>: how the client answered a request for a key.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
+    public static class KeyResolveResults
+    {
+        /// <summary>The key is in <see cref="ResolveKeyResponse.Key"/>.</summary>
+        public const string Resolved = "resolved";
+
+        /// <summary>The client has no key for the reference.</summary>
+        public const string NotFound = "notFound";
+
+        /// <summary>The client has one but will not hand it out for this request (a locked vault, a refusing person, a reference it does not serve).</summary>
+        public const string NotAuthorized = "notAuthorized";
+
+        /// <summary>The client has one, but it is not a usable key.</summary>
+        public const string InvalidKey = "invalidKey";
+
+        /// <summary>The client does not serve this kind of key.</summary>
+        public const string Unsupported = "unsupported";
     }
 
     /// <summary>The values of <see cref="AutoModeStatusDto.LastStopReason"/>: why automatic mode last stopped.</summary>

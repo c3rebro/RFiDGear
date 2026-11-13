@@ -48,12 +48,16 @@ public static class RFiDGear.Bridge.BridgeCapabilities
     public const string ExecutionResultLog = "execution.resultLog"
     public const string ExecutionResultLookup = "execution.resultLookup"
     public const string ExecutionRun = "execution.run"
+    public const string KeysProvider = "keys.provider"
     public const string ProjectLoad = "project.load"
     public const string ReaderScan = "reader.scan"
     public const string Session = "session"
     public const string Status = "status"
     public static System.Collections.Generic.IReadOnlyList<string> All { get; }
     public static System.Collections.Generic.IReadOnlyList<string> Guarantees { get; }
+
+public static class RFiDGear.Bridge.BridgeClientMethods
+    public const string ResolveKey = "resolveKey"
 
 public static class RFiDGear.Bridge.BridgeErrorCodes
     public const int AutoModeActive = 1007
@@ -140,6 +144,7 @@ public static class RFiDGear.Bridge.BridgeMethods
     public const string Hello = "hello"
     public const string ListRunResults = "listRunResults"
     public const string LoadProject = "loadProject"
+    public const string RegisterKeyProvider = "registerKeyProvider"
     public const string ScanReader = "scanReader"
     public const string StartAutoMode = "startAutoMode"
     public const string StartRun = "startRun"
@@ -147,6 +152,7 @@ public static class RFiDGear.Bridge.BridgeMethods
 
 public static class RFiDGear.Bridge.BridgeProtocol
     public const int Major = 1
+    public const int MaxKeyBytes = 32
     public const int MaxMessageBytes = 1048576
     public const int MaxPathLength = 4096
     public const int MaxRequestIdLength = 64
@@ -242,6 +248,9 @@ public interface RFiDGear.Bridge.IBridgeClientEvents
     [Capability("events.running")] public void RunningChanged(RunningChangedEvent e)
     [Capability("events.lifecycle")] public void ShuttingDown(ShuttingDownEvent e)
 
+public interface RFiDGear.Bridge.IBridgeClientKeys
+    [Capability("keys.provider")] public System.Threading.Tasks.Task<ResolveKeyResponse> ResolveKey(ResolveKeyRequest request, System.Threading.CancellationToken cancellationToken)
+
 public interface RFiDGear.Bridge.IBridgeService
     [Capability("execution.cancel")] public System.Threading.Tasks.Task<CancelRunResponse> CancelRun(CancelRunRequest request)
     [Capability("execution.resultLookup")] public System.Threading.Tasks.Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request)
@@ -249,10 +258,30 @@ public interface RFiDGear.Bridge.IBridgeService
     [Capability("session")] public System.Threading.Tasks.Task<HelloResponse> Hello(HelloRequest request)
     [Capability("execution.resultLog")] public System.Threading.Tasks.Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request)
     [Capability("project.load")] public System.Threading.Tasks.Task<LoadProjectResponse> LoadProject(LoadProjectRequest request)
+    [Capability("keys.provider")] public System.Threading.Tasks.Task<RegisterKeyProviderResponse> RegisterKeyProvider(RegisterKeyProviderRequest request)
     [Capability("reader.scan")] public System.Threading.Tasks.Task<ScanReaderResponse> ScanReader(ScanReaderRequest request)
     [Capability("autoMode")] public System.Threading.Tasks.Task<StartAutoModeResponse> StartAutoMode(StartAutoModeRequest request)
     [Capability("execution.run")] public System.Threading.Tasks.Task<StartRunResponse> StartRun(StartRunRequest request)
     [Capability("autoMode")] public System.Threading.Tasks.Task<StopAutoModeResponse> StopAutoMode(StopAutoModeRequest request)
+
+public static class RFiDGear.Bridge.KeyAlgorithms
+    public const string Aes128 = "aes128"
+    public const string Classic6Byte = "classic6Byte"
+    public const string Des = "des"
+    public const string TripleDes2K = "tripleDes2K"
+    public const string TripleDes3K = "tripleDes3K"
+
+public static class RFiDGear.Bridge.KeyResolveResults
+    public const string InvalidKey = "invalidKey"
+    public const string NotAuthorized = "notAuthorized"
+    public const string NotFound = "notFound"
+    public const string Resolved = "resolved"
+    public const string Unsupported = "unsupported"
+
+public static class RFiDGear.Bridge.KeyUsages
+    public const string Authenticate = "authenticate"
+    public const string ChangeKeyCurrent = "changeKeyCurrent"
+    public const string ChangeKeyNew = "changeKeyNew"
 
 public sealed record RFiDGear.Bridge.ListRunResultsRequest : System.IEquatable<ListRunResultsRequest>
     public ctor()
@@ -308,6 +337,35 @@ public static class RFiDGear.Bridge.ReaderStates
     public const string ReadFailed = "readFailed"
     public const string Ready = "ready"
     public const string Unknown = "unknown"
+
+public sealed record RFiDGear.Bridge.RegisterKeyProviderRequest : System.IEquatable<RegisterKeyProviderRequest>
+    public ctor()
+
+public sealed record RFiDGear.Bridge.RegisterKeyProviderResponse : System.IEquatable<RegisterKeyProviderResponse>
+    public ctor()
+    [JsonPropertyName("interactiveTimeoutMs")] public int InteractiveTimeoutMs { get; init; }
+    [JsonPropertyName("providerId")] public string ProviderId { get; init; }
+    [JsonPropertyName("timeoutMs")] public int TimeoutMs { get; init; }
+
+public sealed record RFiDGear.Bridge.ResolveKeyRequest : System.IEquatable<ResolveKeyRequest>
+    public ctor()
+    [JsonPropertyName("algorithm")] public string Algorithm { get; init; }
+    [JsonPropertyName("applicationId")] public long? ApplicationId { get; init; }
+    [JsonPropertyName("cardUid")] public string? CardUid { get; init; }
+    [JsonPropertyName("interactive")] public bool Interactive { get; init; }
+    [JsonPropertyName("keyNumber")] public int? KeyNumber { get; init; }
+    [JsonPropertyName("reference")] public string Reference { get; init; }
+    [JsonPropertyName("runId")] public string? RunId { get; init; }
+    [JsonPropertyName("slotId")] public string SlotId { get; init; }
+    [JsonPropertyName("taskIndex")] public string TaskIndex { get; init; }
+    [JsonPropertyName("usage")] public string Usage { get; init; }
+    public override string ToString()
+
+public sealed record RFiDGear.Bridge.ResolveKeyResponse : System.IEquatable<ResolveKeyResponse>
+    public ctor()
+    [JsonPropertyName("key")] public string? Key { get; init; }
+    [JsonPropertyName("result")] public string Result { get; init; }
+    public override string ToString()
 
 public sealed record RFiDGear.Bridge.RunCompletedEvent : BridgeEvent, System.IEquatable<RunCompletedEvent>
     public ctor()

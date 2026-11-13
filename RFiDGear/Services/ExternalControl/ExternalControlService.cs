@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using RFiDGear.Bridge;
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.ExtensionHost;
+using RFiDGear.Services.SecureKeys;
 
 using Serilog;
 
@@ -33,6 +34,8 @@ namespace RFiDGear.Services.ExternalControl
         private readonly RunSupervisor? _supervisor;
         private readonly AutoModeBridge? _autoMode;
         private readonly RunJournal? _journal;
+        private readonly BridgeKeyProvider? _keyProvider;
+        private readonly KeyChannel? _keyChannel;
         private readonly string _instanceId;
         private int _startupComplete;
         private int _started;
@@ -55,6 +58,11 @@ namespace RFiDGear.Services.ExternalControl
         /// <see cref="BridgeCapabilities.ExecutionJournal"/> is offered; if the folder cannot be used the journal is off and the
         /// guarantee is not offered.
         /// </param>
+        /// <param name="keyProvider">
+        /// The secure key provider that stands for the connected program (<see cref="BridgeKeyProvider.Shared"/> in the application), or
+        /// <see langword="null"/> for none. With one, a program can register as the supplier of card keys and the capability
+        /// <see cref="BridgeCapabilities.KeysProvider"/> is offered; the provider is bound to this service while it listens.
+        /// </param>
         internal ExternalControlService(
             IRFiDGearExtensionHost host,
             Func<Action, Task> dispatchToUi,
@@ -65,10 +73,12 @@ namespace RFiDGear.Services.ExternalControl
             TimeSpan? uiTimeout = null,
             Func<string?>? busyActivity = null,
             TimeSpan? admissionTimeout = null,
-            string? journalDirectory = null)
+            string? journalDirectory = null,
+            BridgeKeyProvider? keyProvider = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = Guid.NewGuid().ToString("N");
+            _keyProvider = keyProvider;
 
             RunRegistry? registry = null;
 
@@ -151,6 +161,11 @@ namespace RFiDGear.Services.ExternalControl
                 capabilities.Add(BridgeCapabilities.EventsAutoMode);
             }
 
+            if (keyProvider != null)
+            {
+                capabilities.Add(BridgeCapabilities.KeysProvider);
+            }
+
             if (_journal != null)
             {
                 capabilities.Add(BridgeCapabilities.ExecutionJournal);
@@ -171,9 +186,16 @@ namespace RFiDGear.Services.ExternalControl
                 ListRunResults = supervisor == null ? null : request => Task.FromResult(supervisor.ListResults(request, _instanceId)),
                 StartAutoMode = autoMode == null ? null : (sessionId, request) => Task.FromResult(autoMode.Start(sessionId, request)),
                 StopAutoMode = autoMode == null ? null : _ => Task.FromResult(autoMode.Stop()),
+                RegisterKeyProvider = keyProvider == null ? null : _ => Task.FromResult(new RegisterKeyProviderResponse
+                {
+                    ProviderId = BridgeKeyProvider.ProviderId,
+                    TimeoutMs = (int)SecureKeyRegistry.DefaultTimeout.TotalMilliseconds,
+                    InteractiveTimeoutMs = (int)SecureKeyRegistry.DefaultInteractiveTimeout.TotalMilliseconds,
+                }),
             };
 
             _server = new BridgeServer(pipeName, options, timings);
+            _keyChannel = keyProvider == null ? null : new KeyChannel(_server);
             RunInFlight = () => (supervisor?.HasActiveRun ?? false) || (autoMode?.HasRunInFlight ?? false);
         }
 
@@ -223,6 +245,11 @@ namespace RFiDGear.Services.ExternalControl
             _host.Project.ProjectChanged += OnProjectChanged;
             _host.Reader.ReaderStateChanged += OnReaderStateChanged;
             _autoMode?.Attach();
+
+            if (_keyProvider != null && _keyChannel != null)
+            {
+                _keyProvider.Attach(_keyChannel);
+            }
 
             // The only hook that every way out of the application shares (they all end in Environment.Exit).
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
@@ -320,6 +347,12 @@ namespace RFiDGear.Services.ExternalControl
             _host.Reader.ReaderStateChanged -= OnReaderStateChanged;
             _supervisor?.Detach();
             _autoMode?.Detach();
+
+            if (_keyProvider != null && _keyChannel != null)
+            {
+                _keyProvider.Detach(_keyChannel);
+            }
+
             _server.StateChanged -= OnServerStateChanged;
             _server.SessionEnded -= OnSessionEnded;
             _server.Dispose();
@@ -387,6 +420,30 @@ namespace RFiDGear.Services.ExternalControl
         }
 
         private void OnServerStateChanged(object? sender, EventArgs e) => ConnectionChanged?.Invoke(this, EventArgs.Empty);
+
+        // The way to the connected program for the secure key provider: the client that is connected, if it registered as the
+        // supplier of keys. Without one the provider is told so (null) and answers "unavailable".
+        private sealed class KeyChannel : IBridgeKeyChannel
+        {
+            private readonly BridgeServer _server;
+
+            internal KeyChannel(BridgeServer server)
+            {
+                _server = server;
+            }
+
+            public async Task<ResolveKeyResponse?> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken)
+            {
+                var session = _server.ActiveSession;
+
+                if (session == null || !session.Service.ProvidesKeys)
+                {
+                    return null;
+                }
+
+                return await session.RequestKeyAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+        }
 
         // A mode that a client switched on for as long as it is connected ends with the connection.
         private void OnSessionEnded(string sessionId) => _autoMode?.OnSessionEnded(sessionId);

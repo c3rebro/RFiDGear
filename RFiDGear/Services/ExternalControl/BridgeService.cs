@@ -60,6 +60,9 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets what <c>listRunResults</c> does; a host that offers the <c>execution.resultLog</c> capability sets it.</summary>
         internal Func<ListRunResultsRequest, Task<ListRunResultsResponse>>? ListRunResults { get; init; }
+
+        /// <summary>Gets what <c>registerKeyProvider</c> answers with; a host that offers the <c>keys.provider</c> capability sets it.</summary>
+        internal Func<RegisterKeyProviderRequest, Task<RegisterKeyProviderResponse>>? RegisterKeyProvider { get; init; }
     }
 
     /// <summary>
@@ -78,6 +81,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly string _sessionId;
         private HashSet<string> _enabledEvents = new HashSet<string>(StringComparer.Ordinal);
         private volatile bool _helloDone;
+        private volatile bool _providesKeys;
 
         /// <summary>Creates the service of one connection.</summary>
         /// <param name="options">What the host offers.</param>
@@ -90,6 +94,9 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets whether the client has made the handshake.</summary>
         internal bool HelloDone => _helloDone;
+
+        /// <summary>Gets whether the client registered as the supplier of card keys; for the life of the connection.</summary>
+        internal bool ProvidesKeys => _providesKeys;
 
         /// <summary>Says whether the client asked for an event and the host offers it.</summary>
         /// <param name="name">The wire name of the event.</param>
@@ -134,6 +141,18 @@ namespace RFiDGear.Services.ExternalControl
         /// <inheritdoc />
         public Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request) =>
             Run(BridgeMethods.ListRunResults, () => (_options.ListRunResults ?? throw new NotSupportedException())(request));
+
+        /// <inheritdoc />
+        public Task<RegisterKeyProviderResponse> RegisterKeyProvider(RegisterKeyProviderRequest request) =>
+            Run(BridgeMethods.RegisterKeyProvider, async () =>
+            {
+                var response = await (_options.RegisterKeyProvider ?? throw new NotSupportedException())(request).ConfigureAwait(false);
+
+                // From now on the host may call the client for keys, until the connection ends.
+                _providesKeys = true;
+
+                return response;
+            });
 
         private async Task<T> Run<T>(string wireName, Func<Task<T>> body)
         {

@@ -11,6 +11,7 @@ using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.ExternalControl;
+using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.Interfaces;
 using RFiDGear.ViewModel;
 
@@ -131,6 +132,34 @@ namespace RFiDGear.Tests.ExternalControl
                 {
                     viewModel.ExternalControl?.Dispose();
                 }
+            });
+        }
+
+        [Fact]
+        public async Task TheApplication_OffersTheKeyProvider_AndBindsTheProviderOfItsRegistryToTheBridge()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var pipe = NewPipeName();
+                var viewModel = await InitializeAsync(pipe, setting: true);
+
+                try
+                {
+                    using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                    var hello = await client.HelloAsync();
+
+                    Assert.Contains(BridgeCapabilities.KeysProvider, hello.Capabilities);
+                    Assert.True(BridgeKeyProvider.Shared.IsBound);
+
+                    // The provider the bridge binds is the one the registry of every task run holds.
+                    Assert.Contains(SecureKeyRegistry.BuiltInProviders(), registration => ReferenceEquals(registration.Provider, BridgeKeyProvider.Shared));
+                }
+                finally
+                {
+                    viewModel.ExternalControl?.Dispose();
+                }
+
+                Assert.False(BridgeKeyProvider.Shared.IsBound);
             });
         }
 

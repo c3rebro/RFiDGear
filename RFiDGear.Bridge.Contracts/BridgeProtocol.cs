@@ -51,6 +51,9 @@ namespace RFiDGear.Bridge
         /// <summary>The longest time a lookup may wait for a result, in milliseconds.</summary>
         public const int MaxWaitMs = 30000;
 
+        /// <summary>The longest key RFiDGear accepts from a client, in bytes (the longest card key is 24).</summary>
+        public const int MaxKeyBytes = 32;
+
         /// <summary>The characters a request id may have; it is logged, so the alphabet is small.</summary>
         public const string RequestIdPattern = @"^[A-Za-z0-9._:-]{1,64}\z";
 
