@@ -210,61 +210,41 @@ namespace RFiDGear.Tests.SecureKeys
             state.Reference = reference;
 
             Assert.Equal(expected, state.CanStoreKey);
-            Assert.Equal(expected, state.StoreKeyCommand.CanExecute(null));
             Assert.Equal(credentialManager, state.ProviderOffersStoreKey);
         }
 
         [Fact]
-        public void A_key_is_asked_for_with_the_digits_its_type_has_and_stored_under_the_reference_without_being_shown()
+        public void A_key_that_is_entered_is_stored_under_the_reference_and_the_state_says_what_came_of_it()
         {
             var host = new FakeHost { HexLength = 32 };
             var store = new FakeCredentialStore();
-            var dialogs = new ScriptedDialogs { Entry = "000102030405060708090A0B0C0D0E0F" };
-            var state = NewState(host, dialogs, store: store);
+            var state = NewState(host, new ScriptedDialogs(), store: store);
             state.ToggleMode();
             state.Reference = "cards/main";
 
-            state.StoreKey();
+            using var entered = TestText.Secure("000102030405060708090A0B0C0D0E0F");
+            var result = state.StoreEntered(entered);
 
-            Assert.Equal(32, dialogs.AskedHexLength);
+            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyStored, 0), result);
             Assert.Equal(Encoding.Unicode.GetBytes("000102030405060708090A0B0C0D0E0F"), store.Blobs[Prefix + "cards/main"]);
-            Assert.Equal((KeySlotMessage.KeyStored, 0), Assert.Single(dialogs.Shown));
         }
 
         [Fact]
         public void The_digits_may_be_typed_in_lower_case()
         {
             var store = new FakeCredentialStore();
-            var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs { Entry = "a1b2c3d4e5f6" }, store: store);
-            state.ToggleMode();
-            state.Reference = "cards/main";
-
-            state.StoreKey();
-
-            Assert.Equal(Encoding.Unicode.GetBytes("A1B2C3D4E5F6"), store.Blobs[Prefix + "cards/main"]);
-        }
-
-        [Fact]
-        public void An_entry_that_is_handed_in_is_stored_without_asking_and_the_state_says_what_came_of_it()
-        {
-            // The key manager has a box for the key of its own: the state is given the entry and neither asks nor shows a message.
-            var store = new FakeCredentialStore();
-            var dialogs = new ScriptedDialogs();
-            var state = NewState(new FakeHost { HexLength = 12 }, dialogs, store: store);
+            var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
             state.ToggleMode();
             state.Reference = "cards/main";
 
             using var entered = TestText.Secure("a1b2c3d4e5f6");
-            var result = state.StoreEntered(entered);
+            state.StoreEntered(entered);
 
-            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyStored, 0), result);
-            Assert.Null(dialogs.AskedHexLength);
-            Assert.Empty(dialogs.Shown);
             Assert.Equal(Encoding.Unicode.GetBytes("A1B2C3D4E5F6"), store.Blobs[Prefix + "cards/main"]);
         }
 
         [Fact]
-        public void An_entry_of_the_wrong_length_or_a_refusing_vault_is_reported_and_an_impossible_store_is_not_tried()
+        public void An_impossible_store_is_not_tried_and_a_refusing_vault_is_reported_with_its_code()
         {
             var store = new FakeCredentialStore();
             var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
@@ -277,20 +257,32 @@ namespace RFiDGear.Tests.SecureKeys
 
             state.ToggleMode();
             state.Reference = "cards/main";
+            store.WriteError = CredentialErrors.AccessDenied;
 
-            using (var shortKey = TestText.Secure("a1b2"))
+            using (var refused = TestText.Secure("A1B2C3D4E5F6"))
             {
-                Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyInvalid, 12), state.StoreEntered(shortKey));
-            }
-
-            store.WriteError = 5;
-
-            using (var refused = TestText.Secure("a1b2c3d4e5f6"))
-            {
-                Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyNotStored, 5), state.StoreEntered(refused));
+                Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyNotStored, CredentialErrors.AccessDenied), state.StoreEntered(refused));
             }
 
             Assert.Empty(store.Blobs);
+        }
+
+        [Theory]
+        [InlineData("A1B2C3")]
+        [InlineData("A1B2C3D4E5F6A1")]
+        [InlineData("A1B2C3D4E5GG")]
+        [InlineData("A1B2 C3D4E5F")]
+        public void An_entry_that_is_not_a_key_of_the_right_length_stores_nothing_and_says_how_long_it_has_to_be(string entry)
+        {
+            var store = new FakeCredentialStore();
+            var state = NewState(new FakeHost { HexLength = 12 }, new ScriptedDialogs(), store: store);
+            state.ToggleMode();
+            state.Reference = "cards/main";
+
+            using var entered = TestText.Secure(entry);
+
+            Assert.Equal(new KeySlotStoreResult(KeySlotMessage.KeyInvalid, 12), state.StoreEntered(entered));
+            Assert.Empty(store.Writes);
         }
 
         [Fact]
@@ -306,64 +298,61 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal(12, state.ExpectedKeyHexLength);
         }
 
+        // ── The line below the key box ──
+
         [Fact]
-        public void A_cancelled_entry_stores_nothing_and_says_nothing()
+        public void A_slot_with_a_typed_key_has_no_caption_which_is_why_its_row_has_no_height()
         {
-            var store = new FakeCredentialStore();
-            var dialogs = new ScriptedDialogs { Entry = null };
-            var state = NewState(new FakeHost(), dialogs, store: store);
-            state.ToggleMode();
-            state.Reference = "cards/main";
+            var state = NewState(new FakeHost(), new ScriptedDialogs());
 
-            state.StoreKey();
-
-            Assert.Empty(store.Writes);
-            Assert.Empty(dialogs.Shown);
-        }
-
-        [Theory]
-        [InlineData("A1B2C3")]
-        [InlineData("A1B2C3D4E5F6A1")]
-        [InlineData("A1B2C3D4E5GG")]
-        [InlineData("A1B2 C3D4E5F")]
-        public void An_entry_that_is_not_a_key_of_the_right_length_stores_nothing_and_says_how_long_it_has_to_be(string entry)
-        {
-            var store = new FakeCredentialStore();
-            var dialogs = new ScriptedDialogs { Entry = entry };
-            var state = NewState(new FakeHost { HexLength = 12 }, dialogs, store: store);
-            state.ToggleMode();
-            state.Reference = "cards/main";
-
-            state.StoreKey();
-
-            Assert.Empty(store.Writes);
-            Assert.Equal((KeySlotMessage.KeyInvalid, 12), Assert.Single(dialogs.Shown));
+            Assert.Equal(string.Empty, state.ReferenceCaption);
+            Assert.Equal(string.Empty, state.ReferenceDetail);
         }
 
         [Fact]
-        public void A_refusal_of_the_key_store_is_reported_with_its_error_code()
+        public void The_caption_is_the_name_of_the_key_and_the_tooltip_adds_the_key_store_in_the_language()
         {
-            var store = new FakeCredentialStore { WriteError = CredentialErrors.AccessDenied };
-            var dialogs = new ScriptedDialogs { Entry = "A1B2C3D4E5F6" };
-            var state = NewState(new FakeHost { HexLength = 12 }, dialogs, store: store);
+            var state = NewState(new FakeHost(), new ScriptedDialogs());
             state.ToggleMode();
             state.Reference = "cards/main";
 
-            state.StoreKey();
-
-            Assert.Equal((KeySlotMessage.KeyNotStored, CredentialErrors.AccessDenied), Assert.Single(dialogs.Shown));
+            Assert.Equal("Windows Credential Manager", state.ProviderName);
+            Assert.Equal("Reference: cards/main", state.ReferenceCaption);
+            Assert.Equal("Key store: Windows Credential Manager. Name of the key: cards/main", state.ReferenceDetail);
         }
 
         [Fact]
-        public void Nothing_is_asked_when_no_key_can_be_stored()
+        public void The_caption_says_so_while_the_name_is_still_missing()
         {
-            var dialogs = new ScriptedDialogs { Entry = "A1B2C3D4E5F6" };
-            var state = NewState(new FakeHost { HexLength = 12 }, dialogs);
+            var state = NewState(new FakeHost(), new ScriptedDialogs());
+            state.ToggleMode();
 
-            // Still the key of the task: nothing to store a key under.
-            state.StoreKey();
+            Assert.Equal("Reference: (no name yet)", state.ReferenceCaption);
+        }
 
-            Assert.Null(dialogs.AskedHexLength);
+        [Fact]
+        public void The_caption_follows_the_language_and_names_a_key_store_that_is_not_listed_by_its_id()
+        {
+            var host = new FakeHost();
+            host.Bind(Slot, "gone.vault", "x/1");
+            var state = new KeySlotEditorState(host, Slot, new[] { CredentialManager }, new ScriptedDialogs(), NewKeyStore(new FakeCredentialStore()), TestText.In("de"));
+
+            Assert.Equal("Referenz: x/1", state.ReferenceCaption);
+            Assert.Equal("Schlüsselspeicher: gone.vault. Name des Schlüssels: x/1", state.ReferenceDetail);
+        }
+
+        [Fact]
+        public void The_caption_is_announced_when_the_task_changes_its_bindings()
+        {
+            var host = new FakeHost();
+            var state = NewState(host, new ScriptedDialogs());
+            var raised = new List<string?>();
+            state.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+            host.Bind(Slot, WindowsCredentialKeyProvider.ProviderId, "from/outside");
+
+            Assert.Contains(string.Empty, raised);
+            Assert.Equal("Reference: from/outside", state.ReferenceCaption);
         }
 
         // ── Staying in step with the task ──
@@ -395,7 +384,7 @@ namespace RFiDGear.Tests.SecureKeys
             ScriptedDialogs dialogs,
             SecureKeyProviderInfo[]? providers = null,
             FakeCredentialStore? store = null) =>
-            new KeySlotEditorState(host, Slot, providers ?? new[] { CredentialManager }, dialogs, NewKeyStore(store ?? new FakeCredentialStore()));
+            new KeySlotEditorState(host, Slot, providers ?? new[] { CredentialManager }, dialogs, NewKeyStore(store ?? new FakeCredentialStore()), TestText.English);
 
         /// <summary>A task whose slot has a key or a binding, and that notes what it was asked.</summary>
         private sealed class FakeHost : IKeySlotHost
@@ -442,19 +431,12 @@ namespace RFiDGear.Tests.SecureKeys
             }
         }
 
-        /// <summary>The person, scripted: what they answer and what they were told.</summary>
+        /// <summary>The person, scripted: whether they agree to discard a typed key.</summary>
         private sealed class ScriptedDialogs : IKeySlotEditorDialogs
         {
             public bool Confirm { get; set; }
 
             public int Confirmations { get; private set; }
-
-            /// <summary>Gets or sets the digits that are entered; <c>null</c> is a cancelled entry.</summary>
-            public string? Entry { get; set; }
-
-            public int? AskedHexLength { get; private set; }
-
-            public List<(KeySlotMessage Message, int Detail)> Shown { get; } = new List<(KeySlotMessage, int)>();
 
             public bool ConfirmReplaceKey()
             {
@@ -462,27 +444,6 @@ namespace RFiDGear.Tests.SecureKeys
 
                 return Confirm;
             }
-
-            public SecureString? AskForKey(int hexLength)
-            {
-                AskedHexLength = hexLength;
-
-                if (Entry == null)
-                {
-                    return null;
-                }
-
-                var secure = new SecureString();
-
-                foreach (var c in Entry)
-                {
-                    secure.AppendChar(c);
-                }
-
-                return secure;
-            }
-
-            public void Show(KeySlotMessage message, int detail) => Shown.Add((message, detail));
         }
     }
 }

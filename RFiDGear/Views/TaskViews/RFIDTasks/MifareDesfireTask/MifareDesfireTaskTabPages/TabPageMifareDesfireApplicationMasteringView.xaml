@@ -272,12 +272,19 @@
                         IsEnabled="{Binding IsAppKeyChangeEnabled}"
                         Command="{Binding ChangeAppKeyCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeChangeKey'}" />
+                    <ctl:KeyManagerButton
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,7,8,8"
+                        Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
@@ -526,6 +533,12 @@
                         Visibility="{Binding ShowAppKeyCurrentInputs, Converter={StaticResource BoolToVisConv}}"
                         Command="{Binding AuthenticateToCardApplicationCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeAuthenticate'}" />
+                    <ctl:KeyManagerButton
+                        Grid.Row="8"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,7,8,8"
+                        Visibility="{Binding ShowAppKeyCurrentInputs, Converter={StaticResource BoolToVisConv}}" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
@@ -534,6 +547,7 @@
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>

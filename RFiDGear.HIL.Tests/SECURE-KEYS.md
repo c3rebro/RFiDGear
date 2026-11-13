@@ -82,11 +82,12 @@ run of this project.
 
 **The checklist for the cases that need a person:**
 
-For these, work in RFiDGear itself. In a task dialog, a key box has a button
-"Use reference...": choose the Credential Manager, type a reference, and press
-"Store key..." to put the key under it (the digits are typed into a password
-box and are not shown again). Use references that start with `hil-` so that you
-can tell them from your own, and remove them afterwards.
+For these, work in RFiDGear itself. In a task dialog, the section of a key has a
+button "Key manager..." at the bottom: press "Use reference" for the key, choose
+the Credential Manager, type a name, and press "Store key" to put the key under
+it (the digits are typed into a password box and are not shown again). Use names
+that start with `hil-` so that you can tell them from your own, and remove them
+afterwards.
 
 - 4, the PICC master key, bound, and back. Needs a card you can lose. Bind the
   new master key to a credential that holds a key you know, change the PICC
@@ -138,6 +139,21 @@ can tell them from your own, and remove them afterwards.
   the copy, save under a new name. Expected: the new project opens, its tasks
   run on a card as the old project did, the old project is unchanged, and the
   report names no key.
+- The key manager. No person has seen these windows on a real screen yet, so
+  look at them on the screen sizes you use, in English and in German. Open each
+  task dialog with keys (card mastering, application mastering, data explorer,
+  MIFARE Classic key setup and MAD) and check that its sections have a "Key
+  manager..." button at the bottom, level with the buttons beside it. Bind a
+  key: the key box turns grey and the name appears below it, and the window
+  does not grow wider for a long name. Point at the name, at the key stores in
+  the list and at the buttons: the tooltips wrap and stay long enough to read.
+  Store a key with Enter and with the button. Close the window with digits in
+  the box that were not stored, open it again: the box is empty. Choose
+  "Connected external application", start the sample client of the bridge, let
+  it register as a key provider, and watch the line under the list change from
+  "external control is not running" (the setting is off) to "no connected
+  program has registered" to "a connected program supplies keys", each within
+  a second or two.
 
 **What to send back:**
 

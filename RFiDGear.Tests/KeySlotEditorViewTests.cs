@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 
 using Xunit;
 using static RFiDGear.Tests.RenderedTab;
@@ -123,36 +124,49 @@ namespace RFiDGear.Tests
             Assert.Equal(expected.OrderBy(slot => slot, StringComparer.Ordinal), covered.OrderBy(slot => slot, StringComparer.Ordinal));
         }
 
-        // ── Switching ──
+        // ── What the editor shows (the choice is made in the key manager; the state does what the manager does) ──
 
         [Fact]
-        public async Task Switching_a_slot_to_a_reference_hides_the_key_box_and_shows_the_reference_and_back()
+        public async Task A_slot_named_by_a_reference_greys_out_its_key_box_and_shows_the_caption_and_back()
         {
-            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, task) =>
+            // A task type enables the group of the keys; without one the whole group is disabled and says nothing about the slot.
+            await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, async (view, task) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicBCurrent);
                 var keyBox = (TextBox)editor.EmbeddedKey;
-                var panel = (FrameworkElement)editor.FindName("ReferencePanel");
+                var caption = (TextBlock)editor.FindName("CaptionRow");
 
-                Assert.True(keyBox.IsVisible);
-                Assert.False(panel.IsVisible);
+                // The frame of the line is what collapses; the line inside keeps the size it last had.
+                var frame = (FrameworkElement)editor.FindName("CaptionFrame");
+
+                // The box is covered by a plain grey field while the slot has a reference: the box is empty then, which the view would show as red.
+                var cover = (FrameworkElement)editor.FindName("ReferenceCover");
+
+                Assert.True(keyBox.IsEnabled);
+                Assert.False(cover.IsVisible);
+                Assert.False(caption.IsVisible);
+                Assert.Equal(0, frame.ActualHeight);
 
                 StateOf(editor).ToggleMode();
                 await Flush();
                 view.UpdateLayout();
 
                 Assert.True(task.IsKeyBound(SecureKeySlots.ClassicBCurrent));
-                Assert.False(keyBox.IsVisible);
-                Assert.True(panel.IsVisible);
-                Assert.True(((FrameworkElement)editor.FindName("ReferenceBox")).IsVisible);
+                Assert.True(keyBox.IsVisible);
+                Assert.False(keyBox.IsEnabled);
+                Assert.True(cover.IsVisible);
+                Assert.True(caption.IsVisible);
+                Assert.True(frame.ActualHeight > 0);
 
                 StateOf(editor).ToggleMode();
                 await Flush();
                 view.UpdateLayout();
 
                 Assert.False(task.IsKeyBound(SecureKeySlots.ClassicBCurrent));
-                Assert.True(keyBox.IsVisible);
-                Assert.False(panel.IsVisible);
+                Assert.True(keyBox.IsEnabled);
+                Assert.False(cover.IsVisible);
+                Assert.False(caption.IsVisible);
+                Assert.Equal(0, frame.ActualHeight);
             });
         }
 
@@ -170,21 +184,19 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task The_reference_box_is_bound_to_the_editor_and_never_to_a_key_of_the_task()
+        public async Task The_caption_is_bound_to_the_editor_and_never_to_a_key_of_the_task()
         {
             await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, task) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
+                var caption = (TextBlock)editor.FindName("CaptionRow");
                 StateOf(editor).ToggleMode();
+                StateOf(editor).Reference = "cards/main";
                 await Flush();
-                var referenceBox = (TextBox)editor.FindName("ReferenceBox");
+                view.UpdateLayout();
 
-                Assert.Equal("Reference", BindingPath(referenceBox, TextBox.TextProperty));
-                Assert.IsType<KeySlotEditorState>(referenceBox.DataContext);
-                Assert.Equal(SecureKeySyntax.MaxReferenceLength, referenceBox.MaxLength);
-
-                referenceBox.Text = "cards/main";
-
+                Assert.Equal("State.ReferenceCaption", BindingPath(caption, TextBlock.TextProperty));
+                Assert.Contains("cards/main", caption.Text);
                 Assert.Equal("cards/main", task.GetKeyBinding(SecureKeySlots.ClassicACurrent).Reference);
 
                 // The key of the task stays what the binding made it: nothing.
@@ -195,7 +207,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task A_slot_that_holds_a_key_is_switched_only_when_the_person_agrees()
         {
-            await OnClassicTab(() => new MifareClassicSetupViewModel { ClassicKeyAKeyCurrent = "A1B2C3D4E5F6" }, (view, task) =>
+            await OnClassicTab(() => new MifareClassicSetupViewModel { ClassicKeyAKeyCurrent = "A1B2C3D4E5F6", SelectedTaskType = TaskType_MifareClassicTask.ReadData }, (view, task) =>
             {
                 var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
                 var dialogs = new RefusingDialogs();
@@ -208,98 +220,23 @@ namespace RFiDGear.Tests
 
                 state.ToggleMode();
 
-                // The same decision as the editor of the tab makes, with the question answered "no".
+                // The same decision as the key manager makes, with the question answered "no".
                 Assert.Equal(1, dialogs.Asked);
                 Assert.False(task.IsKeyBound(SecureKeySlots.ClassicACurrent));
                 Assert.Equal("A1B2C3D4E5F6", task.ClassicKeyAKeyCurrent);
-                Assert.True(((TextBox)editor.EmbeddedKey).IsVisible);
+                Assert.True(((TextBox)editor.EmbeddedKey).IsEnabled);
 
                 return Task.CompletedTask;
             });
         }
 
         [Fact]
-        public async Task The_store_button_is_there_for_the_credential_manager_and_waits_for_a_valid_reference()
-        {
-            // A task type enables the group of the keys; without one the whole group, and so the button, is disabled.
-            await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, async (view, _) =>
-            {
-                var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
-                var button = (Button)editor.FindName("StoreKeyButton");
-                Assert.False(button.IsVisible);
-
-                StateOf(editor).ToggleMode();
-                await Flush();
-                view.UpdateLayout();
-
-                Assert.True(button.IsVisible, "the store button is not visible");
-                Assert.False(button.IsEnabled);
-
-                ((TextBox)editor.FindName("ReferenceBox")).Text = "cards/main";
-                await Flush();
-
-                Assert.Equal("cards/main", StateOf(editor).Reference);
-                Assert.True(StateOf(editor).CanStoreKey);
-                Assert.True(button.Command.CanExecute(null));
-                Assert.True(button.IsEnabled);
-            });
-        }
-
-        [Fact]
-        public async Task The_provider_box_appears_only_when_there_is_more_than_one_provider_to_choose_from()
-        {
-            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, _) =>
-            {
-                var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
-                StateOf(editor).ToggleMode();
-                await Flush();
-                view.UpdateLayout();
-
-                Assert.False(((FrameworkElement)editor.FindName("ProviderBox")).IsVisible);
-            });
-
-            UseProviders(
-                WindowsCredentialKeyProvider.Registration(),
-                new SecureKeyProviderRegistration("other.vault", "Other vault", ScriptedSecureKeyProvider.Failing(SecureKeyFailureReason.NotFound)));
-
-            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, _) =>
-            {
-                var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
-                StateOf(editor).ToggleMode();
-                await Flush();
-                view.UpdateLayout();
-
-                var box = (ComboBox)editor.FindName("ProviderBox");
-                Assert.True(box.IsVisible);
-                Assert.Equal(2, box.Items.Count);
-                Assert.Equal(WindowsCredentialKeyProvider.ProviderId, box.SelectedValue);
-            });
-        }
-
-        [Fact]
-        public async Task Without_a_provider_the_mode_cannot_be_switched()
-        {
-            UseProviders();
-
-            await OnClassicTab(() => new MifareClassicSetupViewModel(), (view, _) =>
-            {
-                var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
-                var button = (Button)editor.FindName("ModeButton");
-
-                Assert.False(button.IsEnabled);
-                Assert.True(((TextBox)editor.EmbeddedKey).IsVisible);
-
-                return Task.CompletedTask;
-            });
-        }
-
-        [Fact]
-        public async Task A_task_that_is_already_bound_is_shown_with_its_reference()
+        public async Task A_task_that_is_already_bound_is_shown_with_its_reference_below_the_greyed_out_key_box()
         {
             await OnClassicTab(
                 () =>
                 {
-                    var task = new MifareClassicSetupViewModel();
+                    var task = new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData };
                     task.BindKeySlot(SecureKeySlots.ClassicACurrent, WindowsCredentialKeyProvider.ProviderId, "cards/main");
 
                     return task;
@@ -307,9 +244,11 @@ namespace RFiDGear.Tests
                 (view, _) =>
                 {
                     var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
+                    var caption = (TextBlock)editor.FindName("CaptionRow");
 
-                    Assert.False(((TextBox)editor.EmbeddedKey).IsVisible);
-                    Assert.Equal("cards/main", ((TextBox)editor.FindName("ReferenceBox")).Text);
+                    Assert.False(((TextBox)editor.EmbeddedKey).IsEnabled);
+                    Assert.True(caption.IsVisible);
+                    Assert.Contains("cards/main", caption.Text);
 
                     return Task.CompletedTask;
                 });
@@ -334,19 +273,218 @@ namespace RFiDGear.Tests
                 });
         }
 
-        // ── Storing a key ──
+        // ── The layout does not move ──
 
         [Fact]
-        public async Task The_window_that_asks_for_a_key_does_not_cut_what_is_pasted()
+        public async Task A_reference_adds_the_caption_below_the_key_box_and_moves_nothing_else()
         {
-            await StaTestRunner.RunOnStaThreadAsync(() =>
+            await OnClassicTab(() => new MifareClassicSetupViewModel(), async (view, _) =>
             {
-                var window = new StoreKeyWindow(32);
+                var editor = EditorOf(view, SecureKeySlots.ClassicACurrent);
+                var host = (FrameworkElement)editor.FindName("EmbeddedHost");
+                var caption = (FrameworkElement)editor.FindName("CaptionFrame");
+                var widthBefore = editor.ActualWidth;
+                var boxBefore = (host.ActualWidth, host.ActualHeight);
+                var heightBefore = editor.ActualHeight;
 
-                // A limit would cut a key of 48 digits pasted into a slot of 32, and its first 32 would be stored as the key.
-                var box = Assert.Single(LogicalDescendants(window).OfType<PasswordBox>());
-                Assert.Equal(0, box.MaxLength);
+                StateOf(editor).ToggleMode();
+
+                // The longest name there is: a caption that ran on would push the columns apart.
+                StateOf(editor).Reference = new string('a', SecureKeySyntax.MaxReferenceLength);
+                await Flush();
+                view.UpdateLayout();
+
+                Assert.Equal(widthBefore, editor.ActualWidth);
+                Assert.Equal(boxBefore, (host.ActualWidth, host.ActualHeight));
+
+                // Taller by the caption and no more than its height and the margin below it.
+                Assert.True(editor.ActualHeight > heightBefore, "the caption has no height");
+                Assert.True(editor.ActualHeight - heightBefore <= caption.ActualHeight + caption.Margin.Bottom + 0.5, "the editor grew by " + (editor.ActualHeight - heightBefore));
             });
+        }
+
+        // ── Every key has a way to its manager ──
+
+        [Fact]
+        public async Task In_every_task_type_a_visible_key_that_can_be_edited_has_a_visible_enabled_manager_button_in_its_group_box()
+        {
+            // There is no way to switch a slot except the key manager: a key whose button is hidden could never be bound.
+            foreach (var type in Enum.GetValues<TaskType_MifareDesfireTask>())
+            {
+                await OnDesfireTab<TabPageMifareDesfireCardMasteringView>(() => new MifareDesfireSetupViewModel { SelectedTaskType = type }, (view, _) => AssertEveryKeyHasItsButton(view, type.ToString()));
+                await OnDesfireTab<TabPageMifareDesfireApplicationMasteringView>(() => new MifareDesfireSetupViewModel { SelectedTaskType = type }, (view, _) => AssertEveryKeyHasItsButton(view, type.ToString()));
+                await OnDesfireTab<TabPageMifareDesfireDataExplorerView>(() => new MifareDesfireSetupViewModel { SelectedTaskType = type }, (view, _) => AssertEveryKeyHasItsButton(view, type.ToString()));
+            }
+
+            foreach (var type in Enum.GetValues<TaskType_MifareClassicTask>())
+            {
+                await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = type }, (view, _) => AssertEveryKeyHasItsButton(view, type.ToString()));
+            }
+        }
+
+        [Fact]
+        public async Task The_button_of_the_classic_key_group_opens_the_manager_for_the_four_keys_in_it_in_screen_order()
+        {
+            await OnClassicTab(() => new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData }, (view, _) =>
+            {
+                var recorder = new RecordingLauncher();
+                var keyA = EditorOf(view, SecureKeySlots.ClassicACurrent);
+                var button = LogicalDescendants(view).OfType<KeyManagerButton>().First(candidate => candidate.IsVisible && EditorGroupBox(candidate) is { } box && IsInside(keyA, box));
+                button.Launcher = recorder;
+                button.KeyStore = () => new WindowsCredentialKeyProvider(new FakeCredentialStore());
+
+                button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+
+                // Current and new side by side, key A above key B.
+                Assert.Equal(
+                    new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicATarget, SecureKeySlots.ClassicBCurrent, SecureKeySlots.ClassicBTarget },
+                    Assert.Single(recorder.Opened));
+
+                return Task.CompletedTask;
+            });
+        }
+
+        // ── The tabs at the smallest size of their windows ──
+
+        [Theory]
+        [InlineData(900, 700)]
+        [InlineData(1000, 750)]
+        public async Task A_reference_moves_nothing_sideways_and_the_manager_buttons_stay_inside_the_window(int width, int height)
+        {
+            // The data explorer, at the smallest size, already reaches over the edge of its own group box; what this asks is that a
+            // reference makes it no worse, and that the buttons are in the window.
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tabs = AllTabs();
+
+                foreach (var (name, make) in tabs)
+                {
+                    var typed = await LayoutOf(make(false), width, height);
+                    var bound = await LayoutOf(make(true), width, height);
+
+                    Assert.NotEmpty(typed.Keys);
+                    Assert.Equal(typed.Keys.Keys.OrderBy(slot => slot, StringComparer.Ordinal), bound.Keys.Keys.OrderBy(slot => slot, StringComparer.Ordinal));
+
+                    foreach (var (slot, before) in typed.Keys)
+                    {
+                        var after = bound.Keys[slot];
+
+                        Assert.True(after.Right <= before.Right + 0.5, name + " " + slot + ": a reference moves the key box from " + before.Right + " to " + after.Right);
+                        Assert.True(Math.Abs(after.Width - before.Width) <= 0.5, name + " " + slot + ": a reference changes the width of the key box from " + before.Width + " to " + after.Width);
+                    }
+
+                    Assert.NotEmpty(bound.Buttons);
+
+                    foreach (var button in bound.Buttons)
+                    {
+                        Assert.True(button.Height >= 26 - 0.5, name + ": a manager button is squeezed to " + button.Height);
+                        Assert.True(button.Bottom <= height, name + ": a manager button reaches below the window (" + button.Bottom + " of " + height + ")");
+                        Assert.True(button.Right <= width, name + ": a manager button reaches beyond the window (" + button.Right + " of " + width + ")");
+                    }
+                }
+            });
+        }
+
+        // Every tab that has keys, as a view and its task: typed, or with every key named by a reference.
+        private static (string Name, Func<bool, (FrameworkElement View, object Task)> Make)[] AllTabs() => new (string Name, Func<bool, (FrameworkElement View, object Task)> Make)[]
+        {
+            ("card mastering", bound => (new TabPageMifareDesfireCardMasteringView(), bound ? BoundDesfire(TaskType_MifareDesfireTask.PICCMasterKeyChangeover) : new MifareDesfireSetupViewModel { SelectedTaskType = TaskType_MifareDesfireTask.PICCMasterKeyChangeover })),
+            ("application mastering", bound => (new TabPageMifareDesfireApplicationMasteringView(), bound ? BoundDesfire(TaskType_MifareDesfireTask.ApplicationKeyChangeover) : new MifareDesfireSetupViewModel { SelectedTaskType = TaskType_MifareDesfireTask.ApplicationKeyChangeover })),
+            ("data explorer", bound => (new TabPageMifareDesfireDataExplorerView(), bound ? BoundDesfire(TaskType_MifareDesfireTask.ReadData) : new MifareDesfireSetupViewModel { SelectedTaskType = TaskType_MifareDesfireTask.ReadData })),
+            ("classic keys", bound => (new TabPageMifareClassicKeySetupView(), bound ? BoundClassic() : new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData })),
+        };
+
+        [Fact]
+        public async Task The_tabs_are_rendered_to_pictures_when_a_folder_is_given()
+        {
+            // For a person to look at, like the API snapshots that are updated on request: nothing happens without the variable.
+            var folder = Environment.GetEnvironmentVariable("RFIDGEAR_RENDER_DIR");
+
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                return;
+            }
+
+            System.IO.Directory.CreateDirectory(folder);
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                foreach (var (width, height) in new[] { (900, 700), (1000, 750), (1200, 750) })
+                {
+                    foreach (var (name, make) in AllTabs())
+                    {
+                        foreach (var bound in new[] { false, true })
+                        {
+                            var (view, task) = make(bound);
+                            view.DataContext = task;
+                            var window = new Window { Content = view, Width = width, Height = height, ShowActivated = false, ShowInTaskbar = false };
+
+                            try
+                            {
+                                window.Show();
+                                window.UpdateLayout();
+                                await Flush();
+                                window.UpdateLayout();
+
+                                var root = (FrameworkElement)VisualTreeHelper.GetChild(window, 0);
+                                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+                                bitmap.Render(root);
+                                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+
+                                using var file = System.IO.File.Create(System.IO.Path.Combine(folder, "tab-" + name.Replace(' ', '-') + (bound ? "-reference-" : "-typed-") + width + "x" + height + ".png"));
+                                encoder.Save(file);
+                            }
+                            finally
+                            {
+                                window.Close();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        private sealed record KeyBounds(double Right, double Width);
+
+        private sealed record ButtonBounds(double Right, double Bottom, double Height);
+
+        private sealed record TabLayout(Dictionary<string, KeyBounds> Keys, List<ButtonBounds> Buttons);
+
+        // Shows a tab alone in a window of the given size and measures where its keys and manager buttons are.
+        private static async Task<TabLayout> LayoutOf((FrameworkElement View, object Task) tab, int width, int height)
+        {
+            tab.View.DataContext = tab.Task;
+            var window = new Window { Content = tab.View, Width = width, Height = height, ShowActivated = false, ShowInTaskbar = false };
+
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+                await Flush();
+                window.UpdateLayout();
+
+                var keys = EditorsIn(tab.View)
+                    .Where(editor => editor.IsVisible)
+                    .GroupBy(editor => editor.SlotId)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => new KeyBounds(group.First().TransformToAncestor(window).Transform(new Point(group.First().ActualWidth, 0)).X, group.First().ActualWidth));
+
+                var buttons = LogicalDescendants(tab.View)
+                    .OfType<KeyManagerButton>()
+                    .Where(button => button.IsVisible)
+                    .Select(button => new ButtonBounds(
+                        button.TransformToAncestor(window).Transform(new Point(button.ActualWidth, 0)).X,
+                        button.TransformToAncestor(window).Transform(new Point(0, button.ActualHeight)).Y,
+                        button.ActualHeight))
+                    .ToList();
+
+                return new TabLayout(keys, buttons);
+            }
+            finally
+            {
+                window.Close();
+            }
         }
 
         // ── The dialog while the keys are obtained ──
@@ -529,19 +667,81 @@ namespace RFiDGear.Tests
 
                 return false;
             }
+        }
 
-            public int? AskedHexLength { get; private set; }
+        private sealed class RecordingLauncher : IKeyManagerLauncher
+        {
+            public List<string[]> Opened { get; } = new List<string[]>();
 
-            public List<(KeySlotMessage Message, int Detail)> Told { get; } = new List<(KeySlotMessage, int)>();
+            public void Show(KeyManagerViewModel viewModel, Window? owner) =>
+                Opened.Add(viewModel.Rows.Select(row => row.SlotId).ToArray());
+        }
 
-            public System.Security.SecureString? AskForKey(int hexLength)
+        // A task of which every slot is named by a reference, so that every caption shows.
+        private static MifareDesfireSetupViewModel BoundDesfire(TaskType_MifareDesfireTask type)
+        {
+            var task = new MifareDesfireSetupViewModel { SelectedTaskType = type };
+
+            foreach (var slot in SecureKeySlots.Desfire)
             {
-                AskedHexLength = hexLength;
-
-                return null;
+                task.BindKeySlot(slot, WindowsCredentialKeyProvider.ProviderId, "cards/" + slot);
             }
 
-            public void Show(KeySlotMessage message, int detail) => Told.Add((message, detail));
+            return task;
+        }
+
+        private static MifareClassicSetupViewModel BoundClassic()
+        {
+            var task = new MifareClassicSetupViewModel { SelectedTaskType = TaskType_MifareClassicTask.ReadData };
+
+            foreach (var slot in SecureKeySlots.Classic)
+            {
+                task.BindKeySlot(slot, WindowsCredentialKeyProvider.ProviderId, "cards/" + slot);
+            }
+
+            return task;
+        }
+
+        // The group box a control sits in, the nearest one: the section of keys that a manager button is for.
+        private static GroupBox? EditorGroupBox(DependencyObject element)
+        {
+            for (var parent = VisualTreeHelper.GetParent(element); parent != null; parent = VisualTreeHelper.GetParent(parent))
+            {
+                if (parent is GroupBox box)
+                {
+                    return box;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsInside(DependencyObject element, DependencyObject ancestor)
+        {
+            for (var parent = VisualTreeHelper.GetParent(element); parent != null; parent = VisualTreeHelper.GetParent(parent))
+            {
+                if (ReferenceEquals(parent, ancestor))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Every key that is shown and can be edited has a button that is shown and enabled in a group box that holds the key.
+        private static Task AssertEveryKeyHasItsButton(FrameworkElement view, string taskType)
+        {
+            var buttons = LogicalDescendants(view).OfType<KeyManagerButton>().Where(button => button.IsVisible && button.IsEnabled).ToList();
+
+            foreach (var editor in EditorsIn(view).Where(candidate => candidate.IsVisible && candidate.IsEnabled))
+            {
+                Assert.True(
+                    buttons.Any(button => EditorGroupBox(button) is { } box && IsInside(editor, box)),
+                    view.GetType().Name + " / " + taskType + ": the key " + editor.SlotId + " is shown and can be edited, but no manager button that is shown and enabled is in its section");
+            }
+
+            return Task.CompletedTask;
         }
     }
 }

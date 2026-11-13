@@ -1967,12 +1967,6 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusFileSettingNameChange" xml:space="preserve">
     <value>Recht zum Ändern der Zugriffsrechte</value>
   </data>
-  <data name="buttonContentKeySlotUseReference" xml:space="preserve">
-    <value>Referenz verwenden...</value>
-  </data>
-  <data name="buttonContentKeySlotUseKey" xml:space="preserve">
-    <value>Schlüssel verwenden</value>
-  </data>
   <data name="toolTipKeySlotMode" xml:space="preserve">
     <value>Den Schlüssel hier eingeben und im Projekt speichern, oder einen Schlüssel in einem Schlüsselspeicher benennen. Bei einem Namen speichert das Projekt nur den Namen.</value>
   </data>
@@ -1981,9 +1975,6 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="toolTipKeySlotProvider" xml:space="preserve">
     <value>Der Schlüsselspeicher, auf den die Referenz zeigt.</value>
-  </data>
-  <data name="buttonContentKeySlotStoreKey" xml:space="preserve">
-    <value>Schlüssel speichern...</value>
   </data>
   <data name="toolTipKeySlotStoreKey" xml:space="preserve">
     <value>Speichert einen Schlüssel unter dieser Referenz in der Windows-Anmeldeinformationsverwaltung. Der Schlüssel wird verdeckt eingegeben und nie wieder angezeigt.</value>
@@ -1994,17 +1985,8 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageKeySlotReplaceKey" xml:space="preserve">
     <value>Der in dieser Aufgabe eingegebene Schlüssel wird daraus entfernt und durch eine Referenz ersetzt. Er ist nirgends sonst gespeichert. Fortfahren?</value>
   </data>
-  <data name="windowTitleKeySlotStoreKey" xml:space="preserve">
-    <value>Schlüssel speichern</value>
-  </data>
   <data name="labelKeySlotStoreKeyPrompt" xml:space="preserve">
     <value>Schlüssel als {0} Hexadezimalziffern (0-9, A-F), ohne Leerzeichen:</value>
-  </data>
-  <data name="buttonContentKeySlotStoreKeyOk" xml:space="preserve">
-    <value>Speichern</value>
-  </data>
-  <data name="buttonContentKeySlotStoreKeyCancel" xml:space="preserve">
-    <value>Abbrechen</value>
   </data>
   <data name="messageKeySlotKeyStored" xml:space="preserve">
     <value>Der Schlüssel wurde unter der Referenz gespeichert.</value>
@@ -2119,6 +2101,15 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="keySlotNameClassicMadBTarget" xml:space="preserve">
     <value>MAD-Schlüssel B, neu</value>
+  </data>
+  <data name="labelKeySlotReferenceCaption" xml:space="preserve">
+    <value>Referenz: {0}</value>
+  </data>
+  <data name="labelKeySlotReferenceDetail" xml:space="preserve">
+    <value>Schlüsselspeicher: {0}. Name des Schlüssels: {1}</value>
+  </data>
+  <data name="labelKeySlotReferenceNoName" xml:space="preserve">
+    <value>(noch kein Name)</value>
   </data>
   <data name="menuItemMigrateProjectKeys" xml:space="preserve">
     <value>Schlüssel eines Projekts in die Anmeldeinformationsverwaltung verschieben...</value>
