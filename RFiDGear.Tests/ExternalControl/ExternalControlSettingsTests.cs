@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Models;
 using RFiDGear.Services;
 
@@ -66,6 +67,35 @@ namespace RFiDGear.Tests.ExternalControl
 
             Assert.DoesNotContain("EnableExternalControl", File.ReadAllText(path), StringComparison.Ordinal);
             Assert.False(writer.ReadSettings(path).EnableExternalControl);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TheBootstrapper_PassesTheSettingOnToTheMainWindow(bool enabled)
+        {
+            var root = NewTempRoot();
+
+            using (var writer = new SettingsReaderWriter(root, loadSettings: false))
+            {
+                writer.SaveSettings(new DefaultSpecification(true) { EnableExternalControl = enabled }, Path.Combine(root, "settings.xml"));
+            }
+
+            // Loading the settings also selects the reader provider and the port for the whole process; put them back.
+            var provider = ReaderDevice.Reader;
+            var port = ReaderDevice.PortNumber;
+
+            try
+            {
+                var result = await new SettingsBootstrapper(() => new SettingsReaderWriter(root)).LoadAsync();
+
+                Assert.Equal(enabled, result.EnableExternalControl);
+            }
+            finally
+            {
+                ReaderDevice.Reader = provider;
+                ReaderDevice.PortNumber = port;
+            }
         }
 
         // ── The start-up argument ──
