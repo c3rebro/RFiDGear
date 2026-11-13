@@ -61,8 +61,10 @@ either.
 1. Make the request id from your job (an order number plus an attempt number,
    say) and **write it down before you call**. It is the only way to ask
    about the run if you lose the connection, and it is what makes a repeated
-   request recognisable: the same id with the same content never starts a
-   second run.
+   request recognisable: while RFiDGear still knows the id (the last 1024, and
+   after a restart only with the capability `execution.journal`), the same id
+   with the same content never starts a second run. Past that it can: this is
+   why a client asks about an id after a doubt and does not send it again.
 2. Check `getStatus` if you like (a project is loaded, the reader sees the
    card), and pass `expectProjectPath` and `expectTaskCount` so that a project
    that was replaced meanwhile is refused instead of run.

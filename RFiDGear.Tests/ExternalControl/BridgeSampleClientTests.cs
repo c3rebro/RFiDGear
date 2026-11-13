@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO.Pipes;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -135,6 +136,43 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(RunOutcomeKind.NotStarted, outcome.Kind);
             Assert.Contains(BridgeErrorKinds.NoProjectLoaded, outcome.Detail, StringComparison.Ordinal);
             Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task ARunThatExpectsAnotherProject_IsRefused_AndTheHostIsNeverAsked()
+        {
+            // The project was replaced between the load and the start: the run says which project it is for.
+            var (_, pipe, host, _) = Start();
+            var client = await ConnectAsync(pipe);
+
+            var otherPath = await client.RunOnceAsync("job-1", NoVariables, expectProjectPath: @"C:\projects\other.rfPrj");
+            var otherCount = await client.RunOnceAsync("job-2", NoVariables, expectProjectPath: @"C:\projects\one.rfPrj", expectTaskCount: 7);
+            var matching = await client.RunOnceAsync("job-3", NoVariables, expectProjectPath: @"C:\projects\one.rfPrj", expectTaskCount: 2);
+
+            Assert.Equal(RunOutcomeKind.NotStarted, otherPath.Kind);
+            Assert.Contains(BridgeErrorKinds.ProjectMismatch, otherPath.Detail, StringComparison.Ordinal);
+            Assert.Equal(RunOutcomeKind.NotStarted, otherCount.Kind);
+            Assert.Equal(RunOutcomeKind.Completed, matching.Kind);
+            Assert.Single(host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task AServerThatNeverAnswersTheHandshake_EndsInATimeout_AndInACancellationWhenTheCallerGivesUp()
+        {
+            var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+            using var silent = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            var accepted = silent.WaitForConnectionAsync();
+
+            await Assert.ThrowsAsync<TimeoutException>(() => BridgeSampleClient.ConnectAsync(name, connectTimeout: TimeSpan.FromMilliseconds(300)));
+            await accepted;
+
+            // Another silent server: the pipe connects at once, and it is the handshake that the caller gives up on.
+            var otherName = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+            using var otherSilent = new NamedPipeServerStream(otherName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            _ = otherSilent.WaitForConnectionAsync();
+            using var giveUp = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BridgeSampleClient.ConnectAsync(otherName, connectTimeout: TimeSpan.FromSeconds(20), cancellationToken: giveUp.Token));
         }
 
         [Fact]
@@ -311,6 +349,43 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Null(afterwards.Key);
             Assert.Equal(1, vault.Served);
             await Assert.ThrowsAsync<OperationCanceledException>(() => new SampleVault("r", key).ResolveAsync(new ResolveKeyRequest { Reference = "r" }, new CancellationToken(true)));
+        }
+
+        [Fact]
+        public async Task AVaultThatIsDisposedWhileItIsAsked_GivesTheWholeKeyOrNothing_NeverAKeyThatIsBeingErased()
+        {
+            var key = Enumerable.Range(1, 16).Select(i => (byte)(i * 7)).ToArray();
+
+            for (var round = 0; round < 200; round++)
+            {
+                var vault = new SampleVault("r", key);
+                var gate = new ManualResetEventSlim(false);
+                var asking = Task.Run(() =>
+                {
+                    gate.Wait();
+
+                    return vault.ResolveAsync(new ResolveKeyRequest { Reference = "r" }, CancellationToken.None);
+                });
+                var disposing = Task.Run(() =>
+                {
+                    gate.Wait();
+                    vault.Dispose();
+                });
+
+                gate.Set();
+                var answer = await asking;
+                await disposing;
+
+                if (answer.Result == KeyResolveResults.Resolved)
+                {
+                    Assert.Equal(key, Convert.FromBase64String(answer.Key!));
+                }
+                else
+                {
+                    Assert.Equal(KeyResolveResults.NotAuthorized, answer.Result);
+                    Assert.Null(answer.Key);
+                }
+            }
         }
 
         [Fact]

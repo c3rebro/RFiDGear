@@ -58,6 +58,10 @@ namespace RFiDGear.Bridge.SampleClient
             {
                 return 1;
             }
+            catch (FormatException e)
+            {
+                return Fail(e.Message);
+            }
         }
 
         private static int Fail(string message)
@@ -75,6 +79,7 @@ namespace RFiDGear.Bridge.SampleClient
             Console.WriteLine("RFiDGear " + client.Hello.AppVersion + ", protocol " + client.Hello.Protocol.Major + "." + client.Hello.Protocol.Minor + ", instance " + client.Hello.InstanceId);
             Console.WriteLine("offers: " + string.Join(", ", client.Hello.Capabilities));
             Console.WriteLine("start-up complete: " + status.StartupComplete + ", running: " + status.IsRunning + ", project: " + status.Project.TaskCount + " tasks");
+            Console.WriteLine(status.UiResponsive ? "main window: answers" : "main window: DOES NOT ANSWER, the project and the reader state may be old (stale: " + status.Stale + ")");
             Console.WriteLine("reader: " + status.Reader.State + (status.Reader.HasCard ? ", card on it" : ", no card") + ", latest result: " + status.LastResultSeq);
 
             return 0;
@@ -84,23 +89,44 @@ namespace RFiDGear.Bridge.SampleClient
         {
             var requestId = args[1];
             var rest = args.Skip(2).ToList();
-            var project = rest.FirstOrDefault(arg => !arg.StartsWith('$') && !arg.Contains('='));
-            var variables = rest
-                .Where(arg => arg.StartsWith('$') && arg.Contains('='))
+
+            // A variable is written $NAME=value and nothing else starts with a dollar sign; everything else is the project, whose
+            // path may well contain an equals sign.
+            var variableArguments = rest.Where(arg => arg.StartsWith('$')).ToList();
+            var projects = rest.Where(arg => !arg.StartsWith('$')).ToList();
+            var names = variableArguments.Select(arg => arg.Split('=', 2)[0]).ToList();
+
+            if (projects.Count > 1 || variableArguments.Any(arg => !arg.Contains('=')) || names.Distinct(StringComparer.Ordinal).Count() != names.Count)
+            {
+                return Fail(Usage);
+            }
+
+            var variables = variableArguments
                 .Select(arg => arg.Split('=', 2))
                 .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
 
             await using var client = await BridgeSampleClient.ConnectAsync(cancellationToken: cancellationToken);
+            string? expectedPath = null;
+            int? expectedTasks = null;
 
-            if (project != null)
+            if (projects.Count == 1)
             {
-                var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = System.IO.Path.GetFullPath(project) });
+                var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = System.IO.Path.GetFullPath(projects[0]) });
                 Console.WriteLine("loaded " + loaded.TaskCount + " tasks");
+
+                // The load and the start are two calls. The run says which project it expects, so that a project that is replaced in
+                // between is refused instead of run.
+                expectedPath = loaded.Path;
+                expectedTasks = loaded.TaskCount;
+            }
+            else
+            {
+                Console.WriteLine("no project given: the run uses whichever project RFiDGear has loaded");
             }
 
             // Written before the call, so that an operator can ask about it even if this program dies in the middle.
             Console.WriteLine("request id: " + requestId);
-            var outcome = await client.RunOnceAsync(requestId, variables, cancellationToken);
+            var outcome = await client.RunOnceAsync(requestId, variables, expectedPath, expectedTasks, cancellationToken);
 
             return Print(outcome);
         }
@@ -214,10 +240,23 @@ namespace RFiDGear.Bridge.SampleClient
                         break;
                     }
 
-                    if (count < digits.Length && Uri.IsHexDigit(pressed.KeyChar))
+                    if (pressed.Key == ConsoleKey.Backspace)
                     {
-                        digits[count++] = pressed.KeyChar;
+                        if (count > 0)
+                        {
+                            digits[--count] = '\0';
+                        }
+
+                        continue;
                     }
+
+                    // Nothing is skipped silently: the prompt shows nothing, so a key that was changed on the way would never be noticed.
+                    if (!Uri.IsHexDigit(pressed.KeyChar) || count == digits.Length)
+                    {
+                        throw new FormatException("A key is at most " + digits.Length + " hexadecimal digits. Start again.");
+                    }
+
+                    digits[count++] = pressed.KeyChar;
                 }
 
                 Console.WriteLine();
@@ -254,7 +293,10 @@ namespace RFiDGear.Bridge.SampleClient
                 }
             }
 
-            return outcome.Kind == RunOutcomeKind.Completed && outcome.Result?.Status == RunStatuses.Success ? 0 : 1;
+            // The project asks for a failure that it handles (completedWithIntentionalFailures): that is a successful run.
+            var succeeded = outcome.Kind == RunOutcomeKind.Completed && outcome.Result?.Status is RunStatuses.Success or RunStatuses.CompletedWithIntentionalFailures;
+
+            return succeeded ? 0 : 1;
         }
     }
 }

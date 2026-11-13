@@ -16,7 +16,8 @@ namespace RFiDGear.Bridge.SampleClient
     {
         private readonly string _reference;
         private readonly byte[] _key;
-        private int _disposed;
+        private readonly object _gate = new object();
+        private bool _disposed;
         private int _served;
 
         /// <summary>Creates a vault that serves a key. It keeps a copy of <paramref name="key"/>; erase your own.</summary>
@@ -39,7 +40,16 @@ namespace RFiDGear.Bridge.SampleClient
         }
 
         /// <summary>Gets how many keys this vault handed out; for a program that wants to tell its operator.</summary>
-        public int Served => Volatile.Read(ref _served);
+        public int Served
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _served;
+                }
+            }
+        }
 
         /// <summary>Answers the host's request for a key. Assign it to <see cref="BridgeSampleClient.KeyVault"/>.</summary>
         /// <param name="request">Which key, and what for.</param>
@@ -50,22 +60,31 @@ namespace RFiDGear.Bridge.SampleClient
             ArgumentNullException.ThrowIfNull(request);
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (Volatile.Read(ref _disposed) != 0 || !string.Equals(request.Reference, _reference, StringComparison.Ordinal))
+            // The check, the encoding and the erasing share one lock: a request gets the whole key or is refused, never a key that
+            // is being erased.
+            lock (_gate)
             {
-                return Task.FromResult(new ResolveKeyResponse { Result = KeyResolveResults.NotAuthorized });
+                if (_disposed || !string.Equals(request.Reference, _reference, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(new ResolveKeyResponse { Result = KeyResolveResults.NotAuthorized });
+                }
+
+                _served++;
+
+                return Task.FromResult(new ResolveKeyResponse { Result = KeyResolveResults.Resolved, Key = Convert.ToBase64String(_key) });
             }
-
-            Interlocked.Increment(ref _served);
-
-            return Task.FromResult(new ResolveKeyResponse { Result = KeyResolveResults.Resolved, Key = Convert.ToBase64String(_key) });
         }
 
         /// <summary>Erases the copy of the key; the vault then refuses everything.</summary>
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            lock (_gate)
             {
-                CryptographicOperations.ZeroMemory(_key);
+                if (!_disposed)
+                {
+                    _disposed = true;
+                    CryptographicOperations.ZeroMemory(_key);
+                }
             }
         }
     }

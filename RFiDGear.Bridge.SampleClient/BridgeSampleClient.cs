@@ -125,7 +125,8 @@ namespace RFiDGear.Bridge.SampleClient
 
             try
             {
-                await pipe.ConnectAsync(connectTimeout ?? TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
+                var patience = connectTimeout ?? TimeSpan.FromSeconds(10);
+                await pipe.ConnectAsync(patience, cancellationToken).ConfigureAwait(false);
                 var client = new BridgeSampleClient(pipe);
 
                 try
@@ -137,7 +138,7 @@ namespace RFiDGear.Bridge.SampleClient
                         ProtocolMajorMin = BridgeProtocol.Major,
                         ProtocolMajorMax = BridgeProtocol.Major,
                         Events = events ?? Array.Empty<string>(),
-                    }).ConfigureAwait(false);
+                    }).WaitAsync(patience, cancellationToken).ConfigureAwait(false);
 
                     return client;
                 }
@@ -162,14 +163,23 @@ namespace RFiDGear.Bridge.SampleClient
         /// <summary>
         /// Starts one run of the loaded project and waits for its result. The rule it keeps: <b>a request that may have reached
         /// RFiDGear is never repeated as a new request</b>. If the answer does not come (a timeout, a lost connection, an error
-        /// that does not say "never started"), the client asks about the same request id instead. (Sending the same id again
-        /// would be safe too, because RFiDGear recognises it; a new id would write the card twice.)
+        /// that does not say "never started"), the client asks about the same request id instead, which only looks and never
+        /// starts anything. (It does not send the request again: RFiDGear recognises an id only while it still knows it, and an id
+        /// that is older than the last 1024, or that a restart without <c>execution.journal</c> made it forget, would start another
+        /// run and write the card again.)
         /// </summary>
         /// <param name="requestId">The id of this job. Make it from the job (an order number), or write it down before the call: it is what you ask with later.</param>
         /// <param name="variables">The variables of the run (names as the project writes them, with the leading dollar sign).</param>
+        /// <param name="expectProjectPath">The project the job is for (the path <c>loadProject</c> answered with), or <see langword="null"/> to run whichever is loaded. A project that was replaced since is refused, and nothing is started.</param>
+        /// <param name="expectTaskCount">The number of tasks the project has, or <see langword="null"/>.</param>
         /// <param name="cancellationToken">Stops waiting; it does not stop the run (use <c>cancelRun</c> for that).</param>
         /// <returns>How it ended.</returns>
-        public async Task<RunOutcome> RunOnceAsync(string requestId, IReadOnlyDictionary<string, string> variables, CancellationToken cancellationToken = default)
+        public async Task<RunOutcome> RunOnceAsync(
+            string requestId,
+            IReadOnlyDictionary<string, string> variables,
+            string? expectProjectPath = null,
+            int? expectTaskCount = null,
+            CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(variables);
 
@@ -177,6 +187,8 @@ namespace RFiDGear.Bridge.SampleClient
             {
                 RequestId = requestId,
                 Variables = variables.Select(pair => new VariablePair { Name = pair.Key, Value = pair.Value }).ToList(),
+                ExpectProjectPath = expectProjectPath,
+                ExpectTaskCount = expectTaskCount,
             };
 
             try
