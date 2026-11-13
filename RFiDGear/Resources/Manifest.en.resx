@@ -2017,6 +2017,87 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="keySlotSupplierStatusConnected" xml:space="preserve">
     <value>A connected program supplies keys.</value>
   </data>
+  <data name="windowTitleKeyManager" xml:space="preserve">
+    <value>Key manager</value>
+  </data>
+  <data name="labelKeyManagerIntro" xml:space="preserve">
+    <value>Each key is typed into the task, or named by a reference to a key store that is asked when the task runs. The project saves only the name, never the key.</value>
+  </data>
+  <data name="labelKeyManagerKeyStore" xml:space="preserve">
+    <value>Key store</value>
+  </data>
+  <data name="labelKeyManagerKeyName" xml:space="preserve">
+    <value>Name of the key</value>
+  </data>
+  <data name="buttonContentKeyManagerUseReference" xml:space="preserve">
+    <value>Use a reference</value>
+  </data>
+  <data name="buttonContentKeyManagerUseKey" xml:space="preserve">
+    <value>Use the typed key</value>
+  </data>
+  <data name="labelKeyManagerTypedKey" xml:space="preserve">
+    <value>The key is typed into the task.</value>
+  </data>
+  <data name="labelKeyManagerNoSlots" xml:space="preserve">
+    <value>There is no key to manage here.</value>
+  </data>
+  <data name="buttonContentKeyManagerClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="buttonContentKeyManagerStoreKey" xml:space="preserve">
+    <value>Store key</value>
+  </data>
+  <data name="buttonContentKeyManager" xml:space="preserve">
+    <value>Key manager...</value>
+  </data>
+  <data name="toolTipKeyManager" xml:space="preserve">
+    <value>Choose where the keys of this section come from, and store keys in the Windows Credential Manager.</value>
+  </data>
+  <data name="keySlotNameDesfirePiccCurrent" xml:space="preserve">
+    <value>PICC master key, current</value>
+  </data>
+  <data name="keySlotNameDesfirePiccNew" xml:space="preserve">
+    <value>PICC master key, new</value>
+  </data>
+  <data name="keySlotNameDesfireAppCurrent" xml:space="preserve">
+    <value>Application key, current</value>
+  </data>
+  <data name="keySlotNameDesfireAppOld" xml:space="preserve">
+    <value>Application key, old</value>
+  </data>
+  <data name="keySlotNameDesfireAppNew" xml:space="preserve">
+    <value>Application key, new</value>
+  </data>
+  <data name="keySlotNameDesfireRead" xml:space="preserve">
+    <value>Key for reading</value>
+  </data>
+  <data name="keySlotNameDesfireWrite" xml:space="preserve">
+    <value>Key for writing</value>
+  </data>
+  <data name="keySlotNameClassicACurrent" xml:space="preserve">
+    <value>Key A, current</value>
+  </data>
+  <data name="keySlotNameClassicBCurrent" xml:space="preserve">
+    <value>Key B, current</value>
+  </data>
+  <data name="keySlotNameClassicATarget" xml:space="preserve">
+    <value>Key A, new</value>
+  </data>
+  <data name="keySlotNameClassicBTarget" xml:space="preserve">
+    <value>Key B, new</value>
+  </data>
+  <data name="keySlotNameClassicMadACurrent" xml:space="preserve">
+    <value>MAD key A, current</value>
+  </data>
+  <data name="keySlotNameClassicMadBCurrent" xml:space="preserve">
+    <value>MAD key B, current</value>
+  </data>
+  <data name="keySlotNameClassicMadATarget" xml:space="preserve">
+    <value>MAD key A, new</value>
+  </data>
+  <data name="keySlotNameClassicMadBTarget" xml:space="preserve">
+    <value>MAD key B, new</value>
+  </data>
   <data name="menuItemMigrateProjectKeys" xml:space="preserve">
     <value>Move keys of a project to the Credential Manager...</value>
   </data>
