@@ -205,6 +205,55 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task AClientThatPollsWhileTheWindowIsStuck_DoesNotLeaveABacklogForTheWindow()
+        {
+            var waiting = new List<(Action Action, TaskCompletionSource<bool> Done)>();
+            Task Stuck(Action action)
+            {
+                var done = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                lock (waiting)
+                {
+                    waiting.Add((action, done));
+                }
+
+                return done.Task;
+            }
+
+            var (_, name, _) = Start(dispatch: Stuck, uiTimeout: TimeSpan.FromMilliseconds(100));
+            var client = await ConnectAsync(name);
+            await client.HelloAsync();
+
+            for (var i = 0; i < 5; i++)
+            {
+                Assert.False((await client.Service.GetStatus(new GetStatusRequest())).UiResponsive);
+            }
+
+            // One read waits for the window, however often the client asked.
+            int queued;
+            lock (waiting)
+            {
+                queued = waiting.Count;
+            }
+
+            Assert.Equal(1, queued);
+
+            // When that read has been done, the next question makes a new one.
+            (Action Action, TaskCompletionSource<bool> Done) first;
+            lock (waiting)
+            {
+                first = waiting[0];
+            }
+
+            first.Action();
+            first.Done.SetResult(true);
+            Assert.True((await client.Service.GetStatus(new GetStatusRequest())).Stale);
+            lock (waiting)
+            {
+                Assert.Equal(2, waiting.Count);
+            }
+        }
+
+        [Fact]
         public async Task GetStatus_WhenTheWindowIsClosing_DoesNotFail()
         {
             var (_, name, _) = Start(dispatch: _ => throw new InvalidOperationException("The dispatcher has shut down."));

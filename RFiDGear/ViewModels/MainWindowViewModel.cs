@@ -349,9 +349,14 @@ namespace RFiDGear.ViewModel
                 {
                     LoadCompleted(mainWindow, EventArgs.Empty);
                 }
-                else if (externalControl != null)
+                else
                 {
-                    ArmStartupFallback(mainWindow);
+                    // Does nothing unless the bridge is on.
+                    ArmStartupFallback(
+                        () => mainWindow.IsVisible,
+                        handler => mainWindow.ContentRendered += handler,
+                        handler => mainWindow.ContentRendered -= handler,
+                        () => LoadCompleted(mainWindow, EventArgs.Empty));
                 }
             }
         }
@@ -408,12 +413,24 @@ namespace RFiDGear.ViewModel
         /// project that is loaded at start) waits for that. A program that waits for RFiDGear would wait with it, so when the
         /// bridge is on the start-up also runs a moment after the window has been drawn. The first of the two triggers wins.
         /// </summary>
-        /// <param name="mainWindow">The main window.</param>
-        private void ArmStartupFallback(Window mainWindow)
+        /// <param name="isDrawn">Says whether the window has been drawn already.</param>
+        /// <param name="subscribeDrawn">Subscribes to the event that is raised when the window has been drawn.</param>
+        /// <param name="unsubscribeDrawn">Takes the subscription back.</param>
+        /// <param name="run">Starts the start-up; it goes through the same gate as the activation, so it runs only if nothing else did.</param>
+        /// <param name="delay">How long after the window was drawn to wait for the activation; 1.5 seconds when <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> when the fallback was armed; <see langword="false"/> when the bridge is off (nothing waits for the start-up, so nothing changes).</returns>
+        internal bool ArmStartupFallback(Func<bool> isDrawn, Action<EventHandler> subscribeDrawn, Action<EventHandler> unsubscribeDrawn, Action run, TimeSpan? delay = null)
         {
+            if (externalControl == null)
+            {
+                return false;
+            }
+
+            var wait = delay ?? StartupFallbackDelay;
+
             void Arm()
             {
-                Task.Delay(StartupFallbackDelay).ContinueWith(
+                Task.Delay(wait).ContinueWith(
                     _ => uiDispatcher.InvokeAsync(() =>
                     {
                         if (startupOnce.HasEntered)
@@ -422,25 +439,27 @@ namespace RFiDGear.ViewModel
                         }
 
                         Log.ForContext<MainWindowViewModel>().Information("Start-up was run by the fallback: the main window was drawn but never activated");
-                        LoadCompleted(mainWindow, EventArgs.Empty);
+                        run();
                     }),
                     TaskScheduler.Default);
             }
 
-            if (mainWindow.IsVisible)
+            if (isDrawn())
             {
                 Arm();
 
-                return;
+                return true;
             }
 
             EventHandler drawn = null;
             drawn = (_, _) =>
             {
-                mainWindow.ContentRendered -= drawn;
+                unsubscribeDrawn(drawn);
                 Arm();
             };
-            mainWindow.ContentRendered += drawn;
+            subscribeDrawn(drawn);
+
+            return true;
         }
 
         private static readonly TimeSpan StartupFallbackDelay = TimeSpan.FromMilliseconds(1500);
@@ -1872,7 +1891,7 @@ namespace RFiDGear.ViewModel
 
                         settings.DefaultSpecification = currentSettings;
 
-                        sender.SaveSettings.ExecuteAsync(null);
+                        var saveTask = sender.SaveSettings.ExecuteAsync(null);
 
                         // Switch the provider first: setting the name announces the change to extensions, and they read
                         // the connection and card state of whichever provider is current when that happens.
@@ -1893,10 +1912,12 @@ namespace RFiDGear.ViewModel
 
                         IsReaderBusy = false;
 
-                        if (externalControlChanged)
+                        // Not for settings that did not pass the check of the dialog: nothing was saved, so there is nothing to restart for.
+                        if (externalControlChanged && sender.IsValidClassicKeysText != false)
                         {
                             // The same notice as for the language: the software must be restarted for the change to apply.
-                            OnNewLanguageChangedDialog();
+                            // Accepting it ends the process, so it is offered only after the write has finished.
+                            _ = RestartNotice.OfferWhenSavedAsync(saveTask, OnNewLanguageChangedDialog);
                         }
                     },
 

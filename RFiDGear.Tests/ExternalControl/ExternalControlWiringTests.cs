@@ -260,6 +260,148 @@ namespace RFiDGear.Tests.ExternalControl
             });
         }
 
+        // ── The fallback for a window that is never activated ──
+
+        private sealed class FakeWindow
+        {
+            public bool Drawn { get; set; }
+
+            public int Subscriptions { get; private set; }
+
+            public int Unsubscriptions { get; private set; }
+
+            public EventHandler? Handler { get; private set; }
+
+            public void Subscribe(EventHandler handler)
+            {
+                Subscriptions++;
+                Handler = handler;
+            }
+
+            public void Unsubscribe(EventHandler handler)
+            {
+                Unsubscriptions++;
+                Handler = null;
+            }
+
+            public void RaiseDrawn() => Handler?.Invoke(this, EventArgs.Empty);
+        }
+
+        private static readonly TimeSpan ShortDelay = TimeSpan.FromMilliseconds(60);
+
+        [Fact]
+        public async Task WithTheBridgeOff_TheFallbackIsNotArmed()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = await InitializeAsync(NewPipeName(), setting: false);
+                var window = new FakeWindow { Drawn = true };
+                var runs = 0;
+
+                var armed = viewModel.ArmStartupFallback(() => window.Drawn, window.Subscribe, window.Unsubscribe, () => runs++, ShortDelay);
+                await Task.Delay(300);
+
+                Assert.False(armed);
+                Assert.Equal(0, window.Subscriptions);
+                Assert.Equal(0, runs);
+            });
+        }
+
+        [Fact]
+        public async Task AWindowThatIsDrawnButNeverActivated_IsStartedByTheFallback_Once_AndTheClientSeesIt()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var pipe = NewPipeName();
+                var viewModel = await InitializeAsync(pipe, setting: true);
+
+                try
+                {
+                    using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                    await client.HelloAsync();
+                    var window = new FakeWindow { Drawn = true };
+                    var startups = 0;
+                    Task Startup()
+                    {
+                        startups++;
+
+                        return Task.CompletedTask;
+                    }
+
+                    var armed = viewModel.ArmStartupFallback(() => window.Drawn, window.Subscribe, window.Unsubscribe, () => _ = viewModel.RunStartupOnceAsync(Startup), ShortDelay);
+                    await WaitUntilAsync(() => startups == 1);
+
+                    // The activation that comes late finds the start-up done.
+                    var late = await viewModel.RunStartupOnceAsync(Startup);
+
+                    Assert.True(armed);
+                    Assert.False(late);
+                    Assert.Equal(1, startups);
+                    Assert.True((await client.Service.GetStatus(new GetStatusRequest())).StartupComplete);
+                }
+                finally
+                {
+                    viewModel.ExternalControl?.Dispose();
+                }
+            });
+        }
+
+        [Fact]
+        public async Task AWindowThatIsNotDrawnYet_WaitsForTheDrawing_ThenForTheDelay_AndLetsGoOfTheEvent()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = await InitializeAsync(NewPipeName(), setting: true);
+
+                try
+                {
+                    var window = new FakeWindow { Drawn = false };
+                    var runs = 0;
+
+                    viewModel.ArmStartupFallback(() => window.Drawn, window.Subscribe, window.Unsubscribe, () => runs++, ShortDelay);
+                    await Task.Delay(300);
+
+                    Assert.Equal(1, window.Subscriptions);
+                    Assert.Equal(0, runs);
+
+                    window.RaiseDrawn();
+                    await WaitUntilAsync(() => runs == 1);
+
+                    Assert.Equal(1, window.Unsubscriptions);
+                }
+                finally
+                {
+                    viewModel.ExternalControl?.Dispose();
+                }
+            });
+        }
+
+        [Fact]
+        public async Task WhenTheActivationComesFirst_TheFallbackDoesNotStartAnything()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = await InitializeAsync(NewPipeName(), setting: true);
+
+                try
+                {
+                    var window = new FakeWindow { Drawn = true };
+                    var fallbackRuns = 0;
+
+                    viewModel.ArmStartupFallback(() => window.Drawn, window.Subscribe, window.Unsubscribe, () => fallbackRuns++, TimeSpan.FromMilliseconds(200));
+                    var activation = await viewModel.RunStartupOnceAsync(() => Task.CompletedTask);
+                    await Task.Delay(500);
+
+                    Assert.True(activation);
+                    Assert.Equal(0, fallbackRuns);
+                }
+                finally
+                {
+                    viewModel.ExternalControl?.Dispose();
+                }
+            });
+        }
+
         private static async Task WaitUntilAsync(Func<bool> condition)
         {
             var until = DateTime.UtcNow.AddSeconds(5);

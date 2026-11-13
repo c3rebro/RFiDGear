@@ -27,6 +27,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Func<long> _lastResultSeq;
         private readonly object _gate = new object();
         private UiValues? _lastUi;
+        private Task? _outstandingRead;
 
         /// <summary>Creates the provider.</summary>
         /// <param name="host">The host service of RFiDGear.</param>
@@ -84,26 +85,14 @@ namespace RFiDGear.Services.ExternalControl
         }
 
         // Asks the main window for its values. The action may run late, after the answer was given with the old values; it
-        // stores what it read, so the next question gets it.
+        // stores what it read, so the next question gets it. While one such action is still waiting for a window that does
+        // not answer, further questions share it instead of queueing another: a client that polls must not leave a growing
+        // backlog behind for the window to work off when it recovers.
         private async Task<bool> TryReadUiValuesAsync()
         {
             try
             {
-                var read = _dispatchToUi(() =>
-                {
-                    var path = _host.Project.CurrentPath;
-                    var taskCount = _host.Project.TaskCount;
-                    var values = new UiValues(
-                        new ProjectStatusDto { Loaded = path != null || taskCount > 0, Path = path, TaskCount = taskCount },
-                        _isReaderInitializing());
-
-                    lock (_gate)
-                    {
-                        _lastUi = values;
-                    }
-                });
-
-                await read.WaitAsync(_uiTimeout).ConfigureAwait(false);
+                await StartOrJoinRead().WaitAsync(_uiTimeout).ConfigureAwait(false);
 
                 return true;
             }
@@ -113,6 +102,34 @@ namespace RFiDGear.Services.ExternalControl
                 Log.ForContext<BridgeStatusProvider>().Debug("External control: the main window did not answer in time ({ExceptionType})", e.GetType().FullName);
 
                 return false;
+            }
+        }
+
+        private Task StartOrJoinRead()
+        {
+            lock (_gate)
+            {
+                if (_outstandingRead == null || _outstandingRead.IsCompleted)
+                {
+                    _outstandingRead = _dispatchToUi(ReadUiValues);
+                }
+
+                return _outstandingRead;
+            }
+        }
+
+        // Runs on the thread of the main window.
+        private void ReadUiValues()
+        {
+            var path = _host.Project.CurrentPath;
+            var taskCount = _host.Project.TaskCount;
+            var values = new UiValues(
+                new ProjectStatusDto { Loaded = path != null || taskCount > 0, Path = path, TaskCount = taskCount },
+                _isReaderInitializing());
+
+            lock (_gate)
+            {
+                _lastUi = values;
             }
         }
 

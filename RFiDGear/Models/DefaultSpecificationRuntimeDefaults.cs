@@ -39,7 +39,7 @@ namespace RFiDGear.Models
         public bool AutoLoadProjectOnStart { get; set; }
             = false;
 
-        public bool EnableExternalControl { get; set; } = false;
+        public bool EnableExternalControl { get; set; }
 
         public string LastUsedProjectPath { get; set; } = string.Empty;
 

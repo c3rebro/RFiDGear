@@ -153,6 +153,44 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(new[] { "report-07.pdf" }, Directory.GetFiles(root).Select(Path.GetFileName).ToArray());
         }
 
+        // ── The restart notice ──
+
+        [Fact]
+        public async Task TheRestartNotice_IsOfferedOnlyAfterTheSettingsAreSaved()
+        {
+            var save = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var offered = 0;
+
+            var offering = RestartNotice.OfferWhenSavedAsync(save.Task, () => offered++);
+            await Task.Delay(100);
+
+            Assert.Equal(0, offered);
+            Assert.False(offering.IsCompleted);
+
+            save.SetResult(true);
+            await offering;
+
+            Assert.Equal(1, offered);
+        }
+
+        [Fact]
+        public async Task TheRestartNotice_IsNotOfferedWhenTheSettingsCouldNotBeSaved_AndNothingIsThrown()
+        {
+            var offered = 0;
+
+            await RestartNotice.OfferWhenSavedAsync(Task.FromException(new IOException("The disk is full.")), () => offered++);
+            await RestartNotice.OfferWhenSavedAsync(Task.FromCanceled(new System.Threading.CancellationToken(true)), () => offered++);
+
+            Assert.Equal(0, offered);
+        }
+
+        [Fact]
+        public async Task TheRestartNotice_NeedsAWriteAndANotice()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(() => RestartNotice.OfferWhenSavedAsync(null!, () => { }));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => RestartNotice.OfferWhenSavedAsync(Task.CompletedTask, null!));
+        }
+
         // ── The gate for the start-up ──
 
         [Fact]
