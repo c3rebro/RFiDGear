@@ -213,6 +213,13 @@ namespace RFiDGear.Tests.ExternalControl
             var whileItRuns = service.MakeRunningChanged(1, "session", DateTimeOffset.UtcNow, ownWhenItChanged);
             var nobody = service.MakeRunningChanged(2, "session", DateTimeOffset.UtcNow, null);
 
+            // The host has given up its gate and not reported the end of the run yet: nothing runs, so nobody owns it.
+            host.ExecutionHost.SetRunningQuietly(false);
+            var idle = service.MakeRunningChanged(4, "session", DateTimeOffset.UtcNow, ownWhenItChanged);
+            host.ExecutionHost.SetRunningQuietly(true);
+            Assert.False(idle.IsRunning);
+            Assert.Null(idle.OwnRequestId);
+
             // The host gives up the run, and somebody else is running when the notice that was made for the start is sent.
             host.ExecutionHost.RaiseExecutionCompleted(FakeResults.Success(2) with { RunId = response.RunId });
             host.ExecutionHost.SetRunningQuietly(true);
