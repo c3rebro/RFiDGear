@@ -748,7 +748,21 @@ namespace RFiDGear.Services.TaskExecution
                     {
                         // The index has moved on to the task that will not start; the watchdog timed the one before it,
                         // and its tag says which.
-                        LogAbandoned(runId, taskTimeout.Tag is int timedPosition ? timedPosition : (int?)null);
+                        int? timedPosition = taskTimeout.Tag is int tag ? tag : (int?)null;
+
+                        // AbandonRun marked that task failed in its model, though it had finished. If it ran, its recorded
+                        // outcome says the same now and the evaluator counts it as given up, as at the end of a task.
+                        if (timedPosition is int position &&
+                            position < descriptors.Count &&
+                            observations.Any(observation => observation.TaskPosition == position && observation.Decision == "Executed"))
+                        {
+                            var timedDescriptor = descriptors[position];
+                            var timedModel = timedDescriptor.Task ?? request.TaskHandler?.TaskCollection?[position] as IGenericTask;
+                            RecordObservation(observations, request, CreateTaskObservation(position, timedDescriptor, timedModel, "Executed", false));
+                            abandonedAt = position;
+                        }
+
+                        LogAbandoned(runId, timedPosition);
                         break;
                     }
 

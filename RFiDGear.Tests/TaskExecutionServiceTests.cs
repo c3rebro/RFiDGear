@@ -981,15 +981,24 @@ namespace RFiDGear.Tests
                 }),
                 new TaskDescriptor(1, new StubTaskModel { CurrentTaskIndex = "11" }, ct => { secondRan++; return Task.CompletedTask; })
             };
+            var request = BuildRequest(descriptors);
+            var observations = new List<TaskExecutionObservation>();
+            request.Observations = observations;
 
             TaskExecutionResult? result = null;
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                result = await service.ExecuteOnceAsync(BuildRequest(descriptors));
+                result = await service.ExecuteOnceAsync(request);
             });
 
             Assert.NotNull(result);
             Assert.Equal(0, secondRan);
+
+            // AbandonRun marked the task the watchdog was timing as failed, though it had finished; what the loop recorded
+            // for it and what the summary counts say the same.
+            Assert.False(observations.Last(observation => observation.TaskPosition == 0).WasSuccessful);
+            var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "UnhandledFailures"));
             Assert.True(result.Abandoned);
             Assert.Equal(1, service.CurrentTaskIndex);   // the task that never started was not reached
             Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
