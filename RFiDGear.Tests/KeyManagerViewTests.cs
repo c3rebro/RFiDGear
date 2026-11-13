@@ -493,11 +493,12 @@ namespace RFiDGear.Tests
 
                 await OnWindow(setup, new[] { SecureKeySlots.DesfirePiccCurrent, SecureKeySlots.DesfireAppCurrent, SecureKeySlots.DesfireAppNew }, async (window, viewModel) =>
                 {
+                    // The controls are counted over all rows, the typed one and the collapsed ones included: the index is the row.
                     await Toggle(window, 1);
-                    Of<TextBox>(window, "ReferenceBox", 0).Text = "cards/application-main";
+                    Of<TextBox>(window, "ReferenceBox", 1).Text = "cards/application-main";
                     await Toggle(window, 2);
-                    Of<ComboBox>(window, "ProviderBox", 1).SelectedValue = BridgeKeyProvider.ProviderId;
-                    Of<TextBox>(window, "ReferenceBox", 1).Text = "orders/4711";
+                    Of<ComboBox>(window, "ProviderBox", 2).SelectedValue = BridgeKeyProvider.ProviderId;
+                    Of<TextBox>(window, "ReferenceBox", 2).Text = "orders/4711";
                     setup.Supplier.Current = KeySupplierAvailability.NoSupplier;
                     viewModel.RefreshSupplierStatus();
                     window.UpdateLayout();
