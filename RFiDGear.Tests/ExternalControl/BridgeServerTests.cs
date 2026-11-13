@@ -327,6 +327,17 @@ namespace RFiDGear.Tests.ExternalControl
             await Assert.ThrowsAsync<TimeoutException>(() => BridgeTestClient.ConnectAsync(name, 300));
         }
 
+        [Fact]
+        public async Task Stopping_WhileNobodyIsConnected_ClosesTheWaitingPipe()
+        {
+            var (server, name) = StartServer();
+
+            server.Stop();
+
+            Assert.Null(server.WaitingPipe);
+            await Assert.ThrowsAsync<TimeoutException>(() => BridgeTestClient.ConnectAsync(name, 300));
+        }
+
         // ── A client that misbehaves ──
 
         [Fact]

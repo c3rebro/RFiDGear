@@ -237,6 +237,21 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public void TheServiceClass_HasNoPublicMethodThatTheContractDoesNotName()
+        {
+            // The connection registers the service by its interface, so nothing else could be called; this keeps the class itself
+            // from growing a public method that a registration by class would expose.
+            var contract = typeof(IBridgeService).GetMethods().Select(method => method.Name).ToHashSet(StringComparer.Ordinal);
+
+            var extra = typeof(BridgeService)
+                .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)
+                .Select(method => method.Name)
+                .Where(name => !contract.Contains(name));
+
+            Assert.Empty(extra);
+        }
+
+        [Fact]
         public void ThePipeName_IsThePrefixAndTheSidOfTheUserWhoRunsTheProcess()
         {
             var name = PipeNames.ForCurrentUser();
