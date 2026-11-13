@@ -163,7 +163,10 @@ namespace RFiDGear.Tests.ExternalControl
             using var silent = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             var accepted = silent.WaitForConnectionAsync();
 
-            await Assert.ThrowsAsync<TimeoutException>(() => BridgeSampleClient.ConnectAsync(name, connectTimeout: TimeSpan.FromMilliseconds(300)));
+            // Bounded: a client that waits for ever must fail this test, not hang it.
+            var timedOut = Assert.ThrowsAsync<TimeoutException>(() => BridgeSampleClient.ConnectAsync(name, connectTimeout: TimeSpan.FromMilliseconds(300)));
+            Assert.Same(timedOut, await Task.WhenAny(timedOut, Task.Delay(10_000)));
+            await timedOut;
             await accepted;
 
             // Another silent server: the pipe connects at once, and it is the handshake that the caller gives up on.
@@ -172,7 +175,9 @@ namespace RFiDGear.Tests.ExternalControl
             _ = otherSilent.WaitForConnectionAsync();
             using var giveUp = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BridgeSampleClient.ConnectAsync(otherName, connectTimeout: TimeSpan.FromSeconds(20), cancellationToken: giveUp.Token));
+            var cancelled = Assert.ThrowsAnyAsync<OperationCanceledException>(() => BridgeSampleClient.ConnectAsync(otherName, connectTimeout: TimeSpan.FromSeconds(20), cancellationToken: giveUp.Token));
+            Assert.Same(cancelled, await Task.WhenAny(cancelled, Task.Delay(10_000)));
+            await cancelled;
         }
 
         [Fact]
