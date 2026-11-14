@@ -1050,6 +1050,69 @@ namespace RFiDGear.Tests
             Assert.Equal(new[] { 0, 1, 1 }, observations.Select(observation => observation.TaskPosition));
         }
 
+        // A task of a kind that no handler of the loop runs used to leave the loop on its position for ever (#216): nothing
+        // ran, the index did not move, and the watchdog is restarted on every pass. The run ends with an error instead.
+        [Fact]
+        public async Task ATaskOfAKindNoHandlerRuns_EndsTheRunWithAnErrorInsteadOfHanging()
+        {
+            var failure = await RunProjectOfOneTaskAsync(() => new StubTaskModel { CurrentTaskIndex = "0" });
+
+            var unsupported = Assert.IsType<NotSupportedException>(failure);
+            Assert.Contains(nameof(StubTaskModel), unsupported.Message);
+        }
+
+        // The Ultralight task has no handler yet: the same as for any unknown kind, not a hang.
+        [Fact]
+        public async Task AnUltralightTask_EndsTheRunWithAnErrorInsteadOfHanging()
+        {
+            var failure = await RunProjectOfOneTaskAsync(() => new MifareUltralightSetupViewModel());
+
+            Assert.IsType<NotSupportedException>(failure);
+        }
+
+        // Runs a project of one task through the handlers of the service and returns what ended the run. A run that hangs
+        // is ended by the token after five seconds and comes back as that cancellation, so a test that expects the error
+        // fails with the type it got instead of waiting for ever.
+        private static async Task<Exception> RunProjectOfOneTaskAsync(Func<object> createTask)
+        {
+            Exception failure = null;
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var chip = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102);
+                var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider { GenericChip = chip, Card = chip };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var handler = new ChipTaskHandlerModel();
+                    handler.TaskCollection.Add(createTask());
+
+                    var request = new TaskExecutionRequest
+                    {
+                        TaskHandler = handler,
+                        VariablesFromArgs = new Dictionary<string, string>(),
+                        Timeouts = TaskExecutionTimeouts.Default
+                    };
+
+                    using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+                    try
+                    {
+                        await new TaskExecutionService(new FixedReaderDeviceProvider(reader), new StubDispatcherTimerAdapter(), new StubDispatcherTimerAdapter())
+                            .ExecuteOnceAsync(request, limit.Token);
+                    }
+                    catch (Exception e)
+                    {
+                        failure = e;
+                    }
+                }
+            });
+
+            Assert.NotNull(failure);
+
+            return failure;
+        }
+
         // Runs a list of two tasks: a first one that a handler of the service runs, and a second one that is routed back
         // to the first once and goes well on its second attempt. Returns what the loop recorded for every attempt and how
         // often the second task ran.
