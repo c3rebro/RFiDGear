@@ -1147,25 +1147,37 @@ namespace RFiDGear.ViewModel
         public ICommand CreateUltralightTaskCommand => new AsyncRelayCommand(OnNewCreateUltralightTaskCommand);
         private Task OnNewCreateUltralightTaskCommand()
         {
-
-
             var timerState = triggerReadChip.IsEnabled;
 
             triggerReadChip.IsEnabled = false;
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
-            using (var device = ReaderDevice.Instance)
+            try
             {
-                if (device != null)
+                using (var device = ReaderDevice.Instance)
                 {
-                    Dialogs.Add(taskDialogFactory.CreateUltralightTaskDialog(SelectedSetupViewModel, ChipTasks, dialogs));
+                    // only call dialog if device is ready
+                    if (device != null)
+                    {
+                        Dialogs.Add(taskDialogFactory.CreateUltralightTaskDialog(SelectedSetupViewModel, ChipTasks, dialogs));
+                    }
+                    else
+                    {
+                        OnNewNoReaderFoundDialog();
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to open the Ultralight task dialog.");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
 
-            Mouse.OverrideCursor = null;
-
-            triggerReadChip.IsEnabled = timerState;
+                triggerReadChip.IsEnabled = timerState;
+            }
 
             return Task.CompletedTask;
         }
