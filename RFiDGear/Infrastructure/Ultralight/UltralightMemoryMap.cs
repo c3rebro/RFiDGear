@@ -23,25 +23,31 @@ namespace RFiDGear.Infrastructure.Ultralight
         /// <summary>The number of pages of the largest variant (NTAG216): no chip has a page at or above this number.</summary>
         public static int MaxPageCount => 231;
 
-        // Pages, last user page. After the user memory come, per chip: Ultralight C the lock bytes, the counter, AUTH0, AUTH1 and the
-        // key (pages 40-47); MF0UL11 CFG0, CFG1, PWD and PACK (16-19); MF0UL21 the dynamic lock bytes and the same four (36-40); the
-        // NTAGs the dynamic lock bytes and the same four (40-44, 130-134, 226-230). The plain Ultralight has nothing after page 15.
+        // Pages, last user page, pages a READ gives as themselves, first page that reads as zeros. After the user memory come, per
+        // chip: Ultralight C the lock bytes, the counter, AUTH0, AUTH1 and the key (pages 40-47; the key, pages 44-47, is write-only
+        // and a READ that reaches it goes on at page 0); MF0UL11 CFG0, CFG1, PWD and PACK (16-19); MF0UL21 the dynamic lock bytes and
+        // the same four (36-40); the NTAGs the dynamic lock bytes and the same four (40-44, 130-134, 226-230). The password and the
+        // PACK of an Ultralight EV1 and an NTAG read as zeros. The plain Ultralight has nothing after page 15.
         private static readonly UltralightMemoryMap[] Maps =
         {
-            new UltralightMemoryMap(UltralightVariant.Plain, 16, 15),
-            new UltralightMemoryMap(UltralightVariant.C, 48, 39),
-            new UltralightMemoryMap(UltralightVariant.Ev1Mf0ul11, 20, 15),
-            new UltralightMemoryMap(UltralightVariant.Ev1Mf0ul21, 41, 35),
-            new UltralightMemoryMap(UltralightVariant.Ntag213, 45, 39),
-            new UltralightMemoryMap(UltralightVariant.Ntag215, 135, 129),
-            new UltralightMemoryMap(UltralightVariant.Ntag216, 231, 225)
+            new UltralightMemoryMap(UltralightVariant.Plain, 16, 15, 16, 16),
+            new UltralightMemoryMap(UltralightVariant.C, 48, 39, 44, 48),
+            new UltralightMemoryMap(UltralightVariant.Ev1Mf0ul11, 20, 15, 20, 18),
+            new UltralightMemoryMap(UltralightVariant.Ev1Mf0ul21, 41, 35, 41, 39),
+            new UltralightMemoryMap(UltralightVariant.Ntag213, 45, 39, 45, 43),
+            new UltralightMemoryMap(UltralightVariant.Ntag215, 135, 129, 135, 133),
+            new UltralightMemoryMap(UltralightVariant.Ntag216, 231, 225, 231, 229)
         };
 
-        internal UltralightMemoryMap(UltralightVariant variant, int pageCount, int lastUserPage)
+        private readonly int _firstMaskedPage;
+
+        internal UltralightMemoryMap(UltralightVariant variant, int pageCount, int lastUserPage, int readablePageCount, int firstMaskedPage)
         {
             Variant = variant;
             PageCount = pageCount;
             LastUserPage = lastUserPage;
+            ReadablePageCount = readablePageCount;
+            _firstMaskedPage = firstMaskedPage;
         }
 
         /// <summary>Gets the variant this layout belongs to.</summary>
@@ -58,6 +64,13 @@ namespace RFiDGear.Infrastructure.Ultralight
 
         /// <summary>Gets the number of protected pages (the four first ones and those after the user memory).</summary>
         public int ProtectedPageCount => PageCount - UserPageCount;
+
+        /// <summary>
+        /// Gets the number of pages, from page 0, that a READ gives as themselves. It is <see cref="PageCount"/> except for the
+        /// Ultralight C: its key (pages 44-47) is write-only, and a READ that reaches it goes on at page 0, so those pages would be
+        /// taken for the key.
+        /// </summary>
+        public int ReadablePageCount { get; }
 
         /// <summary>
         /// The layout of a variant.
@@ -169,6 +182,27 @@ namespace RFiDGear.Infrastructure.Ultralight
         {
             // Written so that nothing can overflow: the range ends in the chip when its length fits in what is left after its start.
             return pageCount >= 1 && startPage >= 0 && startPage < PageCount && pageCount <= PageCount - startPage;
+        }
+
+        /// <summary>Whether all pages of a range are pages that a READ gives as themselves.</summary>
+        /// <param name="startPage">The first page.</param>
+        /// <param name="pageCount">The number of pages, at least 1.</param>
+        /// <returns><c>false</c> for an empty or negative range, and for one that ends after <see cref="ReadablePageCount"/>.</returns>
+        public bool ContainsReadableRange(int startPage, int pageCount)
+        {
+            return pageCount >= 1 && startPage >= 0 && startPage < ReadablePageCount && pageCount <= ReadablePageCount - startPage;
+        }
+
+        /// <summary>
+        /// Whether a page that was written reads back as it was written. It does not for a page that cannot be read (the key of an
+        /// Ultralight C) and for the password and the PACK of an Ultralight EV1 and an NTAG, which read as zeros: a write to them
+        /// cannot be checked by reading.
+        /// </summary>
+        /// <param name="page">The page number.</param>
+        /// <returns><c>false</c> for those pages and for a page that is not in the chip.</returns>
+        public bool ReadsBackAsWritten(int page)
+        {
+            return page >= 0 && page < ReadablePageCount && page < _firstMaskedPage;
         }
 
         /// <summary>Whether the page is user memory.</summary>

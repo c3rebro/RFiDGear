@@ -3,6 +3,7 @@ using LibLogicalAccess;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
 
 using System;
@@ -183,6 +184,52 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         // Mifare Ultralight Method Definitions
         public abstract Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo);
+
+        /// <summary>
+        /// Reads pages of a chip of the Ultralight family (Ultralight, Ultralight C, Ultralight EV1, NTAG213/215/216). The reader finds
+        /// out which chip is on it, checks it against what the task expects and the range against its layout, authenticates once if
+        /// the access says so, and reads. It makes one attempt: nothing is retried, and a refusal ends the call.
+        /// </summary>
+        /// <param name="access">What the task expects, and how to authenticate.</param>
+        /// <param name="startPage">The first page.</param>
+        /// <param name="pageCount">The number of pages, at least 1.</param>
+        /// <returns>
+        /// The bytes read (4 per page) and the normalized error: <see cref="ERROR.ProtocolConstraint"/> when the call cannot be made
+        /// to this chip or at all (another chip than expected, a page that the chip does not have, a reader without this operation),
+        /// <see cref="ERROR.AuthFailure"/> for a key or password that the chip does not take, <see cref="ERROR.PermissionDenied"/> when
+        /// the chip refuses the read, <see cref="ERROR.TransportError"/> when there is no chip or the reader fails.
+        /// A reader that has no page operations answers <see cref="ERROR.ProtocolConstraint"/>, which is what this default does.
+        /// </returns>
+        public virtual Task<UltralightResult> ReadMifareUltralightPagesAsync(UltralightAccess access, int startPage, int pageCount) =>
+            Task.FromResult(UltralightResult.Failed(ERROR.ProtocolConstraint));
+
+        /// <summary>
+        /// Writes whole pages of a chip of the Ultralight family, after the same checks as the read and after
+        /// <see cref="UltralightWritePolicy"/> allowed the range (protected pages need the opt-in in the access and a named chip), and
+        /// reads them back to check. It makes one attempt: a refused page ends the call, and nothing is written again.
+        /// </summary>
+        /// <param name="access">What the task expects, how to authenticate, and whether protected pages may be written.</param>
+        /// <param name="startPage">The first page.</param>
+        /// <param name="data">The bytes to write, a whole number of 4-byte pages.</param>
+        /// <returns>
+        /// The number of pages written and the normalized error, as for the read; a page that reads back different is
+        /// <see cref="ERROR.Unknown"/> with <see cref="UltralightResult.FailedPage"/>. A reader that has no page operations answers
+        /// <see cref="ERROR.ProtocolConstraint"/>, which is what this default does.
+        /// </returns>
+        public virtual Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            Task.FromResult(UltralightResult.Failed(ERROR.ProtocolConstraint));
+
+        /// <summary>
+        /// Authenticates to a chip of the Ultralight family and does nothing else. The access must name the chip and how to authenticate.
+        /// It makes one attempt, so a wrong key or password is tried once.
+        /// </summary>
+        /// <param name="access">What the task expects, and how to authenticate.</param>
+        /// <returns>
+        /// The normalized error and whether the reader authenticated. A reader that has no page operations answers
+        /// <see cref="ERROR.ProtocolConstraint"/>, which is what this default does.
+        /// </returns>
+        public virtual Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
+            Task.FromResult(UltralightResult.Failed(ERROR.ProtocolConstraint));
 
         #endregion
 

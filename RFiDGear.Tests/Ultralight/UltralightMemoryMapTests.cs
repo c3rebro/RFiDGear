@@ -75,6 +75,41 @@ namespace RFiDGear.Tests.Ultralight
             Assert.Equal("0-" + (pageCount - 1), Describe(around.Where(map.Contains)));
         }
 
+        // Per variant: how many pages from page 0 a READ gives as themselves, and the pages (of the chip) that a READ does not give
+        // back as they were written: the key of an Ultralight C cannot be read at all, and the password and the PACK of an Ultralight
+        // EV1 and an NTAG read as zeros.
+        public static IEnumerable<object[]> Readability() => new[]
+        {
+            new object[] { UltralightVariant.Plain, 16, string.Empty },
+            new object[] { UltralightVariant.C, 44, "44-47" },
+            new object[] { UltralightVariant.Ev1Mf0ul11, 20, "18-19" },
+            new object[] { UltralightVariant.Ev1Mf0ul21, 41, "39-40" },
+            new object[] { UltralightVariant.Ntag213, 45, "43-44" },
+            new object[] { UltralightVariant.Ntag215, 135, "133-134" },
+            new object[] { UltralightVariant.Ntag216, 231, "229-230" }
+        };
+
+        [Theory]
+        [MemberData(nameof(Readability))]
+        public void EveryVariant_KnowsWhichPagesAReadCannotGive(UltralightVariant variant, int readablePageCount, string notReadBack)
+        {
+            var map = UltralightMemoryMap.For(variant);
+            var around = Enumerable.Range(-3, map.PageCount + 6).ToList();
+
+            Assert.Equal(readablePageCount, map.ReadablePageCount);
+            Assert.Equal(notReadBack, Describe(around.Where(page => map.Contains(page) && !map.ReadsBackAsWritten(page))));
+            Assert.False(map.ReadsBackAsWritten(-1));
+            Assert.False(map.ReadsBackAsWritten(map.PageCount));
+
+            Assert.True(map.ContainsReadableRange(0, readablePageCount));
+            Assert.True(map.ContainsReadableRange(readablePageCount - 1, 1));
+            Assert.False(map.ContainsReadableRange(0, readablePageCount + 1));
+            Assert.False(map.ContainsReadableRange(readablePageCount, 1));
+            Assert.False(map.ContainsReadableRange(0, 0));
+            Assert.False(map.ContainsReadableRange(-1, 1));
+            Assert.False(map.ContainsReadableRange(0, int.MaxValue));
+        }
+
         [Fact]
         public void EveryVariantOfTheEnum_IsInTheTable_AndNothingElseHasALayout()
         {
