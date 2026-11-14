@@ -89,6 +89,22 @@ namespace RFiDGear.Tests.Reader
 
         public byte[] AcceptedKey { get; set; }
 
+        /// <summary>
+        /// AUTH0 of a chip with the password protection on for reads (PROT = 1): until the password was sent, a READ that starts at
+        /// this page or after it is refused, and one that starts before it gets the pages from here on replaced by what the chip
+        /// wraps around to (page 0, 1, ...). <c>null</c>: nothing is protected.
+        /// </summary>
+        public int? ReadProtectedFromPage { get; set; }
+
+        /// <summary>Gets a value that says whether the chip took the key or the password since it was selected.</summary>
+        public bool Authenticated { get; private set; }
+
+        // What the data sheets say of the pages that a READ cannot give: the key of an Ultralight C (pages 44-47) is write-only, and a
+        // READ goes on at page 0 where page 44 would be; the password and the PACK of an Ultralight EV1 and an NTAG read as zeros.
+        private int ReadablePages => Variant == UltralightVariant.C ? 44 : PageCount;
+
+        private bool IsHidden(int page) => (Variant != UltralightVariant.Plain && Variant != UltralightVariant.C) && page >= PageCount - 2;
+
         public List<string> Calls { get; } = new List<string>();
 
         public List<byte[]> SecretsReceived { get; } = new List<byte[]>();
@@ -118,6 +134,7 @@ namespace RFiDGear.Tests.Reader
         {
             Calls.Add("select");
             _idle = false;
+            Authenticated = false;
 
             if (SelectThrows != null)
             {
@@ -145,7 +162,9 @@ namespace RFiDGear.Tests.Reader
         {
             Calls.Add("read " + page);
 
-            if (_idle || page >= PageCount || RefusedReads.Contains(page))
+            var protectedFrom = Authenticated ? null : ReadProtectedFromPage;
+
+            if (_idle || page >= PageCount || RefusedReads.Contains(page) || (protectedFrom.HasValue && page >= protectedFrom.Value))
             {
                 _idle = true;
                 TagOnReader = !RemoveTagWhenAReadIsRefused && TagOnReader;
@@ -157,7 +176,22 @@ namespace RFiDGear.Tests.Reader
 
             for (var i = 0; i < 4; i++)
             {
-                Array.Copy(Memory, ((page + i) % PageCount) * 4, block, i * 4, 4);
+                var wanted = page + i;
+                var seen = wanted;
+
+                if (protectedFrom.HasValue && wanted >= protectedFrom.Value)
+                {
+                    seen = wanted - protectedFrom.Value;
+                }
+                else if (wanted >= ReadablePages)
+                {
+                    seen = wanted - ReadablePages;
+                }
+
+                if (!IsHidden(seen))
+                {
+                    Array.Copy(Memory, seen * 4, block, i * 4, 4);
+                }
             }
 
             return Task.FromResult(block);
@@ -203,6 +237,7 @@ namespace RFiDGear.Tests.Reader
         {
             Calls.Add("present");
             _idle = false;
+            Authenticated = false;
 
             return Task.FromResult(TagOnReader);
         }
@@ -215,6 +250,8 @@ namespace RFiDGear.Tests.Reader
 
                 throw AccessDenied();
             }
+
+            Authenticated = true;
 
             return Task.CompletedTask;
         }

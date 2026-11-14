@@ -21,7 +21,7 @@ namespace RFiDGear.Infrastructure.Ultralight
     /// call only, and never shows them: <see cref="ToString"/> names the access without them. A reader turns the text into bytes,
     /// uses them once, and clears the bytes.
     /// </summary>
-    public readonly struct UltralightAccess
+    public readonly struct UltralightAccess : IEquatable<UltralightAccess>
     {
         /// <summary>Creates the access.</summary>
         /// <param name="expected">The chip the task expects; authentication and writing protected pages need a named chip.</param>
@@ -58,6 +58,33 @@ namespace RFiDGear.Infrastructure.Ultralight
         /// <param name="expected">The chip the task expects.</param>
         /// <returns>The access.</returns>
         public static UltralightAccess Open(UltralightExpectation expected = UltralightExpectation.Auto) => new UltralightAccess(expected);
+
+        /// <summary>Whether two accesses are the same: the same chip, authentication, secrets and opt-in.</summary>
+        /// <param name="left">The first access.</param>
+        /// <param name="right">The second access.</param>
+        /// <returns><c>true</c> when they are equal.</returns>
+        public static bool operator ==(UltralightAccess left, UltralightAccess right) => left.Equals(right);
+
+        /// <summary>Whether two accesses differ.</summary>
+        /// <param name="left">The first access.</param>
+        /// <param name="right">The second access.</param>
+        /// <returns><c>true</c> when they are not equal.</returns>
+        public static bool operator !=(UltralightAccess left, UltralightAccess right) => !left.Equals(right);
+
+        /// <inheritdoc />
+        public bool Equals(UltralightAccess other) =>
+            Expected == other.Expected
+            && Auth == other.Auth
+            && AllowProtectedPages == other.AllowProtectedPages
+            && string.Equals(KeyHex, other.KeyHex, StringComparison.Ordinal)
+            && string.Equals(PackHex, other.PackHex, StringComparison.Ordinal);
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is UltralightAccess other && Equals(other);
+
+        /// <inheritdoc />
+        /// <remarks>The secrets are not part of the hash: equal accesses have equal hashes, and the hash shows nothing of a key.</remarks>
+        public override int GetHashCode() => HashCode.Combine((int)Expected, (int)Auth, AllowProtectedPages);
 
         /// <inheritdoc />
         public override string ToString() =>

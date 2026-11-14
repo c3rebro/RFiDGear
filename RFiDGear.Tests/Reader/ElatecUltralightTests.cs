@@ -24,7 +24,7 @@ namespace RFiDGear.Tests.Reader
         // ── reading ──
 
         [Fact]
-        public async Task ReadingTheLastPagesOfAnNtag215_ReturnsExactlyThosePages_WithoutWhatTheCardWrapsAroundTo()
+        public async Task ReadingTheLastPagesOfAnNtag215_ReturnsExactlyThosePages_AndTheHiddenOnesAsTheChipShowsThem()
         {
             var reader = new UltralightTestReader(UltralightVariant.Ntag215);
 
@@ -34,10 +34,13 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(UltralightVariant.Ntag215, result.Variant);
             Assert.Equal(5, result.PagesDone);
             Assert.Equal(20, result.Data.Length);
-            Assert.Equal(Pages(reader, 130, 5), result.Data);
 
-            // One READ per four pages; the second one starts at page 134, and the 12 bytes it returns from page 0 on are dropped.
-            Assert.Equal(new[] { "read 130", "read 134" }, reader.Calls.Where(c => c.StartsWith("read", StringComparison.Ordinal)));
+            // Page 133 (the password) and page 134 (the PACK) read as zeros on the chip, whatever they hold.
+            Assert.Equal(Pages(reader, 130, 3).Concat(new byte[8]).ToArray(), result.Data);
+
+            // One READ per page: the pages it returns after the one that was asked for (the next ones, or from page 0 again past the
+            // last page) are dropped.
+            Assert.Equal(new[] { "read 130", "read 131", "read 132", "read 133", "read 134" }, reader.Calls.Where(c => c.StartsWith("read", StringComparison.Ordinal)));
         }
 
         [Fact]
@@ -50,7 +53,7 @@ namespace RFiDGear.Tests.Reader
             Assert.True(result.Succeeded);
             Assert.Equal(UltralightVariant.Ntag215, result.Variant);
             Assert.Equal(Pages(reader, 4, 2), result.Data);
-            Assert.Equal(new[] { "select", "version", "read 4" }, reader.Calls);
+            Assert.Equal(new[] { "select", "version", "read 4", "read 5" }, reader.Calls);
         }
 
         [Fact]
@@ -65,7 +68,7 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(Pages(reader, 12, 4), result.Data);
 
             // The refusal left the chip idle, so it was selected again before the first READ.
-            Assert.Equal(new[] { "select", "version", "select", "read 12" }, reader.Calls);
+            Assert.Equal(new[] { "select", "version", "select", "read 12", "read 13", "read 14", "read 15" }, reader.Calls);
         }
 
         [Fact]
@@ -191,16 +194,16 @@ namespace RFiDGear.Tests.Reader
         public async Task ARefusedRead_EndsTheCall_WithThePagesBeforeIt_AndIsNeverRepeated()
         {
             var reader = new UltralightTestReader(UltralightVariant.Ntag215);
-            reader.RefusedReads.Add(134);
+            reader.RefusedReads.Add(132);
 
             var result = await reader.ReadMifareUltralightPagesAsync(Ntag215(), 130, 5);
 
             // The tag is still there after the refusal: the card said no.
             Assert.Equal(ERROR.PermissionDenied, result.Error);
-            Assert.Equal(4, result.PagesDone);
-            Assert.Equal(134, result.FailedPage);
-            Assert.Equal(Pages(reader, 130, 4), result.Data);
-            Assert.Equal(2, reader.CountStartingWith("read"));
+            Assert.Equal(2, result.PagesDone);
+            Assert.Equal(132, result.FailedPage);
+            Assert.Equal(Pages(reader, 130, 2), result.Data);
+            Assert.Equal(3, reader.CountStartingWith("read"));
             Assert.Equal(1, reader.CountOf("present"));
         }
 
@@ -243,7 +246,7 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(2, result.PagesDone);
             Assert.Equal(data, Pages(reader, 100, 2));
             Assert.Equal(new[] { "write 100", "write 101" }, reader.Calls.Where(c => c.StartsWith("write", StringComparison.Ordinal)));
-            Assert.Equal(1, reader.CountStartingWith("read"));   // the check: one READ of four pages covers both
+            Assert.Equal(new[] { "read 100", "read 101" }, reader.Calls.Where(c => c.StartsWith("read", StringComparison.Ordinal)));   // the check: one READ per page written
         }
 
         [Fact]
@@ -355,7 +358,7 @@ namespace RFiDGear.Tests.Reader
 
             Assert.True(result.Succeeded);
             Assert.True(result.Authenticated);
-            Assert.Equal(new[] { "select", "version", "pwd", "read 4" }, reader.Calls);
+            Assert.Equal(new[] { "select", "version", "pwd", "read 4", "read 5" }, reader.Calls);
             Assert.Equal(2, reader.SecretsReceived.Count);
             Assert.All(reader.SecretsReceived, secret => Assert.All(secret, b => Assert.Equal(0, b)));
         }
@@ -509,6 +512,152 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(ERROR.ProtocolConstraint, (await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1)).Error);
             Assert.Equal(ERROR.ProtocolConstraint, (await reader.WriteMifareUltralightPagesAsync(UltralightAccess.Open(), 4, new byte[4])).Error);
             Assert.Equal(ERROR.ProtocolConstraint, (await reader.AuthenticateMifareUltralightAsync(UltralightAccess.Open())).Error);
+        }
+
+        // ── what a READ gives besides the page that was asked for, and what a chip hides ──
+
+        [Fact]
+        public async Task AReadThatCrossesTheProtectedBoundary_IsNeverAnsweredWithPagesFromPageZero()
+        {
+            // With the read protection on from page 6, a READ at page 4 returns the pages 4, 5, 0 and 1: a reader that kept all of them
+            // would report the header of the chip as page 6.
+            var reader = new UltralightTestReader(UltralightVariant.Ntag215) { ReadProtectedFromPage = 6 };
+
+            var result = await reader.ReadMifareUltralightPagesAsync(Ntag215(), 4, 3);
+
+            Assert.Equal(ERROR.PermissionDenied, result.Error);
+            Assert.Equal(6, result.FailedPage);
+            Assert.Equal(2, result.PagesDone);
+            Assert.Equal(Pages(reader, 4, 2), result.Data);
+            Assert.Equal(new[] { "read 4", "read 5", "read 6" }, reader.Calls.Where(c => c.StartsWith("read", StringComparison.Ordinal)));
+        }
+
+        [Fact]
+        public async Task AfterTheAuthentication_TheProtectedPagesAreReadAsTheyAre()
+        {
+            var reader = new UltralightTestReader(UltralightVariant.Ntag215) { ReadProtectedFromPage = 6, AcceptedKey = Password };
+            var access = new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "5566");
+
+            var result = await reader.ReadMifareUltralightPagesAsync(access, 4, 5);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(Pages(reader, 4, 5), result.Data);
+        }
+
+        [Theory]
+        [InlineData(42, 4)]
+        [InlineData(43, 2)]
+        [InlineData(44, 1)]
+        [InlineData(0, 48)]
+        public async Task AnUltralightC_IsNotReadIntoItsKeyPages_WhetherTheTaskNamesItOrTheChipTellsIt(int start, int count)
+        {
+            // The key (pages 44-47) is write-only, and a READ that reaches it goes on at page 0: those pages would be reported as the key.
+            var named = new UltralightTestReader(UltralightVariant.C);
+            var found = new UltralightTestReader(UltralightVariant.C);
+
+            var byName = await named.ReadMifareUltralightPagesAsync(UltralightAccess.Open(UltralightExpectation.C), start, count);
+            var byTheChip = await found.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), start, count);
+
+            Assert.Equal(ERROR.ProtocolConstraint, byName.Error);
+            Assert.Empty(named.Calls);
+            Assert.Equal(ERROR.ProtocolConstraint, byTheChip.Error);
+            Assert.Equal(UltralightVariant.C, byTheChip.Variant);
+            Assert.Equal(0, found.CountStartingWith("read"));
+        }
+
+        [Fact]
+        public async Task AnUltralightC_IsReadUpToItsLastReadablePage()
+        {
+            var reader = new UltralightTestReader(UltralightVariant.C);
+
+            var result = await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(UltralightExpectation.C), 40, 4);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(Pages(reader, 40, 4), result.Data);
+        }
+
+        [Fact]
+        public async Task APasswordWrittenToAnNtag_IsNotTakenForAFailure_BecauseTheChipReadsItAsZeros()
+        {
+            var reader = new UltralightTestReader(UltralightVariant.Ntag215);
+            var access = new UltralightAccess(UltralightExpectation.Ntag215, allowProtectedPages: true);
+            var data = Convert.FromHexString("DEADBEEF12340000");
+
+            var result = await reader.WriteMifareUltralightPagesAsync(access, 133, data);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(2, result.PagesDone);
+            Assert.Equal(data, Pages(reader, 133, 2));
+            Assert.Equal(0, reader.CountStartingWith("read"));   // neither page can be read back
+        }
+
+        [Fact]
+        public async Task TheConfigurationPageNextToThePassword_IsStillReadBack()
+        {
+            var access = new UltralightAccess(UltralightExpectation.Ntag215, allowProtectedPages: true);
+            var data = Convert.FromHexString("01020304" + "DEADBEEF" + "12340000");   // page 132, the password and the PACK
+            var kept = new UltralightTestReader(UltralightVariant.Ntag215);
+            var ignored = new UltralightTestReader(UltralightVariant.Ntag215);
+            ignored.IgnoredWrites.Add(132);
+
+            var written = await kept.WriteMifareUltralightPagesAsync(access, 132, data);
+            var notKept = await ignored.WriteMifareUltralightPagesAsync(access, 132, data);
+
+            Assert.True(written.Succeeded);
+            Assert.Equal(3, written.PagesDone);
+            Assert.Equal(new[] { "read 132" }, kept.Calls.Where(c => c.StartsWith("read", StringComparison.Ordinal)));
+            Assert.Equal(ERROR.Unknown, notKept.Error);
+            Assert.Equal(132, notKept.FailedPage);
+        }
+
+        [Fact]
+        public async Task TheKeyOfAnUltralightC_IsWritten_AndNotReadBack()
+        {
+            var reader = new UltralightTestReader(UltralightVariant.C);
+            var access = new UltralightAccess(UltralightExpectation.C, allowProtectedPages: true);
+            var key = Convert.FromHexString("000102030405060708090A0B0C0D0E0F");
+
+            var result = await reader.WriteMifareUltralightPagesAsync(access, 44, key);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(4, result.PagesDone);
+            Assert.Equal(key, Pages(reader, 44, 4));
+            Assert.Equal(0, reader.CountStartingWith("read"));
+        }
+
+        // ── the request and the access ──
+
+        [Fact]
+        public void ThePasswordOfARequestThatIsRefusedBecauseOfItsPack_IsClearedWhenItIsDisposed()
+        {
+            var request = UltralightRequest.ForRead(new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "55"), 4, 1);
+
+            Assert.Equal(ERROR.ProtocolConstraint, request.Error);
+
+            // The password was parsed before the PACK was found wrong; the request owns it, so Dispose clears it.
+            var password = request.Key;
+            Assert.NotNull(password);
+
+            request.Dispose();
+
+            Assert.All(password, b => Assert.Equal(0, b));
+        }
+
+        [Fact]
+        public void TwoAccesses_AreEqualWhenEverythingTheyHoldIsEqual()
+        {
+            var access = new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "5566", true);
+            var same = new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "5566", true);
+
+            Assert.True(access.Equals(same));
+            Assert.True(access == same);
+            Assert.Equal(access.GetHashCode(), same.GetHashCode());
+            Assert.False(access == new UltralightAccess(UltralightExpectation.Ntag216, UltralightAuth.Password, "A1B2C3D4", "5566", true));
+            Assert.False(access == new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.None, "A1B2C3D4", "5566", true));
+            Assert.True(access != new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "00000000", "5566", true));
+            Assert.True(access != new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "0000", true));
+            Assert.True(access != new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "5566", false));
+            Assert.False(access.Equals((object)"not an access"));
         }
 
         [Fact]

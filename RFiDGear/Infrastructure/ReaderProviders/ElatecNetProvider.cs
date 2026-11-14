@@ -508,7 +508,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         #region MifareUltralight
 
         /// <summary>What the reader found on the antenna: whether a tag answered and, for a MIFARE chip, its sub type.</summary>
-        protected readonly struct UltralightSighting
+        protected readonly struct UltralightSighting : IEquatable<UltralightSighting>
         {
             /// <summary>Creates the sighting.</summary>
             /// <param name="tagFound">Whether a tag answered.</param>
@@ -524,6 +524,27 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             /// <summary>Gets the MIFARE sub type, or <c>null</c>.</summary>
             public MifareChipSubType? SubType { get; }
+
+            /// <summary>Whether two sightings are the same.</summary>
+            /// <param name="left">The first sighting.</param>
+            /// <param name="right">The second sighting.</param>
+            /// <returns><c>true</c> when they are equal.</returns>
+            public static bool operator ==(UltralightSighting left, UltralightSighting right) => left.Equals(right);
+
+            /// <summary>Whether two sightings differ.</summary>
+            /// <param name="left">The first sighting.</param>
+            /// <param name="right">The second sighting.</param>
+            /// <returns><c>true</c> when they are not equal.</returns>
+            public static bool operator !=(UltralightSighting left, UltralightSighting right) => !left.Equals(right);
+
+            /// <inheritdoc />
+            public bool Equals(UltralightSighting other) => TagFound == other.TagFound && SubType == other.SubType;
+
+            /// <inheritdoc />
+            public override bool Equals(object obj) => obj is UltralightSighting other && Equals(other);
+
+            /// <inheritdoc />
+            public override int GetHashCode() => HashCode.Combine(TagFound, SubType);
         }
 
         /// <summary>Gets how long the selection of the chip waits before it asks again (it asks three times at most).</summary>
@@ -685,7 +706,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     return await ReadUltralightRangeAsync(request.StartPage, request.PageCount, variant, authenticated);
 
                 case UltralightOperation.Write:
-                    return await WriteUltralightRangeAsync(request, variant, authenticated);
+                    return await WriteUltralightRangeAsync(request, map, authenticated);
 
                 default:
                     return new UltralightResult(ERROR.NoError, null, variant, authenticated, 0, null);
@@ -790,47 +811,60 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return (value >= 0x90 && value <= 0x92) || (value >= 0xA0 && value <= 0xA6);
         }
 
-        // One READ returns four pages (and wraps to page 0 past the last page), so the range is read four pages at a time and only
-        // the pages that were asked for are kept: the range is in the chip, so those are always real pages.
+        // One READ returns four pages, and only the first is the one that was asked for: after it come the next pages or, where a
+        // page is protected from reading or the chip has nothing readable (past its last page, the key of an Ultralight C), the pages
+        // from page 0 on. A reader that kept all four would report the header of the chip as the pages after a protected boundary, so
+        // a range is read one page at a time and the first page of each answer is the one that is kept.
         private async Task<UltralightResult> ReadUltralightRangeAsync(int startPage, int pageCount, UltralightVariant variant, bool authenticated)
         {
             var data = new byte[pageCount * UltralightMemoryMap.PageSize];
-            var done = 0;
 
-            while (done < pageCount)
+            for (var done = 0; done < pageCount; done++)
             {
                 var page = startPage + done;
-                var need = Math.Min(4, pageCount - done);
-                byte[] block;
+                var (error, content) = await ReadUltralightOnePageAsync(page);
 
-                try
+                if (error != ERROR.NoError)
                 {
-                    block = await ReadUltralightPageAsync((byte)page);
-                }
-                catch (Exception e) when (!(e is OperationCanceledException))
-                {
-                    LogUltralightFailure(UltralightOperation.Read, UltralightCall.Read.ToString(), e);
-
-                    return new UltralightResult(ElatecUltralightErrors.Classify(e, UltralightCall.Read), data.Take(done * 4).ToArray(), variant, authenticated, done, page);
+                    return new UltralightResult(error, data.Take(done * UltralightMemoryMap.PageSize).ToArray(), variant, authenticated, done, page);
                 }
 
-                if (block == null || block.Length < need * UltralightMemoryMap.PageSize)
-                {
-                    // The call returns null for the chip that said no and for the chip that is gone; one look at the antenna tells which.
-                    var error = await ClassifyRefusalAsync();
-
-                    return new UltralightResult(error, data.Take(done * 4).ToArray(), variant, authenticated, done, page);
-                }
-
-                Array.Copy(block, 0, data, done * 4, need * UltralightMemoryMap.PageSize);
-                done += need;
+                Array.Copy(content, 0, data, done * UltralightMemoryMap.PageSize, UltralightMemoryMap.PageSize);
             }
 
-            return new UltralightResult(ERROR.NoError, data, variant, authenticated, done, null);
+            return new UltralightResult(ERROR.NoError, data, variant, authenticated, pageCount, null);
         }
 
-        private async Task<UltralightResult> WriteUltralightRangeAsync(UltralightRequest request, UltralightVariant variant, bool authenticated)
+        private async Task<(ERROR Error, byte[] Page)> ReadUltralightOnePageAsync(int page)
         {
+            byte[] block;
+
+            try
+            {
+                block = await ReadUltralightPageAsync((byte)page);
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogUltralightFailure(UltralightOperation.Read, UltralightCall.Read.ToString(), e);
+
+                return (ElatecUltralightErrors.Classify(e, UltralightCall.Read), null);
+            }
+
+            if (block == null || block.Length < UltralightMemoryMap.PageSize)
+            {
+                // The call returns null for the chip that said no and for the chip that is gone; one look at the antenna tells which.
+                return (await ClassifyRefusalAsync(), null);
+            }
+
+            var content = new byte[UltralightMemoryMap.PageSize];
+            Array.Copy(block, 0, content, 0, UltralightMemoryMap.PageSize);
+
+            return (ERROR.NoError, content);
+        }
+
+        private async Task<UltralightResult> WriteUltralightRangeAsync(UltralightRequest request, UltralightMemoryMap map, bool authenticated)
+        {
+            var variant = map.Variant;
             var written = 0;
 
             while (written < request.PageCount)
@@ -854,22 +888,28 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 written++;
             }
 
-            // What the call returned says nothing about the page: it is read back (reads only, no second write).
-            var back = await ReadUltralightRangeAsync(request.StartPage, request.PageCount, variant, authenticated);
-
-            if (!back.Succeeded)
-            {
-                return new UltralightResult(back.Error, null, variant, authenticated, written, back.FailedPage);
-            }
-
+            // What the call returned says nothing about the page: every page is read back (reads only, no second write). A page that
+            // cannot read back as it was written (the key of an Ultralight C, the password and the PACK of an Ultralight EV1 and an
+            // NTAG, which read as zeros) is not compared: a password that was taken is not a failure because the chip hides it.
             for (var i = 0; i < request.PageCount; i++)
             {
-                for (var b = 0; b < UltralightMemoryMap.PageSize; b++)
+                var page = request.StartPage + i;
+
+                if (!map.ReadsBackAsWritten(page))
                 {
-                    if (back.Data[i * UltralightMemoryMap.PageSize + b] != request.Data[i * UltralightMemoryMap.PageSize + b])
-                    {
-                        return new UltralightResult(ERROR.Unknown, null, variant, authenticated, written, request.StartPage + i);
-                    }
+                    continue;
+                }
+
+                var (error, content) = await ReadUltralightOnePageAsync(page);
+
+                if (error != ERROR.NoError)
+                {
+                    return new UltralightResult(error, null, variant, authenticated, written, page);
+                }
+
+                if (!content.AsSpan().SequenceEqual(request.Data.AsSpan(i * UltralightMemoryMap.PageSize, UltralightMemoryMap.PageSize)))
+                {
+                    return new UltralightResult(ERROR.Unknown, null, variant, authenticated, written, page);
                 }
             }
 

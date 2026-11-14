@@ -115,7 +115,7 @@ namespace RFiDGear.Infrastructure.Ultralight
             switch (Operation)
             {
                 case UltralightOperation.Read:
-                    return map.ContainsRange(StartPage, PageCount) ? ERROR.NoError : ERROR.ProtocolConstraint;
+                    return map.ContainsReadableRange(StartPage, PageCount) ? ERROR.NoError : ERROR.ProtocolConstraint;
 
                 case UltralightOperation.Write:
                     return UltralightWritePolicy.Check(map, StartPage, PageCount, Access.AllowProtectedPages).IsAllowed ? ERROR.NoError : ERROR.ProtocolConstraint;
@@ -171,33 +171,28 @@ namespace RFiDGear.Infrastructure.Ultralight
                 return;
             }
 
-            switch (Operation)
+            if ((Operation == UltralightOperation.Read && !ReadIsInOrder()) || (Operation == UltralightOperation.Write && !WriteIsInOrder()))
             {
-                case UltralightOperation.Read:
-                    // What is true for every chip; the layout of the chip that is found decides the rest.
-                    if (PageCount < 1 || StartPage < 0 || PageCount > UltralightMemoryMap.MaxPageCount - StartPage)
-                    {
-                        return;
-                    }
-
-                    if (Access.Expected.TryGetVariant(out var variant) && !UltralightMemoryMap.For(variant).ContainsRange(StartPage, PageCount))
-                    {
-                        return;
-                    }
-
-                    break;
-
-                case UltralightOperation.Write:
-                    if (PageCount < 1 || !UltralightWritePolicy.Check(Access.Expected, StartPage, PageCount, Access.AllowProtectedPages).IsAllowed)
-                    {
-                        return;
-                    }
-
-                    break;
+                return;
             }
 
             Error = ERROR.NoError;
         }
+
+        // What is true for every chip; the layout of the chip that is found decides the rest. A chip that the task names has its
+        // layout known now, and a READ that reaches the key of an Ultralight C goes on at page 0, so those pages are not read.
+        private bool ReadIsInOrder()
+        {
+            if (PageCount < 1 || StartPage < 0 || PageCount > UltralightMemoryMap.MaxPageCount - StartPage)
+            {
+                return false;
+            }
+
+            return !Access.Expected.TryGetVariant(out var variant) || UltralightMemoryMap.For(variant).ContainsReadableRange(StartPage, PageCount);
+        }
+
+        private bool WriteIsInOrder() =>
+            PageCount >= 1 && UltralightWritePolicy.Check(Access.Expected, StartPage, PageCount, Access.AllowProtectedPages).IsAllowed;
 
         // Authenticating and the key need a chip that is named: the key of an Ultralight C is not the password of an NTAG, and the
         // reader cannot know which to ask for before the card answers.
@@ -208,17 +203,26 @@ namespace RFiDGear.Infrastructure.Ultralight
                 return false;
             }
 
-            if (Access.Auth == UltralightAuth.UltralightC)
+            var keyLength = Access.Auth == UltralightAuth.UltralightC ? 16 : 4;
+
+            if (!TryParseHex(Access.KeyHex, keyLength, out var key))
             {
-                return TryParseHex(Access.KeyHex, 16, out var key) && Assign(key, null);
+                return false;
             }
 
-            return TryParseHex(Access.KeyHex, 4, out var password) && TryParseHex(Access.PackHex, 2, out var pack) && Assign(password, pack);
-        }
-
-        private bool Assign(byte[] key, byte[] pack)
-        {
+            // The request owns the key from here on: when the PACK is wrong the request ends, and Dispose clears the key.
             Key = key;
+
+            if (Access.Auth == UltralightAuth.UltralightC)
+            {
+                return true;
+            }
+
+            if (!TryParseHex(Access.PackHex, 2, out var pack))
+            {
+                return false;
+            }
+
             Pack = pack;
 
             return true;
