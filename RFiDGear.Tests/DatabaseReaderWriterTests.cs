@@ -19,7 +19,10 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task ExecuteOnStaThread_WhenApplicationIsNull_UsesStaThread()
         {
-            var readerWriter = new DatabaseReaderWriter(new ProjectManager());
+            // An isolated root: creating a DatabaseReaderWriter deletes the working files (taskdatabase.xml, *.rfPrj, *.tmp)
+            // in the folder of its ProjectManager, and the default one is %LocalAppData%\RFiDGear of the person who runs this.
+            using var folder = new TemporaryFolder();
+            var readerWriter = new DatabaseReaderWriter(new ProjectManager(folder.Combine("appdata")));
             var method = typeof(DatabaseReaderWriter).GetMethod(
                 "ExecuteOnStaThread",
                 BindingFlags.Instance | BindingFlags.NonPublic);
@@ -46,7 +49,8 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task ExecuteOnStaThread_WhenApplicationIsNull_ShutsDownTheDispatcherItsThreadGotUsed()
         {
-            var readerWriter = new DatabaseReaderWriter(new ProjectManager());
+            using var folder = new TemporaryFolder();
+            var readerWriter = new DatabaseReaderWriter(new ProjectManager(folder.Combine("appdata")));
             var method = typeof(DatabaseReaderWriter).GetMethod(
                 "ExecuteOnStaThread",
                 BindingFlags.Instance | BindingFlags.NonPublic);
