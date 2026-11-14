@@ -15,6 +15,11 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
     <!-- A real SQL engine for the order store's tests only; it is not shipped and the library does not use it. -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
+    <!-- Microsoft.Data.Sqlite 10.0.1 brings SQLitePCLRaw.lib.e_sqlite3 2.1.11, whose SQLite (3.49.1) is older than 3.50.2 and has a
+         flaw that can corrupt memory (CVE-2025-6965, GHSA-2m69-gcr7-jv3q; NuGet warns with NU1903 at every restore). A direct
+         reference to a later version wins over it. TestDatabaseEngineTests asks the engine for its version, so a package that
+         brings the old one back fails a test and not only a warning. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.14" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Fixtures\**" />
