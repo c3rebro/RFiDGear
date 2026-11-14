@@ -51,7 +51,12 @@ up. Visual Studio 2022 cannot target `net10.0`; use Visual Studio 2026 or the
 `dotnet` CLI. Tests require the
 `EnableWindowsTargeting` MSBuild property (already set in the test project) for
 non-Windows dev environments. Tests use `StaTestRunner.cs` to run on an STA
-thread — required for any WPF-touching test.
+thread — required for any WPF-touching test. The test projects run on xunit.v3
+(the package `xunit.v3.mtp-off`: the .NET 10 SDK refuses to run a project that
+is built on Microsoft.Testing.Platform through the VSTest path of `dotnet test`,
+and the commands, filters and loggers here use that path), so they are
+executables; `dotnet test` and `--filter` work as above (see
+`DEVELOPER_NOTES.md`).
 
 Setup/installer projects (`RFiDGearBundleSetup`, `RFiDGearSetup_x64/x86`) use
 WiX 3.14 and are built separately; they are not part of `dotnet build`. Build

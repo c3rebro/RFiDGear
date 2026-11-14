@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Sdk;
 
 namespace RFiDGear.Tests.SecureKeys
 {
@@ -35,9 +36,20 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.False(fixture.Started);
             Assert.Null(fixture.Host);
 
-            // A test that still got this far ends as a skip, and the skip names the file and the setting.
-            var skip = Assert.ThrowsAny<Exception>(fixture.SkipIfNoHardware);
-            Assert.Contains("$XunitDynamicSkip$", skip.Message, StringComparison.Ordinal);
+            // A test that still got this far ends as a skip, and the skip names the file and the setting. xunit.v3 does not let
+            // Assert.Throws or Record catch a skip (the test would end as skipped itself), so the exception is caught here.
+            SkipException? skip = null;
+
+            try
+            {
+                fixture.SkipIfNoHardware();
+            }
+            catch (SkipException caught)
+            {
+                skip = caught;
+            }
+
+            Assert.NotNull(skip);
             Assert.Contains("secureKeys", skip.Message, StringComparison.Ordinal);
         }
 
@@ -82,13 +94,13 @@ namespace RFiDGear.Tests.SecureKeys
                 {
                     Starts++;
 
-                    return Task.CompletedTask;
+                    return ValueTask.CompletedTask;
                 },
                 () =>
                 {
                     Ends++;
 
-                    return Task.CompletedTask;
+                    return ValueTask.CompletedTask;
                 });
         }
     }

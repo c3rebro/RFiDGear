@@ -40,7 +40,7 @@ namespace RFiDGear.HIL.Tests
         }
 
         /// <inheritdoc/>
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             ConfigureSerilog();
 
@@ -63,7 +63,7 @@ namespace RFiDGear.HIL.Tests
         }
 
         /// <inheritdoc/>
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             if (Host != null)
             {

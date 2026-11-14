@@ -26,7 +26,7 @@ namespace RFiDGear.HIL.Tests
         public string? FailureReason { get; private set; }
 
         /// <inheritdoc/>
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             if (!HilSettings.Current.HardwareRequested)
             {
@@ -55,13 +55,13 @@ namespace RFiDGear.HIL.Tests
         }
 
         /// <inheritdoc/>
-        public Task DisposeAsync() => Task.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
         /// <summary>
         /// Makes a host for one test, so that every test starts with a host that has not scanned yet. When tests were asked
         /// for but no reader was found, the test ends as the DESFire tests do: with the dynamic skip of the assert library,
-        /// which xunit 2 reports as a failure with the message prefix <c>$XunitDynamicSkip$</c> and which
-        /// <c>Run-HilTests.ps1</c> counts as skipped.
+        /// which xunit.v3 reports as a skip (xunit 2 reported it as a failure with the message prefix <c>$XunitDynamicSkip$</c>,
+        /// which <c>Run-HilTests.ps1</c> still counts as skipped).
         /// </summary>
         /// <returns>The host; dispose it at the end of the test.</returns>
         public HeadlessExtensionHost NewHost()
