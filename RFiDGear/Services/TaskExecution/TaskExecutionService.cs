@@ -829,7 +829,9 @@ namespace RFiDGear.Services.TaskExecution
                         }
                         else if (request.TaskHandler?.TaskCollection != null && request.TaskHandler.TaskCollection.Count > taskPosition)
                         {
-                            switch (request.TaskHandler.TaskCollection[taskPosition])
+                            var taskOfThePosition = request.TaskHandler.TaskCollection[taskPosition];
+
+                            switch (taskOfThePosition)
                             {
                                 case CommonTaskViewModel commonTask:
                                     executedTask = await HandleCommonTaskAsync(commonTask, request, result, descriptors, genericChip, device);
@@ -844,9 +846,13 @@ namespace RFiDGear.Services.TaskExecution
                                     executedTask = await HandleDesfireTaskAsync(desfireTask, request, descriptors);
                                     break;
                                 case MifareUltralightSetupViewModel _:
-                                    break;
+                                    // No handler runs this kind yet. An arm that does nothing leaves the loop on this position
+                                    // for ever (#216): the index does not move and the watchdog is restarted on every pass.
+                                    throw new NotSupportedException("No handler runs a task of kind " + nameof(MifareUltralightSetupViewModel) + " yet.");
                                 default:
-                                    break;
+                                    // The same for any kind this loop does not know: the run ends with an error, which the
+                                    // catch below records as a failed task. Only the name of the type goes into the text.
+                                    throw new NotSupportedException("No handler runs a task of kind " + taskOfThePosition.GetType().Name + ".");
                             }
                         }
                     }
