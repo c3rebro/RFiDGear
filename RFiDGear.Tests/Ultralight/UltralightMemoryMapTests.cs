@@ -138,6 +138,16 @@ namespace RFiDGear.Tests.Ultralight
         [InlineData("0004040101000E03")]   // NTAG212: same family, layout not confirmed
         [InlineData("0004050201001103")]   // a product type that is neither Ultralight EV1 nor NTAG
         [InlineData("0004040201001203")]   // a storage size no known chip has
+        [InlineData("000404FFFFFF1303")]   // NTAG216 size, but a subtype, major and minor version that no known chip has
+        [InlineData("0004040101001103")]   // NTAG with the subtype of the 17 pF chips: no NTAG215 has it
+        [InlineData("0004040301001103")]   // an unknown NTAG subtype
+        [InlineData("0004040202001103")]   // a major version other than 1
+        [InlineData("00040402FF001103")]
+        [InlineData("0004040201011103")]   // a minor version other than 0
+        [InlineData("000403FF01000B03")]   // an Ultralight EV1 with a subtype other than 17 pF and 50 pF
+        [InlineData("0004030302000B03")]
+        [InlineData("0004030102000B03")]   // an Ultralight EV1 with a major version other than 1
+        [InlineData("0004030101010E03")]   // an Ultralight EV1 with a minor version other than 0
         [InlineData("0004040201001102")]   // a protocol type that is not ISO 14443-3
         [InlineData("0104040201001103")]   // a header byte that is not 0
         [InlineData("0005040201001103")]   // another vendor than NXP

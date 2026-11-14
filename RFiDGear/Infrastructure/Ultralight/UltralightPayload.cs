@@ -10,7 +10,7 @@ namespace RFiDGear.Infrastructure.Ultralight
     public static class UltralightPayload
     {
         /// <summary>The most pages one write can hold: all pages of the largest chip.</summary>
-        public const int MaxPages = UltralightMemoryMap.MaxPageCount;
+        public static int MaxPages => UltralightMemoryMap.MaxPageCount;
 
         /// <summary>
         /// Reads the digits.

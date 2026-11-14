@@ -25,7 +25,7 @@ namespace RFiDGear.Infrastructure.Ultralight
     }
 
     /// <summary>The answer of <see cref="UltralightWritePolicy"/>.</summary>
-    public readonly struct UltralightWriteDecision
+    public readonly struct UltralightWriteDecision : IEquatable<UltralightWriteDecision>
     {
         internal UltralightWriteDecision(UltralightWriteViolation violation, int page)
         {
@@ -41,6 +41,27 @@ namespace RFiDGear.Infrastructure.Ultralight
 
         /// <summary>Gets the first page of the range that is the reason, or -1 when there is none (an allowed write, an invalid range).</summary>
         public int Page { get; }
+
+        /// <summary>Whether two decisions are the same: the same violation at the same page.</summary>
+        /// <param name="left">The first decision.</param>
+        /// <param name="right">The second decision.</param>
+        /// <returns><c>true</c> when they are equal.</returns>
+        public static bool operator ==(UltralightWriteDecision left, UltralightWriteDecision right) => left.Equals(right);
+
+        /// <summary>Whether two decisions differ.</summary>
+        /// <param name="left">The first decision.</param>
+        /// <param name="right">The second decision.</param>
+        /// <returns><c>true</c> when they are not equal.</returns>
+        public static bool operator !=(UltralightWriteDecision left, UltralightWriteDecision right) => !left.Equals(right);
+
+        /// <inheritdoc />
+        public bool Equals(UltralightWriteDecision other) => Violation == other.Violation && Page == other.Page;
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is UltralightWriteDecision other && Equals(other);
+
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine((int)Violation, Page);
     }
 
     /// <summary>

@@ -15,13 +15,13 @@ namespace RFiDGear.Infrastructure.Ultralight
     public sealed class UltralightMemoryMap
     {
         /// <summary>The size of a page in bytes. Every variant has 4-byte pages.</summary>
-        public const int PageSize = 4;
+        public static int PageSize => 4;
 
         /// <summary>The first user page. Pages 0 to 3 are the UID, the internal byte, the lock bytes and the OTP bytes in every variant.</summary>
-        public const int FirstUserPage = 4;
+        public static int FirstUserPage => 4;
 
         /// <summary>The number of pages of the largest variant (NTAG216): no chip has a page at or above this number.</summary>
-        public const int MaxPageCount = 231;
+        public static int MaxPageCount => 231;
 
         // Pages, last user page. After the user memory come, per chip: Ultralight C the lock bytes, the counter, AUTH0, AUTH1 and the
         // key (pages 40-47); MF0UL11 CFG0, CFG1, PWD and PACK (16-19); MF0UL21 the dynamic lock bytes and the same four (36-40); the
@@ -37,7 +37,7 @@ namespace RFiDGear.Infrastructure.Ultralight
             new UltralightMemoryMap(UltralightVariant.Ntag216, 231, 225)
         };
 
-        private UltralightMemoryMap(UltralightVariant variant, int pageCount, int lastUserPage)
+        internal UltralightMemoryMap(UltralightVariant variant, int pageCount, int lastUserPage)
         {
             Variant = variant;
             PageCount = pageCount;
@@ -85,8 +85,9 @@ namespace RFiDGear.Infrastructure.Ultralight
         /// <param name="answer">The 8 bytes of the answer, or what came back instead.</param>
         /// <param name="map">The layout, when the answer names a chip this class knows.</param>
         /// <returns>
-        /// <c>false</c> for anything else, including an answer that is not 8 bytes, a vendor other than NXP, and a chip of the same
-        /// family whose layout is not confirmed (NTAG210, NTAG212): such a chip is refused, not guessed at.
+        /// <c>false</c> for anything else, including an answer that is not 8 bytes, a vendor other than NXP, a product subtype, major
+        /// or minor version that no known chip has, and a chip of the same family whose layout is not confirmed (NTAG210, NTAG212):
+        /// such a chip is refused, not guessed at.
         /// </returns>
         public static bool TryFromGetVersion(byte[] answer, out UltralightMemoryMap map)
         {
@@ -98,6 +99,14 @@ namespace RFiDGear.Infrastructure.Ultralight
                 return false;
             }
 
+            // The versions: every chip of the table answers major 1 and minor 0; the product subtype is 0x01 (17 pF) or 0x02 (50 pF)
+            // for the Ultralight EV1 and 0x02 for the NTAGs. NTAG210 and NTAG212 answer with 0x01, and other NXP products of these
+            // product types (NTAG with tag tamper, NTAG I2C) with other versions and subtypes: they have other layouts, so they are refused.
+            if (answer[4] != 0x01 || answer[5] != 0x00)
+            {
+                return false;
+            }
+
             // The storage size byte holds n in its upper 7 bits; the user memory is 2^n bytes if the lowest bit is 0 and more than 2^n
             // and less than 2^(n+1) if it is 1. So 48 bytes are 0x0B, 128 bytes 0x0E, 144 bytes 0x0F, 504 bytes 0x11, 888 bytes 0x13.
             UltralightVariant variant;
@@ -105,6 +114,11 @@ namespace RFiDGear.Infrastructure.Ultralight
             switch (answer[2])
             {
                 case 0x03: // Ultralight EV1
+                    if (answer[3] != 0x01 && answer[3] != 0x02)
+                    {
+                        return false;
+                    }
+
                     switch (answer[6])
                     {
                         case 0x0B: variant = UltralightVariant.Ev1Mf0ul11; break;
@@ -115,6 +129,11 @@ namespace RFiDGear.Infrastructure.Ultralight
                     break;
 
                 case 0x04: // NTAG. NTAG210 (0x0B) and NTAG212 (0x0E) are the same family and are not here: their layouts are not confirmed.
+                    if (answer[3] != 0x02)
+                    {
+                        return false;
+                    }
+
                     switch (answer[6])
                     {
                         case 0x0F: variant = UltralightVariant.Ntag213; break;

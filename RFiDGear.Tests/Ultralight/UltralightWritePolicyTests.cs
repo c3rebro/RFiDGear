@@ -175,6 +175,22 @@ namespace RFiDGear.Tests.Ultralight
         }
 
         [Fact]
+        public void TwoDecisions_AreEqualWhenTheyHaveTheSameViolationAtTheSamePage()
+        {
+            var a = UltralightWritePolicy.Check(UltralightExpectation.Ntag215, 130, 1, false);
+            var b = UltralightWritePolicy.Check(UltralightMemoryMap.For(UltralightVariant.Ntag215), 130, 1, false);
+            var otherPage = UltralightWritePolicy.Check(UltralightExpectation.Ntag215, 131, 1, false);
+            var allowed = UltralightWritePolicy.Check(UltralightExpectation.Ntag215, 4, 1, false);
+
+            Assert.Equal(a, b);
+            Assert.True(a == b);
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+            Assert.True(a != otherPage);
+            Assert.False(a.Equals(allowed));
+            Assert.False(a.Equals((object)"not a decision"));
+        }
+
+        [Fact]
         public void ACheckWithoutALayoutObject_IsAnArgumentError()
         {
             Assert.Throws<ArgumentNullException>(() => UltralightWritePolicy.Check((UltralightMemoryMap)null, 4, 1, false));
