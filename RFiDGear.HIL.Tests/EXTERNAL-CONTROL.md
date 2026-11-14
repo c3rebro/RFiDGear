@@ -18,9 +18,10 @@ time to change the protocol.
 
 - Use a card you can spare, and **a copy of a project, never the real one**.
   The runs write the card as the project says.
-- Build or install RFiDGear, switch external control on (settings dialog,
-  "Allow another program of this Windows user to control RFiDGear", then restart
-  RFiDGear), or start it with `EXTERNALCONTROL=1`.
+- Build or install RFiDGear, switch external control on (settings dialog, Misc
+  tab, "Enable JSON-RPC pipe server" / "JSON-RPC Pipe Server aktivieren", then
+  restart RFiDGear), or start it with `EXTERNALCONTROL=1`. The label fits the
+  smallest settings window, and the tooltip breaks its lines: look at both.
 - The client is the sample: `dotnet run --project RFiDGear.Bridge.SampleClient
   -- <command>` (or the built `RFiDGear.Bridge.SampleClient.exe`). The commands
   are `status`, `run`, `result`, `results`, `auto` and `keys`; its README lists

@@ -2162,7 +2162,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>The original project is intact, but not everything that this attempt created could be removed again. Please remove it by hand:{0}</value>
   </data>
   <data name="labelEnableExternalControl" xml:space="preserve">
-    <value>Allow another program of this Windows user to control RFiDGear (external control)</value>
+    <value>Enable JSON-RPC pipe server</value>
   </data>
   <data name="toolTipEnableExternalControl" xml:space="preserve">
     <value>Opens a named pipe that only this Windows user can reach. A program that connects can see the state of RFiDGear, load a project and run its tasks. A change takes effect after a restart. The start-up argument EXTERNALCONTROL=1 switches it on for one run.</value>

@@ -37,8 +37,16 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Stretch"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelEnableExternalControl, Converter={StaticResource Localization}}"
-                ToolTip="{Binding LocalizationResourceSet, ConverterParameter=toolTipEnableExternalControl, Converter={StaticResource Localization}}"
-                IsChecked="{Binding EnableExternalControl, Mode=TwoWay}"/>
+                IsChecked="{Binding EnableExternalControl, Mode=TwoWay}">
+                <!-- A tooltip given as text is one line, and a long text runs off the screen: this one breaks its lines. -->
+                <CheckBox.ToolTip>
+                    <ToolTip MaxWidth="380">
+                        <TextBlock
+                            Text="{Binding LocalizationResourceSet, ConverterParameter=toolTipEnableExternalControl, Converter={StaticResource Localization}}"
+                            TextWrapping="Wrap" />
+                    </ToolTip>
+                </CheckBox.ToolTip>
+            </CheckBox>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="213" />
                 <ColumnDefinition Width="0.5*" />
