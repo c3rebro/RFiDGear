@@ -21,6 +21,7 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 using Serilog;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
@@ -30,9 +31,11 @@ using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
-    /// Description of MifareClassicSetupViewModel.
+    /// The setup of a task for MIFARE Ultralight (and the chips that share its page commands). It is a task kind of the
+    /// application like the others: the run loop runs it through <see cref="CommandDelegator"/>, and the project stores what
+    /// the user chose and nothing a run or the open dialog leaves behind.
     /// </summary>
-    public class MifareUltralightSetupViewModel : ObservableObject, IUserDialogViewModel
+    public class MifareUltralightSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -140,6 +143,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public string SelectedUltralightPageCurrent
         {
             get => selectedUltralightPageCurrent;
@@ -155,6 +159,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool IsDataExplorerEditTabEnabled
         {
             get => isDataExplorerEditTabEnabled;
@@ -169,6 +174,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public RFiDChipChildLayerViewModel ChildNodeViewModelFromChip
         {
             get => childNodeViewModelFromChip;
@@ -179,6 +185,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public RFiDChipChildLayerViewModel ChildNodeViewModelTemp
         {
             get => childNodeViewModelTemp;
@@ -264,6 +271,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? IsValidSelectedExecuteConditionTaskIndex
         {
             get => isValidSelectedExecuteConditionTaskIndex;
@@ -303,12 +311,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public ERROR CurrentTaskErrorLevel { get; set; }
 
+        /// <summary>
+        /// Where the run loop is with this task in the current run. Reset at the start of a run; not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
+
         [XmlIgnore]
         public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new ObservableCollection<TaskAttemptResult>();
 
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? IsTaskCompletedSuccessfully
         {
             get => isTaskCompletedSuccessfully;
@@ -365,6 +380,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? IsValidSelectedTaskIndex
         {
             get => isValidSelectedTaskIndex;
@@ -450,6 +466,29 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         #endregion General Properties
 
         #region Commands
+
+        /// <summary>
+        /// Runs the command of a task type; the run loop awaits it, once per task and attempt.
+        /// </summary>
+        public IAsyncRelayCommand CommandDelegator => new AsyncRelayCommand<TaskType_MifareUltralightTask>(OnNewCommandDelegatorCall);
+        private Task OnNewCommandDelegatorCall(TaskType_MifareUltralightTask taskType)
+        {
+            switch (taskType)
+            {
+                case TaskType_MifareUltralightTask.ReadData:
+                case TaskType_MifareUltralightTask.WriteData:
+                    // The commands do not reach the card yet (the readers have no page operations for them). The task ends as
+                    // one that cannot be done here, and the run goes on after it, not as a hang or an error of the run.
+                    CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                    IsTaskCompletedSuccessfully = false;
+                    break;
+
+                default:
+                    break;
+            }
+
+            return Task.CompletedTask;
+        }
 
         public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
         private async Task OnNewSaveSettingsCommand()

@@ -1061,13 +1061,105 @@ namespace RFiDGear.Tests
             Assert.Contains(nameof(StubTaskModel), unsupported.Message);
         }
 
-        // The Ultralight task has no handler yet: the same as for any unknown kind, not a hang.
+        // The Ultralight task kind is run by the loop like the others. Its commands do not reach the card yet: the task ends
+        // as a failed one with ProtocolConstraint ("not possible here"), and the run ends with a result, not with an error.
         [Fact]
-        public async Task AnUltralightTask_EndsTheRunWithAnErrorInsteadOfHanging()
+        public async Task AnUltralightTask_IsRunByTheLoop_AndEndsAsAFailedTaskWithProtocolConstraint()
         {
-            var failure = await RunProjectOfOneTaskAsync(() => new MifareUltralightSetupViewModel());
+            MifareUltralightSetupViewModel task = null;
 
-            Assert.IsType<NotSupportedException>(failure);
+            var (result, observations) = await RunProjectAsync(() => task = new MifareUltralightSetupViewModel
+            {
+                CurrentTaskIndex = "0",
+                SelectedTaskType = TaskType_MifareUltralightTask.ReadData
+            });
+
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            Assert.Equal(ERROR.ProtocolConstraint, task.CurrentTaskErrorLevel);
+            Assert.False(task.IsTaskCompletedSuccessfully);
+            Assert.Single(task.AttemptResults);
+
+            var observation = Assert.Single(observations);
+            Assert.Equal("Executed", observation.Decision);
+            Assert.Equal(0, observation.TaskPosition);
+        }
+
+        [Fact]
+        public async Task AnUltralightTask_FollowsItsExecuteCondition_LikeTheOtherKinds()
+        {
+            var tasks = new List<MifareUltralightSetupViewModel>();
+
+            var (_, observations) = await RunProjectAsync(
+                () => Added(tasks, new MifareUltralightSetupViewModel { CurrentTaskIndex = "0", SelectedTaskType = TaskType_MifareUltralightTask.ReadData }),
+
+                // Runs: the task before ended with ProtocolConstraint.
+                () => Added(tasks, new MifareUltralightSetupViewModel
+                {
+                    CurrentTaskIndex = "1",
+                    SelectedTaskType = TaskType_MifareUltralightTask.WriteData,
+                    SelectedExecuteConditionErrorLevel = ERROR.ProtocolConstraint,
+                    SelectedExecuteConditionTaskIndex = "0"
+                }),
+
+                // Does not run: the first task did not end with AuthFailure.
+                () => Added(tasks, new MifareUltralightSetupViewModel
+                {
+                    CurrentTaskIndex = "2",
+                    SelectedTaskType = TaskType_MifareUltralightTask.WriteData,
+                    SelectedExecuteConditionErrorLevel = ERROR.AuthFailure,
+                    SelectedExecuteConditionTaskIndex = "0"
+                }));
+
+            Assert.Equal(new[] { "Executed", "Executed", "Skipped" }, observations.OrderBy(observation => observation.TaskPosition).Select(observation => observation.Decision));
+            Assert.Single(tasks[0].AttemptResults);
+            Assert.Single(tasks[1].AttemptResults);
+            Assert.Empty(tasks[2].AttemptResults);
+        }
+
+        private static object Added<T>(List<T> list, T task)
+        {
+            list.Add(task);
+
+            return task;
+        }
+
+        // Runs a project of the given tasks through the handlers of the service, with the reader of a test, and returns the
+        // result and what the loop recorded. The token ends a run that hangs after ten seconds, which fails the test.
+        private static async Task<(TaskExecutionResult Result, List<TaskExecutionObservation> Observations)> RunProjectAsync(params Func<object>[] createTasks)
+        {
+            TaskExecutionResult result = null;
+            var observations = new List<TaskExecutionObservation>();
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var chip = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102);
+                var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider { GenericChip = chip, Card = chip };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var handler = new ChipTaskHandlerModel();
+
+                    foreach (var create in createTasks)
+                    {
+                        handler.TaskCollection.Add(create());
+                    }
+
+                    var request = new TaskExecutionRequest
+                    {
+                        TaskHandler = handler,
+                        VariablesFromArgs = new Dictionary<string, string>(),
+                        Timeouts = TaskExecutionTimeouts.Default,
+                        Observations = observations
+                    };
+
+                    using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+                    result = await new TaskExecutionService(new FixedReaderDeviceProvider(reader), new StubDispatcherTimerAdapter(), new StubDispatcherTimerAdapter())
+                        .ExecuteOnceAsync(request, limit.Token);
+                }
+            });
+
+            return (result, observations);
         }
 
         // Runs a project of one task through the handlers of the service and returns what ended the run. A run that hangs

@@ -339,6 +339,34 @@ namespace RFiDGear.Tests.Reader
             });
         }
 
+        // The reset walks every task of the project. An Ultralight task used to stop it with an InvalidCastException, which
+        // also stopped the start of a run, as that begins with the reset.
+        [Fact]
+        public async Task TheResetCommands_ResetAnUltralightTaskToo()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                var task = new MifareUltralightSetupViewModel { CurrentTaskIndex = "1" };
+                task.IsTaskCompletedSuccessfully = true;
+                task.CurrentTaskErrorLevel = ERROR.AuthFailure;
+                viewModel.ChipTasks.TaskCollection.Add(task);
+                viewModel.SelectedSetupViewModel = task;
+
+                await Within(viewModel.ResetTaskStatusCommand.ExecuteAsync(null));
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+
+                task.IsTaskCompletedSuccessfully = true;
+                task.CurrentTaskErrorLevel = ERROR.AuthFailure;
+                await Within(viewModel.ResetSelectedTaskStatusCommand.ExecuteAsync(null));
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+
+                Assert.True(coordinator.TryBeginProjectOperation());   // every command gave the slot back
+                coordinator.EndProjectOperation();
+            });
+        }
+
         [Fact]
         public async Task TheResetAndRemoveCommands_WorkWhenNothingIsRunning_AndGiveTheSlotBack()
         {
