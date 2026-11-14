@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <!-- xunit.v3 test projects are executables; dotnet test and the test explorer run them through the VSTest adapter. -->
@@ -23,7 +23,7 @@
     <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
     <!-- A real SQL engine for the order store's tests only; it is not shipped and the library does not use it. -->
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Fixtures\**" />
