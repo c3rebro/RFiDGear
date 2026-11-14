@@ -2,6 +2,7 @@
 using Elatec.NET;
 using Elatec.NET.Cards.Mifare;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
 using Serilog;
 using System;
@@ -505,10 +506,398 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         #endregion
 
         #region MifareUltralight
-        public override Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
+
+        /// <summary>What the reader found on the antenna: whether a tag answered and, for a MIFARE chip, its sub type.</summary>
+        protected readonly struct UltralightSighting
         {
-            throw new NotImplementedException();
+            /// <summary>Creates the sighting.</summary>
+            /// <param name="tagFound">Whether a tag answered.</param>
+            /// <param name="subType">The MIFARE sub type of the tag, or <c>null</c> for a tag that is no MIFARE chip.</param>
+            public UltralightSighting(bool tagFound, MifareChipSubType? subType)
+            {
+                TagFound = tagFound;
+                SubType = subType;
+            }
+
+            /// <summary>Gets a value that says whether a tag answered.</summary>
+            public bool TagFound { get; }
+
+            /// <summary>Gets the MIFARE sub type, or <c>null</c>.</summary>
+            public MifareChipSubType? SubType { get; }
         }
+
+        /// <summary>Gets how long the selection of the chip waits before it asks again (it asks three times at most).</summary>
+        protected virtual TimeSpan UltralightSelectRetryDelay => TimeSpan.FromMilliseconds(100);
+
+        /// <summary>Selects the tag on the antenna and tells what it is; the first call of every page operation. Overridden by the tests.</summary>
+        /// <returns>What the reader found.</returns>
+        protected virtual async Task<UltralightSighting> SelectUltralightChipAsync()
+        {
+            var chip = await readerDevice.GetSingleChipAsync();
+
+            return chip == null
+                ? new UltralightSighting(false, null)
+                : new UltralightSighting(true, (chip as MifareChip)?.SubType);
+        }
+
+        /// <summary>The GET_VERSION command: 8 bytes, or <c>null</c> when the chip refuses it (an Ultralight and an Ultralight C do, and are idle afterwards).</summary>
+        /// <returns>The answer.</returns>
+        protected virtual Task<byte[]> GetUltralightVersionAsync() => readerDevice.MifareUltralightEV1_GetVersionAsync();
+
+        /// <summary>The READ command: 16 bytes, the page and the three after it (and from page 0 again past the last page), or <c>null</c> when the chip refuses.</summary>
+        /// <param name="page">The page.</param>
+        /// <returns>The 16 bytes.</returns>
+        protected virtual Task<byte[]> ReadUltralightPageAsync(byte page) => readerDevice.MifareUltralight_ReadPageAsync(page);
+
+        /// <summary>The WRITE command for one page. A refusal is an exception.</summary>
+        /// <param name="page">The page.</param>
+        /// <param name="data">4 bytes.</param>
+        /// <returns>A task that ends when the chip took the data.</returns>
+        protected virtual Task WriteUltralightPageAsync(byte page, byte[] data) => readerDevice.MifareUltralight_WritePageAsync(page, data);
+
+        /// <summary>The 3DES authentication of an Ultralight C. A refusal is an exception.</summary>
+        /// <param name="key">The 16-byte key.</param>
+        /// <returns>A task that ends when the chip took the key.</returns>
+        protected virtual Task AuthUltralightCAsync(byte[] key) => readerDevice.MifareUltralightC_AuthenticateAsync(key);
+
+        /// <summary>The PWD_AUTH of an Ultralight EV1 or an NTAG. A refusal is an exception.</summary>
+        /// <param name="password">The 4-byte password.</param>
+        /// <param name="pwdAck">The 2-byte PACK the chip must answer with.</param>
+        /// <returns>A task that ends when the chip took the password.</returns>
+        protected virtual Task PwdAuthUltralightAsync(byte[] password, byte[] pwdAck) => readerDevice.MifareUltralightEV1_PwdAuthAsync(password, pwdAck);
+
+        /// <summary>Selects the tag again and says whether it is there: what tells a chip that refused from one that was taken away.</summary>
+        /// <returns><c>true</c> when a tag answers.</returns>
+        protected virtual async Task<bool> IsUltralightTagPresentAsync() => await readerDevice.SearchTagAsync() != null;
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> ReadMifareUltralightPagesAsync(UltralightAccess access, int startPage, int pageCount) =>
+            PerformUltralightAsync(UltralightRequest.ForRead(access, startPage, pageCount));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            PerformUltralightAsync(UltralightRequest.ForWrite(access, startPage, data));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
+            PerformUltralightAsync(UltralightRequest.ForAuthenticate(access));
+
+        /// <inheritdoc />
+        public override async Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
+        {
+            var result = await ReadMifareUltralightPagesAsync(UltralightAccess.Open(), _pageNo, 1);
+
+            MifareUltralightPageData = result.Data;
+
+            return result.Error;
+        }
+
+        // One call is one boundary under the lock of the port: what is wrong with the call itself is found before the port is
+        // touched; then the chip is selected and told, the call is checked against what it is, the authentication is made once,
+        // and the work is done. Nothing is repeated after a refusal (the selection is the one exception, and changes nothing on the
+        // card). The bytes of the key are cleared when the request is disposed, whatever happens.
+        private async Task<UltralightResult> PerformUltralightAsync(UltralightRequest request)
+        {
+            using (request)
+            {
+                if (request.Error != ERROR.NoError)
+                {
+                    return UltralightResult.Failed(request.Error);
+                }
+
+                await _comPortLock.WaitAsync();
+                try
+                {
+                    if (!IsConnected)
+                    {
+                        return UltralightResult.Failed(ERROR.TransportError);
+                    }
+
+                    try
+                    {
+                        return await RunUltralightAsync(request);
+                    }
+                    catch (Exception e) when (!(e is OperationCanceledException))
+                    {
+                        // A fault outside the calls that classify their own: the call ends, and the lock is released below.
+                        LogUltralightFailure(request.Operation, "unexpected", e);
+
+                        return UltralightResult.Failed(ElatecUltralightErrors.Classify(e, UltralightCall.Select));
+                    }
+                }
+                finally
+                {
+                    _comPortLock.Release();
+                }
+            }
+        }
+
+        private async Task<UltralightResult> RunUltralightAsync(UltralightRequest request)
+        {
+            var (detectError, map) = await DetectUltralightChipAsync(request.Access.Expected);
+
+            if (detectError != ERROR.NoError)
+            {
+                return UltralightResult.Failed(detectError);
+            }
+
+            var variant = map.Variant;
+
+            // The checks that need the chip: that it is the one the task expects, that it has the pages, that a write is allowed.
+            var check = request.CheckAgainst(map);
+
+            if (check != ERROR.NoError)
+            {
+                return new UltralightResult(check, null, variant, false, 0, null);
+            }
+
+            var authenticated = false;
+
+            if (request.Access.Auth != UltralightAuth.None)
+            {
+                var call = request.Access.Auth == UltralightAuth.UltralightC ? UltralightCall.AuthUltralightC : UltralightCall.AuthPassword;
+
+                try
+                {
+                    if (call == UltralightCall.AuthUltralightC)
+                    {
+                        await AuthUltralightCAsync(request.Key);
+                    }
+                    else
+                    {
+                        await PwdAuthUltralightAsync(request.Key, request.Pack);
+                    }
+
+                    authenticated = true;
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // Once. A wrong key is not tried again, and nothing is read or written after it.
+                    LogUltralightFailure(request.Operation, call.ToString(), e);
+
+                    return new UltralightResult(ElatecUltralightErrors.Classify(e, call), null, variant, false, 0, null);
+                }
+            }
+
+            switch (request.Operation)
+            {
+                case UltralightOperation.Read:
+                    return await ReadUltralightRangeAsync(request.StartPage, request.PageCount, variant, authenticated);
+
+                case UltralightOperation.Write:
+                    return await WriteUltralightRangeAsync(request, variant, authenticated);
+
+                default:
+                    return new UltralightResult(ERROR.NoError, null, variant, authenticated, 0, null);
+            }
+        }
+
+        // Finds the chip: it is selected (three times at most, which sets nothing on the card), and told by its sub type and by GET_VERSION.
+        private async Task<(ERROR Error, UltralightMemoryMap Map)> DetectUltralightChipAsync(UltralightExpectation expected)
+        {
+            var sighting = default(UltralightSighting);
+
+            for (var attempt = 1; attempt <= 3; attempt++)
+            {
+                try
+                {
+                    sighting = await SelectUltralightChipAsync();
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    LogUltralightFailure(UltralightOperation.Read, UltralightCall.Select.ToString(), e);
+
+                    return (ElatecUltralightErrors.Classify(e, UltralightCall.Select), null);
+                }
+
+                if (sighting.TagFound)
+                {
+                    break;
+                }
+
+                if (attempt < 3)
+                {
+                    await Task.Delay(UltralightSelectRetryDelay);
+                }
+            }
+
+            if (!sighting.TagFound)
+            {
+                return (ERROR.TransportError, null);
+            }
+
+            if (!IsUltralightFamily(sighting.SubType))
+            {
+                return (ERROR.ProtocolConstraint, null);
+            }
+
+            if (sighting.SubType == MifareChipSubType.MifareUltralightC)
+            {
+                return (ERROR.NoError, UltralightMemoryMap.For(UltralightVariant.C));
+            }
+
+            byte[] version;
+
+            try
+            {
+                version = await GetUltralightVersionAsync();
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogUltralightFailure(UltralightOperation.Read, UltralightCall.Version.ToString(), e);
+
+                return (ElatecUltralightErrors.Classify(e, UltralightCall.Version), null);
+            }
+
+            if (version != null)
+            {
+                // An answer that names a chip of the table, or nothing this class knows: not guessed at.
+                return UltralightMemoryMap.TryFromGetVersion(version, out var named) ? (ERROR.NoError, named) : (ERROR.ProtocolConstraint, null);
+            }
+
+            // The chip refused GET_VERSION and is idle: select it again. A plain Ultralight does so, and so does an Ultralight C, which
+            // Elatec.NET 0.7.0-beta.1 reports as MifareUltralight too, so what the task expects tells them apart (an authentication
+            // with the key proves it).
+            try
+            {
+                sighting = await SelectUltralightChipAsync();
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogUltralightFailure(UltralightOperation.Read, UltralightCall.Select.ToString(), e);
+
+                return (ElatecUltralightErrors.Classify(e, UltralightCall.Select), null);
+            }
+
+            if (!sighting.TagFound)
+            {
+                return (ERROR.TransportError, null);
+            }
+
+            return (ERROR.NoError, UltralightMemoryMap.For(expected == UltralightExpectation.C ? UltralightVariant.C : UltralightVariant.Plain));
+        }
+
+        // The sub types of Elatec.NET that are chips of this family: Ultralight (0x90), Ultralight C (0x91), Ultralight EV1 (0x92), NTAG21x (0xA0-0xA6).
+        private static bool IsUltralightFamily(MifareChipSubType? subType)
+        {
+            if (!subType.HasValue)
+            {
+                return false;
+            }
+
+            var value = (int)subType.Value;
+
+            return (value >= 0x90 && value <= 0x92) || (value >= 0xA0 && value <= 0xA6);
+        }
+
+        // One READ returns four pages (and wraps to page 0 past the last page), so the range is read four pages at a time and only
+        // the pages that were asked for are kept: the range is in the chip, so those are always real pages.
+        private async Task<UltralightResult> ReadUltralightRangeAsync(int startPage, int pageCount, UltralightVariant variant, bool authenticated)
+        {
+            var data = new byte[pageCount * UltralightMemoryMap.PageSize];
+            var done = 0;
+
+            while (done < pageCount)
+            {
+                var page = startPage + done;
+                var need = Math.Min(4, pageCount - done);
+                byte[] block;
+
+                try
+                {
+                    block = await ReadUltralightPageAsync((byte)page);
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    LogUltralightFailure(UltralightOperation.Read, UltralightCall.Read.ToString(), e);
+
+                    return new UltralightResult(ElatecUltralightErrors.Classify(e, UltralightCall.Read), data.Take(done * 4).ToArray(), variant, authenticated, done, page);
+                }
+
+                if (block == null || block.Length < need * UltralightMemoryMap.PageSize)
+                {
+                    // The call returns null for the chip that said no and for the chip that is gone; one look at the antenna tells which.
+                    var error = await ClassifyRefusalAsync();
+
+                    return new UltralightResult(error, data.Take(done * 4).ToArray(), variant, authenticated, done, page);
+                }
+
+                Array.Copy(block, 0, data, done * 4, need * UltralightMemoryMap.PageSize);
+                done += need;
+            }
+
+            return new UltralightResult(ERROR.NoError, data, variant, authenticated, done, null);
+        }
+
+        private async Task<UltralightResult> WriteUltralightRangeAsync(UltralightRequest request, UltralightVariant variant, bool authenticated)
+        {
+            var written = 0;
+
+            while (written < request.PageCount)
+            {
+                var page = request.StartPage + written;
+                var chunk = new byte[UltralightMemoryMap.PageSize];
+                Array.Copy(request.Data, written * UltralightMemoryMap.PageSize, chunk, 0, UltralightMemoryMap.PageSize);
+
+                try
+                {
+                    await WriteUltralightPageAsync((byte)page, chunk);
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // One attempt: the page that was refused is not written again, and no later page is written.
+                    LogUltralightFailure(UltralightOperation.Write, UltralightCall.Write.ToString(), e);
+
+                    return new UltralightResult(ElatecUltralightErrors.Classify(e, UltralightCall.Write), null, variant, authenticated, written, page);
+                }
+
+                written++;
+            }
+
+            // What the call returned says nothing about the page: it is read back (reads only, no second write).
+            var back = await ReadUltralightRangeAsync(request.StartPage, request.PageCount, variant, authenticated);
+
+            if (!back.Succeeded)
+            {
+                return new UltralightResult(back.Error, null, variant, authenticated, written, back.FailedPage);
+            }
+
+            for (var i = 0; i < request.PageCount; i++)
+            {
+                for (var b = 0; b < UltralightMemoryMap.PageSize; b++)
+                {
+                    if (back.Data[i * UltralightMemoryMap.PageSize + b] != request.Data[i * UltralightMemoryMap.PageSize + b])
+                    {
+                        return new UltralightResult(ERROR.Unknown, null, variant, authenticated, written, request.StartPage + i);
+                    }
+                }
+            }
+
+            return new UltralightResult(ERROR.NoError, null, variant, authenticated, written, null);
+        }
+
+        private async Task<ERROR> ClassifyRefusalAsync()
+        {
+            try
+            {
+                return await IsUltralightTagPresentAsync() ? ERROR.PermissionDenied : ERROR.TransportError;
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogUltralightFailure(UltralightOperation.Read, UltralightCall.Select.ToString(), e);
+
+                return ElatecUltralightErrors.Classify(e, UltralightCall.Select);
+            }
+        }
+
+        // The log gets the operation, the call, and the name of the exception type and reader error: never a key, a password, a UID or the text of an exception.
+        private static void LogUltralightFailure(UltralightOperation operation, string call, Exception exception) =>
+            Log.ForContext<ElatecNetProvider>().Warning(
+                "Elatec Ultralight {Operation} failed at {Call}: {Fault}",
+                operation,
+                call,
+                ElatecUltralightErrors.Describe(exception));
+
         #endregion
 
         #region MifareDesfire
