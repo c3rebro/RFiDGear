@@ -161,6 +161,12 @@ namespace RFiDGear.Infrastructure.Ultralight
         {
             Error = ERROR.ProtocolConstraint;
 
+            // A number that is none of the expectations (from a project file, say) is not Auto: nothing is asked of the port for it.
+            if (!Enum.IsDefined(typeof(UltralightExpectation), Access.Expected))
+            {
+                return;
+            }
+
             if (Operation == UltralightOperation.Authenticate && Access.Auth == UltralightAuth.None)
             {
                 return;

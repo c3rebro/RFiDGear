@@ -94,6 +94,12 @@ namespace RFiDGear.Tests.Reader
         /// <summary>The sub type the second and every later selection reports (a tag that was swapped), or <c>null</c> for the same as the first.</summary>
         public MifareChipSubType? SubTypeOfLaterSelections { get; set; }
 
+        /// <summary>The UID the tag reports (made up for the tests, 7 bytes).</summary>
+        public byte[] Uid { get; set; } = { 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
+
+        /// <summary>The UID the second and every later selection reports (a tag of the same kind that was swapped), or <c>null</c> for the same as the first.</summary>
+        public byte[] UidOfLaterSelections { get; set; }
+
         private int _selections;
 
         public Exception SelectThrows { get; set; }
@@ -152,9 +158,11 @@ namespace RFiDGear.Tests.Reader
                 throw SelectThrows;
             }
 
-            var subType = _selections++ > 0 && SubTypeOfLaterSelections.HasValue ? SubTypeOfLaterSelections : SubType;
+            var later = _selections++ > 0;
+            var subType = later && SubTypeOfLaterSelections.HasValue ? SubTypeOfLaterSelections : SubType;
+            var uid = later && UidOfLaterSelections != null ? UidOfLaterSelections : Uid;
 
-            return Task.FromResult(TagOnReader ? new UltralightSighting(true, subType) : new UltralightSighting(false, null));
+            return Task.FromResult(TagOnReader ? new UltralightSighting(true, subType, uid) : new UltralightSighting(false, null));
         }
 
         protected override Task<byte[]> GetUltralightVersionAsync()

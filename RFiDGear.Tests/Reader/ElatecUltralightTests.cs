@@ -677,6 +677,40 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(new[] { "select", "version", "select" }, reader.Calls);
         }
 
+        [Fact]
+        public async Task ATagThatWasSwappedForOneOfTheSameSubType_IsNotGivenALayout()
+        {
+            // The library reports a plain Ultralight, an Ultralight C and an EV1 with the same sub type, so only the UID tells two
+            // tags of the same kind apart. The UID is compared and never logged.
+            var reader = new UltralightTestReader(UltralightVariant.Plain) { UidOfLaterSelections = new byte[] { 0x04, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F } };
+
+            var result = await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1);
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Null(result.Variant);
+            Assert.Equal(new[] { "select", "version", "select" }, reader.Calls);
+        }
+
+        [Theory]
+        [InlineData("read")]
+        [InlineData("write")]
+        [InlineData("authenticate")]
+        public async Task AnExpectationThatIsNoValueOfTheEnum_IsRefusedBeforeThePortIsTouched(string operation)
+        {
+            // A reader that is not connected answers TransportError to anything that gets as far as the port.
+            var reader = new UltralightTestReader(UltralightVariant.Ntag215) { Connected = false };
+            var undefined = (UltralightExpectation)99;
+
+            var result = operation == "read"
+                ? await reader.ReadMifareUltralightPagesAsync(new UltralightAccess(undefined), 4, 1)
+                : operation == "write"
+                    ? await reader.WriteMifareUltralightPagesAsync(new UltralightAccess(undefined), 4, new byte[4])
+                    : await reader.AuthenticateMifareUltralightAsync(new UltralightAccess(undefined, UltralightAuth.Password, "A1B2C3D4", "5566"));
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Empty(reader.Calls);
+        }
+
         // ── the request and the access ──
 
         [Fact]
