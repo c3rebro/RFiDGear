@@ -429,6 +429,11 @@ namespace RFiDGear.Tests.ExternalControl
                 entered.Set();
                 release.Wait(TimeSpan.FromSeconds(10));
             };
+
+            // The run itself goes on after the admission until the test lets it end. Without the gate the fake run finishes
+            // the moment the window is released, and whether the answer says "running" or "completed" is a race with the
+            // thread pool, which the order of the tests of the class (and so the path of the test assembly) decides.
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
             h.Dispatch = action => Task.Run(action);
 
             var start = h.Supervisor.StartAsync(Request("r-1"));
@@ -443,6 +448,8 @@ namespace RFiDGear.Tests.ExternalControl
 
             Assert.Equal(RunStates.Running, response.State);
             Assert.Single(h.Host.ExecutionHost.Requests);
+
+            h.Host.ExecutionHost.RunGate.SetResult(true);
             await ResultOf(h, "r-1");
         }
 
