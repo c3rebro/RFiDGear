@@ -85,6 +85,21 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(ERROR.Unknown, ElatecUltralightErrors.Classify(new ArgumentException("our own bug"), UltralightCall.Write));
         }
 
+        [Theory]
+        [InlineData("Select")]
+        [InlineData("Version")]
+        [InlineData("Read")]
+        [InlineData("Write")]
+        [InlineData("AuthUltralightC")]
+        [InlineData("AuthPassword")]
+        public void AFunctionThatTheReaderFirmwareDoesNotKnow_IsAProtocolConstraint_NotATransportError(string call)
+        {
+            // The conversation worked and the reader said it cannot do it (a firmware without the EV1 commands, say).
+            var exception = new TwnException("Reader error: UnknownFunction", ResponseError.UnknownFunction);
+
+            Assert.Equal(ERROR.ProtocolConstraint, ElatecUltralightErrors.Classify(exception, Enum.Parse<UltralightCall>(call)));
+        }
+
         [Fact]
         public void TheDescriptionForTheLog_NamesTheTypeAndTheReaderError_NeverTheMessage()
         {

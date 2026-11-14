@@ -85,6 +85,17 @@ namespace RFiDGear.Tests.Reader
 
         public bool RemoveTagWhenAReadIsRefused { get; set; }
 
+        /// <summary>
+        /// A write or an authentication that is refused also takes the tag away: Elatec.NET throws "AccessDenied" whenever the reader
+        /// says no, so a tag that was pulled away looks the same as a refusal until the antenna is looked at.
+        /// </summary>
+        public bool RemoveTagWhenAWriteOrAuthenticationIsRefused { get; set; }
+
+        /// <summary>The sub type the second and every later selection reports (a tag that was swapped), or <c>null</c> for the same as the first.</summary>
+        public MifareChipSubType? SubTypeOfLaterSelections { get; set; }
+
+        private int _selections;
+
         public Exception SelectThrows { get; set; }
 
         public byte[] AcceptedKey { get; set; }
@@ -141,7 +152,9 @@ namespace RFiDGear.Tests.Reader
                 throw SelectThrows;
             }
 
-            return Task.FromResult(TagOnReader ? new UltralightSighting(true, SubType) : new UltralightSighting(false, null));
+            var subType = _selections++ > 0 && SubTypeOfLaterSelections.HasValue ? SubTypeOfLaterSelections : SubType;
+
+            return Task.FromResult(TagOnReader ? new UltralightSighting(true, subType) : new UltralightSighting(false, null));
         }
 
         protected override Task<byte[]> GetUltralightVersionAsync()
@@ -204,6 +217,7 @@ namespace RFiDGear.Tests.Reader
             if (_idle || page >= PageCount || RefusedWrites.Contains(page))
             {
                 _idle = true;
+                TagOnReader = !RemoveTagWhenAWriteOrAuthenticationIsRefused && TagOnReader;
 
                 throw AccessDenied();
             }
@@ -247,6 +261,7 @@ namespace RFiDGear.Tests.Reader
             if (_idle || AcceptedKey == null || !key.SequenceEqual(AcceptedKey))
             {
                 _idle = true;
+                TagOnReader = !RemoveTagWhenAWriteOrAuthenticationIsRefused && TagOnReader;
 
                 throw AccessDenied();
             }

@@ -696,7 +696,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     // Once. A wrong key is not tried again, and nothing is read or written after it.
                     LogUltralightFailure(request.Operation, call.ToString(), e);
 
-                    return new UltralightResult(ElatecUltralightErrors.Classify(e, call), null, variant, false, 0, null);
+                    return new UltralightResult(await ClassifyFaultAsync(e, call), null, variant, false, 0, null);
                 }
             }
 
@@ -752,6 +752,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return (ERROR.ProtocolConstraint, null);
             }
 
+            var toldSubType = sighting.SubType;
+
             if (sighting.SubType == MifareChipSubType.MifareUltralightC)
             {
                 return (ERROR.NoError, UltralightMemoryMap.For(UltralightVariant.C));
@@ -793,6 +795,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             if (!sighting.TagFound)
             {
                 return (ERROR.TransportError, null);
+            }
+
+            // It must still be the chip that was told: a tag that was swapped for another between the two selections is not given
+            // the layout of an Ultralight, and no page of it is touched.
+            if (sighting.SubType != toldSubType)
+            {
+                return (ERROR.ProtocolConstraint, null);
             }
 
             return (ERROR.NoError, UltralightMemoryMap.For(expected == UltralightExpectation.C ? UltralightVariant.C : UltralightVariant.Plain));
@@ -847,7 +856,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 LogUltralightFailure(UltralightOperation.Read, UltralightCall.Read.ToString(), e);
 
-                return (ElatecUltralightErrors.Classify(e, UltralightCall.Read), null);
+                return (await ClassifyFaultAsync(e, UltralightCall.Read), null);
             }
 
             if (block == null || block.Length < UltralightMemoryMap.PageSize)
@@ -882,7 +891,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     // One attempt: the page that was refused is not written again, and no later page is written.
                     LogUltralightFailure(UltralightOperation.Write, UltralightCall.Write.ToString(), e);
 
-                    return new UltralightResult(ElatecUltralightErrors.Classify(e, UltralightCall.Write), null, variant, authenticated, written, page);
+                    return new UltralightResult(await ClassifyFaultAsync(e, UltralightCall.Write), null, variant, authenticated, written, page);
                 }
 
                 written++;
@@ -916,11 +925,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return new UltralightResult(ERROR.NoError, null, variant, authenticated, written, null);
         }
 
-        private async Task<ERROR> ClassifyRefusalAsync()
+        // Elatec.NET throws "AccessDenied" whenever the reader says no, and it says no to a tag that was taken away as well as to a
+        // page or a key that the chip refused. So a refusal is looked at once: the tag is still there (the card said no: the error
+        // stays what the call made of it), or it is gone (a transport error, and not a wrong key or a locked page). A look at the
+        // antenna, never a second attempt.
+        private async Task<ERROR> ClassifyFaultAsync(Exception exception, UltralightCall call)
+        {
+            var error = ElatecUltralightErrors.Classify(exception, call);
+
+            return error == ERROR.AuthFailure || error == ERROR.PermissionDenied ? await ClassifyRefusalAsync(error) : error;
+        }
+
+        private async Task<ERROR> ClassifyRefusalAsync(ERROR whenTheTagIsThere = ERROR.PermissionDenied)
         {
             try
             {
-                return await IsUltralightTagPresentAsync() ? ERROR.PermissionDenied : ERROR.TransportError;
+                return await IsUltralightTagPresentAsync() ? whenTheTagIsThere : ERROR.TransportError;
             }
             catch (Exception e) when (!(e is OperationCanceledException))
             {

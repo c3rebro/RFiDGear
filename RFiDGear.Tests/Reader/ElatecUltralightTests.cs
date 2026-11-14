@@ -314,6 +314,7 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(101, result.FailedPage);
             Assert.Equal(new[] { "write 100", "write 101" }, reader.Calls.Where(c => c.StartsWith("write", StringComparison.Ordinal)));
             Assert.Equal(0, reader.CountStartingWith("read"));
+            Assert.Equal(1, reader.CountOf("present"));   // the tag is still there: the card said no, after one look and no second attempt
         }
 
         [Fact]
@@ -375,6 +376,7 @@ namespace RFiDGear.Tests.Reader
             Assert.False(result.Authenticated);
             Assert.Equal(1, reader.CountOf("pwd"));
             Assert.Equal(0, reader.CountStartingWith("read"));
+            Assert.Equal(1, reader.CountOf("present"));   // the tag is still there: the key was wrong, after one look and no second attempt
             Assert.All(reader.SecretsReceived, secret => Assert.All(secret, b => Assert.Equal(0, b)));
         }
 
@@ -623,6 +625,56 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(4, result.PagesDone);
             Assert.Equal(key, Pages(reader, 44, 4));
             Assert.Equal(0, reader.CountStartingWith("read"));
+        }
+
+        // ── a refusal that is none: the library says "AccessDenied" whenever the reader says no, and so it does for a tag that is gone ──
+
+        [Fact]
+        public async Task ATagThatWasTakenAwayDuringAWrite_IsATransportError_AndNotARefusedPage()
+        {
+            var reader = new UltralightTestReader(UltralightVariant.Ntag215) { RemoveTagWhenAWriteOrAuthenticationIsRefused = true };
+            reader.RefusedWrites.Add(101);
+
+            var result = await reader.WriteMifareUltralightPagesAsync(Ntag215(), 100, Convert.FromHexString("A1B2C3D401020304"));
+
+            Assert.Equal(ERROR.TransportError, result.Error);
+            Assert.Equal(1, result.PagesDone);
+            Assert.Equal(101, result.FailedPage);
+
+            // One look at the antenna after the refusal, and the refused page is not written again.
+            Assert.Equal(new[] { "write 100", "write 101", "present" }, reader.Calls.Where(c => c.StartsWith("write", StringComparison.Ordinal) || c == "present"));
+        }
+
+        [Fact]
+        public async Task ATagThatWasTakenAwayDuringTheAuthentication_IsATransportError_AndNotAWrongPassword()
+        {
+            var reader = new UltralightTestReader(UltralightVariant.Ntag215)
+            {
+                AcceptedKey = Convert.FromHexString("00000000"),
+                RemoveTagWhenAWriteOrAuthenticationIsRefused = true
+            };
+            var access = new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "5566");
+
+            var result = await reader.ReadMifareUltralightPagesAsync(access, 4, 2);
+
+            Assert.Equal(ERROR.TransportError, result.Error);
+            Assert.False(result.Authenticated);
+            Assert.Equal(new[] { "select", "version", "pwd", "present" }, reader.Calls);
+        }
+
+        [Theory]
+        [InlineData(MifareChipSubType.Mifare1K)]
+        [InlineData(MifareChipSubType.MifareUltralightC)]
+        public async Task ATagThatWasSwappedBetweenTheTwoSelections_IsNotGivenALayout(MifareChipSubType later)
+        {
+            // GET_VERSION was refused and the tag is selected again: it must still be the chip that was told, or no page is touched.
+            var reader = new UltralightTestReader(UltralightVariant.Plain) { SubTypeOfLaterSelections = later };
+
+            var result = await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1);
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Null(result.Variant);
+            Assert.Equal(new[] { "select", "version", "select" }, reader.Calls);
         }
 
         // ── the request and the access ──

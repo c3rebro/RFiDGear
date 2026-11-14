@@ -38,6 +38,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 case ReaderException _:
                     return TryGetReaderError(exception, out var error) ? Classify(error, call) : ERROR.Unknown;
 
+                case TwnException twn when twn.ErrorNumber == ResponseError.UnknownFunction:
+                    // The conversation worked and the reader said it cannot do that: its firmware lacks the command.
+                    return ERROR.ProtocolConstraint;
+
                 case TwnException _:
                 case IOException _:
                 case TimeoutException _:
