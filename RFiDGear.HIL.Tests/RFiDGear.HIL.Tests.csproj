@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- xunit.v3 test projects are executables; dotnet test and the test explorer run them through the VSTest adapter. -->
+    <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64;x86</Platforms>
@@ -14,8 +16,10 @@
   <ItemGroup>
     <PackageReference Include="Elatec.NET" Version="0.7.0-beta.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="xunit" Version="2.8.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
+    <!-- xunit.v3 without Microsoft.Testing.Platform: the .NET 10 SDK refuses to run a test project that is built on it through
+         the VSTest path of dotnet test, and Run-HilTests.ps1 and the filters of this repository use that path. -->
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear\RFiDGear.csproj" />

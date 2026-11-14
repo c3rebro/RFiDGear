@@ -35,6 +35,14 @@ public sealed class MefHelper : IDisposable
     private readonly Func<string, ComposablePartCatalog> _catalogFactory;
     private IReadOnlyList<ExtensionLoadResult> _lastLoadResults = Array.Empty<ExtensionLoadResult>();
 
+    /// <summary>
+    /// The assembly of the application itself, whose exports the container starts with and whose name names the extensions
+    /// folder. It is this assembly and not the entry assembly of the process: the two are the same in the application, but when
+    /// the code runs under a test project that is an executable (xunit.v3 test projects are), the entry assembly is the test
+    /// assembly, whose deliberately broken exports would then be composed into every container.
+    /// </summary>
+    private static Assembly HostAssembly => typeof(MefHelper).Assembly;
+
     #region Constructor / Destructor
 
     /// <summary>
@@ -44,8 +52,7 @@ public sealed class MefHelper : IDisposable
     private MefHelper()
     {
         var programDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-        var assembly = Assembly.GetEntryAssembly();
-        var applicationName = assembly?.GetName().Name;
+        var applicationName = HostAssembly.GetName().Name;
 
         _ExtensionsPath = BuildExtensionsPath(programDataPath, applicationName);
         _catalogFactory = CreateAssemblyCatalog;
@@ -149,7 +156,7 @@ public sealed class MefHelper : IDisposable
     /// </remarks>
     public void Compose()
     {
-        var hostAssembly = _hostAssembly ?? Assembly.GetEntryAssembly();
+        var hostAssembly = _hostAssembly ?? HostAssembly;
         var results = new List<ExtensionLoadResult>();
 
         var container = BuildContainer(hostAssembly, results);

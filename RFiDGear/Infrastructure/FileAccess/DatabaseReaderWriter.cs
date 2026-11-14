@@ -9,6 +9,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.IO.Compression;
 using System.Windows;
+using System.Windows.Threading;
 
 using RFiDGear.Models;
 using RFiDGear.ViewModel;
@@ -247,14 +248,28 @@ namespace RFiDGear.Infrastructure.FileAccess
             var tcs = new TaskCompletionSource<object>();
             var thread = new Thread(() =>
             {
+                Exception failure = null;
+
                 try
                 {
                     action();
-                    tcs.SetResult(null);
                 }
                 catch (Exception ex)
                 {
-                    tcs.SetException(ex);
+                    failure = ex;
+                }
+                finally
+                {
+                    ShutDownDispatcherOfCurrentThread();
+                }
+
+                if (failure == null)
+                {
+                    tcs.SetResult(null);
+                }
+                else
+                {
+                    tcs.SetException(failure);
                 }
             })
             {
@@ -265,6 +280,25 @@ namespace RFiDGear.Infrastructure.FileAccess
             thread.Start();
 
             tcs.Task.GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Shuts down the dispatcher that the current thread got, if it got one. What the action of
+        /// <see cref="ExecuteOnStaThread"/> creates can register with it (the weak event table of WPF does). A thread that ends with
+        /// its dispatcher still running leaves that to process exit, where WPF asks each such dispatcher to run a clean-up and waits
+        /// for a thread that is gone to answer: a timeout for every thread that ever read a project.
+        /// </summary>
+        private void ShutDownDispatcherOfCurrentThread()
+        {
+            try
+            {
+                Dispatcher.FromThread(Thread.CurrentThread)?.InvokeShutdown();
+            }
+            catch (Exception e)
+            {
+                // The result of the action is what the caller waits for; a dispatcher that does not go quietly must not keep it.
+                logger.Warning(e, "The dispatcher of a temporary STA thread could not be shut down");
+            }
         }
 
         private void LogNewerManifest(string manifestVersion)

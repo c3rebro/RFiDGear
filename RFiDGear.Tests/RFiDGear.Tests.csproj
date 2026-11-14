@@ -1,18 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- xunit.v3 test projects are executables; dotnet test and the test explorer run them through the VSTest adapter. -->
+    <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- The analyzers that come with xunit.v3 advise on tests that were written for xunit 2, and none of it was reported before
+         the move: xUnit1051 (pass TestContext.Current.CancellationToken, about 240 calls), xUnit2031 and xUnit2029 (overloads
+         of Assert.Single and Assert.DoesNotContain), xUnit1069 (a test with a Timeout) and xUnit1073 (the collections of the
+         hardware tests that are linked in and not used here). They are a follow-up of their own; xUnit1031 is not hidden. -->
+    <NoWarn>$(NoWarn);xUnit1051;xUnit2031;xUnit2029;xUnit1069;xUnit1073</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="xunit" Version="2.8.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
+    <!-- xunit.v3 without Microsoft.Testing.Platform: the .NET 10 SDK refuses to run a test project that is built on it through
+         the VSTest path of dotnet test, and the filters, loggers and scripts of this repository use that path. -->
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
     <!-- A real SQL engine for the order store's tests only; it is not shipped and the library does not use it. -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
   </ItemGroup>

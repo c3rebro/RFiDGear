@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
+using System.Windows.Threading;
 using RFiDGear.ViewModel;
 using Xunit;
 
@@ -36,6 +37,34 @@ namespace RFiDGear.Tests
             });
 
             Assert.Equal(ApartmentState.STA, observedState);
+        }
+
+        // Objects made on that thread can register with its dispatcher (the weak event table of WPF does). A thread that
+        // ends with its dispatcher running leaves the registration to process exit, where WPF asks every such dispatcher to
+        // run a clean-up and waits for the answer of a thread that is gone, once per thread: about half a second each in the
+        // tests that read projects, and a test process that did not end within the ten seconds xunit.v3 allows.
+        [Fact]
+        public async Task ExecuteOnStaThread_WhenApplicationIsNull_ShutsDownTheDispatcherItsThreadGotUsed()
+        {
+            var readerWriter = new DatabaseReaderWriter(new ProjectManager());
+            var method = typeof(DatabaseReaderWriter).GetMethod(
+                "ExecuteOnStaThread",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.NotNull(method);
+
+            Dispatcher dispatcherOfTheThread = null;
+
+            await Task.Run(() =>
+            {
+                method.Invoke(readerWriter, new object[]
+                {
+                    (Action)(() => dispatcherOfTheThread = Dispatcher.CurrentDispatcher)
+                });
+            });
+
+            Assert.NotNull(dispatcherOfTheThread);
+            Assert.True(dispatcherOfTheThread.HasShutdownFinished);
         }
 
         [Fact]

@@ -142,11 +142,12 @@ the hardware.
 
 `DesfireWorkflowTests` need a reader with a DESFire card and are not gated by
 `hil.settings.json`: they open the reader on every run of this project. They
-try to skip themselves when no reader is found, but xunit 2 reports the dynamic
-skip of the assert library as a failure whose message starts with
-`$XunitDynamicSkip$` and goes on with the reason ("No reader detected ...").
-`Run-HilTests.ps1` knows this and counts such a failure as skipped; a plain
-`dotnet test` shows it as failed.
+skip themselves when no reader is found ("No reader detected ..."), and xunit.v3
+reports that as a skip, in `dotnet test` and in the report of
+`Run-HilTests.ps1`.
+(xunit 2, which these tests used before, reported the dynamic skip of the assert
+library as a failure whose message starts with `$XunitDynamicSkip$`; the script
+still counts such a failure as skipped, for a report of an older build.)
 
 The reader-scan tests are gated differently. Without the settings file, or with
 `readerScan` off, they are real skips, decided when the tests are discovered.

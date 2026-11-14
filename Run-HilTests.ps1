@@ -344,7 +344,8 @@ if (Test-Path $TrxFile) {
         switch ($r.Node.outcome) {
             'Passed' { $passed++ }
             'Failed' {
-                # xunit 2.x dynamic skip shows as Failed with $XunitDynamicSkip$ prefix
+                # xunit.v3 reports a dynamic skip as NotExecuted, which the default branch counts as skipped. xunit 2 reported it as
+                # Failed with the prefix $XunitDynamicSkip$; that is kept for a trx file of an older build.
                 $msg = $r.Node.Output.ErrorInfo.Message
                 if ($msg -and $msg.StartsWith('$XunitDynamicSkip$')) {
                     $skipped++

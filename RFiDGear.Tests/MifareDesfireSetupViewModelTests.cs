@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace RFiDGear.Tests
 {

@@ -10,7 +10,11 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task Execute_PropagatesExceptionsFromExecutionTask()
         {
-            var command = new AsyncRelayCommand(() => Task.FromException(new InvalidOperationException("Boom")));
+            // FlowExceptionsToTaskScheduler: Execute does not rethrow the exception from an async void method as well, which
+            // xunit.v3 would report as a fatal error of the run; the exception stays in ExecutionTask, which this test is about.
+            var command = new AsyncRelayCommand(
+                () => Task.FromException(new InvalidOperationException("Boom")),
+                AsyncRelayCommandOptions.FlowExceptionsToTaskScheduler);
 
             command.Execute(null);
 

@@ -24,7 +24,7 @@ namespace RFiDGear.HIL.Tests
     /// </para>
     /// </summary>
     [Collection("HILReader")]
-    [TestCaseOrderer("RFiDGear.HIL.Tests.HilCaseOrderer", "RFiDGear.HIL.Tests")]
+    [TestCaseOrderer(typeof(HilCaseOrderer))]
     public sealed class ReaderScanTests
     {
         private readonly HilReaderFixture _fixture;
