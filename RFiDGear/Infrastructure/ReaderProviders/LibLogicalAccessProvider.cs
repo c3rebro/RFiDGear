@@ -14,6 +14,7 @@ using System.Globalization;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.Infrastructure.Ultralight;
 using Serilog;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
@@ -201,6 +202,30 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return Task.FromResult(ERROR.TransportError);
         }
 
+        /// <summary>
+        /// Describes the chips that need no command of the card to be described: those of the Ultralight family, and those that
+        /// LibLogicalAccess names with a type this application has no value for (an NTAG215 is "__UNSUPPORTED__UNKNOWN" to it).
+        /// </summary>
+        /// <param name="uidAsString">The UID of the chip as text.</param>
+        /// <param name="cardType">The card type that LibLogicalAccess gave the chip.</param>
+        /// <returns>The model, or <c>null</c> for a chip that is described with the commands of the card (DESFire, Classic).</returns>
+        internal static GenericChipModel DescribeUltralightOrUnknownChip(string uidAsString, string cardType)
+        {
+            // A name of CARD_TYPE and not a number: Enum.TryParse would take "4096" for MifareClassic.
+            if (string.IsNullOrEmpty(cardType) || char.IsDigit(cardType[0]) || cardType[0] == '-'
+                || !Enum.TryParse(cardType, false, out CARD_TYPE chipType) || !Enum.IsDefined(typeof(CARD_TYPE), chipType))
+            {
+                return new GenericChipModel(uidAsString, CARD_TYPE.Unspecified);
+            }
+
+            if (chipType == CARD_TYPE.MifareUltralight || chipType == CARD_TYPE.MifareUltralightC || chipType == CARD_TYPE.MifareUltralightC_EV1)
+            {
+                return new MifareUltralightChipModel(uidAsString, chipType);
+            }
+
+            return null;
+        }
+
         public override async Task<ERROR> ReadChipPublic()
         {
             try
@@ -220,6 +245,17 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         try
                         {
                             var uidAsString = ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray());
+
+                            // Before the masks below: 0x9000 & 0x1000 == 0x1000, so an Ultralight matches the mask of the Classic chips.
+                            var described = DescribeUltralightOrUnknownChip(uidAsString, card.getCardType());
+
+                            if (described != null)
+                            {
+                                GenericChip = described;
+
+                                return ERROR.NoError;
+                            }
+
                             var chipType = (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType());
 
                             if ((chipType & CARD_TYPE.DESFire) == CARD_TYPE.DESFire)
@@ -773,37 +809,398 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region mifare ultralight
 
-        public override async Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
+        /// <summary>What the PC/SC reader found: whether a chip answered and what LibLogicalAccess calls it.</summary>
+        protected readonly struct PcscUltralightSighting : IEquatable<PcscUltralightSighting>
+        {
+            /// <summary>Creates the sighting.</summary>
+            /// <param name="chipFound">Whether a chip answered.</param>
+            /// <param name="cardType">The card type of LibLogicalAccess ("MifareUltralight", "MifareUltralightC", or the name it gives a chip it does not know), or <c>null</c>.</param>
+            public PcscUltralightSighting(bool chipFound, string cardType)
+            {
+                ChipFound = chipFound;
+                CardType = cardType;
+            }
+
+            /// <summary>Gets a value that says whether a chip answered.</summary>
+            public bool ChipFound { get; }
+
+            /// <summary>Gets the card type of LibLogicalAccess, or <c>null</c>.</summary>
+            public string CardType { get; }
+
+            /// <summary>Whether two sightings are the same.</summary>
+            /// <param name="left">The first sighting.</param>
+            /// <param name="right">The second sighting.</param>
+            /// <returns><c>true</c> when they are equal.</returns>
+            public static bool operator ==(PcscUltralightSighting left, PcscUltralightSighting right) => left.Equals(right);
+
+            /// <summary>Whether two sightings differ.</summary>
+            /// <param name="left">The first sighting.</param>
+            /// <param name="right">The second sighting.</param>
+            /// <returns><c>true</c> when they are not equal.</returns>
+            public static bool operator !=(PcscUltralightSighting left, PcscUltralightSighting right) => !left.Equals(right);
+
+            /// <inheritdoc />
+            public bool Equals(PcscUltralightSighting other) => ChipFound == other.ChipFound && string.Equals(CardType, other.CardType, StringComparison.Ordinal);
+
+            /// <inheritdoc />
+            public override bool Equals(object obj) => obj is PcscUltralightSighting other && Equals(other);
+
+            /// <inheritdoc />
+            public override int GetHashCode() => HashCode.Combine(ChipFound, CardType);
+        }
+
+        // The chip of the call that is running: set by the selection, used by the page operations after it.
+        private Chip ultralightChip;
+
+        /// <summary>Connects to the chip on the reader and tells what LibLogicalAccess calls it; the first call of every page operation. Overridden by the tests.</summary>
+        /// <returns>What the reader found.</returns>
+        protected virtual async Task<PcscUltralightSighting> SelectPcscUltralightChipAsync()
+        {
+            ultralightChip = null;
+
+            if (!await tryInitReader())
+            {
+                return new PcscUltralightSighting(false, null);
+            }
+
+            return await Task.Run(() => TranslateCardFault(() =>
+            {
+                var chip = readerUnit.getSingleChip();
+                ultralightChip = chip;
+
+                return chip == null ? new PcscUltralightSighting(false, null) : new PcscUltralightSighting(true, chip.getCardType());
+            }));
+        }
+
+        /// <summary>Reads one page (4 bytes). Overridden by the tests.</summary>
+        /// <param name="page">The page.</param>
+        /// <returns>The bytes the chip answered with.</returns>
+        protected virtual Task<byte[]> ReadPcscUltralightPageAsync(int page) =>
+            Task.Run(() => TranslateCardFault(() =>
+            {
+                using (var bytes = PcscUltralightCommands().readPage(page))
+                {
+                    return bytes.ToArray();
+                }
+            }));
+
+        /// <summary>Writes one page (4 bytes). Overridden by the tests.</summary>
+        /// <param name="page">The page.</param>
+        /// <param name="data">The 4 bytes.</param>
+        /// <returns>A task that ends when the page was written.</returns>
+        protected virtual Task WritePcscUltralightPageAsync(int page, byte[] data) =>
+            Task.Run(() => TranslateCardFault(() =>
+            {
+                using (var bytes = new ByteVector(data))
+                {
+                    PcscUltralightCommands().writePage(page, bytes);
+                }
+
+                return true;
+            }));
+
+        /// <summary>Authenticates to an Ultralight C with its 16-byte key (once). Overridden by the tests.</summary>
+        /// <param name="key">The 16 bytes of the key.</param>
+        /// <returns>A task that ends when the chip took the key.</returns>
+        protected virtual Task AuthenticatePcscUltralightCAsync(byte[] key) =>
+            Task.Run(() => TranslateCardFault(() =>
+            {
+                var commands = (ultralightChip as MifareUltralightCChip)?.getMifareUltralightCCommands()
+                               ?? throw new PcscCardRefusal(CardException.ErrorType.FUNCTION_NOT_SUPPORTED);
+
+                using (var bytes = new ByteVector(key))
+                using (var tripleDes = new TripleDESKey(bytes))
+                {
+                    try
+                    {
+                        commands.authenticate(tripleDes);
+                    }
+                    finally
+                    {
+                        // What is cleared here is the copy of the native objects; the arrays of the request are cleared by the request.
+                        tripleDes.clear();
+                        bytes.Clear();
+                    }
+                }
+
+                return true;
+            }));
+
+        private MifareUltralightCommands PcscUltralightCommands() =>
+            (ultralightChip as MifareUltralightChip)?.getMifareUltralightCommands()
+            ?? throw new PcscCardRefusal(CardException.ErrorType.FUNCTION_NOT_SUPPORTED);
+
+        // The native card exception becomes a managed one that carries its error code and nothing else.
+        private static T TranslateCardFault<T>(Func<T> call)
         {
             try
             {
-                if (await tryInitReader())
-                {
-                    ReaderUnitName = readerUnit.getConnectedName();
-                    RawFormat format = new RawFormat();
-
-                    var chip = readerUnit.getSingleChip() as MifareUltralightChip;
-
-                    var service = chip.getService(CardServiceType.CST_STORAGE) as StorageCardService;
-
-                    Location location = chip.createLocation() as Location;
-
-                    if (chip.getCardType() == "MifareUltralight")
-                    {
-                        var cmd = chip.getCommands() as MifareUltralightCommands;
-                        MifareUltralightPageData = cmd.readPages(_pageNo, _pageNo).ToArray();
-                    }
-
-                    return ERROR.NoError;
-                }
-                return ERROR.NoError;
+                return call();
             }
-            catch (Exception e)
+            catch (CardException e)
             {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                return ERROR.TransportError;
+                throw new PcscCardRefusal(e.error_code());
             }
         }
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> ReadMifareUltralightPagesAsync(UltralightAccess access, int startPage, int pageCount) =>
+            PerformPcscUltralightAsync(UltralightRequest.ForRead(access, startPage, pageCount));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            PerformPcscUltralightAsync(UltralightRequest.ForWrite(access, startPage, data));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
+            PerformPcscUltralightAsync(UltralightRequest.ForAuthenticate(access));
+
+        /// <inheritdoc />
+        public override async Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
+        {
+            var result = await ReadMifareUltralightPagesAsync(UltralightAccess.Open(), _pageNo, 1);
+
+            MifareUltralightPageData = result.Data;
+
+            return result.Error;
+        }
+
+        // One call is one boundary: what is wrong with the call itself, and what LibLogicalAccess cannot do, is found before the card
+        // is touched; then the chip is selected and told, the call is checked against what it is, the key is sent once, and the work is
+        // done. Nothing is repeated after a refusal. The bytes of the key are cleared when the request is disposed, whatever happens.
+        private async Task<UltralightResult> PerformPcscUltralightAsync(UltralightRequest request)
+        {
+            using (request)
+            {
+                if (request.Error != ERROR.NoError)
+                {
+                    return UltralightResult.Failed(request.Error);
+                }
+
+                // LibLogicalAccess knows the plain Ultralight and the Ultralight C, and has no command for the password of an
+                // Ultralight EV1 and an NTAG: those are a protocol constraint, and no card is asked.
+                if (!IsWhatLibLogicalAccessKnows(request.Access))
+                {
+                    return UltralightResult.Failed(ERROR.ProtocolConstraint);
+                }
+
+                try
+                {
+                    return await RunPcscUltralightAsync(request);
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // A fault outside the calls that classify their own.
+                    LogPcscUltralightFailure(request.Operation, "unexpected", e);
+
+                    return UltralightResult.Failed(PcscUltralightErrors.Classify(e, UltralightCall.Select));
+                }
+            }
+        }
+
+        private static bool IsWhatLibLogicalAccessKnows(UltralightAccess access)
+        {
+            if (access.Auth == UltralightAuth.Password)
+            {
+                return false;
+            }
+
+            return !access.Expected.TryGetVariant(out var variant) || variant == UltralightVariant.Plain || variant == UltralightVariant.C;
+        }
+
+        // What LibLogicalAccess calls a chip it knows. It gives an Ultralight EV1 and an NTAG the name of a chip it does not know
+        // (an NTAG215 was seen as "__UNSUPPORTED__UNKNOWN"), so they have no layout here and are refused, never guessed at.
+        private static UltralightMemoryMap MapOfPcscCardType(string cardType)
+        {
+            switch (cardType)
+            {
+                case "MifareUltralight":
+                    return UltralightMemoryMap.For(UltralightVariant.Plain);
+
+                case "MifareUltralightC":
+                    return UltralightMemoryMap.For(UltralightVariant.C);
+
+                default:
+                    return null;
+            }
+        }
+
+        private async Task<UltralightResult> RunPcscUltralightAsync(UltralightRequest request)
+        {
+            PcscUltralightSighting sighting;
+
+            try
+            {
+                sighting = await SelectPcscUltralightChipAsync();
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogPcscUltralightFailure(request.Operation, UltralightCall.Select.ToString(), e);
+
+                return UltralightResult.Failed(PcscUltralightErrors.Classify(e, UltralightCall.Select));
+            }
+
+            if (!sighting.ChipFound)
+            {
+                return UltralightResult.Failed(ERROR.TransportError);
+            }
+
+            var map = MapOfPcscCardType(sighting.CardType);
+
+            if (map == null)
+            {
+                return UltralightResult.Failed(ERROR.ProtocolConstraint);
+            }
+
+            var variant = map.Variant;
+            var check = request.CheckAgainst(map);
+
+            if (check != ERROR.NoError)
+            {
+                return new UltralightResult(check, null, variant, false, 0, null);
+            }
+
+            var authenticated = false;
+
+            if (request.Access.Auth == UltralightAuth.UltralightC)
+            {
+                try
+                {
+                    await AuthenticatePcscUltralightCAsync(request.Key);
+
+                    authenticated = true;
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // Once. A wrong key is not tried again, and nothing is read or written after it.
+                    LogPcscUltralightFailure(request.Operation, UltralightCall.AuthUltralightC.ToString(), e);
+
+                    return new UltralightResult(PcscUltralightErrors.Classify(e, UltralightCall.AuthUltralightC), null, variant, false, 0, null);
+                }
+            }
+
+            switch (request.Operation)
+            {
+                case UltralightOperation.Read:
+                    return await ReadPcscRangeAsync(request.StartPage, request.PageCount, variant, authenticated);
+
+                case UltralightOperation.Write:
+                    return await WritePcscRangeAsync(request, map, authenticated);
+
+                default:
+                    return new UltralightResult(ERROR.NoError, null, variant, authenticated, 0, null);
+            }
+        }
+
+        // One page per call: the range is never asked for in one piece, so a page that cannot be read is a refusal of that page and not
+        // a short answer for the range, and the pages before it are kept.
+        private async Task<UltralightResult> ReadPcscRangeAsync(int startPage, int pageCount, UltralightVariant variant, bool authenticated)
+        {
+            var data = new byte[pageCount * UltralightMemoryMap.PageSize];
+
+            for (var done = 0; done < pageCount; done++)
+            {
+                var page = startPage + done;
+                var (error, content) = await ReadPcscOnePageAsync(page);
+
+                if (error != ERROR.NoError)
+                {
+                    return new UltralightResult(error, data.Take(done * UltralightMemoryMap.PageSize).ToArray(), variant, authenticated, done, page);
+                }
+
+                Array.Copy(content, 0, data, done * UltralightMemoryMap.PageSize, UltralightMemoryMap.PageSize);
+            }
+
+            return new UltralightResult(ERROR.NoError, data, variant, authenticated, pageCount, null);
+        }
+
+        private async Task<(ERROR Error, byte[] Page)> ReadPcscOnePageAsync(int page)
+        {
+            byte[] bytes;
+
+            try
+            {
+                bytes = await ReadPcscUltralightPageAsync(page);
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogPcscUltralightFailure(UltralightOperation.Read, UltralightCall.Read.ToString(), e);
+
+                return (PcscUltralightErrors.Classify(e, UltralightCall.Read), null);
+            }
+
+            // An empty or a short answer is no page, and never a success (the old code answered NoError whether or not it read).
+            if (bytes == null || bytes.Length < UltralightMemoryMap.PageSize)
+            {
+                return (ERROR.Unknown, null);
+            }
+
+            var content = new byte[UltralightMemoryMap.PageSize];
+            Array.Copy(bytes, 0, content, 0, UltralightMemoryMap.PageSize);
+
+            return (ERROR.NoError, content);
+        }
+
+        private async Task<UltralightResult> WritePcscRangeAsync(UltralightRequest request, UltralightMemoryMap map, bool authenticated)
+        {
+            var variant = map.Variant;
+            var written = 0;
+
+            while (written < request.PageCount)
+            {
+                var page = request.StartPage + written;
+                var chunk = new byte[UltralightMemoryMap.PageSize];
+                Array.Copy(request.Data, written * UltralightMemoryMap.PageSize, chunk, 0, UltralightMemoryMap.PageSize);
+
+                try
+                {
+                    await WritePcscUltralightPageAsync(page, chunk);
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // One attempt: the page that was refused is not written again, and no later page is written.
+                    LogPcscUltralightFailure(UltralightOperation.Write, UltralightCall.Write.ToString(), e);
+
+                    return new UltralightResult(PcscUltralightErrors.Classify(e, UltralightCall.Write), null, variant, authenticated, written, page);
+                }
+
+                written++;
+            }
+
+            // What the call returned says nothing about the page: every page is read back (reads only, no second write), except those
+            // that cannot read back as they were written (the key of an Ultralight C).
+            for (var i = 0; i < request.PageCount; i++)
+            {
+                var page = request.StartPage + i;
+
+                if (!map.ReadsBackAsWritten(page))
+                {
+                    continue;
+                }
+
+                var (error, content) = await ReadPcscOnePageAsync(page);
+
+                if (error != ERROR.NoError)
+                {
+                    return new UltralightResult(error, null, variant, authenticated, written, page);
+                }
+
+                if (!content.AsSpan().SequenceEqual(request.Data.AsSpan(i * UltralightMemoryMap.PageSize, UltralightMemoryMap.PageSize)))
+                {
+                    return new UltralightResult(ERROR.Unknown, null, variant, authenticated, written, page);
+                }
+            }
+
+            return new UltralightResult(ERROR.NoError, null, variant, authenticated, written, null);
+        }
+
+        // The log gets the operation, the call, and the name of the exception type and card error code: never a key, a UID or the text of an exception.
+        private static void LogPcscUltralightFailure(UltralightOperation operation, string call, Exception exception) =>
+            Log.ForContext<LibLogicalAccessProvider>().Warning(
+                "PC/SC Ultralight {Operation} failed at {Call}: {Fault}",
+                operation,
+                call,
+                PcscUltralightErrors.Describe(exception));
 
         #endregion mifare ultralight
 

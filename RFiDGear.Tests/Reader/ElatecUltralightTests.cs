@@ -505,17 +505,6 @@ namespace RFiDGear.Tests.Reader
             }
         }
 
-        [Fact]
-        public async Task AReaderThatHasNoPageOperations_AnswersProtocolConstraint()
-        {
-            // The PC/SC reader keeps the default of the base class until it gets its own operations.
-            var reader = new LibLogicalAccessProvider();
-
-            Assert.Equal(ERROR.ProtocolConstraint, (await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1)).Error);
-            Assert.Equal(ERROR.ProtocolConstraint, (await reader.WriteMifareUltralightPagesAsync(UltralightAccess.Open(), 4, new byte[4])).Error);
-            Assert.Equal(ERROR.ProtocolConstraint, (await reader.AuthenticateMifareUltralightAsync(UltralightAccess.Open())).Error);
-        }
-
         // ── what a READ gives besides the page that was asked for, and what a chip hides ──
 
         [Fact]
