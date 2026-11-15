@@ -28,6 +28,35 @@ namespace RFiDGear.Services.Sam
         }
 
         /// <inheritdoc />
+        public byte[]? ReadAtr(string readerName)
+        {
+            var unit = GetProvider().getReaderList().FirstOrDefault(reader => reader.getName() == readerName);
+
+            if (unit == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                // Not connect(): the library knows the ATR as soon as it sees the card (probed: isConnected stays false), and
+                // connect() opens the card, which lets the library identify the chip on its own.
+                if (!(unit.connectToReader() && unit.waitInsertion(InsertionWaitMilliseconds)))
+                {
+                    return null;
+                }
+
+                var atr = (unit as PCSCReaderUnit)?.getATR()?.ToArray();
+
+                return atr == null || atr.Length == 0 ? null : atr;
+            }
+            finally
+            {
+                Release(unit);
+            }
+        }
+
+        /// <inheritdoc />
         public ISamCardConnection? Connect(string readerName)
         {
             var unit = GetProvider().getReaderList().FirstOrDefault(reader => reader.getName() == readerName);

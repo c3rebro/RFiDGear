@@ -33,26 +33,28 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
-        public void A_search_sends_nothing_to_any_card_and_lets_go_of_every_one()
+        public void A_search_connects_to_no_card_and_so_sends_no_command_to_any()
         {
             var source = Bench().With("Another reader", SamTestData.DesfireAtr);
 
             new SamReaderFinder(source).Find();
 
-            Assert.NotEmpty(source.Handed);
-            Assert.All(source.Handed, handed => Assert.Empty(handed.Transport.Sent));
-            Assert.All(source.Handed, handed => Assert.True(handed.Connection.Disposed, handed.Name + " was not let go of"));
+            // The ATR of every card is read, and no card is opened for it: a connection is what lets the library talk to a card.
+            Assert.Contains(ContactReader, source.AtrRead);
+            Assert.Contains("Another reader", source.AtrRead);
+            Assert.Empty(source.Connected);
+            Assert.Empty(source.Handed);
         }
 
         [Fact]
-        public void The_virtual_reader_of_windows_hello_is_not_even_connected_to()
+        public void The_virtual_reader_of_windows_hello_is_not_even_looked_at()
         {
             var source = Bench();
 
             new SamReaderFinder(source).Find();
 
-            Assert.DoesNotContain(HelloReader, source.Connected);
-            Assert.Contains(ContactReader, source.Connected);
+            Assert.DoesNotContain(HelloReader, source.AtrRead);
+            Assert.Contains(ContactReader, source.AtrRead);
         }
 
         [Fact]
@@ -73,7 +75,7 @@ namespace RFiDGear.Tests.Sam
             var source = new FakeSamReaderSource()
                 .With("Broken", SamTestData.SamAtr)
                 .With("Good", SamTestData.SamAtr);
-            source.ConnectFails["Broken"] = new InvalidOperationException("PRIVATE-LIBRARY-TEXT");
+            source.AtrFails["Broken"] = new InvalidOperationException("PRIVATE-LIBRARY-TEXT");
 
             var result = new SamReaderFinder(source).Find();
 
@@ -108,7 +110,7 @@ namespace RFiDGear.Tests.Sam
 
             // A reader that fails is logged the same way, with no name of it.
             var failing = new FakeSamReaderSource().With("Broken-reader-name", SamTestData.SamAtr);
-            failing.ConnectFails["Broken-reader-name"] = new InvalidOperationException("PRIVATE-LIBRARY-TEXT");
+            failing.AtrFails["Broken-reader-name"] = new InvalidOperationException("PRIVATE-LIBRARY-TEXT");
 
             new SamReaderFinder(failing).Find();
 
@@ -151,13 +153,27 @@ namespace RFiDGear.Tests.Sam
             var source = Bench();
 
             Assert.Null(new SamReaderFinder(source).Open(readerName));
-            Assert.DoesNotContain(HelloReader, source.Connected);
+            Assert.Empty(source.Connected);
         }
 
         [Fact]
-        public void A_card_that_is_no_sam_gets_no_connection_and_is_let_go_of()
+        public void A_card_that_is_no_sam_is_never_connected_to()
         {
             var source = new FakeSamReaderSource().With("Reader", SamTestData.DesfireAtr);
+
+            var connection = new SamReaderFinder(source).Open("Reader");
+
+            Assert.Null(connection);
+            Assert.Contains("Reader", source.AtrRead);
+            Assert.Empty(source.Connected);
+            Assert.Empty(source.Handed);
+        }
+
+        [Fact]
+        public void A_card_that_was_swapped_between_the_look_and_the_connection_gets_no_command_and_is_let_go_of()
+        {
+            var source = new FakeSamReaderSource().With("Reader", SamTestData.SamAtr);
+            source.AtrOnConnect["Reader"] = SamTestData.DesfireAtr;
 
             var connection = new SamReaderFinder(source).Open("Reader");
 

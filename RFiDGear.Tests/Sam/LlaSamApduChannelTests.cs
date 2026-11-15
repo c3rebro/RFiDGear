@@ -108,13 +108,28 @@ namespace RFiDGear.Tests.Sam
         [Fact]
         public async Task The_blocking_call_to_the_reader_is_not_made_on_the_thread_of_the_caller()
         {
+            // The caller is a thread of its own that blocks until the answer is there, like a window that waits. It is not a thread
+            // of the pool, so the work that the channel queues can never be run by it, whatever the scheduler does.
             var transport = ScriptedSamTransport.Always(0x90, 0x00);
             var channel = new LlaSamApduChannel(transport);
-            var caller = Environment.CurrentManagedThreadId;
+            var done = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var caller = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    channel.TransmitAsync(new SamApdu(0x80, 0x60, 0x00, 0x00, null, 0x00)).GetAwaiter().GetResult();
+                    done.SetResult(Environment.CurrentManagedThreadId);
+                }
+                catch (Exception e)
+                {
+                    done.SetException(e);
+                }
+            });
 
-            await channel.TransmitAsync(new SamApdu(0x80, 0x60, 0x00, 0x00, null, 0x00));
+            caller.Start();
+            var callerThread = await done.Task;
 
-            Assert.NotEqual(caller, transport.LastThread);
+            Assert.NotEqual(callerThread, transport.LastThread);
         }
 
         [Fact]

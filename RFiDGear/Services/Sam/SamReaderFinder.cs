@@ -44,8 +44,9 @@ namespace RFiDGear.Services.Sam
     }
 
     /// <summary>
-    /// Finds the SAMs among the PC/SC readers: a card is a SAM when its ATR says <c>MIFARE SAM AV3</c>. The search reads the
-    /// ATR of each card and sends nothing to it.
+    /// Finds the SAMs among the PC/SC readers: a card is a SAM when its ATR says <c>MIFARE SAM AV3</c>. The search only reads
+    /// the ATR of each card from the state of the readers; it connects to no card and sends no command to any. Only a card that
+    /// is a SAM is connected to, by <see cref="Open"/>.
     /// </summary>
     internal sealed class SamReaderFinder
     {
@@ -89,11 +90,11 @@ namespace RFiDGear.Services.Sam
 
                 try
                 {
-                    using var connection = _source.Connect(name);
+                    var atr = _source.ReadAtr(name);
 
-                    if (connection != null && SamDetection.IsSamAv3(connection.Atr))
+                    if (atr != null && SamDetection.IsSamAv3(atr))
                     {
-                        found.Add(new SamReaderInfo(name, connection.Atr));
+                        found.Add(new SamReaderInfo(name, atr));
                     }
                 }
                 catch (Exception e) when (e is not OperationCanceledException)
@@ -116,6 +117,12 @@ namespace RFiDGear.Services.Sam
                 return null;
             }
 
+            // No connection to a card that is not a SAM: it is looked at first, without opening it.
+            if (!SamDetection.IsSamAv3(_source.ReadAtr(readerName)))
+            {
+                return null;
+            }
+
             var connection = _source.Connect(readerName);
 
             if (connection == null)
@@ -123,7 +130,7 @@ namespace RFiDGear.Services.Sam
                 return null;
             }
 
-            // The card may have been changed since the search: no command goes to a card that is not a SAM.
+            // The card may have been changed between the two: no command goes to a card that is not a SAM.
             if (!SamDetection.IsSamAv3(connection.Atr))
             {
                 connection.Dispose();

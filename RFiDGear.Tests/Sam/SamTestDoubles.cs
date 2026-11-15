@@ -110,8 +110,19 @@ namespace RFiDGear.Tests.Sam
         /// <summary>Readers whose connect throws, by name, with the exception to throw.</summary>
         internal Dictionary<string, Exception> ConnectFails { get; } = new Dictionary<string, Exception>();
 
+        /// <summary>Readers whose reading of the ATR throws, by name, with the exception to throw.</summary>
+        internal Dictionary<string, Exception> AtrFails { get; } = new Dictionary<string, Exception>();
+
+        /// <summary>
+        /// For a reader whose card was swapped between reading the ATR and connecting: the ATR that the connection then reports.
+        /// </summary>
+        internal Dictionary<string, byte[]> AtrOnConnect { get; } = new Dictionary<string, byte[]>();
+
         /// <summary>When set, listing the readers throws it.</summary>
         internal Exception? ListFails { get; set; }
+
+        /// <summary>The names whose ATR was read, in order. Reading it opens no card.</summary>
+        internal List<string> AtrRead { get; } = new List<string>();
 
         /// <summary>The names that were connected to, in order.</summary>
         internal List<string> Connected { get; } = new List<string>();
@@ -137,6 +148,18 @@ namespace RFiDGear.Tests.Sam
             return _readers.Select(r => r.Name).ToList();
         }
 
+        public byte[]? ReadAtr(string readerName)
+        {
+            AtrRead.Add(readerName);
+
+            if (AtrFails.TryGetValue(readerName, out var failure))
+            {
+                throw failure;
+            }
+
+            return _readers.FirstOrDefault(r => r.Name == readerName).Atr;
+        }
+
         public ISamCardConnection? Connect(string readerName)
         {
             Connected.Add(readerName);
@@ -154,7 +177,7 @@ namespace RFiDGear.Tests.Sam
             }
 
             var transport = ScriptedSamTransport.Always(0x90, 0x00);
-            var connection = new FakeSamCardConnection(reader.Atr, transport);
+            var connection = new FakeSamCardConnection(AtrOnConnect.TryGetValue(readerName, out var swapped) ? swapped : reader.Atr, transport);
             Handed.Add((readerName, connection, transport));
 
             return connection;

@@ -36,7 +36,18 @@ namespace RFiDGear.Services.Sam
         /// <returns>The reader names.</returns>
         IReadOnlyList<string> GetReaderNames();
 
-        /// <summary>Connects to the card in a reader, sending nothing to it.</summary>
+        /// <summary>
+        /// Reads the answer to reset of the card in a reader, without connecting to the card: the ATR comes from what the
+        /// PC/SC service knows about the reader (its state), so no command is sent to the card and the card is not opened.
+        /// </summary>
+        /// <param name="readerName">The reader, as <see cref="GetReaderNames"/> named it.</param>
+        /// <returns>The ATR, or <c>null</c> when the reader has no card (or no such reader exists).</returns>
+        byte[]? ReadAtr(string readerName);
+
+        /// <summary>
+        /// Connects to the card in a reader, so that APDUs can be sent to it. Call it only for a card that
+        /// <see cref="ReadAtr"/> showed to be the one that is wanted.
+        /// </summary>
         /// <param name="readerName">The reader, as <see cref="GetReaderNames"/> named it.</param>
         /// <returns>The connection, or <c>null</c> when the reader has no card (or no such reader exists).</returns>
         ISamCardConnection? Connect(string readerName);
