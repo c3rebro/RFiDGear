@@ -1033,7 +1033,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 // LibLogicalAccess knows the plain Ultralight and the Ultralight C, and has no command for the password of an
                 // Ultralight EV1 and an NTAG: those are a protocol constraint, and no card is asked.
-                if (!IsWhatLibLogicalAccessKnows(request.Access))
+                if (!SupportsUltralightAccess(request.Access))
                 {
                     return UltralightResult.Failed(ERROR.ProtocolConstraint);
                 }
@@ -1057,7 +1057,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        private static bool IsWhatLibLogicalAccessKnows(UltralightAccess access)
+        /// <inheritdoc />
+        /// <remarks>
+        /// LibLogicalAccess knows the plain Ultralight and the Ultralight C, and has no command for the password of an Ultralight EV1 or an
+        /// NTAG, nor a name for those chips: they are a protocol constraint here, and a task knows that before it asks for a key.
+        /// </remarks>
+        public override bool SupportsUltralightAccess(UltralightAccess access)
         {
             if (access.Auth == UltralightAuth.Password)
             {

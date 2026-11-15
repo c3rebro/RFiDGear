@@ -182,6 +182,18 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         #region MifareUltralight
 
         /// <summary>
+        /// Says, without a card, whether this reader can make a call with this access at all: the chip that is expected and the way of
+        /// authenticating. A task asks before it asks a key provider for anything, so that a call that the reader refuses anyway never
+        /// needs a key. The answer is no promise that the chip on the reader allows the call: the reader checks that again against the
+        /// chip that it finds, and that check is the one that counts.
+        /// </summary>
+        /// <param name="access">
+        /// What the call is about. It carries no keys at this point, and a reader must not need them to answer.
+        /// </param>
+        /// <returns><c>true</c> when the reader can make such a call; this default says so for every access.</returns>
+        public virtual bool SupportsUltralightAccess(UltralightAccess access) => true;
+
+        /// <summary>
         /// Reads pages of a chip of the Ultralight family (Ultralight, Ultralight C, Ultralight EV1, NTAG213/215/216). The reader finds
         /// out which chip is on it, checks it against what the task expects and the range against its layout, authenticates once if
         /// the access says so, and reads. It makes one attempt: nothing is retried, and a refusal ends the call.
