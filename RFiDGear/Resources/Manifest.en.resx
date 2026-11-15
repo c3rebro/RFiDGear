@@ -2462,7 +2462,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Activate SAM...</value>
   </data>
   <data name="toolTipSamSetupActivate" xml:space="preserve">
-    <value>Only for a new SAM that answered 'not activated'. Asks first. The activation cannot be undone.</value>
+    <value>Only for a new SAM that answered 'not activated'. Asks first. No way to undo the activation is known.</value>
   </data>
   <data name="labelSamSetupNewKey" xml:space="preserve">
     <value>Key to write (AES-128 key for cards, a PICC key)</value>
@@ -2483,7 +2483,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Messages</value>
   </data>
   <data name="messageSamSetupConfirmActivate" xml:space="preserve">
-    <value>Activate the MIFARE SAM AV3?&#10;&#10;This cannot be undone. Do it only for a new SAM that you want to use, with its master key (a new SAM has the factory key, sixteen zero bytes).&#10;&#10;The command for the activation was taken from the MIFARE SAM AV2 and has not been checked on a SAM AV3 yet. It may be refused, and it may do something else than expected.</value>
+    <value>Activate the MIFARE SAM AV3?&#10;&#10;Do it only for a new SAM that you want to use, with its master key (a new SAM has the factory key, sixteen zero bytes).&#10;&#10;The activation worked on the one SAM AV3 it was tried on, and that SAM stayed activated after it was taken out and put back. No way to undo it is known: treat it as permanent.</value>
   </data>
   <data name="messageSamSetupReaderBusy" xml:space="preserve">
     <value>The reader is in use by another part of RFiDGear. Wait until it is done and try again.</value>

@@ -23,7 +23,7 @@ namespace RFiDGear.Services.Sam
         /// <returns>A task that ends when the three passes are done.</returns>
         Task AuthenticateHostAsync(byte keyNo, byte keyVersion, byte[] key);
 
-        /// <summary>Activates a new SAM (SAM_LockUnlock, activation). Irreversible.</summary>
+        /// <summary>Activates a new SAM (SAM_LockUnlock, activation). Persistent: it survived a removal of the SAM, and no way back is known.</summary>
         /// <param name="keyNo">The key entry of the key.</param>
         /// <param name="keyVersion">The version of the key.</param>
         /// <param name="key">The 16 bytes of the key. The caller erases them.</param>

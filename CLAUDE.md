@@ -193,10 +193,13 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
 - `SamSetupService` has the steps: connect (SAM_GetVersion), authenticate (key
   entry 0, version 0), activate (SAM_LockUnlock), write a key entry (an AES-128
   PICC key into 1 to 127, version 0). Each is one attempt and never repeated.
-  **The activation is irreversible and its frame has not been checked on a SAM
-  AV3.** It asks first (`ISamSetupDialogs.ConfirmActivate`, No is the default)
-  and sends nothing without a yes. Do not run a step of it against a real SAM
-  from a test or a script: the person clicks.
+  **The activation worked on the one real SAM AV3 it was tried on (2026-11-15:
+  `90AF`, `90AF`, `9000`, and the SAM stayed activated after it was taken out
+  and put back). No way back is known, so it is treated as irreversible.** It
+  asks first (`ISamSetupDialogs.ConfirmActivate`, No is the default) and sends
+  nothing without a yes. A step that changes a real SAM (the activation, a key
+  write) runs only after the person has said go for that step, in a test, a
+  script or a window.
 - A key is the factory key (16 zero bytes), a stored key (the Credential
   Manager, slots `sam.master` and `sam.newkey`) or typed into a `KeyEntryBox`.
   It lives in a pinned buffer (`SamKeyBuffer`) for one step and is erased after
@@ -216,6 +219,11 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   it cannot be used. The key itself cannot be read back.
 - Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (a read-only case, a case that
   writes a key entry, and the checklist for the window).
+  `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md` is the record of the first
+  session with a real SAM: every APDU and answer (UID masked), what was found
+  (the activation, the version byte that changed, the key entry that reads
+  back) and what is still open. The window itself has not been clicked with a
+  real SAM.
 
 ### Automatic Mode
 

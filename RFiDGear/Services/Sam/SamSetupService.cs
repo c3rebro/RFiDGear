@@ -75,8 +75,9 @@ namespace RFiDGear.Services.Sam
     internal interface ISamSetupDialogs
     {
         /// <summary>
-        /// Asks whether the SAM may be activated. The activation cannot be undone, and it has not been checked on a
-        /// MIFARE SAM AV3 yet. Anything but a clear yes is a no.
+        /// Asks whether the SAM may be activated. The activation worked on the one MIFARE SAM AV3 it was tried on and stayed after
+        /// the SAM was taken out and put back; no way to undo it is known, so it is treated as permanent. Anything but a clear yes
+        /// is a no.
         /// </summary>
         /// <returns><c>true</c> when the person confirmed.</returns>
         bool ConfirmActivate();
@@ -226,7 +227,7 @@ namespace RFiDGear.Services.Sam
 
         /// <summary>
         /// Activates a new SAM with SAM_LockUnlock. It asks the person first and sends nothing, and reads no key, when the
-        /// answer is not a clear yes. The activation is irreversible, and its frame has not been verified on a MIFARE SAM AV3.
+        /// answer is not a clear yes. The activation (the frame comes from an AV2 library) worked on a real MIFARE SAM AV3 on 2026-11-15 and persists; no way back is known, so it is treated as irreversible (RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md).
         /// There is no authentication afterwards: the person starts it.
         /// </summary>
         /// <param name="master">The key of entry 0 (all zero on a new SAM).</param>
