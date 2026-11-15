@@ -188,8 +188,8 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   `SamAv3HostSession` needs. It sits on the **data transport** of
   LibLogicalAccess, not on the reader card adapter: the adapter throws for every
   status word but `9000`, and the host protocol needs `90AF`, and `6985` tells a
-  new SAM. A reader that fails is a `SamReaderException`; a SAM that says no is a
-  plain `SamException` with a status word.
+  new SAM. A reader that fails is a `SamReaderException`; a SAM that says no is
+  a plain `SamException` with a status word.
 - `SamSetupService` has the steps: connect (SAM_GetVersion), authenticate (key
   entry 0, version 0), activate (SAM_LockUnlock), write a key entry (an AES-128
   PICC key into 1 to 127, version 0). Each is one attempt and never repeated.
@@ -197,13 +197,15 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   AV3.** It asks first (`ISamSetupDialogs.ConfirmActivate`, No is the default)
   and sends nothing without a yes. Do not run a step of it against a real SAM
   from a test or a script: the person clicks.
-- A key is the factory key (16 zero bytes), a stored key (the Credential Manager,
-  slots `sam.master` and `sam.newkey`) or typed into a `KeyEntryBox`. It lives in
-  a pinned buffer (`SamKeyBuffer`) for one step and is erased after it. No log
-  line holds a key, a reference, a reader name, the serial number of the SAM or
-  the text of an exception. SAM_GetVersion gives the serial number as well:
-  `SamDetection` keeps the first 14 bytes (hardware and software information)
-  and drops the rest.
+- A key is the factory key (16 zero bytes), a stored key (the Credential
+  Manager, slots `sam.master` and `sam.newkey`) or typed into a `KeyEntryBox`.
+  It lives in a pinned buffer (`SamKeyBuffer`) for one step and is erased after
+  it. No log line of RFiDGear holds a key, a reference, a reader name, the
+  serial number of the SAM or the text of an exception. SAM_GetVersion gives the
+  serial number as well: `SamDetection` keeps the first 14 bytes (hardware and
+  software information) and drops the rest. The own trace of LibLogicalAccess
+  (`config.log.enabled` with `seecommunication`) would write the whole answer;
+  leave it off while a SAM is in a reader.
 - The window holds `MainWindowViewModel.ReaderGate` and sets `IsReaderBusy`
   while it is open (`SamSetupGate`): a host session lives on the connection, and
   any other connect to that reader could reset the SAM. If somebody else holds
