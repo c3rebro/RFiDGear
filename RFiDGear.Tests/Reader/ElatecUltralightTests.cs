@@ -505,17 +505,6 @@ namespace RFiDGear.Tests.Reader
             }
         }
 
-        [Fact]
-        public async Task AReaderThatHasNoPageOperations_AnswersProtocolConstraint()
-        {
-            // The PC/SC reader keeps the default of the base class until it gets its own operations.
-            var reader = new LibLogicalAccessProvider();
-
-            Assert.Equal(ERROR.ProtocolConstraint, (await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1)).Error);
-            Assert.Equal(ERROR.ProtocolConstraint, (await reader.WriteMifareUltralightPagesAsync(UltralightAccess.Open(), 4, new byte[4])).Error);
-            Assert.Equal(ERROR.ProtocolConstraint, (await reader.AuthenticateMifareUltralightAsync(UltralightAccess.Open())).Error);
-        }
-
         // ── what a READ gives besides the page that was asked for, and what a chip hides ──
 
         [Fact]
@@ -677,6 +666,56 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(new[] { "select", "version", "select" }, reader.Calls);
         }
 
+        [Fact]
+        public async Task ATagThatWasSwappedForOneOfTheSameSubType_IsNotGivenALayout()
+        {
+            // The library reports a plain Ultralight, an Ultralight C and an EV1 with the same sub type, so only the UID tells two
+            // tags of the same kind apart. The UID is compared and never logged.
+            var reader = new UltralightTestReader(UltralightVariant.Plain) { UidOfLaterSelections = new byte[] { 0x04, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F } };
+
+            var result = await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1);
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Null(result.Variant);
+            Assert.Equal(new[] { "select", "version", "select" }, reader.Calls);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task WhenTheReaderGivesNoUid_TheTagCannotBeToldFromAnotherOfItsKind_AndIsNotGivenALayout(int uidLength)
+        {
+            // Two selections without a UID are not the same tag, they are two tags that cannot be told apart: a tag of the same kind
+            // that was swapped between them would be written with the layout of the first. (-1: no UID at all.)
+            var reader = new UltralightTestReader(UltralightVariant.Plain) { Uid = uidLength < 0 ? null : new byte[uidLength] };
+
+            var result = await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1);
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Null(result.Variant);
+            Assert.Equal(new[] { "select", "version", "select" }, reader.Calls);
+        }
+
+        [Theory]
+        [InlineData("read")]
+        [InlineData("write")]
+        [InlineData("authenticate")]
+        public async Task AnExpectationThatIsNoValueOfTheEnum_IsRefusedBeforeThePortIsTouched(string operation)
+        {
+            // A reader that is not connected answers TransportError to anything that gets as far as the port.
+            var reader = new UltralightTestReader(UltralightVariant.Ntag215) { Connected = false };
+            var undefined = (UltralightExpectation)99;
+
+            var result = operation == "read"
+                ? await reader.ReadMifareUltralightPagesAsync(new UltralightAccess(undefined), 4, 1)
+                : operation == "write"
+                    ? await reader.WriteMifareUltralightPagesAsync(new UltralightAccess(undefined), 4, new byte[4])
+                    : await reader.AuthenticateMifareUltralightAsync(new UltralightAccess(undefined, UltralightAuth.Password, "A1B2C3D4", "5566"));
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Empty(reader.Calls);
+        }
+
         // ── the request and the access ──
 
         [Fact]
@@ -693,6 +732,41 @@ namespace RFiDGear.Tests.Reader
             request.Dispose();
 
             Assert.All(password, b => Assert.Equal(0, b));
+        }
+
+        [Fact]
+        public async Task TheBytesOfEveryPageThatWasWritten_AreClearedAfterTheWrite_WhetherItWasKeptOrRefused()
+        {
+            // The pages of a write are copies of the payload, and the payload can be a password or a key.
+            var data = Convert.FromHexString("A1B2C3D401020304");
+            var kept = new UltralightTestReader(UltralightVariant.Ntag215);
+            var refused = new UltralightTestReader(UltralightVariant.Ntag215);
+            refused.RefusedWrites.Add(101);
+
+            await kept.WriteMifareUltralightPagesAsync(Ntag215(), 100, data);
+            await refused.WriteMifareUltralightPagesAsync(Ntag215(), 100, data);
+
+            Assert.Equal(2, kept.ChunksReceived.Count);
+            Assert.Equal(2, refused.ChunksReceived.Count);
+            Assert.All(kept.ChunksReceived.Concat(refused.ChunksReceived), chunk => Assert.All(chunk, b => Assert.Equal(0, b)));
+        }
+
+        [Fact]
+        public void TheRequestOfAWrite_KeepsACopyOfThePayload_AndClearsItWhenItIsDisposed()
+        {
+            // For both readers: the call can wait for the port before it uses the bytes, and the caller may change its array meanwhile.
+            var payload = new byte[] { 1, 2, 3, 4 };
+            var request = UltralightRequest.ForWrite(UltralightAccess.Open(UltralightExpectation.Ntag215), 4, payload);
+
+            payload[0] = 9;
+
+            Assert.Equal(new byte[] { 1, 2, 3, 4 }, request.Data);
+
+            var copy = request.Data;
+            request.Dispose();
+
+            Assert.All(copy, b => Assert.Equal(0, b));
+            Assert.Equal(9, payload[0]);   // the caller's array is not touched
         }
 
         [Fact]

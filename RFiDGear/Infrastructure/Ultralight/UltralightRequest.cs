@@ -77,7 +77,7 @@ namespace RFiDGear.Infrastructure.Ultralight
                 access,
                 startPage,
                 wellFormed ? data.Length / UltralightMemoryMap.PageSize : 0,
-                data);
+                data == null ? null : (byte[])data.Clone());   // the call can wait for the port, and the caller may reuse its array meanwhile
             request.Validate();
 
             return request;
@@ -125,9 +125,14 @@ namespace RFiDGear.Infrastructure.Ultralight
             }
         }
 
-        /// <summary>Clears the key, the password and the PACK.</summary>
+        /// <summary>Clears the key, the password, the PACK and the copy of the bytes to write (a page of a password is among them).</summary>
         public void Dispose()
         {
+            if (Data != null)
+            {
+                CryptographicOperations.ZeroMemory(Data);
+            }
+
             if (Key != null)
             {
                 CryptographicOperations.ZeroMemory(Key);
@@ -160,6 +165,12 @@ namespace RFiDGear.Infrastructure.Ultralight
         private void Validate()
         {
             Error = ERROR.ProtocolConstraint;
+
+            // A number that is none of the expectations (from a project file, say) is not Auto: nothing is asked of the port for it.
+            if (!Enum.IsDefined(typeof(UltralightExpectation), Access.Expected))
+            {
+                return;
+            }
 
             if (Operation == UltralightOperation.Authenticate && Access.Auth == UltralightAuth.None)
             {

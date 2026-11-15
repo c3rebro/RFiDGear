@@ -507,16 +507,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region MifareUltralight
 
-        /// <summary>What the reader found on the antenna: whether a tag answered and, for a MIFARE chip, its sub type.</summary>
+        /// <summary>
+        /// What the reader found on the antenna: whether a tag answered and, for a MIFARE chip, its sub type and its UID. The UID is
+        /// there to tell two tags apart (the library gives a plain Ultralight, an Ultralight C and an EV1 the same sub type); it is
+        /// only compared and never written to a log.
+        /// </summary>
         protected readonly struct UltralightSighting : IEquatable<UltralightSighting>
         {
             /// <summary>Creates the sighting.</summary>
             /// <param name="tagFound">Whether a tag answered.</param>
             /// <param name="subType">The MIFARE sub type of the tag, or <c>null</c> for a tag that is no MIFARE chip.</param>
-            public UltralightSighting(bool tagFound, MifareChipSubType? subType)
+            /// <param name="uid">The UID of the tag, or <c>null</c> when the reader gave none.</param>
+            public UltralightSighting(bool tagFound, MifareChipSubType? subType, byte[] uid = null)
             {
                 TagFound = tagFound;
                 SubType = subType;
+                Uid = uid;
             }
 
             /// <summary>Gets a value that says whether a tag answered.</summary>
@@ -524,6 +530,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             /// <summary>Gets the MIFARE sub type, or <c>null</c>.</summary>
             public MifareChipSubType? SubType { get; }
+
+            // Not public, and not in ToString: the UID is compared and never shown.
+            private byte[] Uid { get; }
+
+            /// <summary>
+            /// Whether this sighting is of the same tag as an earlier one: a tag that answered both times, with the same sub type and the
+            /// same UID. A tag whose UID is not known cannot be told from another tag of its kind, so it is never the same one (two
+            /// sightings without a UID are not equal here, though they are equal as values).
+            /// </summary>
+            /// <param name="earlier">The earlier sighting.</param>
+            /// <returns><c>true</c> when it is the same tag.</returns>
+            public bool IsSameTagAs(UltralightSighting earlier) =>
+                TagFound && earlier.TagFound && SubType == earlier.SubType
+                && Uid != null && Uid.Length > 0 && earlier.Uid != null && earlier.Uid.Length > 0
+                && Uid.AsSpan().SequenceEqual(earlier.Uid);
 
             /// <summary>Whether two sightings are the same.</summary>
             /// <param name="left">The first sighting.</param>
@@ -538,13 +559,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             public static bool operator !=(UltralightSighting left, UltralightSighting right) => !left.Equals(right);
 
             /// <inheritdoc />
-            public bool Equals(UltralightSighting other) => TagFound == other.TagFound && SubType == other.SubType;
+            public bool Equals(UltralightSighting other) => TagFound == other.TagFound && SubType == other.SubType && SameUid(Uid, other.Uid);
 
             /// <inheritdoc />
             public override bool Equals(object obj) => obj is UltralightSighting other && Equals(other);
 
             /// <inheritdoc />
             public override int GetHashCode() => HashCode.Combine(TagFound, SubType);
+
+            // Both without a UID is the same (a reader that gives none); one without is not.
+            private static bool SameUid(byte[] left, byte[] right)
+            {
+                var leftNone = left == null || left.Length == 0;
+                var rightNone = right == null || right.Length == 0;
+
+                return leftNone || rightNone ? leftNone && rightNone : left.AsSpan().SequenceEqual(right);
+            }
         }
 
         /// <summary>Gets how long the selection of the chip waits before it asks again (it asks three times at most).</summary>
@@ -558,7 +588,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             return chip == null
                 ? new UltralightSighting(false, null)
-                : new UltralightSighting(true, (chip as MifareChip)?.SubType);
+                : new UltralightSighting(true, (chip as MifareChip)?.SubType, chip.UID);
         }
 
         /// <summary>The GET_VERSION command: 8 bytes, or <c>null</c> when the chip refuses it (an Ultralight and an Ultralight C do, and are idle afterwards).</summary>
@@ -597,6 +627,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         /// <inheritdoc />
         public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            // ForWrite copies the payload here, in the call, before the request can wait for the port: the caller's array is not kept.
             PerformUltralightAsync(UltralightRequest.ForWrite(access, startPage, data));
 
         /// <inheritdoc />
@@ -752,7 +783,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return (ERROR.ProtocolConstraint, null);
             }
 
-            var toldSubType = sighting.SubType;
+            var told = sighting;
 
             if (sighting.SubType == MifareChipSubType.MifareUltralightC)
             {
@@ -797,9 +828,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return (ERROR.TransportError, null);
             }
 
-            // It must still be the chip that was told: a tag that was swapped for another between the two selections is not given
-            // the layout of an Ultralight, and no page of it is touched.
-            if (sighting.SubType != toldSubType)
+            // It must still be the tag that was told, by sub type and by UID (the library gives a plain Ultralight, an Ultralight C
+            // and an EV1 the same sub type): a tag that was swapped for another between the two selections is not given the layout
+            // of the first, and no page of it is touched. Without a UID the two cannot be told apart, which is the same answer.
+            if (!sighting.IsSameTagAs(told))
             {
                 return (ERROR.ProtocolConstraint, null);
             }
@@ -892,6 +924,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     LogUltralightFailure(UltralightOperation.Write, UltralightCall.Write.ToString(), e);
 
                     return new UltralightResult(await ClassifyFaultAsync(e, UltralightCall.Write), null, variant, authenticated, written, page);
+                }
+                finally
+                {
+                    // The page is a copy of the payload, which can be a password: it does not outlive the write, kept or refused.
+                    System.Security.Cryptography.CryptographicOperations.ZeroMemory(chunk);
                 }
 
                 written++;
