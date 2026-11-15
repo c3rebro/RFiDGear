@@ -750,7 +750,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                var task = Read(start: 4, count: 2);
+                var task = Read();
 
                 using (ReaderDeviceScope.Use(Reader()))
                 {
