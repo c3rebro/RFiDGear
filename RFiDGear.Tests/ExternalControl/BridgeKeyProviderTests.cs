@@ -209,6 +209,22 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(expected, Assert.Single(channel.Requests).Usage);
         }
 
+        [Theory]
+        [InlineData(SecureKeyAlgorithm.UltralightPassword)]
+        [InlineData(SecureKeyAlgorithm.UltralightPack)]
+        public async Task ThePasswordAndThePackOfAnUltralight_AreUnsupported_BecauseTheProtocolHasNoNameForThem_AndTheClientIsNotAsked(SecureKeyAlgorithm algorithm)
+        {
+            // The key of an Ultralight C is a 2K3DES key and has a name; the password and the PACK come with a capability of the
+            // protocol that a client has seen. Until then a slot bound to the client ends KeyUnavailable and no card is touched.
+            var (provider, channel) = Bound((_, _) => Task.FromResult<ResolveKeyResponse?>(Answer(KeyBytes)));
+            var request = new SecureKeyRequest { SlotId = "ultralight.password", Reference = Reference, Algorithm = algorithm, Usage = SecureKeyUsage.Authenticate };
+
+            using var answer = await provider.ResolveAsync(request, CancellationToken.None);
+
+            Assert.Equal(SecureKeyFailureReason.Unsupported, answer.FailureReason);
+            Assert.Empty(channel.Requests);
+        }
+
         [Fact]
         public async Task AKindOfKeyOrUseThatTheProtocolHasNoNameFor_IsUnsupported_AndTheClientIsNotAsked()
         {

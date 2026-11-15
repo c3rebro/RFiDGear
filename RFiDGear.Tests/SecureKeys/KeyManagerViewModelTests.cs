@@ -94,7 +94,7 @@ namespace RFiDGear.Tests.SecureKeys
         {
             var text = TestText.In(culture);
 
-            foreach (var slot in SecureKeySlots.Desfire.Concat(SecureKeySlots.Classic))
+            foreach (var slot in SecureKeySlots.Desfire.Concat(SecureKeySlots.Classic).Concat(SecureKeySlots.Ultralight))
             {
                 var key = KeySlotNames.ResourceKeyOf(slot);
 

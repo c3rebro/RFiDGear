@@ -140,6 +140,8 @@ public enum RFiDGear.Contracts.SecureKeyAlgorithm : int
     TripleDes3K = 2
     Aes128 = 3
     Classic6Byte = 4
+    UltralightPassword = 5
+    UltralightPack = 6
 
 public enum RFiDGear.Contracts.SecureKeyFailureReason : int
     NotFound = 1

@@ -155,6 +155,11 @@ the card.
 - Without a registered client, a task that names the provider ends with
   `ERROR.KeyUnavailable` and does not touch the card; the key typed into the
   project is no fallback.
+- RFiDGear does not ask you for the password or the PACK of a MIFARE Ultralight
+  EV1 or an NTAG: this protocol has no name for those two kinds of key yet, so a
+  slot of that kind that is bound to `bridge-client` ends with
+  `ERROR.KeyUnavailable`, and no `resolveKey` call is made. The key of an
+  Ultralight C is a `tripleDes2K` key.
 - Never log the request or the answer, and do not keep the key longer than the
   answer needs. RFiDGear never logs either, and keeps its copy only for the
   card operation, in a buffer that it erases. **Neither side can erase the
