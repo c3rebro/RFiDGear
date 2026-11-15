@@ -292,9 +292,10 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         /// <summary>
         /// Normalizes legacy XML values in a project payload to the currently supported ones. The old name of the error
-        /// code <c>AuthFailure</c> (<c>AuthenticationError</c>) is only replaced as the whole value of the two elements that
-        /// hold an error code, not anywhere in the text: a provider id, a key reference, a description or a path may
-        /// contain it and must not change. Text that only looks like such an element, inside a CDATA section, a comment or
+        /// code <c>AuthFailure</c> (<c>AuthenticationError</c>) and the old name of the chip type of an Ultralight EV1
+        /// (<c>MifareUltralightC_EV1</c>, now <c>MifareUltralight_EV1</c>) are only replaced as the whole value of the elements
+        /// that hold such a value, not anywhere in the text: a provider id, a key reference, a description or a path may
+        /// contain them and must not change. Text that only looks like such an element, inside a CDATA section, a comment or
         /// a processing instruction, is not an element and is left alone as well.
         /// </summary>
         /// <param name="projectXml">The raw project XML.</param>
@@ -314,7 +315,7 @@ namespace RFiDGear.Infrastructure.FileAccess
                 var literalStart = FindNextLiteralText(projectXml, position, out var literalEnd);
 
                 // Markup up to the next literal is normalized; the literal itself is copied as it is.
-                result.Append(NormalizeErrorCodeElements(projectXml.Substring(position, literalStart - position)));
+                result.Append(NormalizeRenamedValues(projectXml.Substring(position, literalStart - position)));
                 result.Append(projectXml, literalStart, literalEnd - literalStart);
                 position = literalEnd;
             }
@@ -322,8 +323,14 @@ namespace RFiDGear.Infrastructure.FileAccess
             return result.ToString();
         }
 
-        // The elements of a project that store an error code by name: the condition of a task, and a checkpoint.
-        private static readonly string[] LegacyErrorCodeElements = { "SelectedExecuteConditionErrorLevel", "ErrorLevel" };
+        // The values that were renamed, and the elements of a project that store a value of that kind by name: an error code (the
+        // condition of a task, and a checkpoint) and a chip type (what a Generic chip task is set to, and the type of a chip). The
+        // serializer rejects a name that the enum does not have any more, so the project text is changed before it is read.
+        private static readonly (string[] Elements, string OldName, string NewName)[] RenamedValues =
+        {
+            (new[] { "SelectedExecuteConditionErrorLevel", "ErrorLevel" }, "AuthenticationError", "AuthFailure"),
+            (new[] { "SelectedChipType", "CardType" }, "MifareUltralightC_EV1", "MifareUltralight_EV1"),
+        };
 
         // Where text may contain something that looks like markup without being any: the opening and closing marks.
         private static readonly (string Open, string Close)[] LiteralTextMarks =
@@ -333,14 +340,17 @@ namespace RFiDGear.Infrastructure.FileAccess
             ("<?", "?>"),
         };
 
-        private static string NormalizeErrorCodeElements(string markup)
+        private static string NormalizeRenamedValues(string markup)
         {
-            foreach (var element in LegacyErrorCodeElements)
+            foreach (var (elements, oldName, newName) in RenamedValues)
             {
-                markup = markup.Replace(
-                    $"<{element}>AuthenticationError</{element}>",
-                    $"<{element}>AuthFailure</{element}>",
-                    StringComparison.Ordinal);
+                foreach (var element in elements)
+                {
+                    markup = markup.Replace(
+                        $"<{element}>{oldName}</{element}>",
+                        $"<{element}>{newName}</{element}>",
+                        StringComparison.Ordinal);
+                }
             }
 
             return markup;
