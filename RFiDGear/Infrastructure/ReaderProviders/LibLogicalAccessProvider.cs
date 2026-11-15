@@ -1012,6 +1012,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         /// <inheritdoc />
         public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            // ForWrite copies the payload here, in the call, before the request can wait for the session gate: the caller's array is not kept.
             PerformPcscUltralightAsync(UltralightRequest.ForWrite(access, startPage, data));
 
         /// <inheritdoc />

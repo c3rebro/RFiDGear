@@ -681,6 +681,22 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task WhenTheReaderGivesNoUid_TheTagCannotBeToldFromAnotherOfItsKind_AndIsNotGivenALayout(int uidLength)
+        {
+            // Two selections without a UID are not the same tag, they are two tags that cannot be told apart: a tag of the same kind
+            // that was swapped between them would be written with the layout of the first. (-1: no UID at all.)
+            var reader = new UltralightTestReader(UltralightVariant.Plain) { Uid = uidLength < 0 ? null : new byte[uidLength] };
+
+            var result = await reader.ReadMifareUltralightPagesAsync(UltralightAccess.Open(), 4, 1);
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Null(result.Variant);
+            Assert.Equal(new[] { "select", "version", "select" }, reader.Calls);
+        }
+
+        [Theory]
         [InlineData("read")]
         [InlineData("write")]
         [InlineData("authenticate")]

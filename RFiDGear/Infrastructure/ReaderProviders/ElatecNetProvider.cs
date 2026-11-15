@@ -534,6 +534,18 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             // Not public, and not in ToString: the UID is compared and never shown.
             private byte[] Uid { get; }
 
+            /// <summary>
+            /// Whether this sighting is of the same tag as an earlier one: a tag that answered both times, with the same sub type and the
+            /// same UID. A tag whose UID is not known cannot be told from another tag of its kind, so it is never the same one (two
+            /// sightings without a UID are not equal here, though they are equal as values).
+            /// </summary>
+            /// <param name="earlier">The earlier sighting.</param>
+            /// <returns><c>true</c> when it is the same tag.</returns>
+            public bool IsSameTagAs(UltralightSighting earlier) =>
+                TagFound && earlier.TagFound && SubType == earlier.SubType
+                && Uid != null && Uid.Length > 0 && earlier.Uid != null && earlier.Uid.Length > 0
+                && Uid.AsSpan().SequenceEqual(earlier.Uid);
+
             /// <summary>Whether two sightings are the same.</summary>
             /// <param name="left">The first sighting.</param>
             /// <param name="right">The second sighting.</param>
@@ -615,6 +627,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         /// <inheritdoc />
         public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            // ForWrite copies the payload here, in the call, before the request can wait for the port: the caller's array is not kept.
             PerformUltralightAsync(UltralightRequest.ForWrite(access, startPage, data));
 
         /// <inheritdoc />
@@ -817,8 +830,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             // It must still be the tag that was told, by sub type and by UID (the library gives a plain Ultralight, an Ultralight C
             // and an EV1 the same sub type): a tag that was swapped for another between the two selections is not given the layout
-            // of the first, and no page of it is touched.
-            if (sighting != told)
+            // of the first, and no page of it is touched. Without a UID the two cannot be told apart, which is the same answer.
+            if (!sighting.IsSameTagAs(told))
             {
                 return (ERROR.ProtocolConstraint, null);
             }
