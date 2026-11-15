@@ -35,6 +35,14 @@ namespace RFiDGear.Services.Sam
         /// <param name="entry">The new content.</param>
         /// <returns>A task that ends when the SAM has answered.</returns>
         Task ChangeKeyEntryAsync(byte keyEntryNo, SamAv3KeyEntry entry);
+
+        /// <summary>
+        /// Reads the settings of a key entry back (SAM_GetKeyEntry under the secure session): what the SAM holds for it, never a key.
+        /// Needs a host authentication. An answer that is not what a key entry looks like is <c>null</c>.
+        /// </summary>
+        /// <param name="keyEntryNo">The key entry.</param>
+        /// <returns>The settings, or <c>null</c> for an answer of another length.</returns>
+        Task<SamKeyEntryInfo?> ReadKeyEntryAsync(byte keyEntryNo);
     }
 
     /// <summary>The real host session, over <see cref="SamAv3HostSession"/> of Elatec.NET.</summary>
@@ -63,6 +71,15 @@ namespace RFiDGear.Services.Sam
         /// <inheritdoc />
         public Task ChangeKeyEntryAsync(byte keyEntryNo, SamAv3KeyEntry entry) =>
             _session.ChangeKeyEntryAsync(keyEntryNo, entry, allowMasterKeyChange: false, allowIrreversibleLock: false);
+
+        /// <inheritdoc />
+        public async Task<SamKeyEntryInfo?> ReadKeyEntryAsync(byte keyEntryNo)
+        {
+            // SAM_GetKeyEntry: INS 0x64, P1 = the entry, P2 = 0, Le = 0 (read back from a real MIFARE SAM AV3: 13 bytes and 9000).
+            var data = await _session.ExecuteSecureAsync(0x64, keyEntryNo, 0x00, null, 0x00).ConfigureAwait(false);
+
+            return SamKeyEntryInfo.Parse(data);
+        }
 
         /// <inheritdoc />
         public void Dispose() => _session.Dispose();

@@ -2576,4 +2576,16 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageSamSetupMayHaveWritten" xml:space="preserve">
     <value>Die SAM hat mit Erfolg geantwortet, aber ihre Antwort ließ sich nicht prüfen: Der Schlüssel kann in Schlüsseleintrag {0} geschrieben worden sein. Ein Schlüssel lässt sich nicht zurücklesen, und eine Authentifizierung kann einen PICC-Schlüssel nicht beweisen. Authentifizieren Sie sich erneut; ob Sie den Schlüssel noch einmal schreiben, entscheiden Sie.</value>
   </data>
+  <data name="messageSamSetupEntryVerified" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist aktiviert und enthält einen AES-128-Schlüssel der Schlüsselklasse PICC, wie geschrieben.</value>
+  </data>
+  <data name="messageSamSetupEntryDisabled" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist deaktiviert (SET-Bit 9); der Schlüssel darin lässt sich nicht verwenden. Ein leerer Eintrag ist deaktiviert, bis ein Schreiben ihn aktiviert. Schreiben Sie den Schlüssel erneut.</value>
+  </data>
+  <data name="messageSamSetupEntryDiffers" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist kein AES-128-Schlüssel der Schlüsselklasse PICC, wie er geschrieben wurde. Verwenden Sie ihn nicht.</value>
+  </data>
+  <data name="messageSamSetupEntryUnreadable" xml:space="preserve">
+    <value>Der Schlüssel wurde geschrieben, aber das Zurücklesen des Schlüsseleintrags ist fehlgeschlagen; er ist daher nicht geprüft.</value>
+  </data>
 </root>

@@ -484,6 +484,56 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public async Task A_key_that_was_written_is_read_back_and_the_last_line_says_that_the_entry_is_enabled_and_of_the_picc_class()
+        {
+            using var rig = new Rig();
+            await rig.AuthenticatedAsync();
+            rig.ViewModel.EntryNumberText = "5";
+            using var typed = TestText.Secure(TypedKeyHex);
+
+            await rig.ViewModel.WriteKeyAsync(typed);
+
+            Assert.Equal("read 5", rig.Session.Calls.Last());
+            Assert.Contains("The key was written to key entry 5.", rig.ViewModel.StatusText, StringComparison.Ordinal);
+            Assert.Equal("Read back from the SAM: key entry 5 is enabled and holds an AES-128 key of the PICC key class, as written.", rig.ViewModel.ResultText);
+            Assert.False(rig.ViewModel.ResultIsError);
+        }
+
+        [Theory]
+        [InlineData("000000000000000000FF200200", "is disabled (SET bit 9)")]
+        [InlineData("000000000000000000FF200000", "is not an AES-128 key of the PICC key class")]
+        [InlineData("0000", "reading the key entry back failed")]
+        public async Task A_read_back_that_is_not_what_was_written_is_said_in_red_after_the_line_that_the_key_was_written(string answerHex, string expected)
+        {
+            using var rig = new Rig();
+            await rig.AuthenticatedAsync();
+            rig.Session.ReadAnswer = Convert.FromHexString(answerHex);
+            rig.ViewModel.EntryNumberText = "5";
+            using var typed = TestText.Secure(TypedKeyHex);
+
+            var tried = await rig.ViewModel.WriteKeyAsync(typed);
+
+            Assert.True(tried);
+            Assert.True(rig.ViewModel.ResultIsError);
+            Assert.Contains(expected, rig.ViewModel.ResultText, StringComparison.Ordinal);
+            Assert.Contains("The key was written to key entry 5.", rig.ViewModel.StatusText, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task A_key_that_was_not_written_is_not_read_back_and_nothing_is_said_about_the_entry()
+        {
+            using var rig = new Rig();
+            await rig.AuthenticatedAsync();
+            rig.Session.ChangeFails = new SamException("refused", 0x6A80);
+            using var typed = TestText.Secure(TypedKeyHex);
+
+            await rig.ViewModel.WriteKeyAsync(typed);
+
+            Assert.DoesNotContain(rig.Session.Calls, call => call.StartsWith("read", StringComparison.Ordinal));
+            Assert.DoesNotContain("Read back", rig.ViewModel.StatusText, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public async Task A_stored_key_is_written_by_its_reference()
         {
             using var rig = new Rig(storedKeys: StoredName);

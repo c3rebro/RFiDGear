@@ -210,9 +210,12 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   while it is open (`SamSetupGate`): a host session lives on the connection, and
   any other connect to that reader could reset the SAM. If somebody else holds
   the gate, the window does not open.
-- Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (one read-only case, and the
-  checklist for the window). Nothing but reading the ATR and SAM_GetVersion has
-  been run against a SAM so far.
+- After a key entry was written the setup reads it back (`SAM_GetKeyEntry`,
+  `SamKeyEntryInfo`): a blank entry is disabled (SET bit 9), so the entry must
+  read back enabled, AES-128 and of the PICC key class (ExtSET), or the key in
+  it cannot be used. The key itself cannot be read back.
+- Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (a read-only case, a case that
+  writes a key entry, and the checklist for the window).
 
 ### Automatic Mode
 

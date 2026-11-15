@@ -89,6 +89,40 @@ namespace RFiDGear.Tests.Sam
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// What reading a key entry back answers, as the 13 bytes of the answer; <c>null</c> (the default) answers like a SAM that
+        /// holds what was written last.
+        /// </summary>
+        internal byte[]? ReadAnswer { get; set; }
+
+        internal Exception? ReadFails { get; set; }
+
+        public Task<SamKeyEntryInfo?> ReadKeyEntryAsync(byte keyEntryNo)
+        {
+            Calls.Add("read " + keyEntryNo);
+
+            if (ReadFails != null)
+            {
+                IsAuthenticated = false;
+                throw ReadFails;
+            }
+
+            if (ReadAnswer != null)
+            {
+                return Task.FromResult(SamKeyEntryInfo.Parse(ReadAnswer));
+            }
+
+            // A SAM that holds what was written: versions, the entry's own fields and SET and ExtSET as they were written.
+            var entry = LastEntry!;
+            var answer = new byte[]
+            {
+                entry.VersionA, entry.VersionA, entry.VersionA, 0, 0, 0, entry.DfKeyNo, entry.KeyNoCek, entry.KeyVersionCek, entry.RefNoKuc,
+                (byte)(entry.Set & 0xFF), (byte)(entry.Set >> 8), entry.ExtSet,
+            };
+
+            return Task.FromResult(SamKeyEntryInfo.Parse(answer));
+        }
+
         public void Dispose() => Disposed = true;
 
         private void Remember(byte[] key)

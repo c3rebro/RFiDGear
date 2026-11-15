@@ -2554,4 +2554,16 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageSamSetupMayHaveWritten" xml:space="preserve">
     <value>The SAM answered with success, but its answer could not be checked: the key may have been written to key entry {0}. A key cannot be read back, and an authentication cannot prove a PICC key. Authenticate again; whether to write the key again is up to you.</value>
   </data>
+  <data name="messageSamSetupEntryVerified" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is enabled and holds an AES-128 key of the PICC key class, as written.</value>
+  </data>
+  <data name="messageSamSetupEntryDisabled" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is disabled (SET bit 9), so the key in it cannot be used. A blank entry is disabled until a write enables it. Write the key again.</value>
+  </data>
+  <data name="messageSamSetupEntryDiffers" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is not an AES-128 key of the PICC key class, as it was written. Do not use it.</value>
+  </data>
+  <data name="messageSamSetupEntryUnreadable" xml:space="preserve">
+    <value>The key was written, but reading the key entry back failed, so it is not verified.</value>
+  </data>
 </root>

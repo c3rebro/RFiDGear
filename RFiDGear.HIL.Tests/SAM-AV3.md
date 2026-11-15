@@ -97,9 +97,11 @@ log.
 6. Write a key: key entry 1, and a key of your own that is not a secret (for
    instance `0F1E2D3C4B5A69788796A5B4C3D2E1F0`), typed into the box (hidden
    until you tick "Show key"). "Write key". The message says that the key was
-   written to key entry 1, and the box is empty afterwards. If the SAM refuses
-   it, the message gives the status word: that is the interesting result, write
-   it down. Nothing is repeated.
+   written to key entry 1, and the box is empty afterwards. A second line says
+   what the SAM reports when the entry is read back: enabled, AES-128, PICC key
+   class (green), or that the entry is still disabled or of another kind (red).
+   If the SAM refuses the write, the message gives the status word: that is the
+   interesting result, write it down. Nothing is repeated.
 7. Entries that must be refused: key entry 0 and key entry 128 turn the box pink
    and the button "Write key" off.
 8. A stored key: choose the key that you stored before you opened the window
@@ -111,12 +113,27 @@ log.
 10. Switch the language of the application to German and look at the window
     once.
 
+**The case that writes (`SamKeyEntryTests`, needs `cardWrites`):**
+
+- **AKeyEntryThatIsWritten_IsReadBack_EnabledAndOfThePiccKeyClass**: with the
+  factory master key it writes the test key `0F1E2D3C4B5A69788796A5B4C3D2E1F0`
+  as an AES-128 PICC key into key entry 120, version 0, reads the entry back
+  with SAM_GetKeyEntry, and asserts that SET bit 9 ("disable key entry") is
+  clear, the type is AES-128 and the key class is PICC. A blank entry is
+  disabled, so this is what shows that the write enabled it. It never
+  activates a SAM and never changes a master key: it is skipped for a SAM that
+  is not activated, or whose master key is not the factory key, and for an
+  entry 120 that is in use. Run it again and it writes the same key again. The
+  entry stays written.
+
 **What this does not check:**
 
 - That the key you wrote works. It is an AES-128 PICC key in a key entry
   (`SET 0x0020`, `ExtSET 0x01`) with the master key as the key that may change
-  it. A host authentication cannot prove it: it is not a host key. The SAM's
-  answer to the command is the only proof there is, until a task uses the key.
+  it. A host authentication cannot prove it: it is not a host key. What the
+  read-back proves is the entry: enabled, AES-128, PICC class. That the key in
+  it is the key you typed is not proved by anything until a task uses it to
+  authenticate a PICC.
 - The master key and the key usage counters: the setup never changes either.
 - Whether closing the window resets the SAM, which would end the session of the
   host authentication. If you can tell (the next "Authenticate" after a close

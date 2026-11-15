@@ -485,7 +485,9 @@ namespace RFiDGear.Tests.Sam
 
             var outcome = await rig.Service.WriteKeyEntryAsync(entryNumber, SamKeySource.FromTyped(typed));
 
-            Assert.Equal(new SamStepOutcome(SamStepResult.Done), outcome);
+            // The entry is read back, and it is what was written: enabled (SET bit 9 clear), AES-128, PICC key class.
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.Matches), outcome);
+            Assert.Equal("read " + entryNumber, rig.Session.Calls.Last());
             Assert.Equal((byte)entryNumber, rig.Session.LastEntryNumber);
 
             var entry = rig.Session.LastEntry!;
@@ -560,6 +562,100 @@ namespace RFiDGear.Tests.Sam
 
             Assert.Equal(SamStepResult.ReaderError, outcome.Result);
             Assert.False(rig.Service.IsConnected);
+        }
+
+        #endregion
+
+        #region the entry is read back
+
+        // The 13 bytes that three entries of a real MIFARE SAM AV3 answered to SAM_GetKeyEntry (see SamKeyEntryInfoTests).
+        private const string BlankEntryAnswer = "000000000000000000FF200200";
+        private const string MasterEntryAnswer = "000000000000000000FF200000";
+
+        [Fact]
+        public async Task A_written_entry_that_is_still_disabled_is_said_to_be_so_and_the_write_is_still_done()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            rig.Session.ReadAnswer = Convert.FromHexString(BlankEntryAnswer);
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(2, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.Disabled), outcome);
+        }
+
+        [Fact]
+        public async Task A_written_entry_that_is_not_of_the_picc_class_is_said_to_differ()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            rig.Session.ReadAnswer = Convert.FromHexString(MasterEntryAnswer);
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.WrongKind), outcome);
+        }
+
+        [Fact]
+        public async Task An_answer_that_is_no_key_entry_is_unreadable_and_the_write_is_still_done()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            rig.Session.ReadAnswer = new byte[5];
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.Unreadable), outcome);
+        }
+
+        [Fact]
+        public async Task A_sam_that_refuses_the_read_back_leaves_the_write_done_and_the_session_gone()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            rig.Session.ReadFails = new SamException("refused", 0x6A86);
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.Unreadable), outcome);
+            Assert.False(rig.Service.IsAuthenticated);
+            Assert.True(rig.Service.IsConnected);
+        }
+
+        [Fact]
+        public async Task A_reader_that_fails_during_the_read_back_ends_the_connection_and_the_write_is_still_done()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            rig.Session.ReadFails = new SamReaderException("reader");
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.Unreadable), outcome);
+            Assert.False(rig.Service.IsConnected);
+        }
+
+        [Fact]
+        public async Task A_write_that_was_refused_or_cannot_be_proved_is_not_read_back()
+        {
+            using var refused = new Rig();
+            await refused.Service.AuthenticateAsync(SamKeySource.Factory());
+            refused.Session.ChangeFails = new SamException("refused", 0x6A80);
+
+            var refusal = await refused.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(SamKeyEntryCheck.NotChecked, refusal.Check);
+            Assert.DoesNotContain(refused.Session.Calls, call => call.StartsWith("read", StringComparison.Ordinal));
+
+            using var unproved = new Rig();
+            await unproved.Service.AuthenticateAsync(SamKeySource.Factory());
+            unproved.Session.ChangeFails = new SamException("The CMAC of the SAM response is invalid.", 0x9000);
+
+            var uncertain = await unproved.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(SamStepResult.MayHaveTakenEffect, uncertain.Result);
+            Assert.Equal(SamKeyEntryCheck.NotChecked, uncertain.Check);
+            Assert.DoesNotContain(unproved.Session.Calls, call => call.StartsWith("read", StringComparison.Ordinal));
         }
 
         #endregion

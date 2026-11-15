@@ -67,6 +67,86 @@ namespace RFiDGear.HIL.Tests
             });
     }
 
+    /// <summary>
+    /// A key entry that is written to a real MIFARE SAM AV3 and read back (see <c>SAM-AV3.md</c>). It <b>writes to the SAM</b>, so it
+    /// needs <c>cardWrites</c> as well as <c>readerScan</c>. It never activates a SAM and never touches the master key: it needs a SAM that
+    /// is activated and still has the factory master key, and otherwise it is skipped.
+    /// </summary>
+    [Collection("HILSam")]
+    public sealed class SamKeyEntryTests
+    {
+        // An entry that is out of the way of the ones a person uses (1 to 10). The key is a test key and no secret.
+        private const byte Entry = 120;
+        private const string TestKeyHex = "0F1E2D3C4B5A69788796A5B4C3D2E1F0";
+
+        /// <summary>
+        /// A blank entry of a SAM is disabled (SET bit 9, AN12701 table 2). The entry that the application writes must be read back
+        /// enabled, an AES-128 key, and of the PICC key class: otherwise the key in it could not be used to authenticate a PICC.
+        /// </summary>
+        /// <returns>The task of the test.</returns>
+        [HilCardWriteFact]
+        public Task AKeyEntryThatIsWritten_IsReadBack_EnabledAndOfThePiccKeyClass() =>
+            StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var finder = new SamReaderFinder(new LlaSamReaderSource());
+                var search = await Task.Run(() => finder.Find());
+
+                if (search.Readers.Count == 0)
+                {
+                    throw SkipException.ForSkip("No MIFARE SAM AV3 was found in a PC/SC reader.");
+                }
+
+                using var connection = finder.Open(search.Readers[0].Name);
+
+                Assert.NotNull(connection);
+
+                using var session = new Av3HostSession(connection!.Channel);
+
+                try
+                {
+                    // Only the factory key: a SAM that was never activated says 6985, and a SAM with another master key refuses.
+                    await session.AuthenticateHostAsync(0, 0, new byte[16]);
+                }
+                catch (SamException e)
+                {
+                    throw SkipException.ForSkip("The host authentication with the factory master key failed (status " + e.StatusWord.ToString("X4")
+                        + "): the SAM is not activated, or its master key is not the factory key. This case does neither activate nor change a master key.");
+                }
+
+                var before = await session.ReadKeyEntryAsync(Entry);
+
+                Assert.NotNull(before);
+
+                // A blank entry is disabled. An entry that is enabled is in use, unless it is what this case wrote on an earlier run.
+                if (before!.IsEnabled && before.Verdict != SamKeyEntryCheck.Matches)
+                {
+                    throw SkipException.ForSkip("Key entry " + Entry + " is in use (enabled, and not an AES-128 PICC key as this case writes it): it is left alone.");
+                }
+
+                var key = Convert.FromHexString(TestKeyHex);
+
+                try
+                {
+                    await session.ChangeKeyEntryAsync(Entry, SamAv3KeyEntry.CreateAes128PiccKey(key, 0));
+                }
+                finally
+                {
+                    Array.Clear(key, 0, key.Length);
+                }
+
+                var after = await session.ReadKeyEntryAsync(Entry);
+
+                Assert.NotNull(after);
+                Assert.Equal(0, after!.Set & 0x0200);
+                Assert.True(after.IsEnabled);
+                Assert.True(after.IsAes128);
+                Assert.Equal(1, after.KeyClass);
+                Assert.Equal(SamKeyEntryCheck.Matches, after.Verdict);
+                Assert.Equal(0xFF, after.RefNoKuc);
+                Assert.Equal(0, after.VersionA);
+            });
+    }
+
     /// <summary>The collection of the SAM case: it uses the PC/SC readers, so nothing else runs at the same time.</summary>
     [CollectionDefinition("HILSam", DisableParallelization = true)]
     public sealed class HilSamCollection { }
