@@ -47,7 +47,17 @@
                         Margin="4,0,4,0"
                         VerticalContentAlignment="Center"
                         FontFamily="Lucida Console"
-                        Text="{Binding StartPage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        Text="{Binding StartPageText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBox.Style>
+                            <Style TargetType="{x:Type TextBox}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsStartPageValid}" Value="False">
+                                        <Setter Property="Background" Value="#FFF4B6B6" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                     <Label
                         Grid.Column="2"
                         Margin="12,0,4,0"
@@ -60,8 +70,18 @@
                         Margin="4,0,4,0"
                         VerticalContentAlignment="Center"
                         FontFamily="Lucida Console"
-                        Text="{Binding PageCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                        Visibility="{Binding IsReadTask, Converter={StaticResource BoolToVisConv}}" />
+                        Text="{Binding PageCountText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Visibility="{Binding IsReadTask, Converter={StaticResource BoolToVisConv}}">
+                        <TextBox.Style>
+                            <Style TargetType="{x:Type TextBox}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPageCountValid}" Value="False">
+                                        <Setter Property="Background" Value="#FFF4B6B6" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                 </Grid>
                 <DataGrid
                     Grid.Row="1"

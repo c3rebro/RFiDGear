@@ -369,7 +369,7 @@ namespace RFiDGear.Tests
                 RenderedTab.AssertUsable(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "ReadDataCommand"), "read");
                 Assert.False(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "WriteDataCommand").IsVisible);
                 Assert.False(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "AddPageCommand").IsVisible);
-                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCount"), "the number of pages");
+                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCountText"), "the number of pages");
             });
         }
 
@@ -382,8 +382,66 @@ namespace RFiDGear.Tests
 
                 RenderedTab.AssertUsable(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "WriteDataCommand"), "write");
                 Assert.False(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "ReadDataCommand").IsVisible);
-                Assert.False(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCount").IsVisible);
-                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "StartPage"), "the first page");
+                Assert.False(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCountText").IsVisible);
+                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "StartPageText"), "the first page");
+            });
+        }
+
+        [Fact]
+        public async Task AMistakeInTheFirstPageBox_StopsTheButtonsAndTheOkButton_UntilItIsFixed()
+        {
+            await OnWindow(() => Write(start: 9), async (window, viewModel) =>
+            {
+                await SelectTab(window, Pages);
+                var box = RenderedTab.One<TextBox>(window, TextBox.TextProperty, "StartPageText");
+                var write = RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "WriteDataCommand");
+                var ok = RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "OKCommand");
+                var reader = new KeyRecordingReader { Connected = true };
+
+                box.Text = "abc";
+                await Settle(window);
+
+                // The task kept page 9; the buttons are off, and pressing the one that is there does nothing on that page.
+                Assert.Equal(9, viewModel.StartPage);
+                Assert.False(write.IsEnabled);
+                Assert.False(ok.IsEnabled);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)write.Command).ExecuteAsync(null);
+                }
+
+                Assert.Empty(reader.UltralightCalls);
+
+                box.Text = "11";
+                await Settle(window);
+
+                Assert.Equal(11, viewModel.StartPage);
+                Assert.True(write.IsEnabled);
+                Assert.True(ok.IsEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AMistakeInTheNumberOfPagesBox_StopsTheReadButton()
+        {
+            await OnWindow(() => Read(), async (window, viewModel) =>
+            {
+                await SelectTab(window, Pages);
+                var box = RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCountText");
+                var read = RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "ReadDataCommand");
+
+                box.Text = string.Empty;
+                await Settle(window);
+
+                Assert.Equal(3, viewModel.PageCount);
+                Assert.False(read.IsEnabled);
+
+                box.Text = "2";
+                await Settle(window);
+
+                Assert.Equal(2, viewModel.PageCount);
+                Assert.True(read.IsEnabled);
             });
         }
 

@@ -559,6 +559,151 @@ namespace RFiDGear.Tests
             });
         }
 
+        // ── The first page and the number of pages, as they are typed ──
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        [InlineData("abc")]
+        [InlineData("0x10")]
+        [InlineData("1.5")]
+        [InlineData("99999999999")]
+        public async Task AFirstPageThatIsNoNumber_KeepsTheTaskAsItWas_ButSaysSo_AndRunsNothing(string text)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = Write("A1B2C3D4", start: 9);
+                var reader = Reader();
+
+                task.StartPageText = text;
+
+                // The task still has the page it had, and the box says that what it holds is no page.
+                Assert.Equal(9, task.StartPage);
+                Assert.Equal(text, task.StartPageText);
+                Assert.False(task.IsStartPageValid);
+                Assert.False(task.ArePageInputsValid);
+                Assert.False(task.WriteDataCommand.CanExecute(null));
+                Assert.False(task.OKCommand.CanExecute(null));
+
+                // Nothing runs on the old page, not even by a path that does not ask the button.
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await task.WriteDataCommand.ExecuteAsync(null);
+                    await task.CommandDelegator.ExecuteAsync(TaskType_MifareUltralightTask.WriteData);
+                }
+
+                Assert.Empty(reader.UltralightCalls);
+                Assert.Equal(ERROR.ProtocolConstraint, task.CurrentTaskErrorLevel);
+            });
+        }
+
+        [Fact]
+        public async Task AFirstPageThatIsFixed_IsTheTasksPageAgain_AndTheButtonsAreBackOn()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = Write("A1B2C3D4", start: 9);
+                var changed = 0;
+                task.WriteDataCommand.CanExecuteChanged += (_, _) => changed++;
+
+                task.StartPageText = "abc";
+                Assert.False(task.WriteDataCommand.CanExecute(null));
+                var afterTheMistake = changed;
+
+                task.StartPageText = " 12 ";
+
+                Assert.Equal(12, task.StartPage);
+                Assert.True(task.IsStartPageValid);
+                Assert.True(task.WriteDataCommand.CanExecute(null));
+                Assert.True(task.OKCommand.CanExecute(null));
+                Assert.True(changed > afterTheMistake, "the button is told");
+                Assert.Equal(new[] { 12 }, task.PageRows.Select(row => row.PageNumber));
+
+                var reader = Reader();
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await task.WriteDataCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal(12, Assert.Single(reader.UltralightCalls).StartPage);
+            });
+        }
+
+        [Fact]
+        public async Task TheFirstPageThatIsSetByTheProgram_ReplacesWhatWasTyped()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Write("A1B2C3D4", start: 9);
+                task.StartPageText = "abc";
+
+                task.StartPage = 20;
+
+                Assert.Equal("20", task.StartPageText);
+                Assert.True(task.IsStartPageValid);
+                Assert.True(task.WriteDataCommand.CanExecute(null));
+            });
+        }
+
+        [Fact]
+        public async Task ANumberOfPagesThatIsNoNumber_StopsAReadAndOnlyAReadAndThePagesStayAsTheyWere()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var read = Read(count: 3);
+                var reader = Reader();
+
+                read.PageCountText = "many";
+
+                Assert.Equal(3, read.PageCount);
+                Assert.False(read.IsPageCountValid);
+                Assert.False(read.ReadDataCommand.CanExecute(null));
+                Assert.Equal(3, read.PageRows.Count);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await read.ReadDataCommand.ExecuteAsync(null);
+                }
+
+                Assert.Empty(reader.UltralightCalls);
+                Assert.Equal(ERROR.ProtocolConstraint, read.CurrentTaskErrorLevel);
+
+                // A write has no number of pages to be wrong about.
+                read.SelectedTaskType = TaskType_MifareUltralightTask.WriteData;
+                Assert.True(read.ArePageInputsValid);
+                Assert.True(read.WriteDataCommand.CanExecute(null));
+
+                // And a read that has one again is back on.
+                read.SelectedTaskType = TaskType_MifareUltralightTask.ReadData;
+                Assert.False(read.ReadDataCommand.CanExecute(null));
+                read.PageCountText = "4";
+                Assert.True(read.ReadDataCommand.CanExecute(null));
+                Assert.Equal(4, read.PageCount);
+                Assert.Equal(4, read.PageRows.Count);
+            });
+        }
+
+        [Fact]
+        public async Task TheTextOfTheBoxes_IsNoPartOfTheProject()
+        {
+            foreach (var name in new[] { nameof(MifareUltralightSetupViewModel.StartPageText), nameof(MifareUltralightSetupViewModel.PageCountText), nameof(MifareUltralightSetupViewModel.IsStartPageValid), nameof(MifareUltralightSetupViewModel.IsPageCountValid), nameof(MifareUltralightSetupViewModel.ArePageInputsValid) })
+            {
+                var property = typeof(MifareUltralightSetupViewModel).GetProperty(name);
+
+                Assert.NotNull(property);
+                Assert.NotNull(property.GetCustomAttribute<XmlIgnoreAttribute>());
+            }
+
+            // A task with a mistake in a box keeps what it had: the project is written from the numbers.
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Read(start: 7, count: 2);
+                task.StartPageText = "abc";
+
+                Assert.Equal(7, task.StartPage);
+            });
+        }
+
         // ── What turns the key boxes on ──
 
         [Theory]

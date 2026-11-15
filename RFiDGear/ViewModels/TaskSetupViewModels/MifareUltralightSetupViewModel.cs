@@ -577,6 +577,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(IsReadTask));
                 OnPropertyChanged(nameof(IsWriteTask));
                 RebuildPageRows();
+                PageInputsChanged();
             }
         }
         private TaskType_MifareUltralightTask selectedTaskType;
@@ -595,6 +596,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 startPage = value;
                 OnPropertyChanged();
 
+                if (!startPageIsFromText)
+                {
+                    // The program set the page: what the box holds is that page, and no mistake.
+                    startPageText = null;
+                    startPageIsValid = true;
+                    OnPropertyChanged(nameof(StartPageText));
+                    OnPropertyChanged(nameof(IsStartPageValid));
+                    PageInputsChanged();
+                }
+
                 // The pages of a write keep their data and take new numbers, the pages of a read show what was read of their number.
                 if (IsWriteTask)
                 {
@@ -609,6 +620,103 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
         private int startPage = UltralightMemoryMap.FirstUserPage;
 
+        // What the boxes of the first page and of the number of pages hold, as it is typed. WPF leaves the number of the task as it was
+        // when a box holds no number, and a button that runs the task would then act on a page that the box no longer shows: the text
+        // is kept here, the box says when it is no number, and nothing runs while it is not.
+        private string startPageText;
+        private bool startPageIsValid = true;
+        private bool startPageIsFromText;
+        private string pageCountText;
+        private bool pageCountIsValid = true;
+        private bool pageCountIsFromText;
+
+        /// <summary>
+        /// Gets or sets the first page as it is typed. While it is no whole number the task keeps the page it had, <see cref="IsStartPageValid"/>
+        /// is <see langword="false"/>, and nothing is run on that page. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public string StartPageText
+        {
+            get => startPageText ?? startPage.ToString(CultureInfo.InvariantCulture);
+            set
+            {
+                startPageText = value ?? string.Empty;
+                startPageIsValid = int.TryParse(startPageText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var page);
+
+                if (startPageIsValid)
+                {
+                    startPageIsFromText = true;
+
+                    try
+                    {
+                        StartPage = page;
+                    }
+                    finally
+                    {
+                        startPageIsFromText = false;
+                    }
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsStartPageValid));
+                PageInputsChanged();
+            }
+        }
+
+        /// <summary>Gets whether the box of the first page holds a whole number. Not part of the project.</summary>
+        [XmlIgnore]
+        public bool IsStartPageValid => startPageIsValid;
+
+        /// <summary>
+        /// Gets or sets the number of pages of a read as it is typed. While it is no whole number the task keeps the number it had,
+        /// <see cref="IsPageCountValid"/> is <see langword="false"/>, and a read does not run. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public string PageCountText
+        {
+            get => pageCountText ?? pageCount.ToString(CultureInfo.InvariantCulture);
+            set
+            {
+                pageCountText = value ?? string.Empty;
+                pageCountIsValid = int.TryParse(pageCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count);
+
+                if (pageCountIsValid)
+                {
+                    pageCountIsFromText = true;
+
+                    try
+                    {
+                        PageCount = count;
+                    }
+                    finally
+                    {
+                        pageCountIsFromText = false;
+                    }
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsPageCountValid));
+                PageInputsChanged();
+            }
+        }
+
+        /// <summary>Gets whether the box of the number of pages holds a whole number. Not part of the project.</summary>
+        [XmlIgnore]
+        public bool IsPageCountValid => pageCountIsValid;
+
+        /// <summary>
+        /// Gets whether the boxes that the task needs hold numbers: the first page, and for a read the number of pages. While they do
+        /// not, the buttons that run the task and the OK button are off and a run is refused. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public bool ArePageInputsValid => startPageIsValid && (!IsReadTask || pageCountIsValid);
+
+        private void PageInputsChanged()
+        {
+            OnPropertyChanged(nameof(ArePageInputsValid));
+            NotifyTheButtons();
+        }
+
         /// <summary>Gets or sets the number of pages a read returns. A write has as many pages as its data has.</summary>
         public int PageCount
         {
@@ -617,6 +725,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 pageCount = value;
                 OnPropertyChanged();
+
+                if (!pageCountIsFromText)
+                {
+                    pageCountText = null;
+                    pageCountIsValid = true;
+                    OnPropertyChanged(nameof(PageCountText));
+                    OnPropertyChanged(nameof(IsPageCountValid));
+                    PageInputsChanged();
+                }
 
                 if (IsReadTask)
                 {
@@ -934,7 +1051,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// the task holds. It is off while an operation runs, and is the same command each time so that the button is told when that
         /// changes. The run loop uses <see cref="CommandDelegator"/>.
         /// </summary>
-        public IAsyncRelayCommand ReadDataCommand => readDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: false), () => !IsRunning);
+        public IAsyncRelayCommand ReadDataCommand => readDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: false), () => !IsRunning && ArePageInputsValid);
 
         private IAsyncRelayCommand writeDataCommand;
 
@@ -942,7 +1059,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Writes the data of the task to the chip on the reader, for the button of the dialog. Off while an operation runs, like
         /// <see cref="ReadDataCommand"/>.
         /// </summary>
-        public IAsyncRelayCommand WriteDataCommand => writeDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: true), () => !IsRunning);
+        public IAsyncRelayCommand WriteDataCommand => writeDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: true), () => !IsRunning && ArePageInputsValid);
 
         // The buttons are told when an operation starts and when it ends. They are told on the thread of the window: the run loop
         // can run the task on another.
@@ -951,6 +1068,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 readDataCommand?.NotifyCanExecuteChanged();
                 writeDataCommand?.NotifyCanExecuteChanged();
+                okCommand?.NotifyCanExecuteChanged();
             });
 
         // The steps of a read or a write, in this order. Each one ends the task when it fails. First the reader is looked for, and a
@@ -1053,6 +1171,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             data = null;
             pages = PageCount;
+
+            // A box that holds no number: the task still has the number it had, which is not what the dialog shows.
+            if (!ArePageInputsValid)
+            {
+                pages = 0;
+
+                return ERROR.ProtocolConstraint;
+            }
 
             if (write)
             {
@@ -1276,7 +1402,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         public event EventHandler DialogClosing;
 
-        public ICommand OKCommand => new RelayCommand(Ok);
+        private RelayCommand okCommand;
+
+        /// <summary>Gets the command of the OK button; it is off while a box of the pages holds no number.</summary>
+        public ICommand OKCommand => okCommand ??= new RelayCommand(Ok, () => ArePageInputsValid);
 
         protected virtual void Ok()
         {
