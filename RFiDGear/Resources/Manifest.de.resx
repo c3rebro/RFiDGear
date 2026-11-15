@@ -2102,6 +2102,15 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="keySlotNameClassicMadBTarget" xml:space="preserve">
     <value>MAD-Schlüssel B, neu</value>
   </data>
+  <data name="keySlotNameUltralightCKey" xml:space="preserve">
+    <value>Schlüssel (Ultralight C)</value>
+  </data>
+  <data name="keySlotNameUltralightPassword" xml:space="preserve">
+    <value>Passwort (EV1 / NTAG)</value>
+  </data>
+  <data name="keySlotNameUltralightPack" xml:space="preserve">
+    <value>Passwort-Quittung (PACK)</value>
+  </data>
   <data name="labelKeySlotReferenceCaption" xml:space="preserve">
     <value>Referenz: {0}</value>
   </data>
