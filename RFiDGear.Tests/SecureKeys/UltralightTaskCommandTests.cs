@@ -590,20 +590,6 @@ namespace RFiDGear.Tests.SecureKeys
         // ── What the buttons of the dialog may do, and what may run at the same time ──
 
         [Fact]
-        public async Task TheButtonsOfTheOldDialog_AreOff_UntilTheDialogIsBoundToTheTask()
-        {
-            // They write what the task holds, while the dialog still shows other pages and other data: a person would write one thing
-            // and read another, possibly into a protected page. The run loop uses the command of the task type and is not affected.
-            await StaTestRunner.RunOnStaThreadAsync(() =>
-            {
-                var task = NewTask(Scenarios["WriteC"]);
-
-                Assert.False(task.ReadDataCommand.CanExecute(null));
-                Assert.False(task.WriteDataCommand.CanExecute(null));
-            });
-        }
-
-        [Fact]
         public async Task AnOperationThatIsAskedForWhileOneIsInFlight_IsNotStarted()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="RFiDGear.View.TabPageMifareUltralightKeysView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:ctl="clr-namespace:RFiDGear.View"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <dal:ResourceLoader x:Key="Localization" />
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="8,8,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <GroupBox
+                Grid.Row="0"
+                Grid.Column="0"
+                Margin="0,0,4,0"
+                VerticalAlignment="Top"
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareUltralightKeyC'}"
+                IsEnabled="{Binding UsesUltralightCKey}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Label
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Margin="8,8,8,8"
+                        VerticalContentAlignment="Center"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareUltralightKeyC'}" />
+                    <ctl:KeySlotEditor
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Host="{Binding}"
+                        SlotId="ultralight.c.key">
+                        <TextBox
+                            Margin="8,8,8,8"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            FontFamily="Lucida Console"
+                            Text="{Binding UltralightCKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </ctl:KeySlotEditor>
+                    <ctl:KeyManagerButton
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,0,8,8" />
+                </Grid>
+            </GroupBox>
+            <GroupBox
+                Grid.Row="0"
+                Grid.Column="1"
+                Margin="4,0,0,0"
+                VerticalAlignment="Top"
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareUltralightKeyPassword'}"
+                IsEnabled="{Binding UsesPassword}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Label
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Margin="8,8,8,8"
+                        VerticalContentAlignment="Center"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareUltralightPassword'}" />
+                    <ctl:KeySlotEditor
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Host="{Binding}"
+                        SlotId="ultralight.password">
+                        <TextBox
+                            Margin="8,8,8,8"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            FontFamily="Lucida Console"
+                            Text="{Binding UltralightPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </ctl:KeySlotEditor>
+                    <Label
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        VerticalContentAlignment="Center"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareUltralightPack'}" />
+                    <ctl:KeySlotEditor
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Host="{Binding}"
+                        SlotId="ultralight.pack">
+                        <TextBox
+                            Margin="8,0,8,8"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            FontFamily="Lucida Console"
+                            Text="{Binding UltralightPack, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </ctl:KeySlotEditor>
+                    <ctl:KeyManagerButton
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,0,8,8" />
+                </Grid>
+            </GroupBox>
+            <TextBlock
+                Grid.Row="1"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Margin="4,10,4,0"
+                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='textBlockMifareUltralightKeysHint'}"
+                TextWrapping="Wrap" />
+        </Grid>
+    </ScrollViewer>
+</UserControl>

@@ -47,9 +47,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
 
-        private MifareUltralightChipModel chipModel;
-        private MifareUltralightPageModel pageModel;
-
         private SettingsReaderWriter settings = new SettingsReaderWriter();
 
         #endregion fields
@@ -61,14 +58,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         public MifareUltralightSetupViewModel()
         {
-            chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
-
-            childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
-            childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
-
-            MifareUltralightPages = CustomConverter.GenerateStringSequence(0, 15).ToArray();
-
-            SelectedUltralightPageCurrent = "0";
         }
 
         /// <summary>
@@ -82,17 +71,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 MefHelper.Instance.EnsureCompose();
                 MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
-
-                chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
-
-                pageModel = new MifareUltralightPageModel(new byte[4], 0)
-                {
-                    PageNumber = selectedUltralightPageCurrentAsInt
-                };
-
-                childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
-                childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
-
 
                 if (_selectedSetupViewModel is MifareUltralightSetupViewModel)
                 {
@@ -111,7 +89,20 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         if (mget == null) { continue; }
                         if (mset == null) { continue; }
 
-                        p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+                        // What this dialog composes for itself is no data of the task. The plugins of the edited task were never composed
+                        // (it came out of a project file), and copying their absence would throw in the setter, stop the copy at this
+                        // property and leave every property behind it at its default: the dialog would open empty.
+                        if (p.Name == nameof(Items) || p.Name == nameof(HasPlugins) || p.Name == nameof(SelectedPlugin)) { continue; }
+
+                        try
+                        {
+                            p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+                        }
+                        catch (Exception e) when (!(e is OperationCanceledException))
+                        {
+                            // The name of the property and the type of the exception, nothing of the value.
+                            Log.ForContext<MifareUltralightSetupViewModel>().Error("A property of the edited task could not be copied ({Property}, {ExceptionType})", p.Name, (e.InnerException ?? e).GetType().FullName);
+                        }
                     }
                 }
 
@@ -121,10 +112,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     CurrentTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                 }
-
-                MifareUltralightPages = CustomConverter.GenerateStringSequence(0, 15).ToArray();
-
-                SelectedUltralightPageCurrent = "0";
 
                 HasPlugins = items != null ? items.Any() : false;
 
@@ -144,27 +131,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         #region DataExplorer
 
-        [XmlIgnore]
-        public string[] MifareUltralightPages { get; set; }
-
         /// <summary>
-        ///
-        /// </summary>
-        [XmlIgnore]
-        public string SelectedUltralightPageCurrent
-        {
-            get => selectedUltralightPageCurrent;
-            set
-            {
-                selectedUltralightPageCurrent = value;
-                int.TryParse(value, out selectedUltralightPageCurrentAsInt);
-            }
-        }
-        private string selectedUltralightPageCurrent;
-        private int selectedUltralightPageCurrentAsInt;
-
-        /// <summary>
-        ///
+        /// Gets or sets whether the pages of the dialog take input: they do for a read and for a write.
         /// </summary>
         [XmlIgnore]
         public bool IsDataExplorerEditTabEnabled
@@ -178,29 +146,191 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
         private bool isDataExplorerEditTabEnabled;
 
-        /// <summary>
-        ///
-        /// </summary>
-        [XmlIgnore]
-        public RFiDChipChildLayerViewModel ChildNodeViewModelFromChip
-        {
-            get => childNodeViewModelFromChip;
-            set => childNodeViewModelFromChip = value;
-        }
-        private RFiDChipChildLayerViewModel childNodeViewModelFromChip;
-
-        /// <summary>
-        ///
-        /// </summary>
-        [XmlIgnore]
-        public RFiDChipChildLayerViewModel ChildNodeViewModelTemp
-        {
-            get => childNodeViewModelTemp;
-            set => childNodeViewModelTemp = value;
-        }
-        private RFiDChipChildLayerViewModel childNodeViewModelTemp;
-
         #endregion DataExplorer
+
+        #region The grid of pages
+
+        // The biggest chip of the family, an NTAG216, has 231 pages: a grid never has more rows than that.
+        private static readonly int MostPagesOfAnyChip = Enum.GetValues(typeof(UltralightVariant)).Cast<UltralightVariant>().Max(variant => UltralightMemoryMap.For(variant).PageCount);
+
+        // Set while the data of the task is made from the rows, so that the rows are not made from the data again: a row that is typed
+        // into and not yet whole would otherwise be cut up differently from the way the person sees it.
+        private bool dataIsMadeFromTheRows;
+
+        /// <summary>
+        /// Gets the rows of the grid of pages: for a write one per page of its data, which the person types into and which change the
+        /// data of the task; for a read one per page that it asks for, showing what the last read gave. The rows are a view of the task
+        /// and no part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public ObservableCollection<UltralightPageRow> PageRows { get; } = new ObservableCollection<UltralightPageRow>();
+
+        /// <summary>Gets whether the task reads pages.</summary>
+        [XmlIgnore]
+        public bool IsReadTask => SelectedTaskType == TaskType_MifareUltralightTask.ReadData;
+
+        /// <summary>Gets whether the task writes pages.</summary>
+        [XmlIgnore]
+        public bool IsWriteTask => SelectedTaskType == TaskType_MifareUltralightTask.WriteData;
+
+        /// <summary>Gets whether the task authenticates with the key of an Ultralight C: the box of that key is on.</summary>
+        [XmlIgnore]
+        public bool UsesUltralightCKey => Authentication == UltralightAuth.UltralightC;
+
+        /// <summary>Gets whether the task authenticates with the password of an EV1 or an NTAG: the boxes of the password and the PACK are on.</summary>
+        [XmlIgnore]
+        public bool UsesPassword => Authentication == UltralightAuth.Password;
+
+        private IRelayCommand addPageCommand;
+
+        /// <summary>Gets the command that adds an empty page at the end of the data of a write. It is off for a read and when the chip has no more pages.</summary>
+        public IRelayCommand AddPageCommand => addPageCommand ??= new RelayCommand(AddPage, CanAddPage);
+
+        private IRelayCommand<UltralightPageRow> removePageCommand;
+
+        /// <summary>Gets the command that removes a page of a write; its parameter is the row.</summary>
+        public IRelayCommand<UltralightPageRow> RemovePageCommand => removePageCommand ??= new RelayCommand<UltralightPageRow>(RemovePage);
+
+        // The pages that the grid can have: the chip the task names has as many as its layout says, a task that names none can have the
+        // pages of the biggest chip. The rows start at the first page of the task.
+        private int MostRows()
+        {
+            var pages = ExpectedChip.TryGetVariant(out var variant) ? UltralightMemoryMap.For(variant).PageCount : MostPagesOfAnyChip;
+
+            return Math.Max(0, pages - Math.Max(StartPage, 0));
+        }
+
+        private bool CanAddPage() => IsWriteTask && PageRows.Count < MostRows();
+
+        private void AddPage()
+        {
+            if (!CanAddPage())
+            {
+                return;
+            }
+
+            AddRow(string.Empty, readOnly: false);
+            Renumber();
+            MakeTheDataFromTheRows();
+        }
+
+        private void RemovePage(UltralightPageRow row)
+        {
+            if (row == null || !IsWriteTask || !PageRows.Contains(row))
+            {
+                return;
+            }
+
+            row.PropertyChanged -= OnRowChanged;
+            PageRows.Remove(row);
+            Renumber();
+            MakeTheDataFromTheRows();
+        }
+
+        private void AddRow(string hex, bool readOnly)
+        {
+            var row = new UltralightPageRow(hex, readOnly);
+            row.PropertyChanged += OnRowChanged;
+            PageRows.Add(row);
+        }
+
+        private void OnRowChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(UltralightPageRow.Hex) && IsWriteTask)
+            {
+                MakeTheDataFromTheRows();
+            }
+        }
+
+        // The data of a write is what the rows hold, one after the other, as long as every row is a whole page. With a row that is
+        // not (two rows A1B2 and C3D4, or an empty row before a full one) the plain digits could be one whole page that the grid does
+        // not show, or the data of a later row one page too early: the rows are kept exactly as they are, each after a mark, and
+        // that text is no data that a run takes (it is not hexadecimal), so the write is refused. The grid reads it back as it was.
+        private void MakeTheDataFromTheRows()
+        {
+            dataIsMadeFromTheRows = true;
+
+            try
+            {
+                var digits = PageRows.Select(row => row.Hex).ToList();
+
+                WriteDataHex = digits.All(UltralightPageRow.IsWholePage)
+                    ? string.Concat(digits)
+                    : UltralightPageRow.RowMark + string.Join(UltralightPageRow.RowMark.ToString(), digits);
+            }
+            finally
+            {
+                dataIsMadeFromTheRows = false;
+            }
+
+            addPageCommand?.NotifyCanExecuteChanged();
+        }
+
+        // The rows are made again from what the task holds: from its data for a write, and for a read from the pages it asks for and the
+        // bytes of the last read.
+        private void RebuildPageRows()
+        {
+            foreach (var row in PageRows)
+            {
+                row.PropertyChanged -= OnRowChanged;
+            }
+
+            PageRows.Clear();
+
+            if (IsWriteTask && WriteDataHex.Length > 0 && WriteDataHex[0] == UltralightPageRow.RowMark)
+            {
+                // Rows that were kept as they were shown (see MakeTheDataFromTheRows).
+                foreach (var digits in WriteDataHex.Substring(1).Split(UltralightPageRow.RowMark))
+                {
+                    AddRow(digits, readOnly: false);
+                }
+            }
+            else if (IsWriteTask)
+            {
+                for (var offset = 0; offset < WriteDataHex.Length; offset += 8)
+                {
+                    AddRow(WriteDataHex.Substring(offset, Math.Min(8, WriteDataHex.Length - offset)), readOnly: false);
+                }
+            }
+            else if (IsReadTask)
+            {
+                var count = Math.Min(Math.Max(PageCount, 0), MostPagesOfAnyChip);
+
+                for (var i = 0; i < count; i++)
+                {
+                    AddRow(ShownOfTheLastRead(unchecked(StartPage + i)), readOnly: true);
+                }
+            }
+
+            Renumber();
+            addPageCommand?.NotifyCanExecuteChanged();
+        }
+
+        private void Renumber()
+        {
+            for (var i = 0; i < PageRows.Count; i++)
+            {
+                // A first page near the end of the numbers must not stop the grid: the application is built with overflow checks.
+                PageRows[i].PageNumber = unchecked(StartPage + i);
+            }
+        }
+
+        // The bytes that the last read gave of a page, as digits; nothing for a page that was not read (the bytes belong to the pages
+        // they were read from, not to the place in the grid).
+        private string ShownOfTheLastRead(int page)
+        {
+            // In 64 bits: the pages are those of any number a task can hold, and the difference of two of them does not fit 32.
+            var offset = ((long)page - LastReadStartPage) * UltralightMemoryMap.PageSize;
+
+            if (LastReadData == null || offset < 0 || offset + UltralightMemoryMap.PageSize > LastReadData.Length)
+            {
+                return string.Empty;
+            }
+
+            return Convert.ToHexString(LastReadData, (int)offset, UltralightMemoryMap.PageSize);
+        }
+
+        #endregion The grid of pages
 
         #region Plugins
 
@@ -446,6 +576,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
+                OnPropertyChanged(nameof(IsReadTask));
+                OnPropertyChanged(nameof(IsWriteTask));
+                RebuildPageRows();
+                PageInputsChanged();
             }
         }
         private TaskType_MifareUltralightTask selectedTaskType;
@@ -463,9 +597,128 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 startPage = value;
                 OnPropertyChanged();
+
+                if (!startPageIsFromText)
+                {
+                    // The program set the page: what the box holds is that page, and no mistake.
+                    startPageText = null;
+                    startPageIsValid = true;
+                    OnPropertyChanged(nameof(StartPageText));
+                    OnPropertyChanged(nameof(IsStartPageValid));
+                    PageInputsChanged();
+                }
+
+                // The pages of a write keep their data and take new numbers, the pages of a read show what was read of their number.
+                if (IsWriteTask)
+                {
+                    Renumber();
+                    addPageCommand?.NotifyCanExecuteChanged();
+                }
+                else
+                {
+                    RebuildPageRows();
+                }
             }
         }
         private int startPage = UltralightMemoryMap.FirstUserPage;
+
+        // What the boxes of the first page and of the number of pages hold, as it is typed. WPF leaves the number of the task as it was
+        // when a box holds no number, and a button that runs the task would then act on a page that the box no longer shows: the text
+        // is kept here, the box says when it is no number, and nothing runs while it is not.
+        private string startPageText;
+        private bool startPageIsValid = true;
+        private bool startPageIsFromText;
+        private string pageCountText;
+        private bool pageCountIsValid = true;
+        private bool pageCountIsFromText;
+
+        /// <summary>
+        /// Gets or sets the first page as it is typed. While it is no whole number the task keeps the page it had, <see cref="IsStartPageValid"/>
+        /// is <see langword="false"/>, and nothing is run on that page. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public string StartPageText
+        {
+            get => startPageText ?? startPage.ToString(CultureInfo.InvariantCulture);
+            set
+            {
+                startPageText = value ?? string.Empty;
+                // A page of a chip: no chip of the family has more than MostPagesOfAnyChip pages, and none has a page below 0.
+                startPageIsValid = int.TryParse(startPageText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var page) && page >= 0 && page < MostPagesOfAnyChip;
+
+                if (startPageIsValid)
+                {
+                    startPageIsFromText = true;
+
+                    try
+                    {
+                        StartPage = page;
+                    }
+                    finally
+                    {
+                        startPageIsFromText = false;
+                    }
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsStartPageValid));
+                PageInputsChanged();
+            }
+        }
+
+        /// <summary>Gets whether the box of the first page holds a page of a chip (a whole number from 0 up to the pages of the biggest chip). Not part of the project.</summary>
+        [XmlIgnore]
+        public bool IsStartPageValid => startPageIsValid;
+
+        /// <summary>
+        /// Gets or sets the number of pages of a read as it is typed. While it is no whole number the task keeps the number it had,
+        /// <see cref="IsPageCountValid"/> is <see langword="false"/>, and a read does not run. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public string PageCountText
+        {
+            get => pageCountText ?? pageCount.ToString(CultureInfo.InvariantCulture);
+            set
+            {
+                pageCountText = value ?? string.Empty;
+                pageCountIsValid = int.TryParse(pageCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count) && count >= 0 && count <= MostPagesOfAnyChip;
+
+                if (pageCountIsValid)
+                {
+                    pageCountIsFromText = true;
+
+                    try
+                    {
+                        PageCount = count;
+                    }
+                    finally
+                    {
+                        pageCountIsFromText = false;
+                    }
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsPageCountValid));
+                PageInputsChanged();
+            }
+        }
+
+        /// <summary>Gets whether the box of the number of pages holds a number of pages that a chip can have. Not part of the project.</summary>
+        [XmlIgnore]
+        public bool IsPageCountValid => pageCountIsValid;
+
+        /// <summary>
+        /// Gets whether the boxes that the task needs hold numbers: the first page, and for a read the number of pages. While they do
+        /// not, the buttons that run the task and the OK button are off and a run is refused. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public bool ArePageInputsValid => startPageIsValid && (!IsReadTask || pageCountIsValid);
+
+        private void PageInputsChanged()
+        {
+            OnPropertyChanged(nameof(ArePageInputsValid));
+            NotifyTheButtons();
+        }
 
         /// <summary>Gets or sets the number of pages a read returns. A write has as many pages as its data has.</summary>
         public int PageCount
@@ -475,13 +728,29 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 pageCount = value;
                 OnPropertyChanged();
+
+                if (!pageCountIsFromText)
+                {
+                    pageCountText = null;
+                    pageCountIsValid = true;
+                    OnPropertyChanged(nameof(PageCountText));
+                    OnPropertyChanged(nameof(IsPageCountValid));
+                    PageInputsChanged();
+                }
+
+                if (IsReadTask)
+                {
+                    RebuildPageRows();
+                }
             }
         }
         private int pageCount = 1;
 
         /// <summary>
         /// Gets or sets the data of a write, as hexadecimal digits without separators, 8 per page. White space is dropped and the
-        /// digits are written in upper case; what is not a digit is kept, and a write with such data does not reach the card.
+        /// digits are written in upper case; what is not a digit is kept, and a write with such data does not reach the card. The grid
+        /// of the dialog writes a vertical bar in front of the rows, and between them, while one of them is not a whole page, so that
+        /// rows that are shown apart are never run together into a page: such text is not data, and no write takes it.
         /// </summary>
         public string WriteDataHex
         {
@@ -490,6 +759,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 writeDataHex = NormalizeHex(value);
                 OnPropertyChanged();
+
+                if (!dataIsMadeFromTheRows && IsWriteTask)
+                {
+                    RebuildPageRows();
+                }
             }
         }
         private string writeDataHex = string.Empty;
@@ -506,6 +780,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 expectedChip = value;
                 OnPropertyChanged();
+                addPageCommand?.NotifyCanExecuteChanged();
             }
         }
         private UltralightExpectation expectedChip = UltralightExpectation.Auto;
@@ -518,6 +793,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 authentication = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(UsesUltralightCKey));
+                OnPropertyChanged(nameof(UsesPassword));
             }
         }
         private UltralightAuth authentication = UltralightAuth.None;
@@ -770,17 +1047,33 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await settings.SaveSettings();
         }
 
-        /// <summary>
-        /// Reads the pages of the task from the chip on the reader. Off until the dialog is bound to the inputs of the task: the page
-        /// and the data that the old dialog shows are not the ones the task holds, and a button that wrote the one while showing the
-        /// other could write a protected page. The run loop uses <see cref="CommandDelegator"/>, which is not affected.
-        /// </summary>
-        public ICommand ReadDataCommand => new AsyncRelayCommand(() => RunPageOperationAsync(write: false), () => false);
+        private IAsyncRelayCommand readDataCommand;
 
         /// <summary>
-        /// Writes the data of the task to the chip on the reader. Off for the same reason as <see cref="ReadDataCommand"/>.
+        /// Reads the pages of the task from the chip on the reader, for the button of the dialog: the pages the dialog shows are the ones
+        /// the task holds. It is off while an operation runs, and is the same command each time so that the button is told when that
+        /// changes. The run loop uses <see cref="CommandDelegator"/>.
         /// </summary>
-        public ICommand WriteDataCommand => new AsyncRelayCommand(() => RunPageOperationAsync(write: true), () => false);
+        public IAsyncRelayCommand ReadDataCommand => readDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: false), () => !IsRunning && ArePageInputsValid);
+
+        private IAsyncRelayCommand writeDataCommand;
+
+        /// <summary>
+        /// Writes the data of the task to the chip on the reader, for the button of the dialog. Off while an operation runs, like
+        /// <see cref="ReadDataCommand"/>.
+        /// </summary>
+        public IAsyncRelayCommand WriteDataCommand => writeDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: true), () => !IsRunning && ArePageInputsValid);
+
+        // The buttons are told when an operation starts and when it ends. They are told on the thread of the window: the run loop
+        // can run the task on another.
+        private void NotifyTheButtons() =>
+            UiDispatcher.InvokeIfRequired(() =>
+            {
+                readDataCommand?.NotifyCanExecuteChanged();
+                writeDataCommand?.NotifyCanExecuteChanged();
+                okCommand?.NotifyCanExecuteChanged();
+                cancelCommand?.NotifyCanExecuteChanged();
+            });
 
         // The steps of a read or a write, in this order. Each one ends the task when it fails. First the reader is looked for, and a
         // reader that is not connected ends the task before a provider is asked for anything. Then what can be known without the
@@ -801,6 +1094,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 OnPropertyChanged(nameof(IsRunning));
                 OnPropertyChanged(nameof(AreInputsEnabled));
+                NotifyTheButtons();
                 lastOutcome = null;
                 CurrentTaskErrorLevel = ERROR.Empty;
 
@@ -864,6 +1158,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 Interlocked.Exchange(ref running, 0);
                 OnPropertyChanged(nameof(IsRunning));
                 OnPropertyChanged(nameof(AreInputsEnabled));
+                NotifyTheButtons();
             }
         }
 
@@ -880,6 +1175,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             data = null;
             pages = PageCount;
+
+            // A box that holds no number: the task still has the number it had, which is not what the dialog shows.
+            if (!ArePageInputsValid)
+            {
+                pages = 0;
+
+                return ERROR.ProtocolConstraint;
+            }
 
             if (write)
             {
@@ -960,6 +1263,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 LastReadStartPage = StartPage;
                 LastReadData = (byte[])result.Data.Clone();
+
+                // The grid shows what was read. It is changed on the thread of the window, which the run loop may not be on.
+                if (IsReadTask)
+                {
+                    UiDispatcher.InvokeIfRequired(RebuildPageRows);
+                }
             }
 
             CurrentTaskErrorLevel = result.Error;
@@ -1097,7 +1406,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         public event EventHandler DialogClosing;
 
-        public ICommand OKCommand => new RelayCommand(Ok);
+        private RelayCommand okCommand;
+
+        /// <summary>
+        /// Gets the command of the OK button. It is off while a box of the pages holds no number, and while an operation runs: OK
+        /// adds the task to the project and closes the dialog, and a write that still waits for its key would reach the card after that.
+        /// </summary>
+        public ICommand OKCommand => okCommand ??= new RelayCommand(Ok, () => ArePageInputsValid && !IsRunning);
 
         protected virtual void Ok()
         {
@@ -1111,7 +1426,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
-        public ICommand CancelCommand => new RelayCommand(Cancel);
+        private RelayCommand cancelCommand;
+
+        /// <summary>
+        /// Gets the command of the Cancel button. It is off while an operation runs: closing the dialog leaves the operation running,
+        /// and a write that still waits for its key would reach the card after the person pressed the button that says it will not.
+        /// </summary>
+        public ICommand CancelCommand => cancelCommand ??= new RelayCommand(Cancel, () => !IsRunning);
 
         protected virtual void Cancel()
         {

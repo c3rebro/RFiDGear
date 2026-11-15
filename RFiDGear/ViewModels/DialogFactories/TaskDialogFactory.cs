@@ -283,7 +283,7 @@ namespace RFiDGear.ViewModel.DialogFactories
 
             var viewModel = new MifareUltralightSetupViewModel(selectedSetupViewModel, dialogs)
             {
-                Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
+                Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareUltralightTask"),
 
                 OnOk = (sender) =>
                 {
