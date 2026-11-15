@@ -88,6 +88,57 @@ namespace RFiDGear.Tests
             });
         }
 
+        // ── What a Generic chip task that checks for "Mifare Ultralight" says to an NTAG ──
+
+        [Theory]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.MifareUltralight, true)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.MifareUltralightC, true)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.MifareUltralight_EV1, true)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.MifareUltralight_EV1_MF0UL11, true)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.MifareUltralight_EV1_MF0UL21, true)]
+        // Before Elatec.NET 0.7.0-beta.2 an NTAG was reported as MifareUltralight, so a project that checks for "Mifare Ultralight"
+        // has been passing for the NTAGs that it works with, and its branches depend on it. It still passes.
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.NTAG_213, true)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.NTAG_215, true)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.NTAG_216, true)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.Mifare1K, false)]
+        [InlineData(CARD_TYPE.MifareUltralight, CARD_TYPE.DESFireEV1, false)]
+        // The other checks are what they were: a family is the family, and any other type is that exact type.
+        [InlineData(CARD_TYPE.NTAG_210, CARD_TYPE.NTAG_215, true)]
+        [InlineData(CARD_TYPE.NTAG_210, CARD_TYPE.MifareUltralight, false)]
+        [InlineData(CARD_TYPE.NTAG_215, CARD_TYPE.NTAG_215, true)]
+        [InlineData(CARD_TYPE.NTAG_215, CARD_TYPE.NTAG_213, false)]
+        [InlineData(CARD_TYPE.NTAG_215, CARD_TYPE.MifareUltralight, false)]
+        [InlineData(CARD_TYPE.MifareUltralightC, CARD_TYPE.MifareUltralightC, true)]
+        [InlineData(CARD_TYPE.MifareUltralightC, CARD_TYPE.MifareUltralight, false)]
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.Mifare1K, true)]
+        [InlineData(CARD_TYPE.Mifare1K, CARD_TYPE.Mifare1K, true)]
+        [InlineData(CARD_TYPE.Mifare1K, CARD_TYPE.Mifare4K, false)]
+        public void AChipTypeCheck_SaysWhatItAlwaysSaid_AndStillPassesAnNtagForMifareUltralight(CARD_TYPE selected, CARD_TYPE found, bool expected)
+        {
+            Assert.Equal(expected, GenericChipTaskViewModel.ChipTypeMatches(selected, found));
+        }
+
+        [Theory]
+        [InlineData(CARD_TYPE.NTAG_215, ERROR.NoError)]
+        [InlineData(CARD_TYPE.MifareUltralight_EV1_MF0UL21, ERROR.NoError)]
+        [InlineData(CARD_TYPE.Mifare1K, ERROR.IsNotTrue)]
+        public async Task TheTaskThatChecksForMifareUltralight_RunsTheSameCheck_ForTheChipThatIsOnTheReader(CARD_TYPE onTheReader, ERROR expected)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = new GenericChipTaskViewModel { SelectedChipType = CARD_TYPE.MifareUltralight, CurrentTaskIndex = "0" };
+
+                using (ReaderDeviceScope.Use(new KeySlots.KeyRecordingReader()))
+                {
+                    await task.CheckChipType.ExecuteAsync(new GenericChipModel("04AABBCCDDEEFF", onTheReader));
+                }
+
+                Assert.Equal(expected, task.CurrentTaskErrorLevel);
+                Assert.Equal(expected == ERROR.NoError, task.IsTaskCompletedSuccessfully);
+            });
+        }
+
         private static ChipTaskHandlerModel Load(string xml)
         {
             using var reader = new StringReader(xml);
