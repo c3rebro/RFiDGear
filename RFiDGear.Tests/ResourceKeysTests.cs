@@ -270,6 +270,10 @@ namespace RFiDGear.Tests
             "messageSamSetupNoKeyEntered",
             "messageSamSetupWritten",
             "messageSamSetupMayHaveWritten",
+            "messageSamSetupEntryVerified",
+            "messageSamSetupEntryDisabled",
+            "messageSamSetupEntryDiffers",
+            "messageSamSetupEntryUnreadable",
         };
 
         // The unit of a size, the INIT of the status bar, and the names of chips and of a protocol term read the same in both languages.

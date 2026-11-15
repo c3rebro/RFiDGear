@@ -4,10 +4,15 @@ title: MIFARE SAM AV3 setup, hardware cases
 
 These cases check the setup of a MIFARE SAM AV3 in a PC/SC reader (issue 347):
 Tools > "MIFARE SAM AV3 setup...". One of them runs by itself and only reads
-(`SamDetectionTests`). The rest is a checklist for the window, and it is for
-**you** to run: it activates a SAM, which cannot be undone, and it writes a key
-into the SAM. Nothing here is claimed to have run on a SAM until you have run
-it. Only the ATR and SAM_GetVersion were read from a SAM so far.
+(`SamDetectionTests`), one writes a key entry (`SamKeyEntryTests`), and the
+rest is a checklist for the window, for **you** to run: it activates a SAM,
+which is treated as permanent, and it writes a key into the SAM.
+
+The steps themselves (the `6985` of a new SAM, the activation, the host
+authentication, the key write and the read-back of the entry) have been run
+once, on one bench SAM, with a throwaway console that traced every APDU. The
+record is `SAM-AV3-FIRST-CONTACT.md` in this folder. What has **not** run on a
+SAM is the window: that, and a second SAM, are what this checklist is for.
 
 **What it is, and what it is not:**
 
@@ -21,9 +26,10 @@ it. Only the ATR and SAM_GetVersion were read from a SAM so far.
 
 **Before you start:**
 
-- Use a SAM you can spare. The activation is **irreversible**, and its command
-  was taken from the MIFARE SAM AV2: it has not been checked on a SAM AV3. It
-  may be refused, and it may do something else than expected.
+- Use a SAM you can spare. The activation worked on the bench SAM (`90AF`,
+  `90AF`, `9000`) and the SAM stayed activated after it was taken out and put
+  back. No way back is known, so treat it as **permanent**. It may still be
+  refused by a SAM of another batch or firmware: write down the status word.
 - Close every program that uses the reader. The window holds the reader of the
   application while it is open (the reader monitor, the automatic mode and the
   tasks leave it alone), and it does not open while a run holds the reader.
@@ -65,7 +71,10 @@ dotnet test RFiDGear.HIL.Tests `
 **The checklist for the window (you run it):**
 
 Stop at the first surprise, and write down the status word and the line of the
-log.
+log. What the window looks like, as the tests render it with a scripted SAM
+(so the reader name and the messages are the tests' own): `images/` has
+`sam-setup-found-en.png` (before the check) and `sam-setup-authenticated-en.png`
+(after the host authentication), and the same in German (`-de`).
 
 1. Open Tools > "MIFARE SAM AV3 setup...". The reader with the SAM is in the
    list and is chosen, and the state says that a SAM was found. The box for the
@@ -84,22 +93,28 @@ log.
      has the factory key. Go to step 6.
    - "did not accept the authentication (status XXXX)": its master key is not
      the factory key. Stop. Do not try keys by guessing.
-4. "Activate SAM..." **only if you want that**. The question says that it cannot
-   be undone, and **No** is the button that is on. Answer No once: nothing
-   changes, and the message says "Not activated". Then again, with Yes. Three
-   outcomes, all of them worth reporting with their status word:
-   - "The SAM was activated. Authenticate now."
+4. "Activate SAM..." **only if you want that**. The question says that no way
+   to undo it is known, and **No** is the button that is on. Answer No once:
+   nothing changes, and the message says "Not activated". Then again, with Yes.
+   Three outcomes, all of them worth reporting with their status word:
+   - "The SAM was activated. Authenticate now." (This is what the bench SAM
+     did: `90AF`, `90AF`, `9000`.)
    - "The SAM refused the command (status XXXX)". Nothing was changed, as far as
      the SAM says.
    - "The activation ended with an error, but the SAM may be activated all the
      same": do "Check SAM" and "Authenticate" to find out.
-5. "Authenticate" again. It must succeed now.
+5. "Authenticate" again. It must succeed now (on the bench SAM it did, with the
+   factory key). If you take the SAM out of the reader and put it back, it
+   must still be activated: "Check SAM" and "Authenticate" succeed without a
+   second activation.
 6. Write a key: key entry 1, and a key of your own that is not a secret (for
    instance `0F1E2D3C4B5A69788796A5B4C3D2E1F0`), typed into the box (hidden
    until you tick "Show key"). "Write key". The message says that the key was
-   written to key entry 1, and the box is empty afterwards. If the SAM refuses
-   it, the message gives the status word: that is the interesting result, write
-   it down. Nothing is repeated.
+   written to key entry 1, and the box is empty afterwards. A second line says
+   what the SAM reports when the entry is read back: enabled, AES-128, PICC key
+   class (green), or that the entry is still disabled or of another kind (red).
+   If the SAM refuses the write, the message gives the status word: that is the
+   interesting result, write it down. Nothing is repeated.
 7. Entries that must be refused: key entry 0 and key entry 128 turn the box pink
    and the button "Write key" off.
 8. A stored key: choose the key that you stored before you opened the window
@@ -111,13 +126,38 @@ log.
 10. Switch the language of the application to German and look at the window
     once.
 
+**The case that writes (`SamKeyEntryTests`, needs `cardWrites`):**
+
+- **AKeyEntryThatIsWritten_IsReadBack_EnabledAndOfThePiccKeyClass**: with the
+  factory master key it writes the test key `0F1E2D3C4B5A69788796A5B4C3D2E1F0`
+  as an AES-128 PICC key into key entry 120, version 0, reads the entry back
+  with SAM_GetKeyEntry, and asserts that SET bit 9 ("disable key entry") is
+  clear, the type is AES-128 and the key class is PICC. A blank entry is
+  disabled, so this is what shows that the write enabled it. It never
+  activates a SAM and never changes a master key: it is skipped for a SAM that
+  is not activated, or whose master key is not the factory key, and for an
+  entry 120 that is enabled: a key cannot be read back, so a key that this
+  case wrote earlier cannot be told from the key of somebody else, and an
+  entry that is in use is never overwritten. So it runs once per SAM (it writes
+  only into a blank entry 120), and the entry stays written.
+
 **What this does not check:**
 
 - That the key you wrote works. It is an AES-128 PICC key in a key entry
   (`SET 0x0020`, `ExtSET 0x01`) with the master key as the key that may change
-  it. A host authentication cannot prove it: it is not a host key. The SAM's
-  answer to the command is the only proof there is, until a task uses the key.
+  it. A host authentication cannot prove it: it is not a host key. What the
+  read-back proves is the entry: enabled, AES-128, PICC class. That the key in
+  it is the key you typed is not proved by anything until a task uses it to
+  authenticate a PICC.
 - The master key and the key usage counters: the setup never changes either.
+  (On the bench SAM the master entry has no key usage counter, so a wrong key
+  counts against nothing there. A SAM of another batch may differ.)
+- What the last byte of the answer to SAM_GetVersion means. On the bench SAM it
+  went from `03` to `A3` when the SAM was activated. The window does not show
+  it. If you can read it in NXP's documents, say what bits `0x80` and `0x20`
+  are.
+- Whether the activation can be undone. Nobody has tried, and nothing we could
+  read says how.
 - Whether closing the window resets the SAM, which would end the session of the
   host authentication. If you can tell (the next "Authenticate" after a close
   succeeding or failing tells nothing by itself), say so.

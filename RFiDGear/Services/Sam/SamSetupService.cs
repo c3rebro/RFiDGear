@@ -62,7 +62,8 @@ namespace RFiDGear.Services.Sam
     /// <summary>How a step ended, and the status word when the SAM said no.</summary>
     /// <param name="Result">The result.</param>
     /// <param name="StatusWord">The status word of the SAM, <c>0</c> when there is none.</param>
-    internal sealed record SamStepOutcome(SamStepResult Result, ushort StatusWord = 0);
+    /// <param name="Check">For a key entry that was written: what reading it back found. <see cref="SamKeyEntryCheck.NotChecked"/> for every other step.</param>
+    internal sealed record SamStepOutcome(SamStepResult Result, ushort StatusWord = 0, SamKeyEntryCheck Check = SamKeyEntryCheck.NotChecked);
 
     /// <summary>What connecting to the SAM of a reader came to.</summary>
     /// <param name="Result"><see cref="SamStepResult.Done"/>, <see cref="SamStepResult.NoSam"/> or <see cref="SamStepResult.ReaderError"/>.</param>
@@ -74,8 +75,9 @@ namespace RFiDGear.Services.Sam
     internal interface ISamSetupDialogs
     {
         /// <summary>
-        /// Asks whether the SAM may be activated. The activation cannot be undone, and it has not been checked on a
-        /// MIFARE SAM AV3 yet. Anything but a clear yes is a no.
+        /// Asks whether the SAM may be activated. The activation worked on the one MIFARE SAM AV3 it was tried on and stayed after
+        /// the SAM was taken out and put back; no way to undo it is known, so it is treated as permanent. Anything but a clear yes
+        /// is a no.
         /// </summary>
         /// <returns><c>true</c> when the person confirmed.</returns>
         bool ConfirmActivate();
@@ -225,7 +227,7 @@ namespace RFiDGear.Services.Sam
 
         /// <summary>
         /// Activates a new SAM with SAM_LockUnlock. It asks the person first and sends nothing, and reads no key, when the
-        /// answer is not a clear yes. The activation is irreversible, and its frame has not been verified on a MIFARE SAM AV3.
+        /// answer is not a clear yes. The activation (the frame comes from an AV2 library) worked on a real MIFARE SAM AV3 on 2026-11-15 and persists; no way back is known, so it is treated as irreversible (RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md).
         /// There is no authentication afterwards: the person starts it.
         /// </summary>
         /// <param name="master">The key of entry 0 (all zero on a new SAM).</param>
@@ -317,7 +319,9 @@ namespace RFiDGear.Services.Sam
             {
                 await _session.ChangeKeyEntryAsync((byte)entryNumber, SamAv3KeyEntry.CreateAes128PiccKey(read.Key.Bytes, 0)).ConfigureAwait(false);
 
-                return Record("write", SamStepResult.Done, 0);
+                // The key cannot be read back, but the settings of its entry can: a blank entry is disabled (SET bit 9), and a key
+                // that was written to an entry that stays disabled is no key anybody can use.
+                return Record("write", SamStepResult.Done, 0, await ReadBackAsync((byte)entryNumber).ConfigureAwait(false));
             }
             catch (SamReaderException e)
             {
@@ -376,11 +380,43 @@ namespace RFiDGear.Services.Sam
             return Record(step, SamStepResult.Failed, 0);
         }
 
-        private static SamStepOutcome Record(string step, SamStepResult result, ushort statusWord)
+        // The write is done when this runs; whatever it finds, it never turns the write into a failure.
+        private async Task<SamKeyEntryCheck> ReadBackAsync(byte entryNumber)
         {
-            Log.ForContext<SamSetupService>().Information("SAM setup: {Step} -> {Result} (status word {StatusWord:X4}).", step, result, statusWord);
+            try
+            {
+                var info = await _session!.ReadKeyEntryAsync(entryNumber).ConfigureAwait(false);
 
-            return new SamStepOutcome(result, statusWord);
+                return info?.Verdict ?? SamKeyEntryCheck.Unreadable;
+            }
+            catch (SamReaderException e)
+            {
+                Close();
+                LogFailure("read back", e);
+
+                return SamKeyEntryCheck.Unreadable;
+            }
+            catch (SamException e)
+            {
+                // The library discards the session after a failed command; the entry was written all the same.
+                LogFailure("read back", e);
+
+                return SamKeyEntryCheck.Unreadable;
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                Close();
+                LogFailure("read back", e);
+
+                return SamKeyEntryCheck.Unreadable;
+            }
+        }
+
+        private static SamStepOutcome Record(string step, SamStepResult result, ushort statusWord, SamKeyEntryCheck check = SamKeyEntryCheck.NotChecked)
+        {
+            Log.ForContext<SamSetupService>().Information("SAM setup: {Step} -> {Result} (status word {StatusWord:X4}, entry check {Check}).", step, result, statusWord, check);
+
+            return new SamStepOutcome(result, statusWord, check);
         }
 
         private static void LogFailure(string step, Exception e)

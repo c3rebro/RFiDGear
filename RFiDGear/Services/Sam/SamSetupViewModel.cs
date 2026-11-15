@@ -545,6 +545,7 @@ namespace RFiDGear.Services.Sam
                 if (outcome.Result == SamStepResult.Done)
                 {
                     AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupWritten"), entry), false);
+                    ReportEntryCheck(entry, outcome.Check);
                 }
                 else if (outcome.Result == SamStepResult.MayHaveTakenEffect)
                 {
@@ -592,6 +593,29 @@ namespace RFiDGear.Services.Sam
 
         private bool TryGetEntryNumber(out int entry) =>
             int.TryParse(_entryNumberText, NumberStyles.None, CultureInfo.InvariantCulture, out entry) && entry >= FirstEntry && entry <= LastEntry;
+
+        // What reading the entry back found, after the line that says that the key was written: the last line is the one in colour.
+        private void ReportEntryCheck(int entry, SamKeyEntryCheck check)
+        {
+            switch (check)
+            {
+                case SamKeyEntryCheck.Matches:
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryVerified"), entry), false);
+                    break;
+                case SamKeyEntryCheck.Disabled:
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryDisabled"), entry), true);
+                    break;
+                case SamKeyEntryCheck.WrongKind:
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryDiffers"), entry), true);
+                    break;
+                case SamKeyEntryCheck.Unreadable:
+                    AppendStatus(_text("messageSamSetupEntryUnreadable"), true);
+                    break;
+                default:
+                    // NotChecked: the step did not write a key entry, so there is nothing to say about one.
+                    break;
+            }
+        }
 
         // What a step that did not work says. The status word is the SAM's own answer; nothing else of the SAM is shown.
         private void ReportFailure(SamStepOutcome outcome)

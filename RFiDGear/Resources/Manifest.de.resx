@@ -2484,7 +2484,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>SAM aktivieren...</value>
   </data>
   <data name="toolTipSamSetupActivate" xml:space="preserve">
-    <value>Nur für eine neue SAM, die 'nicht aktiviert' geantwortet hat. Fragt vorher nach. Die Aktivierung lässt sich nicht rückgängig machen.</value>
+    <value>Nur für eine neue SAM, die 'nicht aktiviert' geantwortet hat. Fragt vorher nach. Ein Zurück ist nicht bekannt.</value>
   </data>
   <data name="labelSamSetupNewKey" xml:space="preserve">
     <value>Zu schreibender Schlüssel (AES-128-Schlüssel für Karten, ein PICC-Schlüssel)</value>
@@ -2505,7 +2505,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Meldungen</value>
   </data>
   <data name="messageSamSetupConfirmActivate" xml:space="preserve">
-    <value>Die MIFARE SAM AV3 aktivieren?&#10;&#10;Das lässt sich nicht rückgängig machen. Tun Sie es nur bei einer neuen SAM, die Sie verwenden wollen, und mit ihrem Hauptschlüssel (eine neue SAM hat den Werksschlüssel aus sechzehn Null-Bytes).&#10;&#10;Der Befehl für die Aktivierung stammt von der MIFARE SAM AV2 und wurde an einer SAM AV3 noch nicht geprüft. Er kann abgelehnt werden und etwas anderes bewirken als erwartet.</value>
+    <value>Die MIFARE SAM AV3 aktivieren?&#10;&#10;Tun Sie das nur bei einer neuen SAM, die Sie verwenden wollen, und mit ihrem Hauptschlüssel (eine neue SAM hat den Werksschlüssel aus sechzehn Null-Bytes).&#10;&#10;Die Aktivierung hat bei der einen SAM AV3 funktioniert, an der sie ausprobiert wurde, und diese SAM blieb aktiviert, nachdem sie herausgenommen und wieder eingesteckt wurde. Ein Zurück ist nicht bekannt: Betrachten Sie sie als endgültig.</value>
   </data>
   <data name="messageSamSetupReaderBusy" xml:space="preserve">
     <value>Der Leser wird gerade von einem anderen Teil von RFiDGear verwendet. Warten Sie, bis er fertig ist, und versuchen Sie es erneut.</value>
@@ -2575,5 +2575,17 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageSamSetupMayHaveWritten" xml:space="preserve">
     <value>Die SAM hat mit Erfolg geantwortet, aber ihre Antwort ließ sich nicht prüfen: Der Schlüssel kann in Schlüsseleintrag {0} geschrieben worden sein. Ein Schlüssel lässt sich nicht zurücklesen, und eine Authentifizierung kann einen PICC-Schlüssel nicht beweisen. Authentifizieren Sie sich erneut; ob Sie den Schlüssel noch einmal schreiben, entscheiden Sie.</value>
+  </data>
+  <data name="messageSamSetupEntryVerified" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist aktiviert und enthält einen AES-128-Schlüssel der Schlüsselklasse PICC, wie geschrieben.</value>
+  </data>
+  <data name="messageSamSetupEntryDisabled" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist deaktiviert (SET-Bit 9); der Schlüssel darin lässt sich nicht verwenden. Ein leerer Eintrag ist deaktiviert, bis ein Schreiben ihn aktiviert. Schreiben Sie den Schlüssel erneut.</value>
+  </data>
+  <data name="messageSamSetupEntryDiffers" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist kein AES-128-Schlüssel der Schlüsselklasse PICC, wie er geschrieben wurde. Verwenden Sie ihn nicht.</value>
+  </data>
+  <data name="messageSamSetupEntryUnreadable" xml:space="preserve">
+    <value>Der Schlüssel wurde geschrieben, aber das Zurücklesen des Schlüsseleintrags ist fehlgeschlagen; er ist daher nicht geprüft.</value>
   </data>
 </root>
