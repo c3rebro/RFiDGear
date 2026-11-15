@@ -697,7 +697,7 @@ namespace RFiDGear.Tests
             // A task with a mistake in a box keeps what it had: the project is written from the numbers.
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var task = Read(start: 7, count: 2);
+                var task = Read(start: 7);
                 task.StartPageText = "abc";
 
                 Assert.Equal(7, task.StartPage);
@@ -777,8 +777,11 @@ namespace RFiDGear.Tests
                 var read = (IAsyncRelayCommand)task.ReadDataCommand;
                 var readChanged = 0;
                 var writeChanged = 0;
+                var okChanged = 0;
                 read.CanExecuteChanged += (_, _) => readChanged++;
                 task.WriteDataCommand.CanExecuteChanged += (_, _) => writeChanged++;
+                task.OKCommand.CanExecuteChanged += (_, _) => okChanged++;
+                Assert.True(task.OKCommand.CanExecute(null));
 
                 using (ReaderDeviceScope.Use(Reader()))
                 {
@@ -790,12 +793,18 @@ namespace RFiDGear.Tests
                     Assert.True(readChanged > 0);
                     Assert.True(writeChanged > 0);
 
+                    // OK would add the task that is still running to the project and close the dialog, and a write that waits for its
+                    // key would reach the card after that.
+                    Assert.False(task.OKCommand.CanExecute(null));
+                    Assert.True(okChanged > 0);
+
                     provider.Release();
                     await running;
                 }
 
                 Assert.True(read.CanExecute(null));
                 Assert.True(task.WriteDataCommand.CanExecute(null));
+                Assert.True(task.OKCommand.CanExecute(null));
             });
         }
 

@@ -1404,8 +1404,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         private RelayCommand okCommand;
 
-        /// <summary>Gets the command of the OK button; it is off while a box of the pages holds no number.</summary>
-        public ICommand OKCommand => okCommand ??= new RelayCommand(Ok, () => ArePageInputsValid);
+        /// <summary>
+        /// Gets the command of the OK button. It is off while a box of the pages holds no number, and while an operation runs: OK
+        /// adds the task to the project and closes the dialog, and a write that still waits for its key would reach the card after that.
+        /// </summary>
+        public ICommand OKCommand => okCommand ??= new RelayCommand(Ok, () => ArePageInputsValid && !IsRunning);
 
         protected virtual void Ok()
         {
