@@ -719,6 +719,24 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public void TheRequestOfAWrite_KeepsACopyOfThePayload_AndClearsItWhenItIsDisposed()
+        {
+            // For both readers: the call can wait for the port before it uses the bytes, and the caller may change its array meanwhile.
+            var payload = new byte[] { 1, 2, 3, 4 };
+            var request = UltralightRequest.ForWrite(UltralightAccess.Open(UltralightExpectation.Ntag215), 4, payload);
+
+            payload[0] = 9;
+
+            Assert.Equal(new byte[] { 1, 2, 3, 4 }, request.Data);
+
+            var copy = request.Data;
+            request.Dispose();
+
+            Assert.All(copy, b => Assert.Equal(0, b));
+            Assert.Equal(9, payload[0]);   // the caller's array is not touched
+        }
+
+        [Fact]
         public void TwoAccesses_AreEqualWhenEverythingTheyHoldIsEqual()
         {
             var access = new UltralightAccess(UltralightExpectation.Ntag215, UltralightAuth.Password, "A1B2C3D4", "5566", true);

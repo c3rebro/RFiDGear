@@ -77,7 +77,7 @@ namespace RFiDGear.Infrastructure.Ultralight
                 access,
                 startPage,
                 wellFormed ? data.Length / UltralightMemoryMap.PageSize : 0,
-                data);
+                data == null ? null : (byte[])data.Clone());   // the call can wait for the port, and the caller may reuse its array meanwhile
             request.Validate();
 
             return request;
@@ -125,9 +125,14 @@ namespace RFiDGear.Infrastructure.Ultralight
             }
         }
 
-        /// <summary>Clears the key, the password and the PACK.</summary>
+        /// <summary>Clears the key, the password, the PACK and the copy of the bytes to write (a page of a password is among them).</summary>
         public void Dispose()
         {
+            if (Data != null)
+            {
+                CryptographicOperations.ZeroMemory(Data);
+            }
+
             if (Key != null)
             {
                 CryptographicOperations.ZeroMemory(Key);

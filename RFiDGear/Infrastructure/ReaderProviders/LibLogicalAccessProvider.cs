@@ -880,19 +880,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             ultralightChip = null;
 
-            // A fresh session, as ReadChipPublic makes it: tryInitReader reuses a connected one without waiting for a card and without
-            // looking at the result of connect(), and the chip of that session can be the card that was taken away or replaced since.
-            // Disconnected, it waits for a card and connects to the one that is there; no card, or no connection, is no sighting.
-            try
-            {
-                readerUnit?.disconnect();
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC disconnect before the selection failed: {Fault}", PcscUltralightErrors.Describe(e));
-            }
-
-            if (!await tryInitReader())
+            if (!await ConnectToAFreshChipAsync())
             {
                 return new PcscUltralightSighting(false, null);
             }
@@ -905,6 +893,47 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return chip == null ? new PcscUltralightSighting(false, null) : new PcscUltralightSighting(true, chip.getCardType());
             }));
         }
+
+        // A fresh session for every call, every step checked. tryInitReader reuses a connected session without waiting for a card and
+        // without looking at the result of connect(), so the chip of that session can be the card that was taken away or replaced
+        // since. This is the full path that it takes after a disconnect (connect to the reader, wait for a card, connect to it), with
+        // each result looked at: a step that fails is no sighting, and nothing is accepted on a session that was not just made.
+        private Task<bool> ConnectToAFreshChipAsync() =>
+            Task.Run(() =>
+            {
+                if (readerUnit == null)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    try
+                    {
+                        // Nothing may be connected, and then there is nothing to disconnect (ReadChipPublic does the same).
+                        readerUnit.disconnect();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC disconnect before the selection failed: {Fault}", PcscUltralightErrors.Describe(e));
+                    }
+
+                    if (!readerUnit.connectToReader() || !readerUnit.waitInsertion(Constants.MAX_WAIT_INSERTION) || !readerUnit.connect())
+                    {
+                        return false;
+                    }
+
+                    ReaderUnitName = ReaderUnitName ?? readerUnit.getConnectedName();
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<LibLogicalAccessProvider>().Warning("PC/SC connection for a page operation failed: {Fault}", PcscUltralightErrors.Describe(e));
+
+                    return false;
+                }
+            });
 
         /// <summary>Reads one page (4 bytes). Overridden by the tests.</summary>
         /// <param name="page">The page.</param>

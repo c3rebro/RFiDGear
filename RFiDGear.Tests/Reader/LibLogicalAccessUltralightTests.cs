@@ -259,6 +259,27 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(new[] { "select", "read 4", "select", "read 8" }, reader.Calls);
         }
 
+        [Fact]
+        public async Task AWritePayload_IsFixedWhenTheCallIsMade_NotWhenTheReaderGetsToIt()
+        {
+            // The call waits for the session, and the caller may reuse its buffer meanwhile; what is written, and what the read-back is
+            // compared with, is what the buffer held when the call was made.
+            var reader = new UltralightPcscTestReader(UltralightVariant.Plain) { HoldReads = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) };
+            var first = reader.ReadMifareUltralightPagesAsync(Plain(), 4, 1);
+            await WaitUntilAsync(() => reader.Calls.Contains("read 4"));
+
+            var payload = Convert.FromHexString("A1B2C3D4");
+            var write = reader.WriteMifareUltralightPagesAsync(Plain(), 8, payload);
+            Array.Clear(payload, 0, payload.Length);
+
+            reader.HoldReads.SetResult(true);
+            await first;
+            var result = await write;
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(Convert.FromHexString("A1B2C3D4"), reader.PagesOf(8, 1));
+        }
+
         private static async Task WaitUntilAsync(Func<bool> condition)
         {
             var until = DateTime.UtcNow.AddSeconds(10);
