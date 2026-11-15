@@ -130,6 +130,39 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public async Task A_vault_that_cannot_be_listed_keeps_the_choices_and_the_selections_and_says_why()
+        {
+            using var rig = new Rig(storedKeys: StoredName);
+            await rig.ViewModel.RefreshAsync();
+            rig.ViewModel.MasterUsesFactoryKey = false;
+            rig.ViewModel.MasterReference = StoredName;
+            rig.ViewModel.NewKeyReference = StoredName;
+            rig.Store.EnumerateError = 5;
+
+            await rig.ViewModel.RefreshAsync();
+
+            // What the person chose is still chosen, and the list still has the key: a vault that does not answer now is not a vault
+            // that has lost its keys.
+            Assert.Equal(StoredName, rig.ViewModel.MasterReference);
+            Assert.Equal(StoredName, rig.ViewModel.NewKeyReference);
+            Assert.Equal(new[] { string.Empty, StoredName }, rig.ViewModel.StoredKeys.Select(c => c.Reference));
+
+            // The search itself went well, and the vault is what the last line is about.
+            Assert.Equal(SamSetupState.Found, rig.ViewModel.State);
+            Assert.True(rig.ViewModel.ResultIsError);
+            Assert.Equal("The stored keys could not be listed (error 5).", rig.ViewModel.ResultText);
+            Assert.Contains("Found a MIFARE SAM AV3", rig.ViewModel.StatusText, StringComparison.Ordinal);
+
+            // The vault answers again: the list is read again, and a key that is gone is gone.
+            rig.Store.EnumerateError = 0;
+            rig.Store.Blobs.Clear();
+
+            await rig.ViewModel.RefreshAsync();
+
+            Assert.Equal(string.Empty, rig.ViewModel.MasterReference);
+            Assert.Equal(new[] { string.Empty }, rig.ViewModel.StoredKeys.Select(c => c.Reference));
+        }
+        [Fact]
         public async Task A_search_without_a_sam_says_so_and_is_no_error()
         {
             using var rig = new Rig(withSam: false);

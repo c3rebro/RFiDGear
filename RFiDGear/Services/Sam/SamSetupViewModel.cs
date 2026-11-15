@@ -365,7 +365,7 @@ namespace RFiDGear.Services.Sam
         {
             await RunAsync(async () =>
             {
-                ReadStoredKeys();
+                var vaultError = ReadStoredKeys();
 
                 var result = await _service.FindAsync();
 
@@ -393,6 +393,12 @@ namespace RFiDGear.Services.Sam
                 else
                 {
                     AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupSearchFound"), _readerNames.Count), false);
+                }
+
+                // Said last, so that it is not hidden by the good news about the search: the list of stored keys is what it was before.
+                if (vaultError != 0)
+                {
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageStoredKeysListFailed"), vaultError), true);
                 }
 
                 return true;
@@ -701,9 +707,17 @@ namespace RFiDGear.Services.Sam
             OnPropertyChanged(nameof(ResultIsError));
         }
 
-        private void ReadStoredKeys()
+        // Returns the error of the Credential Manager, or 0. A vault that cannot be listed now is no proof that the keys are gone: the
+        // choices and what was chosen stay as they were, and the caller says why nothing new is shown.
+        private int ReadStoredKeys()
         {
             var list = _keyStore.List();
+
+            if (list.Error != 0)
+            {
+                return list.Error;
+            }
+
             var choices = new List<SamKeyChoice> { new SamKeyChoice(string.Empty, _text("labelSamSetupEnterBelow")) };
             choices.AddRange(list.References.Select(reference => new SamKeyChoice(reference, reference)));
             _storedKeys = choices;
@@ -719,6 +733,8 @@ namespace RFiDGear.Services.Sam
             {
                 NewKeyReference = string.Empty;
             }
+
+            return 0;
         }
     }
 }
