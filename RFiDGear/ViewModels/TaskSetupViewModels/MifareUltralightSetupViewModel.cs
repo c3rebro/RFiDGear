@@ -815,7 +815,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         return;
                     }
 
-                    var refused = CheckBeforeTheCard(write, out data, out var pages);
+                    var refused = CheckBeforeTheCard(device, write, out data, out var pages);
 
                     if (refused != ERROR.NoError)
                     {
@@ -874,8 +874,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool IsRunning => Volatile.Read(ref running) != 0;
 
         // What is known without the card. The checks are those of the reader layer, made with the same code on the call without its
-        // keys; the reader checks again against the chip that it finds, which is the one that counts.
-        private ERROR CheckBeforeTheCard(bool write, out byte[] data, out int pages)
+        // keys, and the reader is asked whether it can make such a call at all (a PC/SC reader has no password command and knows no
+        // NTAG). The reader checks again against the chip that it finds, which is the one that counts.
+        private ERROR CheckBeforeTheCard(ReaderDevice device, bool write, out byte[] data, out int pages)
         {
             data = null;
             pages = PageCount;
@@ -908,7 +909,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 return ERROR.ProtocolConstraint;
             }
 
-            return ERROR.NoError;
+            // Asked with the way of authenticating that the task will use, and without its keys: no key is needed to know that.
+            return device.SupportsUltralightAccess(new UltralightAccess(ExpectedChip, Authentication, null, null, AllowProtectedPages))
+                ? ERROR.NoError
+                : ERROR.ProtocolConstraint;
         }
 
         private KeyNeed[] KeysOfTheAuthentication()

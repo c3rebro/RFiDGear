@@ -286,6 +286,59 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Theory]
+        [InlineData("ReadPassword")]
+        [InlineData("WritePassword")]
+        [InlineData("ReadC")]
+        public async Task AnAccessThatTheReaderCannotMakeAtAll_EndsAsAProtocolConstraint_BeforeAKeyIsAskedFor(string scenario)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A PC/SC reader has no command for a password and knows no NTAG: that is known without a card, and a vault that is down
+                // must not turn it into a key that is missing.
+                var vault = new Vault { Failure = SecureKeyFailureReason.ProviderUnavailable };
+                vault.Install();
+                var task = NewTask(Scenarios[scenario]);
+                BindAll(task);
+                var reader = new KeyRecordingReader { Connected = true, AcceptsUltralightAccess = false };
+
+                var run = await RunAsync(task, reader);
+
+                Assert.Equal(ERROR.ProtocolConstraint, run.Error);
+                Assert.False(run.Completed);
+                Assert.Equal(0, run.ReaderCalls);
+                Assert.Empty(vault.Requests);
+
+                // The reader was asked about what the task is about to do, without a key.
+                var asked = Assert.Single(reader.UltralightAccessesAsked);
+                Assert.Equal(task.ExpectedChip, asked.Expected);
+                Assert.Equal(task.Authentication, asked.Auth);
+                Assert.Equal(task.AllowProtectedPages, asked.AllowProtectedPages);
+                Assert.Null(asked.KeyHex);
+                Assert.Null(asked.PackHex);
+            });
+        }
+
+        [Fact]
+        public async Task AReaderThatTakesTheAccess_IsAskedOnce_AndTheKeysAreAskedFor()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(Scenarios["ReadPassword"]);
+                BindAll(task);
+                var reader = new KeyRecordingReader { Connected = true };
+
+                var run = await RunAsync(task, reader);
+
+                Assert.Equal(ERROR.NoError, run.Error);
+                Assert.Equal(1, run.ReaderCalls);
+                Assert.Single(reader.UltralightAccessesAsked);
+                Assert.NotEmpty(vault.Requests);
+            });
+        }
+
         // ── What the reader says ──
 
         [Theory]

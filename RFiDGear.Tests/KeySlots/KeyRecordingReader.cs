@@ -232,6 +232,20 @@ namespace RFiDGear.Tests.KeySlots
 
         // ── Ultralight ──
 
+        /// <summary>Gets or sets whether the reader takes the access that a task asks about before it asks for keys.</summary>
+        public bool AcceptsUltralightAccess { get; set; } = true;
+
+        /// <summary>Gets what the task asked the reader about before it asked for keys, in order.</summary>
+        public List<UltralightAccess> UltralightAccessesAsked { get; } = new List<UltralightAccess>();
+
+        /// <inheritdoc />
+        public override bool SupportsUltralightAccess(UltralightAccess access)
+        {
+            UltralightAccessesAsked.Add(access);
+
+            return AcceptsUltralightAccess;
+        }
+
         /// <summary>Gets every page operation of the Ultralight family that reached the reader, in order.</summary>
         public List<UltralightPageCall> UltralightCalls { get; } = new List<UltralightPageCall>();
 

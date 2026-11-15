@@ -127,6 +127,27 @@ namespace RFiDGear.Tests.Reader
             Assert.Empty(reader.Calls);
         }
 
+        [Theory]
+        [InlineData(UltralightExpectation.Auto, UltralightAuth.None, true)]
+        [InlineData(UltralightExpectation.Plain, UltralightAuth.None, true)]
+        [InlineData(UltralightExpectation.C, UltralightAuth.None, true)]
+        [InlineData(UltralightExpectation.C, UltralightAuth.UltralightC, true)]
+        [InlineData(UltralightExpectation.Ev1Mf0ul11, UltralightAuth.None, false)]
+        [InlineData(UltralightExpectation.Ev1Mf0ul21, UltralightAuth.None, false)]
+        [InlineData(UltralightExpectation.Ntag213, UltralightAuth.None, false)]
+        [InlineData(UltralightExpectation.Ntag215, UltralightAuth.None, false)]
+        [InlineData(UltralightExpectation.Ntag216, UltralightAuth.None, false)]
+        [InlineData(UltralightExpectation.Ntag215, UltralightAuth.Password, false)]
+        [InlineData(UltralightExpectation.Auto, UltralightAuth.Password, false)]
+        public void TheReader_SaysWithoutACard_WhatItCanDoAtAll(UltralightExpectation expected, UltralightAuth auth, bool supported)
+        {
+            // The same answer that the calls give below, so that a task can ask before it asks a provider for a key.
+            var reader = new UltralightPcscTestReader(UltralightVariant.Ntag215);
+
+            Assert.Equal(supported, reader.SupportsUltralightAccess(new UltralightAccess(expected, auth)));
+            Assert.Empty(reader.Calls);
+        }
+
         [Fact]
         public async Task ThePasswordOfAnEv1OrAnNtag_IsNotSentByPcsc_AndMakesNoCall()
         {
