@@ -131,6 +131,47 @@ Task categories:
 `TaskExecutionService` drives sequential execution with error handling;
 individual task VMs implement `ITaskViewModel`.
 
+### Ultralight / NTAG
+
+`MifareUltralightSetupViewModel` is the task kind for the chips of the Type 2
+family with 4-byte pages: MIFARE Ultralight, Ultralight C, Ultralight EV1
+(MF0UL11, MF0UL21) and NTAG213, NTAG215, NTAG216. It reads and writes pages.
+Lock pages, counters, signatures and changing a key or a password are not
+tasks.
+
+- `ReaderDevice` has three virtual operations (`ReadMifareUltralightPagesAsync`,
+  `WriteMifareUltralightPagesAsync`, `AuthenticateMifareUltralightAsync`; the
+  default answer is `ProtocolConstraint`) and `SupportsUltralightAccess`, which
+  a task asks before it asks a key provider for anything. A call carries an
+  `UltralightAccess` (the chip the task expects, how it authenticates, the
+  opt-in for protected pages) and answers an `UltralightResult`.
+- The layout of each chip is a table (`UltralightMemoryMap`, every row pinned
+  by a test). A chip that is not in it is refused, never guessed at. Pages 0 to
+  3 and the lock, configuration, password and key pages are written only when
+  the task opts in (`AllowProtectedPages`) **and** names the chip. That is
+  checked before a key is asked for, and again by the reader.
+- The Elatec provider reads and writes every chip of the family. The PC/SC
+  provider (LibLogicalAccess) knows only the plain Ultralight and the
+  Ultralight C: an EV1 or an NTAG answers `ProtocolConstraint` there, and
+  nothing is sent to the card.
+- Keys use the secure key slots above: the key of an Ultralight C is one slot
+  (`TripleDes2K`, 16 bytes), the password (4 bytes) and the PACK (2 bytes) of an
+  EV1 or an NTAG are two. The byte order of the C key is not verified on a card
+  and no key is offered as a default. The bridge has no wire name for a
+  password or a PACK, so a slot bound to `bridge-client` ends `KeyUnavailable`.
+  Never send the factory password `FFFFFFFF` of an NTAG to a card: a failed
+  try counts against the limit of tries.
+- One operation runs at a time per task (`IsRunning`), and while it runs the
+  dialog cannot be closed. The grid of pages in the dialog is a view of the
+  task (`PageRows`, no part of the project); while a row is not a whole page
+  the data keeps the rows apart by a mark that no run accepts.
+- Hardware cases and the checklist: `RFiDGear.HIL.Tests/ULTRALIGHT.md`. The
+  reader layers were probed with an NTAG215 on an Elatec reader (reads, writes
+  and a refused password) and a PC/SC reader (which does not know the chip);
+  the task, the dialog and the hardware cases have not run on a card, and no
+  plain Ultralight, Ultralight C or EV1 card has been tried at all.
+  `DEVELOPER_NOTES.md` has the facts that bite.
+
 ### Automatic Mode
 
 Continuous card handling is one state machine, `AutoModeController`

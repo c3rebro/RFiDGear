@@ -14,13 +14,15 @@ the end).
 `hil.settings.json` sits in the folder of the solution, next to
 `Run-HilTests.bat`. It is not in git. The tests look for it in the folder of
 the test assembly and in every folder above it, so it is found from the build
-folder, from Visual Studio and from `dotnet test`. It has three settings:
+folder, from Visual Studio and from `dotnet test`. It has five settings:
 
 ```json
 {
   "readerScan": true,
   "interactive": false,
-  "secureKeys": false
+  "secureKeys": false,
+  "cardWrites": false,
+  "readerKind": "auto"
 }
 ```
 
@@ -33,6 +35,15 @@ folder, from Visual Studio and from `dotnet test`. It has three settings:
   credentials into the Windows Credential Manager for a moment. It does not
   depend on `readerScan`. `SECURE-KEYS.md` has the cases, the checklist for the
   ones that need a person, and how to clean up after an interrupted run.
+- `cardWrites`: also run the cases that write to the card
+  (`UltralightWorkflowTests`): on a chip of the Ultralight family they write
+  one page of the user memory and put it back, and they try a write to a
+  protected page that must be refused. It has no effect while `readerScan` is
+  false. `ULTRALIGHT.md` has the cases and the checklist.
+- `readerKind`: `"auto"` (the default), `"elatec"` or `"pcsc"`. Which reader the
+  tests use. With `"auto"` an Elatec TWN4 is tried first and a PC/SC reader
+  after it, which means that a machine with both always used the Elatec reader.
+  Set it to run the cases with the other one. It is text, not true or false.
 - The file may hold `//` comment lines and trailing commas. A setting that is
   left out is off. A file that cannot be read, with a setting that does not
   exist, one that is not `true` or `false` or one that is set twice, asks for
@@ -92,6 +103,8 @@ dotnet test RFiDGear.HIL.Tests `
 
 **The reader:**
 
+Which kind is used is the setting `readerKind` (see above); with `"auto"` the
+first one that is found, an Elatec TWN4 before a PC/SC reader.
 An Elatec TWN4 is found by the reader itself, with or without a card on it.
 A PC/SC reader is found only with a card on it, because RFiDGear cannot tell
 a PC/SC reader without a card from no reader: with one, put the card on the
@@ -137,6 +150,15 @@ the hardware.
   tested without a reader. A pass proves the fix only if the reader detected
   the second card (it usually beeps, or its LED reacts): a card the reader does
   not read gives the same result with the fix and without it.
+
+**The Ultralight / NTAG cases:**
+
+`UltralightWorkflowTests` read and write pages of a chip of the Ultralight
+family on a real card: four cases, of which two write to the card and need
+`cardWrites`. `ULTRALIGHT.md` says what each does, which chips each reader
+gives, and has the checklist for the cards and steps that are not automated.
+`HilUltralightScenarioSelfCheckTests` runs the same steps against readers that
+hold a chip in memory.
 
 **The DESFire workflow tests:**
 
