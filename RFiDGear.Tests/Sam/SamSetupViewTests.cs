@@ -477,6 +477,9 @@ namespace RFiDGear.Tests.Sam
                     Assert.Equal(1, launcher.Shown);
                     Assert.Same(viewModel.ReaderGate, launcher.Gate);
 
+                    // The view model of this test has no main window, so the window would have no owner (as for the Key manager).
+                    Assert.Null(launcher.Owner);
+
                     launcher.SetBusy!(true);
                     Assert.True(viewModel.IsReaderBusy);
 
@@ -494,6 +497,8 @@ namespace RFiDGear.Tests.Sam
         {
             public int Shown { get; private set; }
 
+            public Window? Owner { get; private set; }
+
             public ReaderAccessGate? Gate { get; private set; }
 
             public Action<bool?>? SetBusy { get; private set; }
@@ -501,6 +506,7 @@ namespace RFiDGear.Tests.Sam
             public void Show(Window? owner, ReaderAccessGate gate, Action<bool?> setBusy)
             {
                 Shown++;
+                Owner = owner;
                 Gate = gate;
                 SetBusy = setBusy;
             }

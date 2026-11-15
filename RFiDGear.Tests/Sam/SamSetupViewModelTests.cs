@@ -112,7 +112,7 @@ namespace RFiDGear.Tests.Sam
         [Fact]
         public async Task Searching_finds_the_sam_selects_its_reader_and_lists_the_stored_keys_by_name()
         {
-            using var rig = new Rig("en", true, "sam/master", "cards/a");
+            using var rig = new Rig(storedKeys: new[] { "sam/master", "cards/a" });
 
             await rig.ViewModel.RefreshAsync();
 
@@ -365,7 +365,7 @@ namespace RFiDGear.Tests.Sam
         [Fact]
         public async Task A_stored_master_key_is_taken_from_the_credential_manager_by_its_reference()
         {
-            using var rig = new Rig("en", true, StoredName);
+            using var rig = new Rig(storedKeys: StoredName);
             await rig.ConnectedAsync();
             rig.ViewModel.MasterUsesFactoryKey = false;
             rig.ViewModel.MasterReference = StoredName;
@@ -380,7 +380,7 @@ namespace RFiDGear.Tests.Sam
         [Fact]
         public async Task A_stored_key_that_has_gone_from_the_vault_is_no_longer_a_choice_after_the_next_search()
         {
-            using var rig = new Rig("en", true, StoredName);
+            using var rig = new Rig(storedKeys: StoredName);
             await rig.ViewModel.RefreshAsync();
             rig.ViewModel.MasterReference = StoredName;
             rig.ViewModel.NewKeyReference = StoredName;
@@ -447,7 +447,7 @@ namespace RFiDGear.Tests.Sam
         [Fact]
         public async Task A_stored_key_is_written_by_its_reference()
         {
-            using var rig = new Rig("en", true, StoredName);
+            using var rig = new Rig(storedKeys: StoredName);
             await rig.AuthenticatedAsync();
             rig.ViewModel.NewKeyReference = StoredName;
 
@@ -570,7 +570,7 @@ namespace RFiDGear.Tests.Sam
         [Fact]
         public void The_texts_follow_the_language_and_none_is_empty()
         {
-            using var english = new Rig("en");
+            using var english = new Rig();
             using var german = new Rig("de");
 
             foreach (var rig in new[] { english, german })
