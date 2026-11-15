@@ -488,13 +488,24 @@ namespace RFiDGear.ViewModel
         {
             get
             {
-                switch ((CARD_TYPE)((short)_cardType & 0xF000))
+                // The high nibble of the type, taken from the int: the application is built with overflow checks, and a type from
+                // 0x8000 up (an Ultralight is 0x9000, a chip of the NTAG family 0xA000 and up) does not fit a short.
+                switch ((CARD_TYPE)((int)_cardType & 0xF000))
                 {
                     case CARD_TYPE.MifareClassic:
                         childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
                         break;
                     case CARD_TYPE.MifareUltralight:
                         childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                        break;
+
+                    // The NTAG21x are Type 2 tags with pages like the Ultralight; 0xA000 is the family of their chip types.
+                    case CARD_TYPE.NTAG_210:
+                        if (pageModel != null)
+                        {
+                            childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                        }
+
                         break;
 
                     case CARD_TYPE.DESFireEV0:

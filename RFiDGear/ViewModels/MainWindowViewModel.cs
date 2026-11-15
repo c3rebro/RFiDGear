@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// Main application view model that orchestrates startup, UI binding, reader monitoring,
 /// and task execution lifecycles. Instances are exported via MEF under the name
 /// <c>"MainWin"</c> so XAML bindings can resolve this view model from the shared locator.
@@ -39,6 +39,7 @@ using RFiDGear.Services.Factories;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
@@ -1265,45 +1266,12 @@ namespace RFiDGear.ViewModel
 
                     if (result == ERROR.NoError && !wellKnownTvNodes.Any())
                     {
-                        switch ((CARD_TYPE)((short)chip.CardType & 0xF000))
-                            {
-                                case CARD_TYPE.MifareClassic:
-                                    treeViewParentNodes.Add(
-                                        new RFiDChipParentLayerViewModel(
-                                            new MifareClassicChipModel(chip as MifareClassicChipModel), Dialogs, false));
-                                    break;
+                        var node = CreateParentNode(chip, Dialogs);
 
-                                case CARD_TYPE.DESFireEV0:
-                                case CARD_TYPE.DESFireEV1:
-                                case CARD_TYPE.DESFireEV2:
-                                case CARD_TYPE.DESFireEV3:
-                                    treeViewParentNodes.Add(
-                                        new RFiDChipParentLayerViewModel(
-                                            new MifareDesfireChipModel(chip as MifareDesfireChipModel), Dialogs, false));
-                                    break;
-
-                                case CARD_TYPE.MifarePlus:
-                                    treeViewParentNodes.Add(
-                                        new RFiDChipParentLayerViewModel(
-                                            new MifareClassicChipModel(chip as MifareClassicChipModel), Dialogs, false));
-                                    break;
-
-                                case CARD_TYPE.MifareUltralight:
-                                    treeViewParentNodes.Add(
-                                        new RFiDChipParentLayerViewModel(
-                                            new MifareUltralightChipModel(chip), Dialogs, false));
-                                    break;
-
-                                default:
-                                    if(chip?.CardType != CARD_TYPE.NOTAG)
-                                    {
-                                        treeViewParentNodes.Add(
-                                            new RFiDChipParentLayerViewModel(
-                                                new GenericChipModel(chip), Dialogs, false));
-                                    }
-                                    break;
-                            }
-                        // fill treeview with dummy models and viewmodels
+                        if (node != null)
+                        {
+                            treeViewParentNodes.Add(node);
+                        }
                     }
                     else if (wellKnownTvNodes.Any())
                     {
@@ -1318,6 +1286,44 @@ namespace RFiDGear.ViewModel
 
             // Last, and after everything that must be restored: the subscribers of the event run now, on this thread.
             extensionHost?.AnnounceReaderChange(pictureChanged, pictureGeneration);
+        }
+
+        /// <summary>
+        /// Makes the node of the chip tree for a chip that was read. The kind of node follows the type of the chip; a chip of the
+        /// Ultralight family (the Ultralight, the Ultralight C and EV1, the NTAG21x) gets the node with the pages of its layout, and
+        /// a chip that has no node (no tag) gets none.
+        /// </summary>
+        /// <param name="chip">The chip that was read.</param>
+        /// <param name="dialogs">The dialogs of the window.</param>
+        /// <returns>The node, or <see langword="null"/> when the chip has none.</returns>
+        internal static RFiDChipParentLayerViewModel CreateParentNode(GenericChipModel chip, ObservableCollection<IDialogViewModel> dialogs)
+        {
+            // The chips of the Ultralight family first: an NTAG21x has a type of 0xA5.. and no case below, and has pages like the others.
+            if (UltralightChipTypes.IsOfTheFamily(chip.CardType))
+            {
+                return new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(chip), dialogs, false);
+            }
+
+            // The family is the high nibble of the type. It is taken from the int: the application is built with overflow checks, and
+            // a type from 0x8000 up (an Ultralight is 0x9000, a chip of the NTAG family 0xA000 and up) does not fit a short.
+            switch ((CARD_TYPE)((int)chip.CardType & 0xF000))
+            {
+                case CARD_TYPE.MifareClassic:
+                case CARD_TYPE.MifarePlus:
+                    return new RFiDChipParentLayerViewModel(new MifareClassicChipModel(chip as MifareClassicChipModel), dialogs, false);
+
+                case CARD_TYPE.DESFireEV0:
+                case CARD_TYPE.DESFireEV1:
+                case CARD_TYPE.DESFireEV2:
+                case CARD_TYPE.DESFireEV3:
+                    return new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(chip as MifareDesfireChipModel), dialogs, false);
+
+                case CARD_TYPE.MifareUltralight:
+                    return new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(chip), dialogs, false);
+
+                default:
+                    return chip?.CardType != CARD_TYPE.NOTAG ? new RFiDChipParentLayerViewModel(new GenericChipModel(chip), dialogs, false) : null;
+            }
         }
 
         /// <summary>

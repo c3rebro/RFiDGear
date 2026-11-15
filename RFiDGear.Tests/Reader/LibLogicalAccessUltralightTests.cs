@@ -525,24 +525,5 @@ namespace RFiDGear.Tests.Reader
             Assert.Null(LibLogicalAccessProvider.DescribeUltralightOrUnknownChip("04112233445566", cardType));
         }
 
-        [Fact]
-        public async Task ReadingOnePage_TheOldWay_LeavesThePageForTheCaller()
-        {
-            var reader = new UltralightPcscTestReader(UltralightVariant.Plain);
-
-            var error = await reader.ReadMifareUltralightSinglePage(5);
-
-            Assert.Equal(ERROR.NoError, error);
-            Assert.Equal(reader.PagesOf(5, 1), reader.MifareUltralightPageData);
-        }
-
-        [Fact]
-        public async Task ReadingOnePage_TheOldWay_WithoutAChip_IsNoLongerASuccess()
-        {
-            // The old code answered NoError when no chip was there and no page was read.
-            var reader = new UltralightPcscTestReader(UltralightVariant.Plain) { ChipOnReader = false };
-
-            Assert.Equal(ERROR.TransportError, await reader.ReadMifareUltralightSinglePage(5));
-        }
     }
 }

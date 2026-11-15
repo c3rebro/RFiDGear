@@ -634,16 +634,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
             PerformUltralightAsync(UltralightRequest.ForAuthenticate(access));
 
-        /// <inheritdoc />
-        public override async Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
-        {
-            var result = await ReadMifareUltralightPagesAsync(UltralightAccess.Open(), _pageNo, 1);
-
-            MifareUltralightPageData = result.Data;
-
-            return result.Error;
-        }
-
         // One call is one boundary under the lock of the port: what is wrong with the call itself is found before the port is
         // touched; then the chip is selected and told, the call is checked against what it is, the authentication is made once,
         // and the work is done. Nothing is repeated after a refusal (the selection is the one exception, and changes nothing on the

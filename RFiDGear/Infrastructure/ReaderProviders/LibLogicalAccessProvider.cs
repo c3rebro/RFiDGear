@@ -1019,16 +1019,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
             PerformPcscUltralightAsync(UltralightRequest.ForAuthenticate(access));
 
-        /// <inheritdoc />
-        public override async Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
-        {
-            var result = await ReadMifareUltralightPagesAsync(UltralightAccess.Open(), _pageNo, 1);
-
-            MifareUltralightPageData = result.Data;
-
-            return result.Error;
-        }
-
         // One call is one boundary: what is wrong with the call itself, and what LibLogicalAccess cannot do, is found before the card
         // is touched; then the chip is selected and told, the call is checked against what it is, the key is sent once, and the work is
         // done. Nothing is repeated after a refusal. The bytes of the key are cleared when the request is disposed, whatever happens.
