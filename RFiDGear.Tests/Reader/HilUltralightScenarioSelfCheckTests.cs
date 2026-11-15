@@ -35,6 +35,9 @@ namespace RFiDGear.Tests.Reader
             Assert.Fail("The case should have skipped, and it did not.");
         }
 
+        // The card that is on the reader, as the reader says who it is: always the same one.
+        private static Task<string?> Same() => Task.FromResult<string?>("04AABBCCDDEEFF");
+
         // The failure of a case that is shown to find a fault; a skip is not one, and a case that finds nothing is a failure here.
         private static async Task<Exception> FailureOf(Func<Task> scenario)
         {
@@ -42,11 +45,7 @@ namespace RFiDGear.Tests.Reader
             {
                 await scenario();
             }
-            catch (SkipException)
-            {
-                throw;
-            }
-            catch (Exception failure)
+            catch (Exception failure) when (failure is not SkipException)
             {
                 return failure;
             }
@@ -78,6 +77,8 @@ namespace RFiDGear.Tests.Reader
         [InlineData(false, CARD_TYPE.DESFireEV1, "NotOfTheFamily")]
         [InlineData(true, CARD_TYPE.Mifare1K, "NotOfTheFamily")]
         [InlineData(false, CARD_TYPE.NOTAG, "NotOfTheFamily")]
+        [InlineData(true, CARD_TYPE.Unspecified, "Refused")]
+        [InlineData(false, CARD_TYPE.Unspecified, "NotOfTheFamily")]
         [InlineData(false, CARD_TYPE.NTAG_424, "NotOfTheFamily")]
         public void WhatAReaderGives_IsWhatTheLayersDo(bool pcsc, CARD_TYPE type, string expected)
         {
@@ -103,7 +104,7 @@ namespace RFiDGear.Tests.Reader
                 {
                     await UltralightScenarios.AReadOfTheUserPagesAsync(type);
                     await UltralightScenarios.AnExpectationThatIsNotTheChipIsRefusedAsync(type);
-                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type);
+                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type, Same);
                     await UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync(type);
                 }
 
@@ -127,7 +128,7 @@ namespace RFiDGear.Tests.Reader
                 using (ReaderDeviceScope.Use(reader))
                 {
                     // Any failure but a skip: a case that skipped here would have found nothing.
-                    await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215));
+                    await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215, Same));
                 }
 
                 Assert.Equal(UltralightTestReader.PageOf(HilUltralightTasks.UserPage), reader.PagesOf(HilUltralightTasks.UserPage, 1));
@@ -147,12 +148,89 @@ namespace RFiDGear.Tests.Reader
 
                 using (ReaderDeviceScope.Use(reader))
                 {
-                    var failure = await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215));
+                    var failure = await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215, Same));
 
                     Assert.IsType<InvalidOperationException>(failure);
                     Assert.Contains("could NOT be put back", failure.Message, StringComparison.Ordinal);
+
+                    // What the person needs to put the page back by hand: the bytes it held, and nothing to work out from the page.
+                    Assert.Contains(Convert.ToHexString(before), failure.Message, StringComparison.Ordinal);
                     Assert.NotEqual(before, reader.PagesOf(HilUltralightTasks.UserPage, 1));
                 }
+            });
+        }
+
+        // ── A card that is replaced ──
+
+        // A reader that says who is on it: the first answers are the card the case started with, the later ones another card.
+        private static Func<Task<string?>> ReplacedAfter(int answers)
+        {
+            var asked = 0;
+
+            return () => Task.FromResult<string?>(++asked <= answers ? "04AABBCCDDEEFF" : "04112233445566");
+        }
+
+        [Fact]
+        public async Task TheWriteCase_WritesNothing_WhenTheCardIsReplacedBeforeTheWrite()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var reader = new UltralightTestReader(UltralightVariant.Ntag215);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    // The first answer is the start, the second is the look before the write: another card.
+                    var failure = await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215, ReplacedAfter(1)));
+
+                    Assert.Contains("Nothing was written", failure.Message, StringComparison.Ordinal);
+                }
+
+                Assert.Equal(0, reader.CountStartingWith("write "));
+                Assert.Equal(UltralightTestReader.PageOf(HilUltralightTasks.UserPage), reader.PagesOf(HilUltralightTasks.UserPage, 1));
+            });
+        }
+
+        [Fact]
+        public async Task TheWriteCase_DoesNotPutTheBytesOnAnotherCard_AndSaysWhatTheFirstCardHolds()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var reader = new UltralightTestReader(UltralightVariant.Ntag215);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    // The card is the same at the start and before the write, and another one before the put-back.
+                    var failure = await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215, ReplacedAfter(2)));
+
+                    Assert.IsType<InvalidOperationException>(failure);
+                    Assert.Contains("NOT put back", failure.Message, StringComparison.Ordinal);
+                    Assert.Contains(Convert.ToHexString(UltralightTestReader.PageOf(HilUltralightTasks.UserPage)), failure.Message, StringComparison.Ordinal);
+                    Assert.DoesNotContain("04AABBCCDDEEFF", failure.Message, StringComparison.Ordinal);
+                    Assert.DoesNotContain("04112233445566", failure.Message, StringComparison.Ordinal);
+                }
+
+                // One write, the pattern: nothing was written to put the page back, on this card or on the one that replaced it.
+                Assert.Equal(1, reader.CountStartingWith("write "));
+            });
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public async Task TheWriteCase_WritesNothing_WhenTheReaderDoesNotSayWhoIsOnIt(string? identity)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var reader = new UltralightTestReader(UltralightVariant.Ntag215);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var failure = await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215, () => Task.FromResult(identity)));
+
+                    Assert.Contains("no identity", failure.Message, StringComparison.Ordinal);
+                }
+
+                Assert.Empty(reader.Calls);
             });
         }
 
@@ -174,7 +252,7 @@ namespace RFiDGear.Tests.Reader
 
                     await UltralightScenarios.AReadOfTheUserPagesAsync(type);
                     await UltralightScenarios.AnExpectationThatIsNotTheChipIsRefusedAsync(type);
-                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type);
+                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type, Same);
                     await UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync(type);
                 }
 
@@ -196,7 +274,7 @@ namespace RFiDGear.Tests.Reader
                 using (ReaderDeviceScope.Use(reader))
                 {
                     await UltralightScenarios.AReadOfTheUserPagesAsync(type);
-                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type);
+                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type, Same);
                     await UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync(type);
 
                     // There is no chip to name wrongly: the reader gives no pages of this one.
@@ -211,9 +289,38 @@ namespace RFiDGear.Tests.Reader
         // ── Another card ──
 
         [Theory]
+        [InlineData(UltralightVariant.Ntag215)]
+        [InlineData(UltralightVariant.Ev1Mf0ul21)]
+        public async Task ACardThatAPcscReaderDoesNotKnow_IsRefusedByEveryCase_WithoutSayingWhichChipItIs(UltralightVariant variant)
+        {
+            // Public discovery on a PC/SC reader gives such a card the type "unspecified", and a case that skipped on it would never
+            // check the refusal that the card on this reader is about.
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var reader = new UltralightPcscTestReader(variant);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await UltralightScenarios.AReadOfTheUserPagesAsync(CARD_TYPE.Unspecified);
+                    Assert.Contains("select", reader.Calls);
+
+                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.Unspecified, Same);
+                    await UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync(CARD_TYPE.Unspecified);
+
+                    // There is no chip to name wrongly.
+                    await SkipOf(() => UltralightScenarios.AnExpectationThatIsNotTheChipIsRefusedAsync(CARD_TYPE.Unspecified));
+                }
+
+                Assert.DoesNotContain(reader.Calls, call => call.StartsWith("write", StringComparison.Ordinal));
+                Assert.DoesNotContain(reader.Calls, call => call.StartsWith("read", StringComparison.Ordinal));
+            });
+        }
+
+        [Theory]
         [InlineData(CARD_TYPE.DESFireEV1)]
         [InlineData(CARD_TYPE.Mifare1K)]
         [InlineData(CARD_TYPE.NTAG_424)]
+        [InlineData(CARD_TYPE.Unspecified)]
         public async Task ACardOfAnotherFamily_SkipsEveryCase_AndTheReaderIsNotAsked(CARD_TYPE type)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
@@ -224,7 +331,7 @@ namespace RFiDGear.Tests.Reader
                 {
                     await SkipOf(() => UltralightScenarios.AReadOfTheUserPagesAsync(type));
                     await SkipOf(() => UltralightScenarios.AnExpectationThatIsNotTheChipIsRefusedAsync(type));
-                    await SkipOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type));
+                    await SkipOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(type, Same));
                     await SkipOf(() => UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync(type));
                 }
 

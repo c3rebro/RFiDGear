@@ -66,6 +66,13 @@ namespace RFiDGear.HIL.Tests
         /// <returns>What the reader gives.</returns>
         internal static Support SupportOf(bool pcsc, CARD_TYPE type)
         {
+            // A PC/SC reader gives the type "unspecified" to every card that LibLogicalAccess has no name for: an EV1 or an NTAG, or
+            // any other card. This reader gives nothing of it, and the cases check that it is refused without saying which chip it is.
+            if (pcsc && type == CARD_TYPE.Unspecified)
+            {
+                return Support.Refused;
+            }
+
             if (!UltralightChipTypes.IsOfTheFamily(type))
             {
                 return Support.NotOfTheFamily;
@@ -134,11 +141,14 @@ namespace RFiDGear.HIL.Tests
 
         /// <summary>
         /// Writes one page of the user memory with other bytes, reads it back, and puts the old bytes back. A reader that refuses the
-        /// chip is shown to write nothing.
+        /// chip is shown to write nothing. Every task selects the card anew, so the case first asks who is on the reader, and asks again
+        /// before it writes and before it puts the page back: a card that was replaced meanwhile would get the bytes of the first one.
+        /// The identity is compared and never shown.
         /// </summary>
         /// <param name="type">The chip type on the reader.</param>
+        /// <param name="cardIdentity">Gives the identity of the card that is on the reader now, or <see langword="null"/>.</param>
         /// <returns>A task that ends with the case.</returns>
-        internal static async Task AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE type)
+        internal static async Task AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE type, Func<Task<string?>> cardIdentity)
         {
             var support = RequireTheFamily(type);
             var expected = UltralightChipTypes.ExpectationOf(type);
@@ -154,6 +164,13 @@ namespace RFiDGear.HIL.Tests
                 return;
             }
 
+            var identity = await cardIdentity();
+
+            if (string.IsNullOrEmpty(identity))
+            {
+                throw new InvalidOperationException("The reader gave no identity of the card, so the case cannot tell that it stays the same card through its steps. Nothing was written.");
+            }
+
             var before = await ReadPageAsync(expected, page, "Reading the page before");
 
             // Every byte differs from what it was, so a write that did not happen cannot look like one that did.
@@ -163,6 +180,11 @@ namespace RFiDGear.HIL.Tests
 
             try
             {
+                if (!await IsTheSameCardAsync(cardIdentity, identity))
+                {
+                    throw new InvalidOperationException("The card on the reader is not the one the case started with. Nothing was written.");
+                }
+
                 mayHaveWritten = true;
                 var write = await RunAsync(HilUltralightTasks.Write(expected, page, pattern));
                 Assert.True(write.Error == ERROR.NoError && write.PagesDone == 1, $"Writing page {page}: {write.Describe()}");
@@ -175,15 +197,22 @@ namespace RFiDGear.HIL.Tests
                 failure = ex;
             }
 
-            // Put back, also after a write that failed half way.
+            // Put back, also after a write that failed half way, and only on the card that was written to.
             if (mayHaveWritten)
             {
+                var held = Convert.ToHexString(before);
+
+                if (!await IsTheSameCardAsync(cardIdentity, identity))
+                {
+                    throw new InvalidOperationException($"The card on the reader is not the one the case started with, so page {page} of the first card was NOT put back and holds changed bytes. It held {held} before: put the first card back on the reader and write exactly those bytes to page {page}.", failure);
+                }
+
                 var restore = await RunAsync(HilUltralightTasks.Write(expected, page, before));
                 var restored = restore.Error == ERROR.NoError ? await TryReadPageAsync(expected, page) : null;
 
                 if (restored == null || !restored.SequenceEqual(before))
                 {
-                    throw new InvalidOperationException($"Page {page} could NOT be put back to what it held: {restore.Describe()}. It has to be set by hand.", failure);
+                    throw new InvalidOperationException($"Page {page} could NOT be put back to what it held: {restore.Describe()}. It held {held} before: write exactly those bytes to it, whatever it holds now.", failure);
                 }
             }
 
@@ -192,7 +221,6 @@ namespace RFiDGear.HIL.Tests
                 ExceptionDispatchInfo.Capture(failure).Throw();
             }
         }
-
         /// <summary>
         /// A write to a protected page is refused before the card is asked, with the chip named and without the opt-in, and with the
         /// opt-in and no chip named. The bytes are zeros, so that not even a broken refusal would change a page: the one-time
@@ -205,7 +233,10 @@ namespace RFiDGear.HIL.Tests
             var support = RequireTheFamily(type);
             var expected = UltralightChipTypes.ExpectationOf(type);
 
-            if (expected == UltralightExpectation.Auto)
+            // A card that the reader does not know has no chip to name: the case then tries only the opt-in without a chip.
+            var nothingToName = expected == UltralightExpectation.Auto;
+
+            if (nothingToName && type != CARD_TYPE.Unspecified)
             {
                 throw SkipException.ForSkip($"The layout of a {type} is not known, so there is no chip to name and no protected page to write to.");
             }
@@ -214,10 +245,14 @@ namespace RFiDGear.HIL.Tests
             var zeros = new byte[UltralightMemoryMap.PageSize];
             var before = support == Support.Full ? await TryReadPageAsync(expected, page) : null;
 
-            var withoutTheOptIn = await RunAsync(HilUltralightTasks.Write(expected, page, zeros));
+            var withoutTheOptIn = nothingToName ? null : await RunAsync(HilUltralightTasks.Write(expected, page, zeros));
             var withoutTheChip = await RunAsync(HilUltralightTasks.Write(UltralightExpectation.Auto, page, zeros, allowProtectedPages: true));
 
-            Assert.True(withoutTheOptIn.Error == ERROR.ProtocolConstraint && withoutTheOptIn.PagesDone == 0, $"A write to page {page} without the opt-in should be refused: {withoutTheOptIn.Describe()}");
+            if (withoutTheOptIn != null)
+            {
+                Assert.True(withoutTheOptIn.Error == ERROR.ProtocolConstraint && withoutTheOptIn.PagesDone == 0, $"A write to page {page} without the opt-in should be refused: {withoutTheOptIn.Describe()}");
+            }
+
             Assert.True(withoutTheChip.Error == ERROR.ProtocolConstraint && withoutTheChip.PagesDone == 0, $"A write to page {page} with the opt-in and no chip named should be refused: {withoutTheChip.Describe()}");
 
             if (before != null)
@@ -226,6 +261,14 @@ namespace RFiDGear.HIL.Tests
 
                 Assert.True(after != null && after.SequenceEqual(before), $"Page {page} changed although both writes were refused");
             }
+        }
+
+        // Says whether the card on the reader is still the one that was there at the start. A card whose identity is not given is not.
+        private static async Task<bool> IsTheSameCardAsync(Func<Task<string?>> cardIdentity, string identity)
+        {
+            var now = await cardIdentity();
+
+            return !string.IsNullOrEmpty(now) && string.Equals(now, identity, StringComparison.Ordinal);
         }
 
         // The chip must be of the family: another card on the reader is no case, and the test is reported as skipped.

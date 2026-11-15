@@ -26,7 +26,10 @@ refuse them and nothing is sent to the card.
   It has no name for an EV1 or an NTAG (an NTAG215 is "unsupported unknown" to
   it). The task ends with a protocol constraint and sends nothing to the card.
   The cases check exactly that refusal, so "this reader does not support this
-  chip" is checked as hard as "it works".
+  chip" is checked as hard as "it works". A card that this reader has no name
+  for is reported with the type "unspecified": the cases then check the
+  refusal for it without saying which chip it is (it may be an EV1, an NTAG or
+  another card).
 
 **Before you start:**
 
@@ -86,10 +89,18 @@ pages, the configuration pages, the password, the PACK or a key.
 
 **If a case says a page could not be put back:**
 
-The page holds the bytes that the case wrote: every byte of the old content,
-changed with exclusive-or `A5` (hexadecimal). Read page 10 with a read task, and
-write every byte back with the same operation: `A5` turns what is there into
-what was there before. Nothing else was touched.
+The message gives the four bytes that page 10 held before the case. Write
+exactly those bytes to the page, whatever it holds now: if the put-back worked
+and only its check failed, it holds them already, and if it did not, it holds
+what the case wrote. Do not work the bytes out from what the page holds now.
+The bytes are in the message and nowhere else, so use a card you can spare.
+
+Every task selects the card anew, so the case asks the reader who is on it at
+the start, before it writes, and before it puts the page back; it compares the
+answers and never shows them. If the card was replaced, it stops: before the
+write it writes nothing, and before the put-back it writes nothing to the
+second card. The message then says that the first card holds changed bytes in
+page 10 and which bytes it held: put the first card back and write them.
 
 **The checklist for cards and steps that are not automated:**
 

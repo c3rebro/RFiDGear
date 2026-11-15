@@ -38,12 +38,12 @@ namespace RFiDGear.HIL.Tests
         /// </summary>
         /// <returns>The task of the test.</returns>
         [HilReaderFact]
-        public Task AReadOfTheUserPages_IsAnswered_AsTheReaderAndTheChipAllow() => Run(UltralightScenarios.AReadOfTheUserPagesAsync);
+        public Task AReadOfTheUserPages_IsAnswered_AsTheReaderAndTheChipAllow() => Run((type, _) => UltralightScenarios.AReadOfTheUserPagesAsync(type));
 
         /// <summary>A task that names another chip than the one on the reader reads nothing.</summary>
         /// <returns>The task of the test.</returns>
         [HilReaderFact]
-        public Task AnExpectationThatIsNotTheChip_IsRefused_AndNothingIsRead() => Run(UltralightScenarios.AnExpectationThatIsNotTheChipIsRefusedAsync);
+        public Task AnExpectationThatIsNotTheChip_IsRefused_AndNothingIsRead() => Run((type, _) => UltralightScenarios.AnExpectationThatIsNotTheChipIsRefusedAsync(type));
 
         /// <summary>Writes page 10 with other bytes, reads it back and puts the old bytes back.</summary>
         /// <returns>The task of the test.</returns>
@@ -53,10 +53,11 @@ namespace RFiDGear.HIL.Tests
         /// <summary>A write to page 3 is refused before the card is asked (zeros: nothing could change even if it were not).</summary>
         /// <returns>The task of the test.</returns>
         [HilCardWriteFact]
-        public Task AWriteToAProtectedPage_IsRefused_BeforeTheCard() => Run(UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync);
+        public Task AWriteToAProtectedPage_IsRefused_BeforeTheCard() => Run((type, _) => UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync(type));
 
-        // Every test gets the reader that the fixture found, on the STA thread the reader SDKs need, and the type of the card on it.
-        private Task Run(Func<CARD_TYPE, Task> scenario) =>
+        // Every test gets the reader that the fixture found, on the STA thread the reader SDKs need, the type of the card on it, and a
+        // way to ask who is on the reader now (the cases that write to a card ask, so that a card that was replaced meanwhile is not written to).
+        private Task Run(Func<CARD_TYPE, Func<Task<string?>>, Task> scenario) =>
             StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 using var host = _fixture.NewHost();
@@ -69,7 +70,14 @@ namespace RFiDGear.HIL.Tests
                     throw SkipException.ForSkip("There is no card on the reader. Put an Ultralight, Ultralight C, Ultralight EV1 or NTAG card on it.");
                 }
 
-                await scenario(device.GenericChip.CardType);
+                async Task<string?> WhoIsOnTheReaderAsync()
+                {
+                    var asked = await device.ReadChipPublic();
+
+                    return asked == ERROR.NoError ? device.GenericChip?.UID : null;
+                }
+
+                await scenario(device.GenericChip.CardType, WhoIsOnTheReaderAsync);
             });
     }
 
