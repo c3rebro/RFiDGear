@@ -1,7 +1,10 @@
+using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Ultralight;
+using RFiDGear.Models;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Tests.KeySlots;
+using RFiDGear.Tests.SecureKeys;
 using RFiDGear.View;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
@@ -419,6 +422,51 @@ namespace RFiDGear.Tests
                 Assert.Equal(11, viewModel.StartPage);
                 Assert.True(write.IsEnabled);
                 Assert.True(ok.IsEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AWindowThatIsClosed_WhileAnOperationRuns_StaysOpen_UntilItEnds()
+        {
+            await OnWindow(() => Read(), async (window, viewModel) =>
+            {
+                // A write that still waits for its key would reach the card after the window is gone, and the person has no way left to
+                // see what it did. The key is asked for from a provider that does not answer until it is told to.
+                var provider = new BlockingKeyProvider(16);
+                KeyResolutionScope.SetDefault(new KeyResolutionContext(provider.Registry(), "run-1", "0", null, interactive: false));
+                viewModel.ExpectedChip = UltralightExpectation.C;
+                viewModel.Authentication = UltralightAuth.UltralightC;
+                viewModel.KeyBindings = new[] { new KeyBindingEntry { Slot = SecureKeySlots.UltralightCKey, ProviderId = BlockingKeyProvider.Id, Reference = "ref/c" } };
+
+                try
+                {
+                    using (ReaderDeviceScope.Use(new KeyRecordingReader { Connected = true }))
+                    {
+                        var running = viewModel.ReadDataCommand.ExecuteAsync(null);
+                        Assert.Same(provider.Asked, await Task.WhenAny(provider.Asked, Task.Delay(TimeSpan.FromSeconds(10))));
+                        Assert.True(viewModel.IsRunning);
+
+                        window.Close();
+                        await Settle(window);
+
+                        Assert.True(window.IsVisible, "the window was closed while an operation ran");
+                        Assert.False(viewModel.CancelCommand.CanExecute(null));
+
+                        provider.Release();
+                        await running;
+                    }
+
+                    Assert.True(viewModel.CancelCommand.CanExecute(null));
+
+                    window.Close();
+                    await Settle(window);
+
+                    Assert.False(window.IsVisible, "the window stays open although nothing runs");
+                }
+                finally
+                {
+                    KeyResolutionScope.SetDefault(null);
+                }
             });
         }
 

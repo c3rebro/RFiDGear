@@ -298,7 +298,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 for (var i = 0; i < count; i++)
                 {
-                    AddRow(ShownOfTheLastRead(StartPage + i), readOnly: true);
+                    AddRow(ShownOfTheLastRead(unchecked(StartPage + i)), readOnly: true);
                 }
             }
 
@@ -310,7 +310,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             for (var i = 0; i < PageRows.Count; i++)
             {
-                PageRows[i].PageNumber = StartPage + i;
+                // A first page near the end of the numbers must not stop the grid: the application is built with overflow checks.
+                PageRows[i].PageNumber = unchecked(StartPage + i);
             }
         }
 
@@ -318,14 +319,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         // they were read from, not to the place in the grid).
         private string ShownOfTheLastRead(int page)
         {
-            var offset = (page - LastReadStartPage) * UltralightMemoryMap.PageSize;
+            // In 64 bits: the pages are those of any number a task can hold, and the difference of two of them does not fit 32.
+            var offset = ((long)page - LastReadStartPage) * UltralightMemoryMap.PageSize;
 
             if (LastReadData == null || offset < 0 || offset + UltralightMemoryMap.PageSize > LastReadData.Length)
             {
                 return string.Empty;
             }
 
-            return Convert.ToHexString(LastReadData, offset, UltralightMemoryMap.PageSize);
+            return Convert.ToHexString(LastReadData, (int)offset, UltralightMemoryMap.PageSize);
         }
 
         #endregion The grid of pages
@@ -641,7 +643,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 startPageText = value ?? string.Empty;
-                startPageIsValid = int.TryParse(startPageText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var page);
+                // A page of a chip: no chip of the family has more than MostPagesOfAnyChip pages, and none has a page below 0.
+                startPageIsValid = int.TryParse(startPageText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var page) && page >= 0 && page < MostPagesOfAnyChip;
 
                 if (startPageIsValid)
                 {
@@ -663,7 +666,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
-        /// <summary>Gets whether the box of the first page holds a whole number. Not part of the project.</summary>
+        /// <summary>Gets whether the box of the first page holds a page of a chip (a whole number from 0 up to the pages of the biggest chip). Not part of the project.</summary>
         [XmlIgnore]
         public bool IsStartPageValid => startPageIsValid;
 
@@ -678,7 +681,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 pageCountText = value ?? string.Empty;
-                pageCountIsValid = int.TryParse(pageCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count);
+                pageCountIsValid = int.TryParse(pageCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count) && count >= 0 && count <= MostPagesOfAnyChip;
 
                 if (pageCountIsValid)
                 {
@@ -700,7 +703,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
-        /// <summary>Gets whether the box of the number of pages holds a whole number. Not part of the project.</summary>
+        /// <summary>Gets whether the box of the number of pages holds a number of pages that a chip can have. Not part of the project.</summary>
         [XmlIgnore]
         public bool IsPageCountValid => pageCountIsValid;
 
@@ -1069,6 +1072,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 readDataCommand?.NotifyCanExecuteChanged();
                 writeDataCommand?.NotifyCanExecuteChanged();
                 okCommand?.NotifyCanExecuteChanged();
+                cancelCommand?.NotifyCanExecuteChanged();
             });
 
         // The steps of a read or a write, in this order. Each one ends the task when it fails. First the reader is looked for, and a
@@ -1422,7 +1426,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
-        public ICommand CancelCommand => new RelayCommand(Cancel);
+        private RelayCommand cancelCommand;
+
+        /// <summary>
+        /// Gets the command of the Cancel button. It is off while an operation runs: closing the dialog leaves the operation running,
+        /// and a write that still waits for its key would reach the card after the person pressed the button that says it will not.
+        /// </summary>
+        public ICommand CancelCommand => cancelCommand ??= new RelayCommand(Cancel, () => !IsRunning);
 
         protected virtual void Cancel()
         {

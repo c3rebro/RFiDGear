@@ -704,6 +704,108 @@ namespace RFiDGear.Tests
             });
         }
 
+        // ── Numbers that are no pages ──
+
+        [Theory]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        [InlineData(-1)]
+        [InlineData(1000000)]
+        public async Task AFirstPageThatIsAbsurd_SetByTheProgram_DoesNotBreakTheGrid(int page)
+        {
+            // The application is built with overflow checks: the number of a row is the first page plus its place.
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var write = Write("A1B2C3D401020304");
+                var read = Read(count: 3);
+
+                write.StartPage = page;
+                read.StartPage = page;
+
+                Assert.Equal(2, write.PageRows.Count);
+                Assert.Equal(3, read.PageRows.Count);
+                Assert.Equal(page, write.StartPage);
+
+                // A grid has no room beyond the last page of the biggest chip, and none at all for a first page that is not one.
+                var room = page < 231 ? 3 : 2;
+                write.AddPageCommand.Execute(null);
+                write.SelectedTaskType = TaskType_MifareUltralightTask.ReadData;
+                write.SelectedTaskType = TaskType_MifareUltralightTask.WriteData;
+                Assert.Equal(room, write.PageRows.Count);
+            });
+        }
+
+        [Theory]
+        [InlineData(int.MaxValue, 231)]
+        [InlineData(1000000, 231)]
+        [InlineData(0, 0)]
+        [InlineData(int.MinValue, 0)]
+        public async Task ANumberOfPagesThatIsAbsurd_SetByTheProgram_GivesAGridOfTheBiggestChipAtMost(int count, int rows)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() => Assert.Equal(rows, Read(start: 0, count: count).PageRows.Count));
+        }
+
+        [Fact]
+        public async Task TheRowsOfARead_WhoseBytesWereReadAtAnAbsurdPage_ShowNothingAndDoNotBreak()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = Read(start: 4, count: 2);
+
+                using (ReaderDeviceScope.Use(Reader()))
+                {
+                    await task.ReadDataCommand.ExecuteAsync(null);
+                }
+
+                task.StartPage = int.MaxValue;
+                Assert.All(task.PageRows, row => Assert.Equal(string.Empty, row.Hex));
+
+                task.StartPage = int.MinValue;
+                Assert.All(task.PageRows, row => Assert.Equal(string.Empty, row.Hex));
+            });
+        }
+
+        [Theory]
+        [InlineData("0", true)]
+        [InlineData("230", true)]
+        [InlineData("231", false)]
+        [InlineData("-1", false)]
+        [InlineData("999999", false)]
+        [InlineData("2147483647", false)]
+        public async Task AFirstPageThatTypedIsNoPageOfAnyChip_IsNotAFirstPage(string text, bool valid)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Write("A1B2C3D4", start: 9);
+
+                task.StartPageText = text;
+
+                Assert.Equal(valid, task.IsStartPageValid);
+                Assert.Equal(valid ? int.Parse(text, System.Globalization.CultureInfo.InvariantCulture) : 9, task.StartPage);
+                Assert.Equal(valid, task.WriteDataCommand.CanExecute(null));
+            });
+        }
+
+        [Theory]
+        [InlineData("0", true)]
+        [InlineData("231", true)]
+        [InlineData("232", false)]
+        [InlineData("-3", false)]
+        [InlineData("2147483647", false)]
+        public async Task ANumberOfPagesThatTypedIsMoreThanAnyChipHas_IsNotANumberOfPages(string text, bool valid)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Read(count: 3);
+
+                task.PageCountText = text;
+
+                Assert.Equal(valid, task.IsPageCountValid);
+                Assert.Equal(valid ? int.Parse(text, System.Globalization.CultureInfo.InvariantCulture) : 3, task.PageCount);
+                Assert.Equal(valid, task.ReadDataCommand.CanExecute(null));
+            });
+        }
+
         // ── What turns the key boxes on ──
 
         [Theory]
@@ -798,6 +900,10 @@ namespace RFiDGear.Tests
                     Assert.False(task.OKCommand.CanExecute(null));
                     Assert.True(okChanged > 0);
 
+                    // And Cancel: closing the dialog leaves the operation running, and a write that waits for its key would still
+                    // reach the card, after the person pressed the button that says it will not.
+                    Assert.False(task.CancelCommand.CanExecute(null));
+
                     provider.Release();
                     await running;
                 }
@@ -805,6 +911,7 @@ namespace RFiDGear.Tests
                 Assert.True(read.CanExecute(null));
                 Assert.True(task.WriteDataCommand.CanExecute(null));
                 Assert.True(task.OKCommand.CanExecute(null));
+                Assert.True(task.CancelCommand.CanExecute(null));
             });
         }
 
