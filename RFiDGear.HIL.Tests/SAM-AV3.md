@@ -143,12 +143,16 @@ log. What the window looks like, as the tests render it with a scripted SAM
 
 **What this does not check:**
 
-- That the key you wrote works. It is an AES-128 PICC key in a key entry
-  (`SET 0x0020`, `ExtSET 0x01`) with the master key as the key that may change
-  it. A host authentication cannot prove it: it is not a host key. What the
-  read-back proves is the entry: enabled, AES-128, PICC class. That the key in
-  it is the key you typed is not proved by anything until a task uses it to
-  authenticate a PICC.
+- That the key you wrote works with a DESFire card. It is an AES-128 PICC key
+  in a key entry (`SET 0x0020`, `ExtSET 0x01`) with the master key as the key
+  that may change it. A host authentication cannot prove it: it is not a host
+  key. What the read-back proves is the entry: enabled, AES-128, PICC class.
+  **Known gap:** a DESFire AES key needs SET `0x0024` (b2 "Keep IV", NXP
+  AN12696, table 1). With `0x0020` the SAM accepts the key and then answers
+  `901E` at part 2 of SAM_AuthenticatePICC. The setup does not set the bit yet.
+  That the key in an entry is the key that was typed was proved once, on the
+  bench SAM, by authenticating a DESFire EV3 with the typed key (see the
+  record, second session).
 - The master key and the key usage counters: the setup never changes either.
   (On the bench SAM the master entry has no key usage counter, so a wrong key
   counts against nothing there. A SAM of another batch may differ.)
