@@ -219,7 +219,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return new GenericChipModel(uidAsString, CARD_TYPE.Unspecified);
             }
 
-            if (chipType == CARD_TYPE.MifareUltralight || chipType == CARD_TYPE.MifareUltralightC || chipType == CARD_TYPE.MifareUltralightC_EV1)
+            if (chipType == CARD_TYPE.MifareUltralight || chipType == CARD_TYPE.MifareUltralightC || chipType == CARD_TYPE.MifareUltralight_EV1)
             {
                 return new MifareUltralightChipModel(uidAsString, chipType);
             }

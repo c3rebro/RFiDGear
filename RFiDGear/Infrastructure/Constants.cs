@@ -323,7 +323,9 @@ namespace RFiDGear.Infrastructure
 
         MifareUltralight = 0x9000,
         MifareUltralightC = 0x9100,
-        MifareUltralightC_EV1 = 0x9200,
+        MifareUltralight_EV1 = 0x9200,
+        MifareUltralight_EV1_MF0UL11 = 0x9300,
+        MifareUltralight_EV1_MF0UL21 = 0x9400,
 
         NTAG_210 = 0xA000,
         NTAG_211 = 0xA100,
