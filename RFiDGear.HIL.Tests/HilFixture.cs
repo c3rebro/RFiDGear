@@ -46,19 +46,20 @@ namespace RFiDGear.HIL.Tests
 
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                // Try Elatec TWN4 first (auto-discovers USB readers).
-                if (await TryConnectReaderAsync(ReaderTypes.Elatec))
+                // The kinds of reader that hil.settings.json allows, an Elatec TWN4 (auto-discovers USB readers) before PC/SC unless
+                // the file names one of them.
+                foreach (var kind in HilSettings.Current.ReaderKindsToTry)
                 {
-                    return;
+                    if (await TryConnectReaderAsync(kind == HilReaderKind.Elatec ? ReaderTypes.Elatec : ReaderTypes.PCSC))
+                    {
+                        return;
+                    }
                 }
 
-                // Fall back to PC/SC.
-                if (await TryConnectReaderAsync(ReaderTypes.PCSC))
-                {
-                    return;
-                }
-
-                SkipReason = "No reader detected. Connect an Elatec TWN4 or PC/SC reader with a DESFire card.";
+                // A reason found on the way (a card that is not DESFire) says more than this one.
+                SkipReason ??= HilSettings.Current.ReaderKind == HilReaderKind.Auto
+                    ? "No reader detected. Connect an Elatec TWN4 or PC/SC reader with a DESFire card."
+                    : $"No {HilSettings.Current.ReaderKind} reader with a DESFire card was detected (\"readerKind\" in hil.settings.json asks for that kind only).";
             });
         }
 

@@ -85,6 +85,11 @@ namespace RFiDGear.Tests.Reader
 
         public bool RemoveTagWhenAReadIsRefused { get; set; }
 
+        /// <summary>A chip that takes the first write and refuses every later one (as one that was pulled away, or locked meanwhile, does).</summary>
+        public bool RefusedWritesAfterTheFirst { get; set; }
+
+        private int _writesTaken;
+
         /// <summary>
         /// A write or an authentication that is refused also takes the tag away: Elatec.NET throws "AccessDenied" whenever the reader
         /// says no, so a tag that was pulled away looks the same as a refusal until the antenna is looked at.
@@ -226,13 +231,15 @@ namespace RFiDGear.Tests.Reader
             Calls.Add("write " + page);
             ChunksReceived.Add(data);
 
-            if (_idle || page >= PageCount || RefusedWrites.Contains(page))
+            if (_idle || page >= PageCount || RefusedWrites.Contains(page) || (RefusedWritesAfterTheFirst && _writesTaken > 0))
             {
                 _idle = true;
                 TagOnReader = !RemoveTagWhenAWriteOrAuthenticationIsRefused && TagOnReader;
 
                 throw AccessDenied();
             }
+
+            _writesTaken++;
 
             if (!IgnoredWrites.Contains(page))
             {

@@ -24,13 +24,14 @@ namespace RFiDGear.Tests
             originalReader = ReaderDevice.Reader;
             originalInstance = InstanceField.GetValue(null) as ReaderDevice;
 
-            // No device means no reader at all: the application asks for none and gets null.
-            ReaderDevice.Reader = device == null ? ReaderTypes.None : ReaderTypes.Elatec;
+            // No device means no reader at all: the application asks for none and gets null. A PC/SC reader is reported as one: the
+            // application replaces an instance that is not of the kind it was told, which would take the test reader away.
+            ReaderDevice.Reader = device == null ? ReaderTypes.None : device is LibLogicalAccessProvider ? ReaderTypes.PCSC : ReaderTypes.Elatec;
             InstanceField.SetValue(null, device);
         }
 
         /// <summary>Makes <paramref name="device"/> the reader until the returned scope is disposed.</summary>
-        /// <param name="device">The test reader, reported as an Elatec reader; <see langword="null"/> for no reader at all.</param>
+        /// <param name="device">The test reader, reported as an Elatec reader (as a PC/SC reader when it is one); <see langword="null"/> for no reader at all.</param>
         /// <returns>The scope; dispose it, in a <c>finally</c> or a <c>using</c>, to restore the previous reader.</returns>
         public static ReaderDeviceScope Use(ReaderDevice? device) => new ReaderDeviceScope(device);
 

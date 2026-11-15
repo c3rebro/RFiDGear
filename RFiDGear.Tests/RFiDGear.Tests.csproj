@@ -33,6 +33,10 @@
     <Compile Include="..\RFiDGear.HIL.Tests\ReaderScenarios.cs" Link="Reader\HilScenarios\ReaderScenarios.cs" />
     <!-- The settings file of the hardware tests: its parsing and lookup are tested here (Reader/HilSettingsTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\HilSettings.cs" Link="Reader\HilScenarios\HilSettings.cs" />
+    <!-- The tasks and the steps of the Ultralight / NTAG hardware cases, run here against fakes of the reader that hold a chip in
+         memory (Reader/HilUltralightScenarioSelfCheckTests). -->
+    <Compile Include="..\RFiDGear.HIL.Tests\HilUltralightTasks.cs" Link="Reader\HilScenarios\HilUltralightTasks.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\UltralightScenarios.cs" Link="Reader\HilScenarios\UltralightScenarios.cs" />
     <!-- The tasks and the vault of the secure-key hardware cases, checked here against a scripted reader and a dictionary
          as the vault (SecureKeys/HilSecureKeyScenarioSelfCheckTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\HilConstants.cs" Link="Reader\HilScenarios\HilConstants.cs" />

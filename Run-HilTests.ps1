@@ -189,6 +189,8 @@ if (-not (Test-Path $SettingsFile)) {
 $readerScan      = $false
 $fileInteractive     = $false
 $secureKeys      = $false
+$cardWrites      = $false
+$readerKind      = 'auto'
 $settingsProblem = $null
 try {
     # The sample is shown only in a dry run, which creates nothing; a file that could not be created is no setting at all.
@@ -202,18 +204,27 @@ try {
     $settings     = $settingsText | ConvertFrom-Json
     foreach ($property in $settings.PSObject.Properties) {
         $name = $property.Name.ToLowerInvariant()
-        if ($name -ne 'readerscan' -and $name -ne 'interactive' -and $name -ne 'securekeys') {
-            throw "unknown setting `"$($property.Name)`"; the settings are `"readerScan`", `"interactive`" and `"secureKeys`""
+        if ($name -notin 'readerscan', 'interactive', 'securekeys', 'cardwrites', 'readerkind') {
+            throw "unknown setting `"$($property.Name)`"; the settings are `"readerScan`", `"interactive`", `"secureKeys`", `"cardWrites`" and `"readerKind`""
+        }
+        if ($name -eq 'readerkind') {
+            # The kind of reader is text, not true or false.
+            if ($property.Value -isnot [string] -or $property.Value.ToLowerInvariant() -notin 'auto', 'elatec', 'pcsc') {
+                throw "`"$($property.Name)`" must be `"auto`", `"elatec`" or `"pcsc`""
+            }
+            $readerKind = $property.Value.ToLowerInvariant()
+            continue
         }
         if ($property.Value -isnot [bool]) { throw "`"$($property.Name)`" must be true or false" }
         switch ($name) {
             'readerscan' { $readerScan = $property.Value }
             'interactive' { $fileInteractive = $property.Value }
+            'cardwrites' { $cardWrites = $property.Value }
             default { $secureKeys = $property.Value }
         }
     }
     # ConvertFrom-Json keeps the last of two equal keys; the tests treat a setting that is set twice as a mistake.
-    foreach ($key in 'readerScan', 'interactive', 'secureKeys') {
+    foreach ($key in 'readerScan', 'interactive', 'secureKeys', 'cardWrites', 'readerKind') {
         if ([regex]::Matches($settingsText, '(?i)"' + $key + '"\s*:').Count -gt 1) { throw "`"$key`" is set twice" }
     }
 } catch {
@@ -221,6 +232,8 @@ try {
     $readerScan  = $false
     $fileInteractive = $false
     $secureKeys  = $false
+    $cardWrites  = $false
+    $readerKind  = 'auto'
 }
 
 # -Interactive turns the questions on for this run, whatever the file says; the reader-scan tests must still be on there.
@@ -252,6 +265,15 @@ if ($settingsProblem) {
     Write-Line '  * Set "interactive": true in hil.settings.json, or start with -Interactive, to'
     Write-Line "    also run the 3 cases that ask you to move cards."
 }
+if (-not $settingsProblem -and $readerScan -and $cardWrites) {
+    Write-Line '  * Card writes: the Ultralight / NTAG cases (ULTRALIGHT.md) write one page of the user memory' -ForegroundColor Yellow
+    Write-Line '    (page 10) of a chip of that family and put it back, and try a write to page 3 that must be' -ForegroundColor Yellow
+    Write-Line '    refused (zeros: nothing changes even if it were not). Use a card you can spare; with a card of' -ForegroundColor Yellow
+    Write-Line '    another family they skip themselves.' -ForegroundColor Yellow
+}
+if (-not $settingsProblem -and $readerKind -ne 'auto') {
+    Write-Line ("  * Reader: only a {0} reader is used (readerKind in hil.settings.json)." -f $readerKind) -ForegroundColor Yellow
+}
 if (-not $settingsProblem -and $secureKeys) {
     Write-Line '  * Secure keys: the cases in SECURE-KEYS.md change the keys of the test application' -ForegroundColor Yellow
     Write-Line '    0x5F5F01 on the card (and set them back) and put credentials named' -ForegroundColor Yellow
@@ -276,10 +298,11 @@ Write-Host "Project    : $ProjectFile" -ForegroundColor DarkGray
 Write-Host "Config     : $Configuration" -ForegroundColor DarkGray
 Write-Line ("Settings   : {0}{1}" -f $SettingsFile, $settingsNote) -ForegroundColor DarkGray
 if ($settingsProblem) {
-    Write-Line "             readerScan = ?, interactive = ?, secureKeys = ?  (this script could not read the file)" -ForegroundColor DarkGray
+    Write-Line "             readerScan = ?, interactive = ?, secureKeys = ?, cardWrites = ?, readerKind = ?  (this script could not read the file)" -ForegroundColor DarkGray
 } else {
     $forThisRun = if ($interactiveRun -and -not $fileInteractive) { '  (on for this run: -Interactive)' } else { '' }
     Write-Line ("             readerScan = {0}, interactive = {1}, secureKeys = {2}{3}" -f $readerScan, $fileInteractive, $secureKeys, $forThisRun) -ForegroundColor DarkGray
+    Write-Line ("             cardWrites = {0}, readerKind = {1}" -f $cardWrites, $readerKind) -ForegroundColor DarkGray
 }
 Write-Host "Results    : $TrxFile" -ForegroundColor DarkGray
 Write-Host ""

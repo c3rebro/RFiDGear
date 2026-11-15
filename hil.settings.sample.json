@@ -17,5 +17,15 @@
   // test application 0x5F5F01 on the card and put credentials, whose names start with RFiDGear/key/hil/,
   // into the Windows Credential Manager of this user for a moment. Use a card you can spare.
   // Does not depend on readerScan. Off unless you switch it on here.
-  "secureKeys": false
+  "secureKeys": false,
+
+  // true: also run the cases that write to the card (see RFiDGear.HIL.Tests/ULTRALIGHT.md): on a chip of the
+  // Ultralight family they write one page of the user memory (page 10) and put it back, and they try a write to a
+  // protected page that must be refused (zeros to page 3: nothing changes even if the refusal were broken).
+  // Use a card you can spare. Has no effect while readerScan is false. Off unless you switch it on here.
+  "cardWrites": false,
+
+  // Which reader the tests use: "auto" (an Elatec TWN4 first, then a PC/SC reader, as it always was),
+  // "elatec" (an Elatec TWN4 only) or "pcsc" (a PC/SC reader only). Set it when both are attached.
+  "readerKind": "auto"
 }
