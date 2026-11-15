@@ -363,6 +363,23 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task TheBytesOfEveryPageThatWasWritten_AreClearedAfterTheWrite_WhetherItWasKeptOrRefused()
+        {
+            // The pages of a write are copies of the payload, and the payload can be the key of an Ultralight C.
+            var data = Convert.FromHexString("A1B2C3D401020304");
+            var kept = new UltralightPcscTestReader(UltralightVariant.Plain);
+            var refused = new UltralightPcscTestReader(UltralightVariant.Plain);
+            refused.RefusedWrites.Add(9);
+
+            await kept.WriteMifareUltralightPagesAsync(Plain(), 8, data);
+            await refused.WriteMifareUltralightPagesAsync(Plain(), 8, data);
+
+            Assert.Equal(2, kept.ChunksReceived.Count);
+            Assert.Equal(2, refused.ChunksReceived.Count);
+            Assert.All(kept.ChunksReceived.Concat(refused.ChunksReceived), chunk => Assert.All(chunk, b => Assert.Equal(0, b)));
+        }
+
+        [Fact]
         public async Task AWriteThatTheCardAnsweredButDidNotKeep_IsFoundByTheReadBack()
         {
             var reader = new UltralightPcscTestReader(UltralightVariant.Plain);

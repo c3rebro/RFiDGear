@@ -912,6 +912,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     return new UltralightResult(await ClassifyFaultAsync(e, UltralightCall.Write), null, variant, authenticated, written, page);
                 }
+                finally
+                {
+                    // The page is a copy of the payload, which can be a password: it does not outlive the write, kept or refused.
+                    System.Security.Cryptography.CryptographicOperations.ZeroMemory(chunk);
+                }
 
                 written++;
             }

@@ -719,6 +719,23 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task TheBytesOfEveryPageThatWasWritten_AreClearedAfterTheWrite_WhetherItWasKeptOrRefused()
+        {
+            // The pages of a write are copies of the payload, and the payload can be a password or a key.
+            var data = Convert.FromHexString("A1B2C3D401020304");
+            var kept = new UltralightTestReader(UltralightVariant.Ntag215);
+            var refused = new UltralightTestReader(UltralightVariant.Ntag215);
+            refused.RefusedWrites.Add(101);
+
+            await kept.WriteMifareUltralightPagesAsync(Ntag215(), 100, data);
+            await refused.WriteMifareUltralightPagesAsync(Ntag215(), 100, data);
+
+            Assert.Equal(2, kept.ChunksReceived.Count);
+            Assert.Equal(2, refused.ChunksReceived.Count);
+            Assert.All(kept.ChunksReceived.Concat(refused.ChunksReceived), chunk => Assert.All(chunk, b => Assert.Equal(0, b)));
+        }
+
+        [Fact]
         public void TheRequestOfAWrite_KeepsACopyOfThePayload_AndClearsItWhenItIsDisposed()
         {
             // For both readers: the call can wait for the port before it uses the bytes, and the caller may change its array meanwhile.

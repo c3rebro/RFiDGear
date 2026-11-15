@@ -126,6 +126,9 @@ namespace RFiDGear.Tests.Reader
 
         public List<byte[]> SecretsReceived { get; } = new List<byte[]>();
 
+        /// <summary>The arrays that the writes received, kept as they were handed over (not copies) so a test can see that they were cleared afterwards.</summary>
+        public List<byte[]> ChunksReceived { get; } = new List<byte[]>();
+
         public override bool IsConnected => Connected;
 
         protected override TimeSpan UltralightSelectRetryDelay => TimeSpan.Zero;
@@ -221,6 +224,7 @@ namespace RFiDGear.Tests.Reader
         protected override Task WriteUltralightPageAsync(byte page, byte[] data)
         {
             Calls.Add("write " + page);
+            ChunksReceived.Add(data);
 
             if (_idle || page >= PageCount || RefusedWrites.Contains(page))
             {

@@ -61,6 +61,9 @@ namespace RFiDGear.Tests.Reader
 
         public List<byte[]> SecretsReceived { get; } = new List<byte[]>();
 
+        /// <summary>The arrays that the writes received, kept as they were handed over (not copies) so a test can see that they were cleared afterwards.</summary>
+        public List<byte[]> ChunksReceived { get; } = new List<byte[]>();
+
         public byte[] PagesOf(int startPage, int count)
         {
             var bytes = new byte[count * 4];
@@ -111,6 +114,7 @@ namespace RFiDGear.Tests.Reader
         protected override Task WritePcscUltralightPageAsync(int page, byte[] data)
         {
             Calls.Add("write " + page);
+            ChunksReceived.Add(data);
 
             if (RefusedWrites.Contains(page) || page >= PageCount)
             {

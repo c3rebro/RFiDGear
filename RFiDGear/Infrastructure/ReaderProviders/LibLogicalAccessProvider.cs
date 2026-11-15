@@ -1231,6 +1231,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     return new UltralightResult(PcscUltralightErrors.Classify(e, UltralightCall.Write), null, variant, authenticated, written, page);
                 }
+                finally
+                {
+                    // The page is a copy of the payload, which can be the key of an Ultralight C: it does not outlive the write, kept or refused.
+                    System.Security.Cryptography.CryptographicOperations.ZeroMemory(chunk);
+                }
 
                 written++;
             }
