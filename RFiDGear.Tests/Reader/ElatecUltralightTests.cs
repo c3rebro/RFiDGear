@@ -221,17 +221,6 @@ namespace RFiDGear.Tests.Reader
             Assert.Empty(result.Data);
         }
 
-        [Fact]
-        public async Task ReadingOnePage_TheOldWay_StillWorks_AndLeavesThePageForTheCaller()
-        {
-            var reader = new UltralightTestReader(UltralightVariant.Ntag215);
-
-            var error = await reader.ReadMifareUltralightSinglePage(5);
-
-            Assert.Equal(ERROR.NoError, error);
-            Assert.Equal(Pages(reader, 5, 1), reader.MifareUltralightPageData);
-        }
-
         // ── writing ──
 
         [Fact]

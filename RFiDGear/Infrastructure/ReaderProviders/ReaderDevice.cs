@@ -116,7 +116,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public bool SectorSuccessfullyAuth { get; set; }
         public byte[] MifareDESFireData { get; set; }
         public byte[] FileIDList { get; set; }
-        public byte[] MifareUltralightPageData { get; set; }
         public byte MaxNumberOfAppKeys { get; set; }
         public byte KeyVersion { get; set; }
         public DESFireKeyType EncryptionType { get; set; }
@@ -193,9 +192,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// </param>
         /// <returns><c>true</c> when the reader can make such a call; this default says so for every access.</returns>
         public virtual bool SupportsUltralightAccess(UltralightAccess access) => true;
-
-        // Mifare Ultralight Method Definitions
-        public abstract Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo);
 
         /// <summary>
         /// Reads pages of a chip of the Ultralight family (Ultralight, Ultralight C, Ultralight EV1, NTAG213/215/216). The reader finds
