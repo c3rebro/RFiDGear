@@ -34,6 +34,11 @@ it. Only the ATR and SAM_GetVersion were read from a SAM so far.
   `SAM setup:`. They hold the step, the result and the status word, and never a
   key, a name of a stored key, a reader name, the serial number of the SAM or
   the text of an error. Keep the lines of your run: they are what to send back.
+- The window is modal and holds the reader: while it is open you cannot use
+  the rest of RFiDGear, and closing it lets go of the SAM and its session. For
+  step 8, store a key first, with File > "Key manager..." (a name such as
+  `sam/test` and 32 hexadecimal digits that are not a secret), **before** you
+  open the window.
 - Leave the own trace of LibLogicalAccess off (`config.log.enabled` with
   `seecommunication`) while a SAM is in a reader. It writes every answer in
   hexadecimal, and the answer to SAM_GetVersion holds the serial number of the
@@ -97,9 +102,10 @@ log.
    it down. Nothing is repeated.
 7. Entries that must be refused: key entry 0 and key entry 128 turn the box pink
    and the button "Write key" off.
-8. A stored key: store a key under a name with File > "Key manager...", choose
-   it under "Stored key" in the part "Key to write": the box for the key goes
-   away. Write it to key entry 2.
+8. A stored key: choose the key that you stored before you opened the window
+   under "Stored key" in the part "Key to write": the box for the key goes
+   away. Write it to key entry 2. (It is in the list because the window reads
+   the names when it opens and when you press "Search again".)
 9. While a step runs, the window cannot be closed, and the buttons are off.
    After it, it closes.
 10. Switch the language of the application to German and look at the window
