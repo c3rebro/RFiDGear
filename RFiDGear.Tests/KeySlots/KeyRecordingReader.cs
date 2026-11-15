@@ -1,6 +1,7 @@
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
 
 using System;
@@ -14,6 +15,14 @@ namespace RFiDGear.Tests.KeySlots
     /// <param name="Method">The name of the reader method.</param>
     /// <param name="Keys">The keys as the reader received them, without spaces and in upper case.</param>
     internal sealed record KeyCall(string Method, IReadOnlyList<string> Keys);
+
+    /// <summary>One page operation of the Ultralight family that reached the reader.</summary>
+    /// <param name="Method">The name of the reader method.</param>
+    /// <param name="Access">The access as the reader received it, with the keys as hexadecimal text.</param>
+    /// <param name="StartPage">The first page.</param>
+    /// <param name="PageCount">The number of pages.</param>
+    /// <param name="Data">A copy of the bytes of a write; <c>null</c> for a read or an authentication.</param>
+    internal sealed record UltralightPageCall(string Method, UltralightAccess Access, int StartPage, int PageCount, byte[]? Data);
 
     /// <summary>
     /// A reader that records every call that carries a card key, and answers success to all of them. It never looks at
@@ -41,8 +50,17 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets the card the reader finds when the chip is read; <c>null</c> for none.</summary>
         public GenericChipModel? Card { get; set; }
 
+        /// <summary>Gets or sets whether the reader says it is connected; <c>null</c> (the default) leaves it to <see cref="Card"/>.</summary>
+        public bool? Connected { get; set; }
+
+        /// <summary>Gets or sets whether the reader behaves like a PC/SC reader (see <see cref="ReaderDevice.IsPcscReader"/>).</summary>
+        public bool Pcsc { get; set; }
+
         /// <inheritdoc />
-        public override bool IsConnected => Card != null || base.IsConnected;
+        public override bool IsConnected => Connected ?? (Card != null || base.IsConnected);
+
+        /// <inheritdoc />
+        public override bool IsPcscReader => Pcsc;
 
         /// <summary>Gets how often the chip was read; a call that carries no key and so is not in <see cref="Calls"/>.</summary>
         public int ReadChipCalls { get; private set; }
@@ -211,6 +229,65 @@ namespace RFiDGear.Tests.KeySlots
 
         /// <inheritdoc />
         public override Task<ERROR> CommitTransactionAsync() => Task.FromResult(ERROR.NoError);
+
+        // ── Ultralight ──
+
+        /// <summary>Gets or sets whether the reader takes the access that a task asks about before it asks for keys.</summary>
+        public bool AcceptsUltralightAccess { get; set; } = true;
+
+        /// <summary>Gets what the task asked the reader about before it asked for keys, in order.</summary>
+        public List<UltralightAccess> UltralightAccessesAsked { get; } = new List<UltralightAccess>();
+
+        /// <inheritdoc />
+        public override bool SupportsUltralightAccess(UltralightAccess access)
+        {
+            UltralightAccessesAsked.Add(access);
+
+            return AcceptsUltralightAccess;
+        }
+
+        /// <summary>Gets every page operation of the Ultralight family that reached the reader, in order.</summary>
+        public List<UltralightPageCall> UltralightCalls { get; } = new List<UltralightPageCall>();
+
+        /// <summary>Gets or sets the result the page operations answer with instead of the default one; <c>null</c> for none.</summary>
+        public UltralightResult? ScriptedUltralightResult { get; set; }
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> ReadMifareUltralightPagesAsync(UltralightAccess access, int startPage, int pageCount) =>
+            UltralightPageOperation(nameof(ReadMifareUltralightPagesAsync), access, startPage, pageCount, null);
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            UltralightPageOperation(nameof(WriteMifareUltralightPagesAsync), access, startPage, data == null ? 0 : data.Length / 4, data);
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
+            UltralightPageOperation(nameof(AuthenticateMifareUltralightAsync), access, 0, 0, null);
+
+        private Task<UltralightResult> UltralightPageOperation(string method, UltralightAccess access, int startPage, int pageCount, byte[]? data)
+        {
+            UltralightCalls.Add(new UltralightPageCall(method, access, startPage, pageCount, data == null ? null : (byte[])data.Clone()));
+
+            // The key and the PACK as the reader received them, so that a test can say which slot each came from.
+            var error = Record(method, access.KeyHex, access.PackHex);
+
+            if (ScriptedUltralightResult != null)
+            {
+                return Task.FromResult(ScriptedUltralightResult);
+            }
+
+            if (error != ERROR.NoError)
+            {
+                return Task.FromResult(UltralightResult.Failed(error));
+            }
+
+            // What a successful read leaves: a recognizable byte per position, so that the pages can be told apart.
+            var bytes = method == nameof(ReadMifareUltralightPagesAsync)
+                ? Enumerable.Range(0, pageCount * 4).Select(i => (byte)(startPage * 4 + i)).ToArray()
+                : null;
+
+            return Task.FromResult(new UltralightResult(ERROR.NoError, bytes, UltralightVariant.Ntag215, access.Auth != UltralightAuth.None, pageCount, null));
+        }
 
         // ── Classic ──
 

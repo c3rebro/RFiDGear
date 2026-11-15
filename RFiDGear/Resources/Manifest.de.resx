@@ -2117,6 +2117,15 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="keySlotNameUltralightPack" xml:space="preserve">
     <value>Passwort-Quittung (PACK)</value>
   </data>
+  <data name="textBoxStatusUltralightRead" xml:space="preserve">
+    <value>{0}: {1} Seite(n) ab Seite {2} gelesen.</value>
+  </data>
+  <data name="textBoxStatusUltralightWritten" xml:space="preserve">
+    <value>{0}: {1} Seite(n) ab Seite {2} geschrieben.</value>
+  </data>
+  <data name="textBoxStatusUltralightFailed" xml:space="preserve">
+    <value>{0}: Der Vorgang endete mit {1} (Seiten erledigt: {2} von {3}).</value>
+  </data>
   <data name="labelKeySlotReferenceCaption" xml:space="preserve">
     <value>Referenz: {0}</value>
   </data>

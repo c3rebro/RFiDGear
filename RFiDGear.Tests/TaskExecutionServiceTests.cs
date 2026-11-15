@@ -1061,8 +1061,8 @@ namespace RFiDGear.Tests
             Assert.Contains(nameof(StubTaskModel), unsupported.Message);
         }
 
-        // The Ultralight task kind is run by the loop like the others. Its commands do not reach the card yet: the task ends
-        // as a failed one with ProtocolConstraint ("not possible here"), and the run ends with a result, not with an error.
+        // The Ultralight task kind is run by the loop like the others. The reader of this test has no page operations: the task
+        // ends as a failed one with ProtocolConstraint ("not possible here"), and the run ends with a result, not with an error.
         [Fact]
         public async Task AnUltralightTask_IsRunByTheLoop_AndEndsAsAFailedTaskWithProtocolConstraint()
         {

@@ -144,7 +144,11 @@ namespace RFiDGear.Infrastructure.Ultralight
             }
         }
 
-        private static bool AuthenticationFits(UltralightAuth auth, UltralightVariant variant)
+        /// <summary>Whether a way of authenticating is one the chip has: the key of an Ultralight C, the password of an EV1 or an NTAG, or none.</summary>
+        /// <param name="auth">The way of authenticating.</param>
+        /// <param name="variant">The chip.</param>
+        /// <returns><c>true</c> when the chip has it.</returns>
+        internal static bool AuthenticationFits(UltralightAuth auth, UltralightVariant variant)
         {
             switch (auth)
             {
