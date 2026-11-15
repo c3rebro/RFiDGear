@@ -136,8 +136,10 @@ log. What the window looks like, as the tests render it with a scripted SAM
   disabled, so this is what shows that the write enabled it. It never
   activates a SAM and never changes a master key: it is skipped for a SAM that
   is not activated, or whose master key is not the factory key, and for an
-  entry 120 that is in use. Run it again and it writes the same key again. The
-  entry stays written.
+  entry 120 that is enabled: a key cannot be read back, so a key that this
+  case wrote earlier cannot be told from the key of somebody else, and an
+  entry that is in use is never overwritten. So it runs once per SAM (it writes
+  only into a blank entry 120), and the entry stays written.
 
 **What this does not check:**
 

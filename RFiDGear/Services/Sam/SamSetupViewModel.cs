@@ -611,6 +611,9 @@ namespace RFiDGear.Services.Sam
                 case SamKeyEntryCheck.Unreadable:
                     AppendStatus(_text("messageSamSetupEntryUnreadable"), true);
                     break;
+                default:
+                    // NotChecked: the step did not write a key entry, so there is nothing to say about one.
+                    break;
             }
         }
 

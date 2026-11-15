@@ -15,8 +15,9 @@ the end).
 It looks for the SAM through LibLogicalAccess and reads its version. It does not
 depend on `readerKind`, it authenticates nothing and it writes nothing, and it
 is skipped when no SAM is found. `SamKeyEntryTests` also needs `cardWrites`: it
-writes a test key into key entry 120 of an activated SAM with the factory
-master key and reads the entry back. `SAM-AV3.md` has the cases and the
+writes a test key into a blank key entry 120 of an activated SAM with the
+factory master key and reads the entry back (once: an enabled entry is never
+overwritten). `SAM-AV3.md` has the cases and the
 checklist for the setup window.
 
 **The settings file:**

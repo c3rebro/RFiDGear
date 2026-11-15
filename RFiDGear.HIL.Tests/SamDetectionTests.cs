@@ -117,10 +117,10 @@ namespace RFiDGear.HIL.Tests
 
                 Assert.NotNull(before);
 
-                // A blank entry is disabled. An entry that is enabled is in use, unless it is what this case wrote on an earlier run.
-                if (before!.IsEnabled && before.Verdict != SamKeyEntryCheck.Matches)
+                // A blank entry is disabled. An enabled entry is in use: a key cannot be read back, so a key that this case wrote on an earlier run cannot be told from the key of somebody else, and neither is overwritten.
+                if (before!.IsEnabled)
                 {
-                    throw SkipException.ForSkip("Key entry " + Entry + " is in use (enabled, and not an AES-128 PICC key as this case writes it): it is left alone.");
+                    throw SkipException.ForSkip("Key entry " + Entry + " is enabled, so it is in use (a key cannot be read back, so one of an earlier run cannot be told from another): it is left alone. The case writes only into a blank entry, once.");
                 }
 
                 var key = Convert.FromHexString(TestKeyHex);
