@@ -242,15 +242,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
-        // The data of a write is what the rows hold, one after the other. A row that is not whole is kept as it is, and the write is
-        // refused when it runs, as it is for data that was set any other way.
+        // The data of a write is what the rows hold, one after the other, as long as every row is a whole page. With a row that is
+        // not (two rows A1B2 and C3D4, or an empty row before a full one) the plain digits could be one whole page that the grid does
+        // not show, or the data of a later row one page too early: the rows are kept exactly as they are, each after a mark, and
+        // that text is no data that a run takes (it is not hexadecimal), so the write is refused. The grid reads it back as it was.
         private void MakeTheDataFromTheRows()
         {
             dataIsMadeFromTheRows = true;
 
             try
             {
-                WriteDataHex = string.Concat(PageRows.Select(row => row.Hex));
+                var digits = PageRows.Select(row => row.Hex).ToList();
+
+                WriteDataHex = digits.All(UltralightPageRow.IsWholePage)
+                    ? string.Concat(digits)
+                    : UltralightPageRow.RowMark + string.Join(UltralightPageRow.RowMark.ToString(), digits);
             }
             finally
             {
@@ -271,7 +277,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             PageRows.Clear();
 
-            if (IsWriteTask)
+            if (IsWriteTask && WriteDataHex.Length > 0 && WriteDataHex[0] == UltralightPageRow.RowMark)
+            {
+                // Rows that were kept as they were shown (see MakeTheDataFromTheRows).
+                foreach (var digits in WriteDataHex.Substring(1).Split(UltralightPageRow.RowMark))
+                {
+                    AddRow(digits, readOnly: false);
+                }
+            }
+            else if (IsWriteTask)
             {
                 for (var offset = 0; offset < WriteDataHex.Length; offset += 8)
                 {
@@ -284,7 +298,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 for (var i = 0; i < count; i++)
                 {
-                    AddRow(ShownOfTheLastRead(StartPage + i), readOnly: true);
+                    AddRow(ShownOfTheLastRead(unchecked(StartPage + i)), readOnly: true);
                 }
             }
 
@@ -296,7 +310,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             for (var i = 0; i < PageRows.Count; i++)
             {
-                PageRows[i].PageNumber = StartPage + i;
+                // A first page near the end of the numbers must not stop the grid: the application is built with overflow checks.
+                PageRows[i].PageNumber = unchecked(StartPage + i);
             }
         }
 
@@ -304,14 +319,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         // they were read from, not to the place in the grid).
         private string ShownOfTheLastRead(int page)
         {
-            var offset = (page - LastReadStartPage) * UltralightMemoryMap.PageSize;
+            // In 64 bits: the pages are those of any number a task can hold, and the difference of two of them does not fit 32.
+            var offset = ((long)page - LastReadStartPage) * UltralightMemoryMap.PageSize;
 
             if (LastReadData == null || offset < 0 || offset + UltralightMemoryMap.PageSize > LastReadData.Length)
             {
                 return string.Empty;
             }
 
-            return Convert.ToHexString(LastReadData, offset, UltralightMemoryMap.PageSize);
+            return Convert.ToHexString(LastReadData, (int)offset, UltralightMemoryMap.PageSize);
         }
 
         #endregion The grid of pages
@@ -563,6 +579,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(IsReadTask));
                 OnPropertyChanged(nameof(IsWriteTask));
                 RebuildPageRows();
+                PageInputsChanged();
             }
         }
         private TaskType_MifareUltralightTask selectedTaskType;
@@ -581,6 +598,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 startPage = value;
                 OnPropertyChanged();
 
+                if (!startPageIsFromText)
+                {
+                    // The program set the page: what the box holds is that page, and no mistake.
+                    startPageText = null;
+                    startPageIsValid = true;
+                    OnPropertyChanged(nameof(StartPageText));
+                    OnPropertyChanged(nameof(IsStartPageValid));
+                    PageInputsChanged();
+                }
+
                 // The pages of a write keep their data and take new numbers, the pages of a read show what was read of their number.
                 if (IsWriteTask)
                 {
@@ -595,6 +622,104 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
         private int startPage = UltralightMemoryMap.FirstUserPage;
 
+        // What the boxes of the first page and of the number of pages hold, as it is typed. WPF leaves the number of the task as it was
+        // when a box holds no number, and a button that runs the task would then act on a page that the box no longer shows: the text
+        // is kept here, the box says when it is no number, and nothing runs while it is not.
+        private string startPageText;
+        private bool startPageIsValid = true;
+        private bool startPageIsFromText;
+        private string pageCountText;
+        private bool pageCountIsValid = true;
+        private bool pageCountIsFromText;
+
+        /// <summary>
+        /// Gets or sets the first page as it is typed. While it is no whole number the task keeps the page it had, <see cref="IsStartPageValid"/>
+        /// is <see langword="false"/>, and nothing is run on that page. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public string StartPageText
+        {
+            get => startPageText ?? startPage.ToString(CultureInfo.InvariantCulture);
+            set
+            {
+                startPageText = value ?? string.Empty;
+                // A page of a chip: no chip of the family has more than MostPagesOfAnyChip pages, and none has a page below 0.
+                startPageIsValid = int.TryParse(startPageText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var page) && page >= 0 && page < MostPagesOfAnyChip;
+
+                if (startPageIsValid)
+                {
+                    startPageIsFromText = true;
+
+                    try
+                    {
+                        StartPage = page;
+                    }
+                    finally
+                    {
+                        startPageIsFromText = false;
+                    }
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsStartPageValid));
+                PageInputsChanged();
+            }
+        }
+
+        /// <summary>Gets whether the box of the first page holds a page of a chip (a whole number from 0 up to the pages of the biggest chip). Not part of the project.</summary>
+        [XmlIgnore]
+        public bool IsStartPageValid => startPageIsValid;
+
+        /// <summary>
+        /// Gets or sets the number of pages of a read as it is typed. While it is no whole number the task keeps the number it had,
+        /// <see cref="IsPageCountValid"/> is <see langword="false"/>, and a read does not run. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public string PageCountText
+        {
+            get => pageCountText ?? pageCount.ToString(CultureInfo.InvariantCulture);
+            set
+            {
+                pageCountText = value ?? string.Empty;
+                pageCountIsValid = int.TryParse(pageCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count) && count >= 0 && count <= MostPagesOfAnyChip;
+
+                if (pageCountIsValid)
+                {
+                    pageCountIsFromText = true;
+
+                    try
+                    {
+                        PageCount = count;
+                    }
+                    finally
+                    {
+                        pageCountIsFromText = false;
+                    }
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsPageCountValid));
+                PageInputsChanged();
+            }
+        }
+
+        /// <summary>Gets whether the box of the number of pages holds a number of pages that a chip can have. Not part of the project.</summary>
+        [XmlIgnore]
+        public bool IsPageCountValid => pageCountIsValid;
+
+        /// <summary>
+        /// Gets whether the boxes that the task needs hold numbers: the first page, and for a read the number of pages. While they do
+        /// not, the buttons that run the task and the OK button are off and a run is refused. Not part of the project.
+        /// </summary>
+        [XmlIgnore]
+        public bool ArePageInputsValid => startPageIsValid && (!IsReadTask || pageCountIsValid);
+
+        private void PageInputsChanged()
+        {
+            OnPropertyChanged(nameof(ArePageInputsValid));
+            NotifyTheButtons();
+        }
+
         /// <summary>Gets or sets the number of pages a read returns. A write has as many pages as its data has.</summary>
         public int PageCount
         {
@@ -603,6 +728,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 pageCount = value;
                 OnPropertyChanged();
+
+                if (!pageCountIsFromText)
+                {
+                    pageCountText = null;
+                    pageCountIsValid = true;
+                    OnPropertyChanged(nameof(PageCountText));
+                    OnPropertyChanged(nameof(IsPageCountValid));
+                    PageInputsChanged();
+                }
 
                 if (IsReadTask)
                 {
@@ -614,7 +748,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <summary>
         /// Gets or sets the data of a write, as hexadecimal digits without separators, 8 per page. White space is dropped and the
-        /// digits are written in upper case; what is not a digit is kept, and a write with such data does not reach the card.
+        /// digits are written in upper case; what is not a digit is kept, and a write with such data does not reach the card. The grid
+        /// of the dialog writes a vertical bar in front of the rows, and between them, while one of them is not a whole page, so that
+        /// rows that are shown apart are never run together into a page: such text is not data, and no write takes it.
         /// </summary>
         public string WriteDataHex
         {
@@ -918,7 +1054,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// the task holds. It is off while an operation runs, and is the same command each time so that the button is told when that
         /// changes. The run loop uses <see cref="CommandDelegator"/>.
         /// </summary>
-        public IAsyncRelayCommand ReadDataCommand => readDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: false), () => !IsRunning);
+        public IAsyncRelayCommand ReadDataCommand => readDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: false), () => !IsRunning && ArePageInputsValid);
 
         private IAsyncRelayCommand writeDataCommand;
 
@@ -926,7 +1062,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Writes the data of the task to the chip on the reader, for the button of the dialog. Off while an operation runs, like
         /// <see cref="ReadDataCommand"/>.
         /// </summary>
-        public IAsyncRelayCommand WriteDataCommand => writeDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: true), () => !IsRunning);
+        public IAsyncRelayCommand WriteDataCommand => writeDataCommand ??= new AsyncRelayCommand(() => RunPageOperationAsync(write: true), () => !IsRunning && ArePageInputsValid);
 
         // The buttons are told when an operation starts and when it ends. They are told on the thread of the window: the run loop
         // can run the task on another.
@@ -935,6 +1071,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 readDataCommand?.NotifyCanExecuteChanged();
                 writeDataCommand?.NotifyCanExecuteChanged();
+                okCommand?.NotifyCanExecuteChanged();
+                cancelCommand?.NotifyCanExecuteChanged();
             });
 
         // The steps of a read or a write, in this order. Each one ends the task when it fails. First the reader is looked for, and a
@@ -1037,6 +1175,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             data = null;
             pages = PageCount;
+
+            // A box that holds no number: the task still has the number it had, which is not what the dialog shows.
+            if (!ArePageInputsValid)
+            {
+                pages = 0;
+
+                return ERROR.ProtocolConstraint;
+            }
 
             if (write)
             {
@@ -1260,7 +1406,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         public event EventHandler DialogClosing;
 
-        public ICommand OKCommand => new RelayCommand(Ok);
+        private RelayCommand okCommand;
+
+        /// <summary>
+        /// Gets the command of the OK button. It is off while a box of the pages holds no number, and while an operation runs: OK
+        /// adds the task to the project and closes the dialog, and a write that still waits for its key would reach the card after that.
+        /// </summary>
+        public ICommand OKCommand => okCommand ??= new RelayCommand(Ok, () => ArePageInputsValid && !IsRunning);
 
         protected virtual void Ok()
         {
@@ -1274,7 +1426,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
-        public ICommand CancelCommand => new RelayCommand(Cancel);
+        private RelayCommand cancelCommand;
+
+        /// <summary>
+        /// Gets the command of the Cancel button. It is off while an operation runs: closing the dialog leaves the operation running,
+        /// and a write that still waits for its key would reach the card after the person pressed the button that says it will not.
+        /// </summary>
+        public ICommand CancelCommand => cancelCommand ??= new RelayCommand(Cancel, () => !IsRunning);
 
         protected virtual void Cancel()
         {

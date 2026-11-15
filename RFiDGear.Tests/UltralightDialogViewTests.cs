@@ -1,7 +1,10 @@
+using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Ultralight;
+using RFiDGear.Models;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Tests.KeySlots;
+using RFiDGear.Tests.SecureKeys;
 using RFiDGear.View;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
@@ -113,7 +116,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task TheWindow_HasThreeTabs_AndTheInputsAreOffWhileAnOperationRuns()
         {
-            await OnWindow(() => Read(), (window, viewModel) =>
+            await OnWindow(() => Read(), (window, _) =>
             {
                 var tabs = Tabs(window);
 
@@ -127,7 +130,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task TheTaskTypeIndexDescriptionAndExecuteCondition_AreInTheWindow_AndTakeInput()
         {
-            await OnWindow(() => Read(), (window, viewModel) =>
+            await OnWindow(() => Read(), (window, _) =>
             {
                 foreach (var path in new[] { "SelectedTaskType", "CurrentTaskIndex", "SelectedTaskDescription", "SelectedExecuteConditionErrorLevel", "SelectedExecuteConditionTaskIndex" })
                 {
@@ -149,7 +152,7 @@ namespace RFiDGear.Tests
         [InlineData(Pages)]
         public async Task EveryTab_HasItsCaptions_AndNothingIsBlank(int tab)
         {
-            await OnWindow(() => Write(), async (window, viewModel) =>
+            await OnWindow(() => Write(), async (window, _) =>
             {
                 await SelectTab(window, tab);
 
@@ -232,7 +235,7 @@ namespace RFiDGear.Tests
 
                     return task;
                 },
-                async (window, viewModel) =>
+                async (window, _) =>
                 {
                     await SelectTab(window, Chip);
 
@@ -347,15 +350,16 @@ namespace RFiDGear.Tests
 
                 remove[0].Command.Execute(remove[0].CommandParameter);
 
+                // What is left is the empty row, which is not a page: the data says so.
                 Assert.Single(viewModel.PageRows);
-                Assert.Equal(string.Empty, viewModel.WriteDataHex);
+                Assert.False(UltralightPayload.TryParse(viewModel.WriteDataHex, out _));
             });
         }
 
         [Fact]
         public async Task AReadsPages_CannotBeTypedInto_AndOnlyTheReadButtonIsThere()
         {
-            await OnWindow(() => Read(start: 4, count: 3), async (window, viewModel) =>
+            await OnWindow(() => Read(), async (window, _) =>
             {
                 await SelectTab(window, Pages);
 
@@ -368,28 +372,131 @@ namespace RFiDGear.Tests
                 RenderedTab.AssertUsable(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "ReadDataCommand"), "read");
                 Assert.False(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "WriteDataCommand").IsVisible);
                 Assert.False(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "AddPageCommand").IsVisible);
-                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCount"), "the number of pages");
+                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCountText"), "the number of pages");
             });
         }
 
         [Fact]
         public async Task AWritesPages_HaveTheWriteButton_AndNoNumberOfPages()
         {
-            await OnWindow(() => Write(), async (window, viewModel) =>
+            await OnWindow(() => Write(), async (window, _) =>
             {
                 await SelectTab(window, Pages);
 
                 RenderedTab.AssertUsable(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "WriteDataCommand"), "write");
                 Assert.False(RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "ReadDataCommand").IsVisible);
-                Assert.False(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCount").IsVisible);
-                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "StartPage"), "the first page");
+                Assert.False(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCountText").IsVisible);
+                RenderedTab.AssertUsable(RenderedTab.One<TextBox>(window, TextBox.TextProperty, "StartPageText"), "the first page");
+            });
+        }
+
+        [Fact]
+        public async Task AMistakeInTheFirstPageBox_StopsTheButtonsAndTheOkButton_UntilItIsFixed()
+        {
+            await OnWindow(() => Write(start: 9), async (window, viewModel) =>
+            {
+                await SelectTab(window, Pages);
+                var box = RenderedTab.One<TextBox>(window, TextBox.TextProperty, "StartPageText");
+                var write = RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "WriteDataCommand");
+                var ok = RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "OKCommand");
+                var reader = new KeyRecordingReader { Connected = true };
+
+                box.Text = "abc";
+                await Settle(window);
+
+                // The task kept page 9; the buttons are off, and pressing the one that is there does nothing on that page.
+                Assert.Equal(9, viewModel.StartPage);
+                Assert.False(write.IsEnabled);
+                Assert.False(ok.IsEnabled);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)write.Command).ExecuteAsync(null);
+                }
+
+                Assert.Empty(reader.UltralightCalls);
+
+                box.Text = "11";
+                await Settle(window);
+
+                Assert.Equal(11, viewModel.StartPage);
+                Assert.True(write.IsEnabled);
+                Assert.True(ok.IsEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AWindowThatIsClosed_WhileAnOperationRuns_StaysOpen_UntilItEnds()
+        {
+            await OnWindow(() => Read(), async (window, viewModel) =>
+            {
+                // A write that still waits for its key would reach the card after the window is gone, and the person has no way left to
+                // see what it did. The key is asked for from a provider that does not answer until it is told to.
+                var provider = new BlockingKeyProvider(16);
+                KeyResolutionScope.SetDefault(new KeyResolutionContext(provider.Registry(), "run-1", "0", null, interactive: false));
+                viewModel.ExpectedChip = UltralightExpectation.C;
+                viewModel.Authentication = UltralightAuth.UltralightC;
+                viewModel.KeyBindings = new[] { new KeyBindingEntry { Slot = SecureKeySlots.UltralightCKey, ProviderId = BlockingKeyProvider.Id, Reference = "ref/c" } };
+
+                try
+                {
+                    using (ReaderDeviceScope.Use(new KeyRecordingReader { Connected = true }))
+                    {
+                        var running = viewModel.ReadDataCommand.ExecuteAsync(null);
+                        Assert.Same(provider.Asked, await Task.WhenAny(provider.Asked, Task.Delay(TimeSpan.FromSeconds(10))));
+                        Assert.True(viewModel.IsRunning);
+
+                        window.Close();
+                        await Settle(window);
+
+                        Assert.True(window.IsVisible, "the window was closed while an operation ran");
+                        Assert.False(viewModel.CancelCommand.CanExecute(null));
+
+                        provider.Release();
+                        await running;
+                    }
+
+                    Assert.True(viewModel.CancelCommand.CanExecute(null));
+
+                    window.Close();
+                    await Settle(window);
+
+                    Assert.False(window.IsVisible, "the window stays open although nothing runs");
+                }
+                finally
+                {
+                    KeyResolutionScope.SetDefault(null);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task AMistakeInTheNumberOfPagesBox_StopsTheReadButton()
+        {
+            await OnWindow(() => Read(), async (window, viewModel) =>
+            {
+                await SelectTab(window, Pages);
+                var box = RenderedTab.One<TextBox>(window, TextBox.TextProperty, "PageCountText");
+                var read = RenderedTab.One<Button>(window, ButtonBase.CommandProperty, "ReadDataCommand");
+
+                box.Text = string.Empty;
+                await Settle(window);
+
+                Assert.Equal(3, viewModel.PageCount);
+                Assert.False(read.IsEnabled);
+
+                box.Text = "2";
+                await Settle(window);
+
+                Assert.Equal(2, viewModel.PageCount);
+                Assert.True(read.IsEnabled);
             });
         }
 
         [Fact]
         public async Task TheReadButton_RunsTheTask_AndTheGridShowsWhatWasRead()
         {
-            await OnWindow(() => Read(start: 4, count: 2), async (window, viewModel) =>
+            await OnWindow(() => Read(count: 2), async (window, _) =>
             {
                 await SelectTab(window, Pages);
                 var reader = new KeyRecordingReader { Connected = true };
@@ -462,12 +569,12 @@ namespace RFiDGear.Tests
                 }),
                 ("ultralight-pages-write", Pages, () =>
                 {
-                    var task = Write("A1B2C3D4" + "01020304" + "FFEEDDCC" + "A1B", start: 4);
+                    var task = Write("A1B2C3D4" + "01020304" + "FFEEDDCC" + "A1B");
                     task.ExpectedChip = UltralightExpectation.Ntag215;
 
                     return task;
                 }),
-                ("ultralight-pages-read", Pages, () => Read(start: 4, count: 5)),
+                ("ultralight-pages-read", Pages, () => Read(count: 5)),
             };
 
             foreach (var (name, tab, create) in pictures)
