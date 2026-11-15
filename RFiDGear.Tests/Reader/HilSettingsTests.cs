@@ -143,9 +143,127 @@ namespace RFiDGear.Tests.Reader
             Assert.False(settings.ReaderScan);
             Assert.False(settings.Interactive);
             Assert.False(settings.SecureKeys);
+            Assert.False(settings.CardWrites);
+            Assert.Equal(HilReaderKind.Auto, settings.ReaderKind);
             Assert.False(settings.HardwareRequested);
             Assert.False(settings.InteractiveRequested);
             Assert.False(settings.SecureKeysRequested);
+            Assert.False(settings.CardWritesRequested);
+        }
+
+        // ── The cases that write to the card ──
+
+        [Theory]
+        [InlineData("{}", false)]
+        [InlineData("{ \"cardWrites\": true }", false)]
+        [InlineData("{ \"readerScan\": true }", false)]
+        [InlineData("{ \"readerScan\": true, \"cardWrites\": false }", false)]
+        [InlineData("{ \"readerScan\": true, \"cardWrites\": true }", true)]
+        [InlineData("{ \"READERSCAN\": true, \"CardWrites\": true }", true)]
+        [InlineData("{ \"readerScan\": false, \"cardWrites\": true, \"secureKeys\": true, \"interactive\": true }", false)]
+        public void TheCasesThatWriteToTheCard_NeedBothTheReaderScanTestsAndCardWrites(string json, bool expected)
+        {
+            var settings = HilSettings.Parse(json, Source);
+
+            Assert.Null(settings.Problem);
+            Assert.Equal(expected, settings.CardWritesRequested);
+        }
+
+        [Fact]
+        public void TheCasesThatWriteToTheCard_AreNotSwitchedOnBySecureKeys_OrByTheSwitchOfTheRunner()
+        {
+            Assert.False(HilSettings.Parse("{ \"readerScan\": true, \"secureKeys\": true, \"interactive\": true }", Source).CardWritesRequested);
+
+            File.WriteAllText(Path.Combine(_root, HilSettings.FileName), "{ \"readerScan\": true }");
+            Assert.False(HilSettings.Load(_root, "1").CardWritesRequested);
+        }
+
+        [Fact]
+        public void TheSkippedCasesThatWrite_NameTheFileTheSettingAndWhatTheyWrite()
+        {
+            var noWrites = HilSettings.Parse("{ \"readerScan\": true }", Source);
+            var noScan = HilSettings.Parse("{ \"cardWrites\": true }", Source);
+            var noFile = HilSettings.Load(_root);
+            var broken = HilSettings.Parse("{ \"cardWrites\": 1 }", Source);
+
+            var reason = noWrites.CardWritesSkipReason();
+            Assert.Contains("cardWrites", reason, StringComparison.Ordinal);
+            Assert.Contains(Source, reason, StringComparison.Ordinal);
+            Assert.Contains("writes", reason, StringComparison.Ordinal);
+
+            // With the setting on and the reader scan off, the other setting is the one to change.
+            Assert.Contains("readerScan", noScan.CardWritesSkipReason(), StringComparison.Ordinal);
+            Assert.Contains(HilSettings.SampleFileName, noFile.CardWritesSkipReason(), StringComparison.Ordinal);
+            Assert.Contains("must be true or false", broken.CardWritesSkipReason(), StringComparison.Ordinal);
+        }
+
+        // ── The kind of reader ──
+
+        [Theory]
+        [InlineData("{}", HilReaderKind.Auto)]
+        [InlineData("{ \"readerKind\": \"auto\" }", HilReaderKind.Auto)]
+        [InlineData("{ \"readerKind\": \"elatec\" }", HilReaderKind.Elatec)]
+        [InlineData("{ \"readerKind\": \"PCSC\" }", HilReaderKind.Pcsc)]
+        [InlineData("{ \"READERKIND\": \"Pcsc\", \"readerScan\": true }", HilReaderKind.Pcsc)]
+        public void TheKindOfReader_IsReadInAnyCase_AndIsAutoWhenItIsLeftOut(string json, HilReaderKind expected)
+        {
+            var settings = HilSettings.Parse(json, Source);
+
+            Assert.Null(settings.Problem);
+            Assert.Equal(expected, settings.ReaderKind);
+        }
+
+        [Theory]
+        [InlineData(HilReaderKind.Auto, new[] { HilReaderKind.Elatec, HilReaderKind.Pcsc })]
+        [InlineData(HilReaderKind.Elatec, new[] { HilReaderKind.Elatec })]
+        [InlineData(HilReaderKind.Pcsc, new[] { HilReaderKind.Pcsc })]
+        public void TheReadersThatAreTried_AreTheOneThatWasNamed_OrBothInTheOldOrder(HilReaderKind kind, HilReaderKind[] expected)
+        {
+            var settings = HilSettings.Parse("{ \"readerKind\": \"" + kind.ToString().ToLowerInvariant() + "\" }", Source);
+
+            Assert.Equal(expected, settings.ReaderKindsToTry);
+        }
+
+        [Theory]
+        [InlineData("{ \"readerKind\": \"usb\" }", "\"readerKind\" must be")]
+        [InlineData("{ \"readerKind\": true }", "\"readerKind\" must be")]
+        [InlineData("{ \"readerKind\": 1 }", "\"readerKind\" must be")]
+        [InlineData("{ \"readerKind\": null }", "\"readerKind\" must be")]
+        [InlineData("{ \"readerScan\": true, \"readerKind\": \"\" }", "\"readerKind\" must be")]
+        public void AKindOfReaderThatIsNotOneOfTheThree_IsAProblem_AndAsksForNothing(string json, string expectedInTheProblem)
+        {
+            var settings = HilSettings.Parse(json, Source);
+
+            Assert.NotNull(settings.Problem);
+            Assert.Contains(expectedInTheProblem, settings.Problem, StringComparison.Ordinal);
+            Assert.Contains("auto", settings.Problem, StringComparison.Ordinal);
+            Assert.Equal(HilReaderKind.Auto, settings.ReaderKind);
+            Assert.False(settings.HardwareRequested);
+        }
+
+        [Theory]
+        [InlineData("{ \"readerKind\": \"elatec\", \"ReaderKind\": \"pcsc\" }")]
+        [InlineData("{ \"readerKind\": \"auto\", \"readerKind\": \"auto\" }")]
+        public void AKindOfReaderThatIsSetTwice_IsAProblem_EvenWhenBothAreTheSame(string json)
+        {
+            var settings = HilSettings.Parse(json, Source);
+
+            Assert.NotNull(settings.Problem);
+            Assert.Contains("set twice", settings.Problem, StringComparison.Ordinal);
+            Assert.Equal(HilReaderKind.Auto, settings.ReaderKind);
+            Assert.False(settings.HardwareRequested);
+        }
+
+        [Fact]
+        public void TheKindOfReader_IsKeptWhenTheRunnerTurnsTheQuestionsOn()
+        {
+            File.WriteAllText(Path.Combine(_root, HilSettings.FileName), "{ \"readerScan\": true, \"readerKind\": \"pcsc\", \"cardWrites\": true }");
+
+            var settings = HilSettings.Load(_root, "1");
+
+            Assert.Equal(HilReaderKind.Pcsc, settings.ReaderKind);
+            Assert.True(settings.CardWrites);
+            Assert.True(settings.InteractiveRequested);
         }
 
         [Theory]
@@ -212,8 +330,30 @@ namespace RFiDGear.Tests.Reader
             Assert.NotNull(script);
             var text = File.ReadAllText(script!);
 
-            Assert.Contains("foreach ($key in 'readerScan', 'interactive', 'secureKeys')", text, StringComparison.Ordinal);
-            Assert.Contains("$name -ne 'securekeys'", text, StringComparison.Ordinal);
+            Assert.NotEmpty(HilSettings.Names);
+
+            foreach (var name in HilSettings.Names)
+            {
+                // The runner lower-cases the name it reads and compares it with the list of the names it knows, and checks the
+                // names for a setting that is set twice.
+                Assert.Contains("'" + name.ToLowerInvariant() + "'", text, StringComparison.Ordinal);
+                Assert.Contains("'" + name + "'", text, StringComparison.Ordinal);
+            }
+        }
+
+        [Fact]
+        public void TheRunnerKnowsTheKindsOfReader_AndTheSampleSaysWhichThereAre()
+        {
+            var script = FindFile("Run-HilTests.ps1");
+            var sample = FindFile(HilSettings.SampleFileName);
+            Assert.NotNull(script);
+            Assert.NotNull(sample);
+
+            foreach (var kind in new[] { "auto", "elatec", "pcsc" })
+            {
+                Assert.Contains("'" + kind + "'", File.ReadAllText(script!), StringComparison.Ordinal);
+                Assert.Contains(kind, File.ReadAllText(sample!), StringComparison.Ordinal);
+            }
         }
 
         [Fact]
@@ -282,9 +422,14 @@ namespace RFiDGear.Tests.Reader
             Assert.True(settings.ReaderScan);
             Assert.False(settings.Interactive);
 
-            // The cases that change keys are never on in the sample that a new checkout starts from.
+            // The cases that change keys or write to the card are never on in the sample that a new checkout starts from, and the
+            // reader is found the way it always was.
             Assert.False(settings.SecureKeys);
+            Assert.False(settings.CardWrites);
+            Assert.Equal(HilReaderKind.Auto, settings.ReaderKind);
             Assert.Contains("\"secureKeys\"", File.ReadAllText(sample!), StringComparison.Ordinal);
+            Assert.Contains("\"cardWrites\"", File.ReadAllText(sample!), StringComparison.Ordinal);
+            Assert.Contains("\"readerKind\"", File.ReadAllText(sample!), StringComparison.Ordinal);
         }
 
         // The sample and the runner are in the folder of the solution, above the build folder of the tests.
