@@ -55,9 +55,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Gets whether the row holds the eight hexadecimal digits of a page: <see langword="true"/> or <see langword="false"/> for a
         /// row of a write, and <see langword="null"/> for a row that only shows (there is nothing to be right or wrong about).
         /// </summary>
-        public bool? IsValid => IsReadOnly ? (bool?)null : hex.Length == 8 && hex.All(Uri.IsHexDigit);
+        public bool? IsValid => IsReadOnly ? (bool?)null : IsWholePage(hex);
 
+        /// <summary>The mark that the data of a task puts in front of the rows, and between them, while a row is not a whole page.</summary>
+        internal const char RowMark = '|';
+
+        /// <summary>Tells whether digits are the eight hexadecimal digits of one page.</summary>
+        /// <param name="digits">The digits, as the row holds them.</param>
+        /// <returns><see langword="true"/> for exactly eight hexadecimal digits.</returns>
+        internal static bool IsWholePage(string digits) => digits != null && digits.Length == 8 && digits.All(Uri.IsHexDigit);
+
+        // No white space, upper case, and never the mark of the rows: a row that held it would be cut in two when the data is read again.
         private static string Normalize(string value) =>
-            string.IsNullOrEmpty(value) ? string.Empty : string.Concat(value.Where(c => !char.IsWhiteSpace(c))).ToUpperInvariant();
+            string.IsNullOrEmpty(value) ? string.Empty : string.Concat(value.Where(c => !char.IsWhiteSpace(c) && c != RowMark)).ToUpperInvariant();
     }
 }

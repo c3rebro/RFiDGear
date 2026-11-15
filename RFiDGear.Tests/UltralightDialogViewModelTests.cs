@@ -117,7 +117,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var task = Write("A1B2C3D4", start: 4);
+                var task = Write("A1B2C3D4");
 
                 Assert.True(task.AddPageCommand.CanExecute(null));
                 task.AddPageCommand.Execute(null);
@@ -126,11 +126,137 @@ namespace RFiDGear.Tests
                 Assert.Equal("A1B2C3D4", task.PageRows[0].Hex);
                 Assert.Equal(string.Empty, task.PageRows[1].Hex);
                 Assert.False(task.PageRows[1].IsValid);
-                Assert.Equal("A1B2C3D4", task.WriteDataHex);
+
+                // A grid with a row that is not whole is no data that a run takes: it has the mark of the rows in front of it.
+                Assert.StartsWith("|", task.WriteDataHex, StringComparison.Ordinal);
+                Assert.False(UltralightPayload.TryParse(task.WriteDataHex, out _));
 
                 // And it is typed into like any other.
                 task.PageRows[1].Hex = "01020304";
                 Assert.Equal("A1B2C3D401020304", task.WriteDataHex);
+            });
+        }
+
+        // ── What the grid shows is what is written ──
+
+        [Fact]
+        public async Task TwoRowsThatAreNotWhole_AreNotOneWholePageOfData()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Write("A1B2C3D4");
+                task.PageRows[0].Hex = "A1B2";
+                task.AddPageCommand.Execute(null);
+                task.PageRows[1].Hex = "C3D4";
+
+                Assert.Equal(new bool?[] { false, false }, task.PageRows.Select(row => row.IsValid));
+
+                // Joined, the two rows would be A1B2C3D4: a whole page that the grid does not show.
+                Assert.False(UltralightPayload.TryParse(task.WriteDataHex, out _));
+                Assert.Equal(new[] { "A1B2", "C3D4" }, task.PageRows.Select(row => row.Hex));
+            });
+        }
+
+        [Fact]
+        public async Task AnEmptyRowBeforeAFullOne_DoesNotMoveTheDataUpAPage()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Write(string.Empty, start: 6);
+                task.AddPageCommand.Execute(null);
+                task.AddPageCommand.Execute(null);
+                task.PageRows[1].Hex = "A1B2C3D4";
+
+                // The grid shows page 6 empty and page 7 full. The data must not be the one page A1B2C3D4, which a run would write to page 6.
+                Assert.Equal(new[] { 6, 7 }, task.PageRows.Select(row => row.PageNumber));
+                Assert.Equal(new[] { string.Empty, "A1B2C3D4" }, task.PageRows.Select(row => row.Hex));
+                Assert.False(UltralightPayload.TryParse(task.WriteDataHex, out _));
+            });
+        }
+
+        [Fact]
+        public async Task ARowThatIsNotWhole_IsKeptAsItIs_WhenTheTypeChanges_WhenTheTaskIsCopied_AndWhenTheDataIsSetAgain()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Write("A1B2C3D4", start: 6);
+                task.PageRows[0].Hex = "A1B2";
+                task.AddPageCommand.Execute(null);
+                task.AddPageCommand.Execute(null);
+                task.PageRows[2].Hex = "C3D4";
+                var shown = task.PageRows.Select(row => (row.PageNumber, row.Hex)).ToList();
+
+                // The type changes there and back.
+                task.SelectedTaskType = TaskType_MifareUltralightTask.ReadData;
+                task.SelectedTaskType = TaskType_MifareUltralightTask.WriteData;
+                Assert.Equal(shown, task.PageRows.Select(row => (row.PageNumber, row.Hex)));
+
+                // The dialog copies the task (the project that is saved and loaded sets the same text).
+                var editor = new MifareUltralightSetupViewModel(task, new ObservableCollection<IDialogViewModel>());
+                Assert.Equal(shown, editor.PageRows.Select(row => (row.PageNumber, row.Hex)));
+
+                var loaded = Write(string.Empty, start: 6);
+                loaded.WriteDataHex = task.WriteDataHex;
+                Assert.Equal(shown, loaded.PageRows.Select(row => (row.PageNumber, row.Hex)));
+                Assert.False(UltralightPayload.TryParse(loaded.WriteDataHex, out _));
+            });
+        }
+
+        [Fact]
+        public async Task WhenEveryRowIsWholeAgain_TheDataIsThePlainDigitsAgain()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Write("A1B2C3D4");
+                task.AddPageCommand.Execute(null);
+                Assert.StartsWith("|", task.WriteDataHex, StringComparison.Ordinal);
+
+                task.PageRows[1].Hex = "01020304";
+
+                Assert.Equal("A1B2C3D401020304", task.WriteDataHex);
+                Assert.True(UltralightPayload.TryParse(task.WriteDataHex, out var data));
+                Assert.Equal(new byte[] { 0xA1, 0xB2, 0xC3, 0xD4, 1, 2, 3, 4 }, data);
+
+                // And removing the row that is not whole has the same effect.
+                task.AddPageCommand.Execute(null);
+                Assert.StartsWith("|", task.WriteDataHex, StringComparison.Ordinal);
+                task.RemovePageCommand.Execute(task.PageRows[2]);
+                Assert.Equal("A1B2C3D401020304", task.WriteDataHex);
+            });
+        }
+
+        [Fact]
+        public async Task TheMarkOfTheRows_CannotBeTypedIntoARow()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = Write("A1B2C3D4");
+
+                task.PageRows[0].Hex = "A|1";
+
+                Assert.Equal("A1", task.PageRows[0].Hex);
+                Assert.DoesNotContain("|", task.PageRows[0].Hex, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task AButtonThatWritesAGridWithARowThatIsNotWhole_WritesNothing()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = Write("A1B2C3D4", start: 9);
+                task.PageRows[0].Hex = "A1B2";
+                task.AddPageCommand.Execute(null);
+                task.PageRows[1].Hex = "C3D4";
+                var reader = Reader();
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await task.WriteDataCommand.ExecuteAsync(null);
+                }
+
+                Assert.Empty(reader.UltralightCalls);
+                Assert.Equal(ERROR.ProtocolConstraint, task.CurrentTaskErrorLevel);
             });
         }
 
@@ -139,7 +265,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var task = Write("A1B2C3D4" + "01020304" + "FFEEDDCC", start: 4);
+                var task = Write("A1B2C3D4" + "01020304" + "FFEEDDCC");
 
                 task.RemovePageCommand.Execute(task.PageRows[1]);
 
@@ -170,7 +296,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var task = Write("A1B2C3D401020304", start: 4);
+                var task = Write("A1B2C3D401020304");
 
                 task.StartPage = 10;
 
@@ -211,7 +337,7 @@ namespace RFiDGear.Tests
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
                 // An Ultralight has 16 pages; from page 4 that is 12 rows.
-                var task = Write(string.Concat(Enumerable.Repeat("00000000", 11)), start: 4, chip: UltralightExpectation.Plain);
+                var task = Write(string.Concat(Enumerable.Repeat("00000000", 11)), chip: UltralightExpectation.Plain);
 
                 Assert.True(task.AddPageCommand.CanExecute(null));
                 task.AddPageCommand.Execute(null);
@@ -228,7 +354,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var task = Write(string.Empty, start: 4);
+                var task = Write(string.Empty);
 
                 while (task.AddPageCommand.CanExecute(null))
                 {
@@ -276,7 +402,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                var task = Read(start: 4, count: 2);
+                var task = Read();
                 var reader = Reader();
 
                 using (ReaderDeviceScope.Use(reader))
@@ -295,7 +421,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                var task = Read(start: 4, count: 2);
+                var task = Read();
 
                 using (ReaderDeviceScope.Use(Reader()))
                 {
@@ -318,7 +444,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                var task = Read(start: 4, count: 3);
+                var task = Read(count: 3);
                 var reader = Reader();
                 reader.ScriptedUltralightResult = new UltralightResult(ERROR.PermissionDenied, new byte[] { 1, 2, 3, 4 }, UltralightVariant.Ntag215, false, 1, 5);
 
@@ -337,7 +463,7 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var task = Write("A1B2C3D4", start: 4);
+                var task = Write("A1B2C3D4");
                 task.PageCount = 3;
 
                 task.SelectedTaskType = TaskType_MifareUltralightTask.ReadData;

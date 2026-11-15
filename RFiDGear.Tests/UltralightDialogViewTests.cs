@@ -113,7 +113,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task TheWindow_HasThreeTabs_AndTheInputsAreOffWhileAnOperationRuns()
         {
-            await OnWindow(() => Read(), (window, viewModel) =>
+            await OnWindow(() => Read(), (window, _) =>
             {
                 var tabs = Tabs(window);
 
@@ -127,7 +127,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task TheTaskTypeIndexDescriptionAndExecuteCondition_AreInTheWindow_AndTakeInput()
         {
-            await OnWindow(() => Read(), (window, viewModel) =>
+            await OnWindow(() => Read(), (window, _) =>
             {
                 foreach (var path in new[] { "SelectedTaskType", "CurrentTaskIndex", "SelectedTaskDescription", "SelectedExecuteConditionErrorLevel", "SelectedExecuteConditionTaskIndex" })
                 {
@@ -149,7 +149,7 @@ namespace RFiDGear.Tests
         [InlineData(Pages)]
         public async Task EveryTab_HasItsCaptions_AndNothingIsBlank(int tab)
         {
-            await OnWindow(() => Write(), async (window, viewModel) =>
+            await OnWindow(() => Write(), async (window, _) =>
             {
                 await SelectTab(window, tab);
 
@@ -232,7 +232,7 @@ namespace RFiDGear.Tests
 
                     return task;
                 },
-                async (window, viewModel) =>
+                async (window, _) =>
                 {
                     await SelectTab(window, Chip);
 
@@ -347,15 +347,16 @@ namespace RFiDGear.Tests
 
                 remove[0].Command.Execute(remove[0].CommandParameter);
 
+                // What is left is the empty row, which is not a page: the data says so.
                 Assert.Single(viewModel.PageRows);
-                Assert.Equal(string.Empty, viewModel.WriteDataHex);
+                Assert.False(UltralightPayload.TryParse(viewModel.WriteDataHex, out _));
             });
         }
 
         [Fact]
         public async Task AReadsPages_CannotBeTypedInto_AndOnlyTheReadButtonIsThere()
         {
-            await OnWindow(() => Read(start: 4, count: 3), async (window, viewModel) =>
+            await OnWindow(() => Read(), async (window, _) =>
             {
                 await SelectTab(window, Pages);
 
@@ -375,7 +376,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task AWritesPages_HaveTheWriteButton_AndNoNumberOfPages()
         {
-            await OnWindow(() => Write(), async (window, viewModel) =>
+            await OnWindow(() => Write(), async (window, _) =>
             {
                 await SelectTab(window, Pages);
 
@@ -389,7 +390,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task TheReadButton_RunsTheTask_AndTheGridShowsWhatWasRead()
         {
-            await OnWindow(() => Read(start: 4, count: 2), async (window, viewModel) =>
+            await OnWindow(() => Read(count: 2), async (window, _) =>
             {
                 await SelectTab(window, Pages);
                 var reader = new KeyRecordingReader { Connected = true };
@@ -462,12 +463,12 @@ namespace RFiDGear.Tests
                 }),
                 ("ultralight-pages-write", Pages, () =>
                 {
-                    var task = Write("A1B2C3D4" + "01020304" + "FFEEDDCC" + "A1B", start: 4);
+                    var task = Write("A1B2C3D4" + "01020304" + "FFEEDDCC" + "A1B");
                     task.ExpectedChip = UltralightExpectation.Ntag215;
 
                     return task;
                 }),
-                ("ultralight-pages-read", Pages, () => Read(start: 4, count: 5)),
+                ("ultralight-pages-read", Pages, () => Read(count: 5)),
             };
 
             foreach (var (name, tab, create) in pictures)

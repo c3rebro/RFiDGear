@@ -242,15 +242,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
-        // The data of a write is what the rows hold, one after the other. A row that is not whole is kept as it is, and the write is
-        // refused when it runs, as it is for data that was set any other way.
+        // The data of a write is what the rows hold, one after the other, as long as every row is a whole page. With a row that is
+        // not (two rows A1B2 and C3D4, or an empty row before a full one) the plain digits could be one whole page that the grid does
+        // not show, or the data of a later row one page too early: the rows are kept exactly as they are, each after a mark, and
+        // that text is no data that a run takes (it is not hexadecimal), so the write is refused. The grid reads it back as it was.
         private void MakeTheDataFromTheRows()
         {
             dataIsMadeFromTheRows = true;
 
             try
             {
-                WriteDataHex = string.Concat(PageRows.Select(row => row.Hex));
+                var digits = PageRows.Select(row => row.Hex).ToList();
+
+                WriteDataHex = digits.All(UltralightPageRow.IsWholePage)
+                    ? string.Concat(digits)
+                    : UltralightPageRow.RowMark + string.Join(UltralightPageRow.RowMark.ToString(), digits);
             }
             finally
             {
@@ -271,7 +277,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             PageRows.Clear();
 
-            if (IsWriteTask)
+            if (IsWriteTask && WriteDataHex.Length > 0 && WriteDataHex[0] == UltralightPageRow.RowMark)
+            {
+                // Rows that were kept as they were shown (see MakeTheDataFromTheRows).
+                foreach (var digits in WriteDataHex.Substring(1).Split(UltralightPageRow.RowMark))
+                {
+                    AddRow(digits, readOnly: false);
+                }
+            }
+            else if (IsWriteTask)
             {
                 for (var offset = 0; offset < WriteDataHex.Length; offset += 8)
                 {
@@ -614,7 +628,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <summary>
         /// Gets or sets the data of a write, as hexadecimal digits without separators, 8 per page. White space is dropped and the
-        /// digits are written in upper case; what is not a digit is kept, and a write with such data does not reach the card.
+        /// digits are written in upper case; what is not a digit is kept, and a write with such data does not reach the card. The grid
+        /// of the dialog writes a vertical bar in front of the rows, and between them, while one of them is not a whole page, so that
+        /// rows that are shown apart are never run together into a page: such text is not data, and no write takes it.
         /// </summary>
         public string WriteDataHex
         {
