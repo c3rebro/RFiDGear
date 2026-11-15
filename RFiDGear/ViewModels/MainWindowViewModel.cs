@@ -30,6 +30,7 @@ using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.AutoMode;
 using RFiDGear.Services.ExternalControl;
+using RFiDGear.Services.Sam;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
@@ -2052,6 +2053,17 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public IRelayCommand OpenKeyManagerCommand => new RelayCommand(OnOpenKeyManager);
         private void OnOpenKeyManager() => StoredKeysLauncher.Show(mw);
+
+        /// <summary>Gets or sets how the SAM setup of the menu is shown; the tests replace it.</summary>
+        internal ISamSetupLauncher SamSetupLauncher { get; set; } = new RFiDGear.View.WpfSamSetupLauncher();
+
+        /// <summary>
+        /// Opens the setup of a MIFARE SAM AV3 in a PC/SC reader: find the SAM, activate a new one, authenticate as host and write one
+        /// key entry. It needs no project. It holds the gate of the reader while it is open, so the reader monitor, the automatic mode
+        /// and the tasks leave the reader alone; if somebody holds the gate, the window does not open.
+        /// </summary>
+        public IRelayCommand OpenSamSetupCommand => new RelayCommand(OnOpenSamSetup);
+        private void OnOpenSamSetup() => SamSetupLauncher.Show(mw, _readerGate, busy => IsReaderBusy = busy);
 
         /// <summary>Logs a project-open failure without changing the currently loaded project.</summary>
         private static void LogProjectOpenFailure(string path, ProjectOpenError error) =>

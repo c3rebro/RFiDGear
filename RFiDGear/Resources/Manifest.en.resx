@@ -2389,4 +2389,166 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.UltralightAuth.Password" xml:space="preserve">
     <value>Password and PACK (EV1, NTAG)</value>
   </data>
+  <data name="menuItemSamSetup" xml:space="preserve">
+    <value>MIFARE SAM AV3 setup...</value>
+  </data>
+  <data name="windowTitleSamSetup" xml:space="preserve">
+    <value>MIFARE SAM AV3 setup</value>
+  </data>
+  <data name="labelSamSetupIntro" xml:space="preserve">
+    <value>Sets up a MIFARE SAM AV3 that sits in a PC/SC reader: find it, activate a new one, authenticate as host and write one key into a key entry. The search only reads the answer to reset (ATR) of the card in each reader. While this window is open, it has the reader to itself.</value>
+  </data>
+  <data name="labelSamSetupReader" xml:space="preserve">
+    <value>SAM in reader</value>
+  </data>
+  <data name="buttonContentSamSetupRefresh" xml:space="preserve">
+    <value>Search again</value>
+  </data>
+  <data name="buttonContentSamSetupCheck" xml:space="preserve">
+    <value>Check SAM</value>
+  </data>
+  <data name="toolTipSamSetupCheck" xml:space="preserve">
+    <value>Connects to the SAM and asks for its version (SAM_GetVersion). No key is used and nothing is changed.</value>
+  </data>
+  <data name="labelSamSetupStateNoReader" xml:space="preserve">
+    <value>No MIFARE SAM AV3 found.</value>
+  </data>
+  <data name="labelSamSetupStateFound" xml:space="preserve">
+    <value>A SAM was found. Check it to connect.</value>
+  </data>
+  <data name="labelSamSetupStateConnected" xml:space="preserve">
+    <value>Connected. It is not known yet whether the SAM is activated.</value>
+  </data>
+  <data name="labelSamSetupStateNotActivated" xml:space="preserve">
+    <value>The SAM is not activated.</value>
+  </data>
+  <data name="labelSamSetupStateAuthenticated" xml:space="preserve">
+    <value>Authenticated as host. A key entry can be written.</value>
+  </data>
+  <data name="labelSamSetupVersion" xml:space="preserve">
+    <value>Hardware information {0}, software information {1}</value>
+  </data>
+  <data name="messageSamSetupNoVersion" xml:space="preserve">
+    <value>The SAM did not give its version.</value>
+  </data>
+  <data name="labelSamSetupMasterKey" xml:space="preserve">
+    <value>Master key (key entry 0, version 0)</value>
+  </data>
+  <data name="labelSamSetupFactoryKey" xml:space="preserve">
+    <value>Factory key (all zeros, a new SAM)</value>
+  </data>
+  <data name="toolTipSamSetupFactoryKey" xml:space="preserve">
+    <value>A new SAM has a master key of sixteen zero bytes. Clear this box to use another key.</value>
+  </data>
+  <data name="labelSamSetupStoredKey" xml:space="preserve">
+    <value>Stored key</value>
+  </data>
+  <data name="toolTipSamSetupStoredKey" xml:space="preserve">
+    <value>A key from the Windows Credential Manager. To type the key instead, choose the first entry.</value>
+  </data>
+  <data name="labelSamSetupEnterBelow" xml:space="preserve">
+    <value>(enter the key below)</value>
+  </data>
+  <data name="labelSamSetupKeyDigits" xml:space="preserve">
+    <value>Key (32 hexadecimal digits)</value>
+  </data>
+  <data name="buttonContentSamSetupAuthenticate" xml:space="preserve">
+    <value>Authenticate</value>
+  </data>
+  <data name="toolTipSamSetupAuthenticate" xml:space="preserve">
+    <value>Host authentication with the master key. A new SAM answers that it was never activated, and no key is used then. A wrong key counts as a use of the key if a usage counter is linked to the key entry.</value>
+  </data>
+  <data name="buttonContentSamSetupActivate" xml:space="preserve">
+    <value>Activate SAM...</value>
+  </data>
+  <data name="toolTipSamSetupActivate" xml:space="preserve">
+    <value>Only for a new SAM that answered 'not activated'. Asks first. The activation cannot be undone.</value>
+  </data>
+  <data name="labelSamSetupNewKey" xml:space="preserve">
+    <value>Key to write (AES-128 key for cards, a PICC key)</value>
+  </data>
+  <data name="labelSamSetupEntry" xml:space="preserve">
+    <value>Key entry (1 to 127)</value>
+  </data>
+  <data name="toolTipSamSetupEntry" xml:space="preserve">
+    <value>The key entry that receives the key, as version 0. Entry 0 is the master key and is never written here. The master key stays the key that can change the entry later.</value>
+  </data>
+  <data name="buttonContentSamSetupWrite" xml:space="preserve">
+    <value>Write key</value>
+  </data>
+  <data name="toolTipSamSetupWrite" xml:space="preserve">
+    <value>Writes the key into the key entry. Needs the host authentication first. A SAM never gives a key back.</value>
+  </data>
+  <data name="labelSamSetupStatus" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+  <data name="messageSamSetupConfirmActivate" xml:space="preserve">
+    <value>Activate the MIFARE SAM AV3?&#10;&#10;This cannot be undone. Do it only for a new SAM that you want to use, with its master key (a new SAM has the factory key, sixteen zero bytes).&#10;&#10;The command for the activation was taken from the MIFARE SAM AV2 and has not been checked on a SAM AV3 yet. It may be refused, and it may do something else than expected.</value>
+  </data>
+  <data name="messageSamSetupReaderBusy" xml:space="preserve">
+    <value>The reader is in use by another part of RFiDGear. Wait until it is done and try again.</value>
+  </data>
+  <data name="messageSamSetupSearchFailed" xml:space="preserve">
+    <value>The PC/SC readers could not be listed. Is the Smart Card service running?</value>
+  </data>
+  <data name="messageSamSetupSearchNone" xml:space="preserve">
+    <value>No MIFARE SAM AV3 was found in the PC/SC readers. Insert it and search again.</value>
+  </data>
+  <data name="messageSamSetupSearchFound" xml:space="preserve">
+    <value>Found a MIFARE SAM AV3 in {0} reader(s).</value>
+  </data>
+  <data name="messageSamSetupConnected" xml:space="preserve">
+    <value>Connected to the SAM in '{0}'.</value>
+  </data>
+  <data name="messageSamSetupNoSam" xml:space="preserve">
+    <value>There is no MIFARE SAM AV3 in '{0}' (any more).</value>
+  </data>
+  <data name="messageSamSetupNotConnected" xml:space="preserve">
+    <value>There is no connection to a SAM. Check the SAM first.</value>
+  </data>
+  <data name="messageSamSetupReaderError" xml:space="preserve">
+    <value>The reader failed. The connection was closed, and the SAM may be in any state. Search again.</value>
+  </data>
+  <data name="messageSamSetupFailed" xml:space="preserve">
+    <value>The step failed unexpectedly (the log has the type of the error). The connection was closed.</value>
+  </data>
+  <data name="messageSamSetupAuthenticated" xml:space="preserve">
+    <value>Host authentication succeeded.</value>
+  </data>
+  <data name="messageSamSetupNotActivated" xml:space="preserve">
+    <value>The SAM answered 6985: it was never activated. No key was used. For a new SAM, activate it with its master key.</value>
+  </data>
+  <data name="messageSamSetupAuthFailed" xml:space="preserve">
+    <value>The SAM did not accept the authentication (status {0}). A wrong key counts as a use of the key if a usage counter is linked to the key entry.</value>
+  </data>
+  <data name="messageSamSetupActivated" xml:space="preserve">
+    <value>The SAM was activated. Authenticate now.</value>
+  </data>
+  <data name="messageSamSetupDeclined" xml:space="preserve">
+    <value>Not activated.</value>
+  </data>
+  <data name="messageSamSetupMayHaveActivated" xml:space="preserve">
+    <value>The activation ended with an error, but the SAM may be activated all the same. Check the SAM, then authenticate.</value>
+  </data>
+  <data name="messageSamSetupRefused" xml:space="preserve">
+    <value>The SAM refused the command (status {0}).</value>
+  </data>
+  <data name="messageSamSetupKeyUnavailable" xml:space="preserve">
+    <value>The key could not be read from the Credential Manager. Nothing was sent to the SAM.</value>
+  </data>
+  <data name="messageSamSetupKeyInvalid" xml:space="preserve">
+    <value>That is not a key of 16 bytes (32 hexadecimal digits). Nothing was sent to the SAM.</value>
+  </data>
+  <data name="messageSamSetupNotAuthenticated" xml:space="preserve">
+    <value>A key can only be written after the host authentication. Authenticate first.</value>
+  </data>
+  <data name="messageSamSetupEntryInvalid" xml:space="preserve">
+    <value>The key entry must be a number from 1 to 127. Entry 0 is the master key and is not written here.</value>
+  </data>
+  <data name="messageSamSetupNoKeyEntered" xml:space="preserve">
+    <value>Enter the key, or choose a stored one.</value>
+  </data>
+  <data name="messageSamSetupWritten" xml:space="preserve">
+    <value>The key was written to key entry {0}. The SAM answered with success; a key cannot be read back from it.</value>
+  </data>
 </root>
