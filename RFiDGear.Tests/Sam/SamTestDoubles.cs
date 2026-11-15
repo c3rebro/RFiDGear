@@ -124,6 +124,9 @@ namespace RFiDGear.Tests.Sam
         /// <summary>The names whose ATR was read, in order. Reading it opens no card.</summary>
         internal List<string> AtrRead { get; } = new List<string>();
 
+        /// <summary>What the card answers to a command; by default success without data.</summary>
+        internal Func<byte[], byte[]> Answer { get; set; } = _ => new byte[] { 0x90, 0x00 };
+
         /// <summary>The names that were connected to, in order.</summary>
         internal List<string> Connected { get; } = new List<string>();
 
@@ -176,7 +179,7 @@ namespace RFiDGear.Tests.Sam
                 return null;
             }
 
-            var transport = ScriptedSamTransport.Always(0x90, 0x00);
+            var transport = new ScriptedSamTransport(Answer);
             var connection = new FakeSamCardConnection(AtrOnConnect.TryGetValue(readerName, out var swapped) ? swapped : reader.Atr, transport);
             Handed.Add((readerName, connection, transport));
 
