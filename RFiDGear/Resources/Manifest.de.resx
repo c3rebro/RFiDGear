@@ -568,7 +568,7 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
     <value>Alle Karten entfernen</value>
   </data>
   <data name="menuItemAddEditMifareUltralightTaskHeader" xml:space="preserve">
-    <value>Mifare _Ultralight Aufgabe hinzufügen/bearbeiten</value>
+    <value>Mifare _Ultralight / NTAG Aufgabe hinzufügen/bearbeiten</value>
   </data>
   <data name="menuItemAddEditMifareSAMTaskHeader" xml:space="preserve">
     <value>Mifare _SAM Aufgabe hinzufügen/bearbeiten</value>
@@ -2302,5 +2302,113 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageKeyManagerListUnreadable" xml:space="preserve">
     <value>Die gespeicherten Schlüssel konnten nicht aufgelistet werden (Fehler {0}); es wurde nichts gespeichert.</value>
+  </data>
+  <data name="windowCaptionAddEditMifareUltralightTask" xml:space="preserve">
+    <value>Mifare Ultralight / NTAG Aufgabe erstellen / bearbeiten</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightChip" xml:space="preserve">
+    <value>Chip und Authentifizierung</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightKeys" xml:space="preserve">
+    <value>Schlüssel</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightDataExplorer" xml:space="preserve">
+    <value>Seiten</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightChip" xml:space="preserve">
+    <value>Chip</value>
+  </data>
+  <data name="labelContentMifareUltralightExpectedChip" xml:space="preserve">
+    <value>Erwarteter Chip</value>
+  </data>
+  <data name="labelContentMifareUltralightAuthentication" xml:space="preserve">
+    <value>Authentifizierung</value>
+  </data>
+  <data name="textBlockMifareUltralightExpectedChipHint" xml:space="preserve">
+    <value>Eine Aufgabe, die sich authentifiziert oder geschützte Seiten beschreibt, muss den Chip nennen. Liegt ein anderer Chip auf dem Leser, endet die Aufgabe ohne zu schreiben.</value>
+  </data>
+  <data name="checkBoxContentMifareUltralightAllowProtectedPages" xml:space="preserve">
+    <value>Schreiben geschützter Seiten erlauben</value>
+  </data>
+  <data name="textBlockMifareUltralightProtectedPagesWarning" xml:space="preserve">
+    <value>Geschützte Seiten sind die Seiten 0 bis 3 sowie die Sperr-, Konfigurations-, Passwort- und Schlüsselseiten des Chips. Ein falscher Schreibvorgang dort kann den Chip oder sein Passwort für immer sperren. Der Chip muss oben genannt sein.</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightKeyC" xml:space="preserve">
+    <value>Ultralight C</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightKeyPassword" xml:space="preserve">
+    <value>Ultralight EV1 und NTAG</value>
+  </data>
+  <data name="labelContentMifareUltralightKeyC" xml:space="preserve">
+    <value>Schlüssel</value>
+  </data>
+  <data name="labelContentMifareUltralightPassword" xml:space="preserve">
+    <value>Passwort</value>
+  </data>
+  <data name="labelContentMifareUltralightPack" xml:space="preserve">
+    <value>PACK</value>
+  </data>
+  <data name="textBlockMifareUltralightKeysHint" xml:space="preserve">
+    <value>Verwendet werden nur die Schlüssel der Authentifizierung, die auf dem ersten Reiter gewählt ist. Der Schlüssel eines Ultralight C hat 32 Hex-Ziffern, ein Passwort 8 und ein PACK 4.</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightPages" xml:space="preserve">
+    <value>Seiten</value>
+  </data>
+  <data name="labelContentMifareUltralightStartPage" xml:space="preserve">
+    <value>Erste Seite</value>
+  </data>
+  <data name="labelContentMifareUltralightPageCount" xml:space="preserve">
+    <value>Anzahl Seiten</value>
+  </data>
+  <data name="buttonContentMifareUltralightAddPage" xml:space="preserve">
+    <value>Seite hinzufügen</value>
+  </data>
+  <data name="buttonContentMifareUltralightRemovePage" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="dataGridHeaderMifareUltralightPage" xml:space="preserve">
+    <value>Seite</value>
+  </data>
+  <data name="dataGridHeaderMifareUltralightData" xml:space="preserve">
+    <value>Daten (8 Hex-Ziffern)</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightRunNow" xml:space="preserve">
+    <value>Jetzt ausführen</value>
+  </data>
+  <data name="textBlockMifareUltralightRunNowHint" xml:space="preserve">
+    <value>Führt diese Aufgabe auf dem Chip aus, der auf dem Leser liegt, so wie sie hier eingerichtet ist. Ein Lesevorgang zeigt in den Seiten, was der Chip geliefert hat.</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Auto" xml:space="preserve">
+    <value>Beliebiger Chip (der gefundene)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Plain" xml:space="preserve">
+    <value>Mifare Ultralight</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.C" xml:space="preserve">
+    <value>Mifare Ultralight C</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ev1Mf0ul11" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL11)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ev1Mf0ul21" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL21)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag213" xml:space="preserve">
+    <value>NTAG213</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag215" xml:space="preserve">
+    <value>NTAG215</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag216" xml:space="preserve">
+    <value>NTAG216</value>
+  </data>
+  <data name="ENUM.UltralightAuth.None" xml:space="preserve">
+    <value>Keine Authentifizierung</value>
+  </data>
+  <data name="ENUM.UltralightAuth.UltralightC" xml:space="preserve">
+    <value>Schlüssel eines Ultralight C</value>
+  </data>
+  <data name="ENUM.UltralightAuth.Password" xml:space="preserve">
+    <value>Passwort und PACK (EV1, NTAG)</value>
   </data>
 </root>

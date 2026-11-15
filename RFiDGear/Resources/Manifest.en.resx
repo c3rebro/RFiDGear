@@ -553,7 +553,7 @@ Use a csv file to acuire default keys for authentication</value>
     <value>Remove Cards</value>
   </data>
   <data name="menuItemAddEditMifareUltralightTaskHeader" xml:space="preserve">
-    <value>Add/Edit Mifare _Ultralight Task</value>
+    <value>Add/Edit Mifare _Ultralight / NTAG Task</value>
   </data>
   <data name="menuItemAddEditMifareSAMTaskHeader" xml:space="preserve">
     <value>Add/Edit Mifare _SAM Task</value>
@@ -2280,5 +2280,113 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageKeyManagerListUnreadable" xml:space="preserve">
     <value>The stored keys could not be listed (error {0}), so nothing was stored.</value>
+  </data>
+  <data name="windowCaptionAddEditMifareUltralightTask" xml:space="preserve">
+    <value>Add / Edit Mifare Ultralight / NTAG Task</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightChip" xml:space="preserve">
+    <value>Chip and authentication</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightKeys" xml:space="preserve">
+    <value>Keys</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightDataExplorer" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightChip" xml:space="preserve">
+    <value>Chip</value>
+  </data>
+  <data name="labelContentMifareUltralightExpectedChip" xml:space="preserve">
+    <value>Expected chip</value>
+  </data>
+  <data name="labelContentMifareUltralightAuthentication" xml:space="preserve">
+    <value>Authentication</value>
+  </data>
+  <data name="textBlockMifareUltralightExpectedChipHint" xml:space="preserve">
+    <value>A task that authenticates or writes protected pages has to name the chip. If another chip is on the reader, the task ends without writing.</value>
+  </data>
+  <data name="checkBoxContentMifareUltralightAllowProtectedPages" xml:space="preserve">
+    <value>Allow writing protected pages</value>
+  </data>
+  <data name="textBlockMifareUltralightProtectedPagesWarning" xml:space="preserve">
+    <value>Protected pages are pages 0 to 3 and the lock, configuration, password and key pages of the chip. A wrong write there can lock the chip or its password for good. The chip has to be named above.</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightKeyC" xml:space="preserve">
+    <value>Ultralight C</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightKeyPassword" xml:space="preserve">
+    <value>Ultralight EV1 and NTAG</value>
+  </data>
+  <data name="labelContentMifareUltralightKeyC" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="labelContentMifareUltralightPassword" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="labelContentMifareUltralightPack" xml:space="preserve">
+    <value>PACK</value>
+  </data>
+  <data name="textBlockMifareUltralightKeysHint" xml:space="preserve">
+    <value>Only the keys of the authentication that is chosen on the first tab are used. The key of an Ultralight C has 32 hexadecimal digits, a password 8 and a PACK 4.</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightPages" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="labelContentMifareUltralightStartPage" xml:space="preserve">
+    <value>First page</value>
+  </data>
+  <data name="labelContentMifareUltralightPageCount" xml:space="preserve">
+    <value>Number of pages</value>
+  </data>
+  <data name="buttonContentMifareUltralightAddPage" xml:space="preserve">
+    <value>Add page</value>
+  </data>
+  <data name="buttonContentMifareUltralightRemovePage" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="dataGridHeaderMifareUltralightPage" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="dataGridHeaderMifareUltralightData" xml:space="preserve">
+    <value>Data (8 hexadecimal digits)</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightRunNow" xml:space="preserve">
+    <value>Run now</value>
+  </data>
+  <data name="textBlockMifareUltralightRunNowHint" xml:space="preserve">
+    <value>Runs this task on the chip that is on the reader, as it is set up here. A read shows in the pages what the chip gave.</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Auto" xml:space="preserve">
+    <value>Any chip (the one that is found)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Plain" xml:space="preserve">
+    <value>Mifare Ultralight</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.C" xml:space="preserve">
+    <value>Mifare Ultralight C</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ev1Mf0ul11" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL11)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ev1Mf0ul21" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL21)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag213" xml:space="preserve">
+    <value>NTAG213</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag215" xml:space="preserve">
+    <value>NTAG215</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag216" xml:space="preserve">
+    <value>NTAG216</value>
+  </data>
+  <data name="ENUM.UltralightAuth.None" xml:space="preserve">
+    <value>No authentication</value>
+  </data>
+  <data name="ENUM.UltralightAuth.UltralightC" xml:space="preserve">
+    <value>Key of an Ultralight C</value>
+  </data>
+  <data name="ENUM.UltralightAuth.Password" xml:space="preserve">
+    <value>Password and PACK (EV1, NTAG)</value>
   </data>
 </root>

@@ -179,10 +179,60 @@ namespace RFiDGear.Tests
             "toolTipKeyManagerStoreNew",
             "messageKeyManagerNameInUse",
             "messageKeyManagerListUnreadable",
+            "windowCaptionAddEditMifareUltralightTask",
+            "tabPageHeaderMifareUltralightChip",
+            "tabPageHeaderMifareUltralightKeys",
+            "tabPageHeaderMifareUltralightDataExplorer",
+            "groupBoxHeaderMifareUltralightChip",
+            "labelContentMifareUltralightExpectedChip",
+            "labelContentMifareUltralightAuthentication",
+            "textBlockMifareUltralightExpectedChipHint",
+            "checkBoxContentMifareUltralightAllowProtectedPages",
+            "textBlockMifareUltralightProtectedPagesWarning",
+            "groupBoxHeaderMifareUltralightKeyC",
+            "groupBoxHeaderMifareUltralightKeyPassword",
+            "labelContentMifareUltralightKeyC",
+            "labelContentMifareUltralightPassword",
+            "labelContentMifareUltralightPack",
+            "textBlockMifareUltralightKeysHint",
+            "groupBoxHeaderMifareUltralightPages",
+            "labelContentMifareUltralightStartPage",
+            "labelContentMifareUltralightPageCount",
+            "buttonContentMifareUltralightAddPage",
+            "buttonContentMifareUltralightRemovePage",
+            "dataGridHeaderMifareUltralightPage",
+            "dataGridHeaderMifareUltralightData",
+            "groupBoxHeaderMifareUltralightRunNow",
+            "textBlockMifareUltralightRunNowHint",
+            "ENUM.UltralightExpectation.Auto",
+            "ENUM.UltralightExpectation.Plain",
+            "ENUM.UltralightExpectation.C",
+            "ENUM.UltralightExpectation.Ev1Mf0ul11",
+            "ENUM.UltralightExpectation.Ev1Mf0ul21",
+            "ENUM.UltralightExpectation.Ntag213",
+            "ENUM.UltralightExpectation.Ntag215",
+            "ENUM.UltralightExpectation.Ntag216",
+            "ENUM.UltralightAuth.None",
+            "ENUM.UltralightAuth.UltralightC",
+            "ENUM.UltralightAuth.Password",
         };
 
-        // The unit of a size, and the INIT of the status bar, read the same in both languages.
-        private static readonly string[] SameInBothLanguages = { "labelContentMifareDesfireBytes", "statusHeaderReaderIsInitializing" };
+        // The unit of a size, the INIT of the status bar, and the names of chips and of a protocol term read the same in both languages.
+        private static readonly string[] SameInBothLanguages =
+        {
+            "labelContentMifareDesfireBytes",
+            "statusHeaderReaderIsInitializing",
+            "groupBoxHeaderMifareUltralightChip",
+            "groupBoxHeaderMifareUltralightKeyC",
+            "labelContentMifareUltralightPack",
+            "ENUM.UltralightExpectation.Plain",
+            "ENUM.UltralightExpectation.C",
+            "ENUM.UltralightExpectation.Ev1Mf0ul11",
+            "ENUM.UltralightExpectation.Ev1Mf0ul21",
+            "ENUM.UltralightExpectation.Ntag213",
+            "ENUM.UltralightExpectation.Ntag215",
+            "ENUM.UltralightExpectation.Ntag216",
+        };
 
         private static readonly ResourceManager Manifest =
             new ResourceManager("RFiDGear.Resources.Manifest", typeof(MainWindowViewModel).Assembly);
