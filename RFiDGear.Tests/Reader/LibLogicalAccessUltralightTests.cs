@@ -221,11 +221,54 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
-        public async Task ACancellation_IsNotSwallowed()
+        public async Task ACancellation_IsNotSwallowed_AndTheReaderCanBeUsedAgainAfterIt()
         {
             var reader = new UltralightPcscTestReader(UltralightVariant.Plain) { SelectThrows = new OperationCanceledException() };
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reader.ReadMifareUltralightPagesAsync(Plain(), 4, 1));
+
+            // The gate of the session was released: a call that waited for it for ever would end this test by its timeout.
+            reader.SelectThrows = null;
+            var again = reader.ReadMifareUltralightPagesAsync(Plain(), 4, 1);
+
+            Assert.Same(again, await Task.WhenAny(again, Task.Delay(TimeSpan.FromSeconds(10))));
+            Assert.True((await again).Succeeded);
+        }
+
+        [Fact]
+        public async Task TwoCalls_AreNeverInTheReaderAtTheSameTime()
+        {
+            // One chip handle and one session: a second call that selected while the first was reading would send its commands through
+            // the selection of the first (and the C key of the one would be the other's).
+            var reader = new UltralightPcscTestReader(UltralightVariant.Plain) { HoldReads = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) };
+
+            var first = reader.ReadMifareUltralightPagesAsync(Plain(), 4, 1);
+            await WaitUntilAsync(() => reader.Calls.Contains("read 4"));
+
+            var second = reader.ReadMifareUltralightPagesAsync(Plain(), 8, 1);
+            await Task.Delay(200);
+
+            // The second call has not selected yet: it waits for the first.
+            Assert.Equal(new[] { "select", "read 4" }, reader.Calls.ToArray());
+            Assert.False(second.IsCompleted);
+
+            reader.HoldReads.SetResult(true);
+            var both = await Task.WhenAll(first, second);
+
+            Assert.All(both, result => Assert.True(result.Succeeded));
+            Assert.Equal(new[] { "select", "read 4", "select", "read 8" }, reader.Calls);
+        }
+
+        private static async Task WaitUntilAsync(Func<bool> condition)
+        {
+            var until = DateTime.UtcNow.AddSeconds(10);
+
+            while (!condition() && DateTime.UtcNow < until)
+            {
+                await Task.Delay(10);
+            }
+
+            Assert.True(condition(), "The first call never reached the reader.");
         }
 
         // ── writing ──

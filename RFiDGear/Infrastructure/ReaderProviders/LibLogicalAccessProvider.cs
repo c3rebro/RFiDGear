@@ -8,6 +8,7 @@ using RFiDGear.Models;
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Globalization;
@@ -226,7 +227,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return null;
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> ReadChipPublic()
+        {
+            // It disconnects from the card first: not while a page operation is in the reader.
+            await pcscSessionGate.WaitAsync();
+            try
+            {
+                return await ReadChipPublicCoreAsync();
+            }
+            finally
+            {
+                pcscSessionGate.Release();
+            }
+        }
+
+        private async Task<ERROR> ReadChipPublicCoreAsync()
         {
             try
             {
@@ -849,14 +865,32 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             public override int GetHashCode() => HashCode.Combine(ChipFound, CardType);
         }
 
-        // The chip of the call that is running: set by the selection, used by the page operations after it.
+        // The chip of the call that is running: set by the selection, used by the page operations after it. Only one call is in the
+        // reader at a time (pcscSessionGate), so it is never another call's chip.
         private Chip ultralightChip;
+
+        // One user of the reader session at a time: the chip handle and the card session are shared, a key that was sent belongs to
+        // the call that sent it, and ReadChipPublic disconnects first, which would take the card away from a page operation that is
+        // running. The page operations and ReadChipPublic hold it; the other PC/SC operations of this class do not (they never did).
+        private readonly SemaphoreSlim pcscSessionGate = new SemaphoreSlim(1, 1);
 
         /// <summary>Connects to the chip on the reader and tells what LibLogicalAccess calls it; the first call of every page operation. Overridden by the tests.</summary>
         /// <returns>What the reader found.</returns>
         protected virtual async Task<PcscUltralightSighting> SelectPcscUltralightChipAsync()
         {
             ultralightChip = null;
+
+            // A fresh session, as ReadChipPublic makes it: tryInitReader reuses a connected one without waiting for a card and without
+            // looking at the result of connect(), and the chip of that session can be the card that was taken away or replaced since.
+            // Disconnected, it waits for a card and connects to the one that is there; no card, or no connection, is no sighting.
+            try
+            {
+                readerUnit?.disconnect();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC disconnect before the selection failed: {Fault}", PcscUltralightErrors.Describe(e));
+            }
 
             if (!await tryInitReader())
             {
@@ -984,6 +1018,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     return UltralightResult.Failed(ERROR.ProtocolConstraint);
                 }
 
+                await pcscSessionGate.WaitAsync();
                 try
                 {
                     return await RunPcscUltralightAsync(request);
@@ -994,6 +1029,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     LogPcscUltralightFailure(request.Operation, "unexpected", e);
 
                     return UltralightResult.Failed(PcscUltralightErrors.Classify(e, UltralightCall.Select));
+                }
+                finally
+                {
+                    pcscSessionGate.Release();
                 }
             }
         }

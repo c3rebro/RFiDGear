@@ -83,9 +83,17 @@ namespace RFiDGear.Tests.Reader
             return Task.FromResult(ChipOnReader ? new PcscUltralightSighting(true, CardType) : new PcscUltralightSighting(false, null));
         }
 
-        protected override Task<byte[]> ReadPcscUltralightPageAsync(int page)
+        /// <summary>When set, a read waits for it before it answers: a call that is held inside the reader, so a test can start another one.</summary>
+        public TaskCompletionSource<bool> HoldReads { get; set; }
+
+        protected override async Task<byte[]> ReadPcscUltralightPageAsync(int page)
         {
             Calls.Add("read " + page);
+
+            if (HoldReads != null)
+            {
+                await HoldReads.Task;
+            }
 
             if (RefusedReads.Contains(page) || page >= PageCount)
             {
@@ -94,10 +102,10 @@ namespace RFiDGear.Tests.Reader
 
             if (EmptyReads.Contains(page))
             {
-                return Task.FromResult(new byte[0]);
+                return new byte[0];
             }
 
-            return Task.FromResult(PagesOf(page, 1));
+            return PagesOf(page, 1);
         }
 
         protected override Task WritePcscUltralightPageAsync(int page, byte[] data)

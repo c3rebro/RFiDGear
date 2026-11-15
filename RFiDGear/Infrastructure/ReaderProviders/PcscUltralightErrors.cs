@@ -10,7 +10,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     /// object to deal with (and the tests no native object to build). It carries the error code and nothing of the native message,
     /// which can hold what was sent.
     /// </summary>
-    internal sealed class PcscCardRefusal : Exception
+    public sealed class PcscCardRefusal : Exception
     {
         /// <summary>Creates the refusal.</summary>
         /// <param name="code">The error code of the card exception.</param>
