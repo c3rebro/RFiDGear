@@ -24,7 +24,7 @@ namespace RFiDGear.Tests.SecureKeys
         /// <summary>Creates a vault.</summary>
         /// <param name="providerId">The id the vault is registered under.</param>
         /// <param name="vaultKeyOf">Returns the key the vault holds for a slot as hexadecimal text, or <c>null</c> for none.</param>
-        /// <param name="keyLength">The length of the keys in bytes. A table entry of another length is repeated or cut to it.</param>
+        /// <param name="keyLength">The length of the keys in bytes. A table entry of another length is repeated or cut to it; 0 for the length of each table entry (slots whose keys differ in length).</param>
         public SlotVault(string providerId, Func<string, string?> vaultKeyOf, int keyLength)
         {
             _providerId = providerId;
@@ -120,7 +120,7 @@ namespace RFiDGear.Tests.SecureKeys
             }
 
             var bytes = Convert.FromHexString(vaultKey);
-            var key = KeyLength == bytes.Length ? bytes : Enumerable.Range(0, KeyLength).Select(i => bytes[i % bytes.Length]).ToArray();
+            var key = KeyLength <= 0 || KeyLength == bytes.Length ? bytes : Enumerable.Range(0, KeyLength).Select(i => bytes[i % bytes.Length]).ToArray();
 
             lock (_requests)
             {

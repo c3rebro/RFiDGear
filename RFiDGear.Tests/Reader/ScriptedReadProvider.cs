@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
 
 namespace RFiDGear.Tests.Reader
@@ -40,6 +41,21 @@ namespace RFiDGear.Tests.Reader
 
         /// <inheritdoc />
         public override bool IsPcscReader => Pcsc;
+
+        // It looks at nothing real, so it has no page operations: a task of the Ultralight family that runs on it ends as one that
+        // cannot be done here. (It is an Elatec reader, and the page operations of that one would ask the device inside it.)
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> ReadMifareUltralightPagesAsync(UltralightAccess access, int startPage, int pageCount) =>
+            Task.FromResult(UltralightResult.Failed(ERROR.ProtocolConstraint));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            Task.FromResult(UltralightResult.Failed(ERROR.ProtocolConstraint));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
+            Task.FromResult(UltralightResult.Failed(ERROR.ProtocolConstraint));
 
         /// <summary>Gets the managed thread the last read ran on.</summary>
         public int LastReadThreadId => Volatile.Read(ref _lastReadThreadId);
