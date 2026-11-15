@@ -48,6 +48,26 @@ namespace RFiDGear.HIL.Tests
         }
     }
 
+    /// <summary>
+    /// A test that writes to the card (a page of the user memory of a chip of the Ultralight family, which it puts back, or a
+    /// write that must be refused). It runs only when <c>hil.settings.json</c> sets <c>cardWrites</c> and <c>readerScan</c>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class HilCardWriteFactAttribute : FactAttribute
+    {
+        /// <summary>Creates the attribute; the test is skipped unless the cases that write to the card were asked for.</summary>
+        /// <param name="sourceFilePath">The file the attribute is in; filled in by the compiler.</param>
+        /// <param name="sourceLineNumber">The line the attribute is on; filled in by the compiler.</param>
+        public HilCardWriteFactAttribute([CallerFilePath] string? sourceFilePath = null, [CallerLineNumber] int sourceLineNumber = -1)
+            : base(sourceFilePath, sourceLineNumber)
+        {
+            if (!HilSettings.Current.CardWritesRequested)
+            {
+                Skip = HilSettings.Current.CardWritesSkipReason();
+            }
+        }
+    }
+
     /// <summary>A test that asks the person at the reader to move cards, and so also needs the setting <c>interactive</c>.</summary>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class HilInteractiveFactAttribute : FactAttribute
