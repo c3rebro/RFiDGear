@@ -10,6 +10,12 @@
     <!-- HIL tests are excluded from CI by default.
          Run explicitly: dotnet test RFiDGear.HIL.Tests when a reader and DESFire card are present. -->
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <!-- As in RFiDGear.csproj: the native files of LibLogicalAccess are in runtimes\win10-x64 and win10-x86, which the runtime finds
+         only through the old runtime graph. Without it the managed library loads and the first call into the native one fails, so a
+         PC/SC reader cannot even be listed. -->
+    <UseRidGraph>true</UseRidGraph>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>

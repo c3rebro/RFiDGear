@@ -9,6 +9,14 @@ asks for it, and so do the secure-key cases (they change keys on the card, see
 `SECURE-KEYS.md`); the older DESFire workflow tests do not wait to be asked (see
 the end).
 
+**A case that needs a SAM, not a card:**
+
+`SamDetectionTests` needs `readerScan` and a MIFARE SAM AV3 in a PC/SC reader.
+It looks for the SAM through LibLogicalAccess and reads its version. It does not
+depend on `readerKind`, it authenticates nothing and it writes nothing, and it
+is skipped when no SAM is found. `SAM-AV3.md` has the case and the checklist
+for the setup window.
+
 **The settings file:**
 
 `hil.settings.json` sits in the folder of the solution, next to
