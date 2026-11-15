@@ -304,8 +304,10 @@ namespace RFiDGear.Tests.Reader
                     await UltralightScenarios.AReadOfTheUserPagesAsync(CARD_TYPE.Unspecified);
                     Assert.Contains("select", reader.Calls);
 
-                    await UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.Unspecified, Same);
                     await UltralightScenarios.AWriteToAProtectedPageIsRefusedBeforeTheCardAsync(CARD_TYPE.Unspecified);
+
+                    // No write to a page of the user memory without a chip to name: see the next test.
+                    await SkipOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.Unspecified, Same));
 
                     // There is no chip to name wrongly.
                     await SkipOf(() => UltralightScenarios.AnExpectationThatIsNotTheChipIsRefusedAsync(CARD_TYPE.Unspecified));
@@ -313,6 +315,68 @@ namespace RFiDGear.Tests.Reader
 
                 Assert.DoesNotContain(reader.Calls, call => call.StartsWith("write", StringComparison.Ordinal));
                 Assert.DoesNotContain(reader.Calls, call => call.StartsWith("read", StringComparison.Ordinal));
+            });
+        }
+
+        [Theory]
+        [InlineData(UltralightVariant.Plain)]
+        [InlineData(UltralightVariant.C)]
+        public async Task TheWriteCase_WritesNothingForACardThatIsNotNamed_EvenWhenAKnownCardTookItsPlace(UltralightVariant variant)
+        {
+            // The card that was discovered as "unspecified" has no chip to name, so a write to it cannot be bound to that card: a
+            // card that the reader does know, put on the reader meanwhile, would get the bytes. The case does not write.
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var reader = new UltralightPcscTestReader(variant);
+                var before = reader.PagesOf(HilUltralightTasks.UserPage, 1);
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await SkipOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.Unspecified, Same));
+                }
+
+                Assert.Empty(reader.Calls);
+                Assert.Equal(before, reader.PagesOf(HilUltralightTasks.UserPage, 1));
+            });
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TheWriteCase_ReportsTheBytes_WhenTheLookAtTheCardFailsAfterTheWrite(bool cancelled)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var reader = new UltralightTestReader(UltralightVariant.Ntag215);
+                var asked = 0;
+                Exception lookup = cancelled ? new OperationCanceledException() : new System.IO.IOException("the reader went away");
+
+                // The start and the look before the write are answered; the look before the put-back fails.
+                Task<string?> Identity()
+                {
+                    if (++asked <= 2)
+                    {
+                        return Task.FromResult<string?>("04AABBCCDDEEFF");
+                    }
+
+                    throw lookup;
+                }
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var failure = await FailureOf(() => UltralightScenarios.AWriteToAUserPageIsReadBackAndPutBackAsync(CARD_TYPE.NTAG_215, Identity));
+
+                    Assert.IsType<InvalidOperationException>(failure);
+                    Assert.Contains("NOT", failure.Message, StringComparison.Ordinal);
+                    Assert.Contains(Convert.ToHexString(UltralightTestReader.PageOf(HilUltralightTasks.UserPage)), failure.Message, StringComparison.Ordinal);
+                    Assert.Same(lookup, failure.InnerException);
+
+                    // The text of what failed is not repeated: the type says what it was.
+                    Assert.DoesNotContain("went away", failure.Message, StringComparison.Ordinal);
+                }
+
+                // The pattern was written; nothing was done to put it back when the card could not be confirmed, and nothing was retried.
+                Assert.Equal(1, reader.CountStartingWith("write "));
             });
         }
 

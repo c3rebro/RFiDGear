@@ -27,9 +27,11 @@ refuse them and nothing is sent to the card.
   it). The task ends with a protocol constraint and sends nothing to the card.
   The cases check exactly that refusal, so "this reader does not support this
   chip" is checked as hard as "it works". A card that this reader has no name
-  for is reported with the type "unspecified": the cases then check the
-  refusal for it without saying which chip it is (it may be an EV1, an NTAG or
-  another card).
+  for is reported with the type "unspecified": the read case and the
+  protected-page case then check the refusal for it without saying which chip
+  it is (it may be an EV1, an NTAG or another card). The write case skips: with
+  no chip to name, a write cannot be bound to the card that was discovered, and
+  a card that the reader does know, put on it meanwhile, would get the bytes.
 
 **Before you start:**
 

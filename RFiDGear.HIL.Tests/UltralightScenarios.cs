@@ -156,6 +156,15 @@ namespace RFiDGear.HIL.Tests
 
             if (support != Support.Full)
             {
+                // Zeros in a page of the user memory are a loss where the write is not refused. With a chip that is named the task
+                // refuses a card of another chip too, but without one (a card the reader does not know) a card that the reader does
+                // know, put on it since it was discovered, would get them: that cannot be bound to the card that was discovered. The
+                // read case checks the refusal for such a card.
+                if (expected == UltralightExpectation.Auto)
+                {
+                    throw SkipException.ForSkip($"The reader gives nothing of a {type}, and no chip can be named for it: a write cannot be bound to the card that was discovered, and a card that the reader does know, put on it meanwhile, would get the bytes. The read case checks the refusal.");
+                }
+
                 var refused = await RunAsync(HilUltralightTasks.Write(expected, page, new byte[UltralightMemoryMap.PageSize]));
 
                 Assert.True(refused.Error == ERROR.ProtocolConstraint, $"Writing page {page} of a {type} should be refused: {refused.Describe()}");
@@ -197,22 +206,42 @@ namespace RFiDGear.HIL.Tests
                 failure = ex;
             }
 
-            // Put back, also after a write that failed half way, and only on the card that was written to.
+            // Put back, also after a write that failed half way, and only on the card that was written to. Whatever goes wrong from here
+            // on, the person is given the bytes the page held, and nothing is retried: a failure of the look at the card (the reader went
+            // away, the run was cancelled) is "the card cannot be confirmed", and then nothing is written.
             if (mayHaveWritten)
             {
                 var held = Convert.ToHexString(before);
+                string? notPutBack = null;
+                Exception? recoveryFailure = null;
 
-                if (!await IsTheSameCardAsync(cardIdentity, identity))
+                try
                 {
-                    throw new InvalidOperationException($"The card on the reader is not the one the case started with, so page {page} of the first card was NOT put back and holds changed bytes. It held {held} before: put the first card back on the reader and write exactly those bytes to page {page}.", failure);
+                    if (!await IsTheSameCardAsync(cardIdentity, identity))
+                    {
+                        notPutBack = $"The card on the reader is not the one the case started with, so page {page} of the first card was NOT put back and holds changed bytes. Put the first card back on the reader.";
+                    }
+                    else
+                    {
+                        var restore = await RunAsync(HilUltralightTasks.Write(expected, page, before));
+                        var restored = restore.Error == ERROR.NoError ? await TryReadPageAsync(expected, page) : null;
+
+                        if (restored == null || !restored.SequenceEqual(before))
+                        {
+                            notPutBack = $"Page {page} could NOT be put back to what it held: {restore.Describe()}.";
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // The type of what failed, never its text.
+                    recoveryFailure = ex;
+                    notPutBack = $"Page {page} could NOT be confirmed as put back ({ex.GetType().Name} while the card was looked at or the page was put back).";
                 }
 
-                var restore = await RunAsync(HilUltralightTasks.Write(expected, page, before));
-                var restored = restore.Error == ERROR.NoError ? await TryReadPageAsync(expected, page) : null;
-
-                if (restored == null || !restored.SequenceEqual(before))
+                if (notPutBack != null)
                 {
-                    throw new InvalidOperationException($"Page {page} could NOT be put back to what it held: {restore.Describe()}. It held {held} before: write exactly those bytes to it, whatever it holds now.", failure);
+                    throw new InvalidOperationException($"{notPutBack} It held {held} before: write exactly those bytes to page {page}, whatever it holds now.", recoveryFailure ?? failure);
                 }
             }
 
