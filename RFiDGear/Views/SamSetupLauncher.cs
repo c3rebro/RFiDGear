@@ -19,9 +19,9 @@ namespace RFiDGear.View
     internal sealed class WpfSamSetupLauncher : ISamSetupLauncher
     {
         /// <inheritdoc />
-        public void Show(Window? owner, ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Action<bool?> setBusy)
+        public void Show(Window? owner, ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Func<bool?> isReaderBusy, Action<bool?> setBusy)
         {
-            if (!SamSetupGate.RunExclusive(gate, coordinator, setBusy, () => ShowWindow(owner)))
+            if (!SamSetupGate.RunExclusive(gate, coordinator, isReaderBusy, setBusy, () => ShowWindow(owner)))
             {
                 var text = ResourceLoader.GetResource("messageSamSetupReaderBusy");
                 var caption = ResourceLoader.GetResource("windowTitleSamSetup");

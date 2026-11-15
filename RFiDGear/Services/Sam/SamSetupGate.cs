@@ -20,13 +20,18 @@ namespace RFiDGear.Services.Sam
         /// </summary>
         /// <param name="gate">The gate of the reader.</param>
         /// <param name="coordinator">The coordinator of the operations of the main window; its scan slot is taken.</param>
+        /// <param name="isReaderBusy">
+        /// Whether the main window says that the reader is in use. Some commands of the window (the quick check, a read) work on the
+        /// reader without the coordinator and without the gate for most of the time and say so only with this flag.
+        /// </param>
         /// <param name="setBusy">Tells the main window that the reader is in use (<c>true</c>) and that it is free again (<c>false</c>).</param>
         /// <param name="run">What to do while the reader is held.</param>
-        /// <returns><see langword="false"/> when something else was in progress or held the gate, and nothing was run.</returns>
-        internal static bool RunExclusive(ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Action<bool?> setBusy, Action run)
+        /// <returns><see langword="false"/> when something else was in progress or held the gate or said that it uses the reader, and nothing was run.</returns>
+        internal static bool RunExclusive(ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Func<bool?> isReaderBusy, Action<bool?> setBusy, Action run)
         {
             ArgumentNullException.ThrowIfNull(gate);
             ArgumentNullException.ThrowIfNull(coordinator);
+            ArgumentNullException.ThrowIfNull(isReaderBusy);
             ArgumentNullException.ThrowIfNull(setBusy);
             ArgumentNullException.ThrowIfNull(run);
 
@@ -43,16 +48,31 @@ namespace RFiDGear.Services.Sam
                     return false;
                 }
 
+                var flagSet = false;
+
                 try
                 {
+                    // Asked after the slot and the gate are ours, so that nothing starts between the question and the first use.
+                    if (isReaderBusy() == true)
+                    {
+                        return false;
+                    }
+
                     setBusy(true);
+                    flagSet = true;
                     run();
 
                     return true;
                 }
                 finally
                 {
-                    setBusy(false);
+                    // Only a flag that the setup set is cleared: when the window said that it uses the reader, that flag is the
+                    // window's, and the setup must not tell it that the reader is free.
+                    if (flagSet)
+                    {
+                        setBusy(false);
+                    }
+
                     gate.Exit();
                 }
             }

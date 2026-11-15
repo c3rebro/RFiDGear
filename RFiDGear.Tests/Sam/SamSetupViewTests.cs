@@ -484,6 +484,12 @@ namespace RFiDGear.Tests.Sam
                     // The view model of this test has no main window, so the window would have no owner (as for the Key manager).
                     Assert.Null(launcher.Owner);
 
+                    // What the window says about the reader is what the setup asks before it opens, and what it tells the window.
+                    viewModel.IsReaderBusy = false;
+                    Assert.False(launcher.IsReaderBusy!());
+                    viewModel.IsReaderBusy = true;
+                    Assert.True(launcher.IsReaderBusy!());
+
                     launcher.SetBusy!(true);
                     Assert.True(viewModel.IsReaderBusy);
 
@@ -507,14 +513,17 @@ namespace RFiDGear.Tests.Sam
 
             public ExtensionOperationCoordinator? Coordinator { get; private set; }
 
+            public Func<bool?>? IsReaderBusy { get; private set; }
+
             public Action<bool?>? SetBusy { get; private set; }
 
-            public void Show(Window? owner, ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Action<bool?> setBusy)
+            public void Show(Window? owner, ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Func<bool?> isReaderBusy, Action<bool?> setBusy)
             {
                 Shown++;
                 Owner = owner;
                 Gate = gate;
                 Coordinator = coordinator;
+                IsReaderBusy = isReaderBusy;
                 SetBusy = setBusy;
             }
         }

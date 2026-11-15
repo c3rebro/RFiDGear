@@ -11,10 +11,13 @@ namespace RFiDGear.Tests.Sam
 {
     /// <summary>
     /// The setup holds the reader for as long as it is open, so that nothing else uses it meanwhile: the slot of the coordinator (no run,
-    /// load, edit or scan is admitted, and the setup is not admitted while one is in progress) and the gate of the reader.
+    /// load, edit or scan is admitted, and the setup is not admitted while one is in progress) and the gate of the reader. It is not
+    /// opened while the main window says that it uses the reader either.
     /// </summary>
     public class SamSetupGateTests
     {
+        private static bool? NotBusy() => false;
+
         [Fact]
         public void The_reader_is_held_while_the_setup_is_open_and_the_main_window_is_told_that_it_is_busy()
         {
@@ -24,7 +27,7 @@ namespace RFiDGear.Tests.Sam
             var heldInside = false;
             var scanningInside = false;
 
-            var ran = SamSetupGate.RunExclusive(gate, coordinator, told.Add, () =>
+            var ran = SamSetupGate.RunExclusive(gate, coordinator, NotBusy, told.Add, () =>
             {
                 heldInside = gate.IsHeld;
                 scanningInside = coordinator.IsScanning;
@@ -47,7 +50,7 @@ namespace RFiDGear.Tests.Sam
             var projectEdit = true;
             var scan = true;
 
-            SamSetupGate.RunExclusive(gate, coordinator, _ => { }, () =>
+            SamSetupGate.RunExclusive(gate, coordinator, NotBusy, _ => { }, () =>
             {
                 execution = coordinator.TryBeginExecution();
                 projectEdit = coordinator.TryBeginProjectOperation();
@@ -70,7 +73,7 @@ namespace RFiDGear.Tests.Sam
             // A run of tasks holds the coordinator, and not the gate, while it works.
             Assert.True(coordinator.TryBeginExecution());
 
-            var ran = SamSetupGate.RunExclusive(gate, coordinator, told.Add, () => run = true);
+            var ran = SamSetupGate.RunExclusive(gate, coordinator, NotBusy, told.Add, () => run = true);
 
             Assert.False(ran);
             Assert.False(run);
@@ -82,6 +85,39 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public void A_window_that_says_it_uses_the_reader_keeps_the_setup_from_opening_and_both_are_given_back()
+        {
+            // The quick check works on the reader without the coordinator and without the gate, and says so with the busy flag only.
+            var gate = new ReaderAccessGate();
+            var coordinator = new ExtensionOperationCoordinator();
+            var told = new List<bool?>();
+            var run = false;
+
+            var ran = SamSetupGate.RunExclusive(gate, coordinator, () => true, told.Add, () => run = true);
+
+            Assert.False(ran);
+            Assert.False(run);
+            Assert.Empty(told);
+            Assert.False(gate.IsHeld);
+            Assert.True(coordinator.IsIdle);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(null)]
+        public void A_reader_that_is_free_or_not_known_to_be_busy_does_not_keep_the_setup_from_opening(bool? busy)
+        {
+            var gate = new ReaderAccessGate();
+            var coordinator = new ExtensionOperationCoordinator();
+            var run = false;
+
+            var ran = SamSetupGate.RunExclusive(gate, coordinator, () => busy, _ => { }, () => run = true);
+
+            Assert.True(ran);
+            Assert.True(run);
+        }
+
+        [Fact]
         public void When_somebody_else_holds_the_gate_nothing_runs_the_gate_stays_theirs_and_the_slot_is_given_back()
         {
             var gate = new ReaderAccessGate();
@@ -90,7 +126,7 @@ namespace RFiDGear.Tests.Sam
             var told = new List<bool?>();
             var run = false;
 
-            var ran = SamSetupGate.RunExclusive(gate, coordinator, told.Add, () => run = true);
+            var ran = SamSetupGate.RunExclusive(gate, coordinator, NotBusy, told.Add, () => run = true);
 
             Assert.False(ran);
             Assert.False(run);
@@ -108,7 +144,7 @@ namespace RFiDGear.Tests.Sam
             var coordinator = new ExtensionOperationCoordinator();
             var told = new List<bool?>();
 
-            Assert.Throws<InvalidOperationException>(() => SamSetupGate.RunExclusive(gate, coordinator, told.Add, () => throw new InvalidOperationException("x")));
+            Assert.Throws<InvalidOperationException>(() => SamSetupGate.RunExclusive(gate, coordinator, NotBusy, told.Add, () => throw new InvalidOperationException("x")));
 
             Assert.False(gate.IsHeld);
             Assert.True(coordinator.IsIdle);
@@ -121,8 +157,8 @@ namespace RFiDGear.Tests.Sam
             var gate = new ReaderAccessGate();
             var coordinator = new ExtensionOperationCoordinator();
 
-            Assert.True(SamSetupGate.RunExclusive(gate, coordinator, _ => { }, () => { }));
-            Assert.True(SamSetupGate.RunExclusive(gate, coordinator, _ => { }, () => { }));
+            Assert.True(SamSetupGate.RunExclusive(gate, coordinator, NotBusy, _ => { }, () => { }));
+            Assert.True(SamSetupGate.RunExclusive(gate, coordinator, NotBusy, _ => { }, () => { }));
             Assert.True(coordinator.TryBeginExecution());
         }
 
@@ -132,10 +168,11 @@ namespace RFiDGear.Tests.Sam
             var gate = new ReaderAccessGate();
             var coordinator = new ExtensionOperationCoordinator();
 
-            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(null!, coordinator, _ => { }, () => { }));
-            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(gate, null!, _ => { }, () => { }));
-            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(gate, coordinator, null!, () => { }));
-            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(gate, coordinator, _ => { }, null!));
+            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(null!, coordinator, NotBusy, _ => { }, () => { }));
+            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(gate, null!, NotBusy, _ => { }, () => { }));
+            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(gate, coordinator, null!, _ => { }, () => { }));
+            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(gate, coordinator, NotBusy, null!, () => { }));
+            Assert.Throws<ArgumentNullException>(() => SamSetupGate.RunExclusive(gate, coordinator, NotBusy, _ => { }, null!));
             Assert.False(gate.IsHeld);
             Assert.True(coordinator.IsIdle);
         }
