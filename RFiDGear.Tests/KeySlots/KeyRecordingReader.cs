@@ -50,8 +50,17 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets the card the reader finds when the chip is read; <c>null</c> for none.</summary>
         public GenericChipModel? Card { get; set; }
 
+        /// <summary>Gets or sets whether the reader says it is connected; <c>null</c> (the default) leaves it to <see cref="Card"/>.</summary>
+        public bool? Connected { get; set; }
+
+        /// <summary>Gets or sets whether the reader behaves like a PC/SC reader (see <see cref="ReaderDevice.IsPcscReader"/>).</summary>
+        public bool Pcsc { get; set; }
+
         /// <inheritdoc />
-        public override bool IsConnected => Card != null || base.IsConnected;
+        public override bool IsConnected => Connected ?? (Card != null || base.IsConnected);
+
+        /// <inheritdoc />
+        public override bool IsPcscReader => Pcsc;
 
         /// <summary>Gets how often the chip was read; a call that carries no key and so is not in <see cref="Calls"/>.</summary>
         public int ReadChipCalls { get; private set; }

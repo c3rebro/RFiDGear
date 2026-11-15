@@ -15,6 +15,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -769,38 +770,56 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await settings.SaveSettings();
         }
 
-        /// <summary>Reads the pages of the task from the chip on the reader.</summary>
-        public ICommand ReadDataCommand => new AsyncRelayCommand(() => RunPageOperationAsync(write: false));
+        /// <summary>
+        /// Reads the pages of the task from the chip on the reader. Off until the dialog is bound to the inputs of the task: the page
+        /// and the data that the old dialog shows are not the ones the task holds, and a button that wrote the one while showing the
+        /// other could write a protected page. The run loop uses <see cref="CommandDelegator"/>, which is not affected.
+        /// </summary>
+        public ICommand ReadDataCommand => new AsyncRelayCommand(() => RunPageOperationAsync(write: false), () => false);
 
-        /// <summary>Writes the data of the task to the chip on the reader.</summary>
-        public ICommand WriteDataCommand => new AsyncRelayCommand(() => RunPageOperationAsync(write: true));
+        /// <summary>
+        /// Writes the data of the task to the chip on the reader. Off for the same reason as <see cref="ReadDataCommand"/>.
+        /// </summary>
+        public ICommand WriteDataCommand => new AsyncRelayCommand(() => RunPageOperationAsync(write: true), () => false);
 
-        // What a read or a write does, in this order, and each step ends the task when it fails: the reader is looked for; what can
-        // be known without the card is checked (the data, the pages, the chip that is expected and what it allows), so that a call that
-        // cannot be made never asks a provider for a key; the keys that the authentication needs are obtained, all of them or none;
-        // and the reader is called once. The key is never read from a property on the way to the card except in AcquireKeysAsync.
+        // The steps of a read or a write, in this order. Each one ends the task when it fails. First the reader is looked for, and a
+        // reader that is not connected ends the task before a provider is asked for anything. Then what can be known without the
+        // card is checked, so that a call that cannot be made never asks a provider for a key. Then the keys that the authentication
+        // needs are obtained, all of them or none. Last the reader is called once. The key is never read from a property on the way
+        // to the card except in AcquireKeysAsync. Only one operation runs at a time: they share the outcome and the error of the
+        // task, and one that is asked for while another runs is not started.
         private async Task RunPageOperationAsync(bool write)
         {
-            lastOutcome = null;
-            CurrentTaskErrorLevel = ERROR.Empty;
+            if (Interlocked.CompareExchange(ref running, 1, 0) != 0)
+            {
+                return;
+            }
+
             byte[] data = null;
 
             try
             {
+                OnPropertyChanged(nameof(IsRunning));
+                OnPropertyChanged(nameof(AreInputsEnabled));
+                lastOutcome = null;
+                CurrentTaskErrorLevel = ERROR.Empty;
+
                 using (var device = ReaderDevice.Instance)
                 {
-                    if (device == null)
+                    // The connection of a PC/SC reader says whether a card session is open, which the call opens itself: only the
+                    // other readers are asked whether they are connected.
+                    if (device == null || (!device.IsPcscReader && !device.IsConnected))
                     {
                         EndWithoutTheCard(ERROR.TransportError, 0);
 
                         return;
                     }
 
-                    var refused = CheckBeforeTheCard(write, out data, out var pageCount);
+                    var refused = CheckBeforeTheCard(write, out data, out var pages);
 
                     if (refused != ERROR.NoError)
                     {
-                        EndWithoutTheCard(refused, pageCount);
+                        EndWithoutTheCard(refused, pages);
 
                         return;
                     }
@@ -824,9 +843,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     var result = write
                         ? await device.WriteMifareUltralightPagesAsync(access, StartPage, data)
-                        : await device.ReadMifareUltralightPagesAsync(access, StartPage, pageCount);
+                        : await device.ReadMifareUltralightPagesAsync(access, StartPage, pages);
 
-                    ReportResult(result, write, pageCount);
+                    ReportResult(result, write, pages);
                 }
             }
             catch (Exception e) when (!(e is OperationCanceledException))
@@ -841,31 +860,41 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     System.Security.Cryptography.CryptographicOperations.ZeroMemory(data);
                 }
+
+                Interlocked.Exchange(ref running, 0);
+                OnPropertyChanged(nameof(IsRunning));
+                OnPropertyChanged(nameof(AreInputsEnabled));
             }
         }
 
+        private int running;
+
+        /// <summary>Gets whether a page operation is running: a second one is not started meanwhile.</summary>
+        [XmlIgnore]
+        public bool IsRunning => Volatile.Read(ref running) != 0;
+
         // What is known without the card. The checks are those of the reader layer, made with the same code on the call without its
         // keys; the reader checks again against the chip that it finds, which is the one that counts.
-        private ERROR CheckBeforeTheCard(bool write, out byte[] data, out int pageCount)
+        private ERROR CheckBeforeTheCard(bool write, out byte[] data, out int pages)
         {
             data = null;
-            pageCount = PageCount;
+            pages = PageCount;
 
             if (write)
             {
                 if (!UltralightPayload.TryParse(WriteDataHex, out data))
                 {
-                    pageCount = 0;
+                    pages = 0;
 
                     return ERROR.ProtocolConstraint;
                 }
 
-                pageCount = UltralightPayload.PageCount(data);
+                pages = UltralightPayload.PageCount(data);
             }
 
             var withoutKeys = new UltralightAccess(ExpectedChip, UltralightAuth.None, null, null, AllowProtectedPages);
 
-            using (var probe = write ? UltralightRequest.ForWrite(withoutKeys, StartPage, data) : UltralightRequest.ForRead(withoutKeys, StartPage, pageCount))
+            using (var probe = write ? UltralightRequest.ForWrite(withoutKeys, StartPage, data) : UltralightRequest.ForRead(withoutKeys, StartPage, pages))
             {
                 if (probe.Error != ERROR.NoError)
                 {
@@ -902,11 +931,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private static KeyNeed Need(string slot, SecureKeyAlgorithm algorithm) =>
             new KeyNeed(slot, algorithm, SecureKeyUsage.Authenticate, null, null);
 
-        private void ReportResult(UltralightResult result, bool write, int pageCount)
+        private void ReportResult(UltralightResult result, bool write, int pages)
         {
             var details = new Dictionary<string, object>
             {
-                ["PagesRequested"] = pageCount,
+                ["PagesRequested"] = pages,
                 ["PagesDone"] = result.PagesDone,
                 ["Authenticated"] = result.Authenticated,
             };
@@ -935,15 +964,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             // Numbers and the name of the error: never the data, the keys or what the reader said.
             StatusText += result.Succeeded
                 ? string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource(write ? "textBoxStatusUltralightWritten" : "textBoxStatusUltralightRead"), DateTime.Now, result.PagesDone, StartPage) + "\n"
-                : string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("textBoxStatusUltralightFailed"), DateTime.Now, result.Error, result.PagesDone, pageCount) + "\n";
+                : string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("textBoxStatusUltralightFailed"), DateTime.Now, result.Error, result.PagesDone, pages) + "\n";
         }
 
         // The task ends without a call to the card: no reader, a call that cannot be made, or a fault.
-        private void EndWithoutTheCard(ERROR error, int pageCount)
+        private void EndWithoutTheCard(ERROR error, int pages)
         {
             CurrentTaskErrorLevel = error;
             IsTaskCompletedSuccessfully = false;
-            StatusText += string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("textBoxStatusUltralightFailed"), DateTime.Now, error, 0, pageCount) + "\n";
+            StatusText += string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("textBoxStatusUltralightFailed"), DateTime.Now, error, 0, pages) + "\n";
         }
 
         #region Key acquisition
@@ -974,9 +1003,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public bool IsFetchingKeys => isFetchingKeys;
 
-        /// <summary>Gets whether the inputs of the dialog take input: they do not while the keys of a command are being obtained.</summary>
+        /// <summary>Gets whether the inputs of the dialog take input: they do not while an operation runs, which includes the time the keys are being obtained.</summary>
         [XmlIgnore]
-        public bool AreInputsEnabled => !isFetchingKeys;
+        public bool AreInputsEnabled => !isFetchingKeys && !IsRunning;
 
         private void SetFetchingKeys(bool fetching)
         {

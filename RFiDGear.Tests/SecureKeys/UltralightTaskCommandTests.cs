@@ -300,7 +300,7 @@ namespace RFiDGear.Tests.SecureKeys
             {
                 new Vault().Install();
                 var task = NewTask(Scenarios["ReadC"]);
-                var reader = new KeyRecordingReader { FailMethod = nameof(KeyRecordingReader.ReadMifareUltralightPagesAsync), FailWith = answer };
+                var reader = new KeyRecordingReader { Connected = true, FailMethod = nameof(KeyRecordingReader.ReadMifareUltralightPagesAsync), FailWith = answer };
 
                 var run = await RunAsync(task, reader);
 
@@ -335,7 +335,7 @@ namespace RFiDGear.Tests.SecureKeys
                 var task = NewTask(Scenarios["WriteC"]);
                 task.StartPage = 8;
                 task.AllowProtectedPages = true;
-                var reader = new KeyRecordingReader();
+                var reader = NewReader();
 
                 await RunAsync(task, reader);
 
@@ -371,7 +371,7 @@ namespace RFiDGear.Tests.SecureKeys
                 Assert.All(done.Values, value => Assert.True(value is int || value is bool, "Only numbers and flags: " + value));
 
                 // A failure that stopped at a page.
-                var reader = new KeyRecordingReader { ScriptedUltralightResult = new UltralightResult(ERROR.PermissionDenied, new byte[4], UltralightVariant.Plain, false, 1, 5) };
+                var reader = new KeyRecordingReader { Connected = true, ScriptedUltralightResult = new UltralightResult(ERROR.PermissionDenied, new byte[4], UltralightVariant.Plain, false, 1, 5) };
                 await RunAsync(task, reader);
 
                 var failed = details.GetOutcomeDetails();
@@ -414,6 +414,7 @@ namespace RFiDGear.Tests.SecureKeys
                 BindAll(task);
                 var reader = new KeyRecordingReader
                 {
+                    Connected = true,
                     ThrowMethod = nameof(KeyRecordingReader.WriteMifareUltralightPagesAsync),
                     ThrowText = "the reader failed for " + Slots[SecureKeySlots.UltralightCKey].Vault + " and " + Payload,
                 };
@@ -513,7 +514,7 @@ namespace RFiDGear.Tests.SecureKeys
                 var announced = new List<string>();
                 task.PropertyChanged += (_, e) => announced.Add(e.PropertyName ?? string.Empty);
 
-                using (ReaderDeviceScope.Use(new KeyRecordingReader()))
+                using (ReaderDeviceScope.Use(NewReader()))
                 {
                     var running = task.CommandDelegator.ExecuteAsync(task.SelectedTaskType);
 
@@ -533,6 +534,122 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        // ── What the buttons of the dialog may do, and what may run at the same time ──
+
+        [Fact]
+        public async Task TheButtonsOfTheOldDialog_AreOff_UntilTheDialogIsBoundToTheTask()
+        {
+            // They write what the task holds, while the dialog still shows other pages and other data: a person would write one thing
+            // and read another, possibly into a protected page. The run loop uses the command of the task type and is not affected.
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = NewTask(Scenarios["WriteC"]);
+
+                Assert.False(task.ReadDataCommand.CanExecute(null));
+                Assert.False(task.WriteDataCommand.CanExecute(null));
+            });
+        }
+
+        [Fact]
+        public async Task AnOperationThatIsAskedForWhileOneIsInFlight_IsNotStarted()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var provider = new BlockingKeyProvider(16);
+                KeyResolutionScope.SetDefault(new KeyResolutionContext(provider.Registry(), "run-1", "0", null, interactive: false));
+                var task = NewTask(Scenarios["ReadC"]);
+                task.KeyBindings = new[] { new KeyBindingEntry { Slot = SecureKeySlots.UltralightCKey, ProviderId = BlockingKeyProvider.Id, Reference = "ref/c" } };
+                var reader = NewReader();
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var first = task.CommandDelegator.ExecuteAsync(TaskType_MifareUltralightTask.ReadData);
+                    Assert.Same(provider.Asked, await Task.WhenAny(provider.Asked, Task.Delay(TimeSpan.FromSeconds(10))));
+                    Assert.True(task.IsRunning);
+                    Assert.False(task.AreInputsEnabled);
+
+                    // The other command and the same one again would share the outcome and the error of the task: neither starts, and
+                    // neither changes what the first one has.
+                    await task.CommandDelegator.ExecuteAsync(TaskType_MifareUltralightTask.WriteData);
+                    await task.CommandDelegator.ExecuteAsync(TaskType_MifareUltralightTask.ReadData);
+                    Assert.Empty(reader.UltralightCalls);
+                    Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+
+                    provider.Release();
+                    await first;
+                }
+
+                var call = Assert.Single(reader.UltralightCalls);
+                Assert.Equal(nameof(KeyRecordingReader.ReadMifareUltralightPagesAsync), call.Method);
+                Assert.Equal(ERROR.NoError, task.CurrentTaskErrorLevel);
+                Assert.False(task.IsRunning);
+                Assert.True(task.AreInputsEnabled);
+
+                // And the task can be run again.
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    KeyResolutionScope.SetDefault(null);
+                    task.KeyBindings = new KeyBindingEntry[0];
+                    await task.CommandDelegator.ExecuteAsync(TaskType_MifareUltralightTask.ReadData);
+                }
+
+                Assert.Equal(2, reader.UltralightCalls.Count);
+            });
+        }
+
+        [Fact]
+        public async Task AFaultInTheOperation_ReleasesTheGuard()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = NewTask(Scenarios["ReadC"]);
+                var failing = NewReader();
+                failing.ThrowMethod = nameof(KeyRecordingReader.ReadMifareUltralightPagesAsync);
+
+                var first = await RunAsync(task, failing);
+                var second = await RunAsync(task, NewReader());
+
+                Assert.Equal(ERROR.Unknown, first.Error);
+                Assert.Equal(ERROR.NoError, second.Error);
+                Assert.False(task.IsRunning);
+            });
+        }
+
+        [Fact]
+        public async Task AReaderThatIsNotConnected_EndsTheTaskAsATransportError_BeforeAKeyIsAskedFor()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A provider that is there but has no reader attached: the answer is the reader, not a key that was asked for for nothing.
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(Scenarios["ReadC"]);
+                BindAll(task);
+
+                var run = await RunAsync(task, new KeyRecordingReader { Connected = false });
+
+                Assert.Equal(ERROR.TransportError, run.Error);
+                Assert.False(run.Completed);
+                Assert.Equal(0, run.ReaderCalls);
+                Assert.Empty(vault.Requests);
+            });
+        }
+
+        [Fact]
+        public async Task APcscReader_IsNotLookedAtForAConnection_BecauseItsSessionIsMadeByTheCall()
+        {
+            // The connection of a PC/SC reader says whether a card session is open, which the page operation opens itself.
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var task = NewTask(Scenarios["ReadC"]);
+
+                var run = await RunAsync(task, new KeyRecordingReader { Connected = false, Pcsc = true });
+
+                Assert.Equal(ERROR.NoError, run.Error);
+                Assert.Equal(1, run.ReaderCalls);
+            });
+        }
+
         // ── Through the execution service ──
 
         [Fact]
@@ -544,7 +661,7 @@ namespace RFiDGear.Tests.SecureKeys
                 var task = NewTask(Scenarios["ReadPassword"]);
                 task.CurrentTaskIndex = "4";
                 BindAll(task);
-                var reader = new KeyRecordingReader { Card = new GenericChipModel("04AABBCCDD", CARD_TYPE.NTAG_215) };
+                var reader = new KeyRecordingReader { Connected = true, Card = new GenericChipModel("04AABBCCDD", CARD_TYPE.NTAG_215) };
 
                 ExecResult result;
                 using (ReaderDeviceScope.Use(reader))
@@ -574,7 +691,7 @@ namespace RFiDGear.Tests.SecureKeys
                 var vault = new Vault { Failure = SecureKeyFailureReason.ProviderUnavailable };
                 var task = NewTask(Scenarios["WriteC"]);
                 BindAll(task);
-                var reader = new KeyRecordingReader();
+                var reader = NewReader();
 
                 ExecResult result;
                 using (ReaderDeviceScope.Use(reader))
@@ -593,6 +710,9 @@ namespace RFiDGear.Tests.SecureKeys
         // ── Helpers ──
 
         private sealed record Run(string Calls, ERROR Error, string Status, bool? Completed, int ReaderCalls);
+
+        // A reader that says it is connected, as the reader of an application with a reader attached does.
+        private static KeyRecordingReader NewReader() => new KeyRecordingReader { Connected = true };
 
         private static MifareUltralightSetupViewModel NewTask(Scenario scenario, bool withEmbeddedKeys = true)
         {
@@ -625,7 +745,7 @@ namespace RFiDGear.Tests.SecureKeys
 
         private static async Task<Run> RunAsync(MifareUltralightSetupViewModel task, KeyRecordingReader? reader = null)
         {
-            reader ??= new KeyRecordingReader();
+            reader ??= NewReader();
 
             using (ReaderDeviceScope.Use(reader))
             {
