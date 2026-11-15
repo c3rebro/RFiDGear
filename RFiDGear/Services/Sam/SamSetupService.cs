@@ -48,8 +48,10 @@ namespace RFiDGear.Services.Sam
         ReaderError,
 
         /// <summary>
-        /// The activation may have taken effect although it ended with an error: the last command may have been executed.
-        /// Authenticate to find out.
+        /// The step may have taken effect although it ended with an error: the SAM answered success, but its answer could not
+        /// be checked (the proof or the CMAC is missing or wrong), or the reader failed after the last command was sent.
+        /// For an activation, check the SAM and authenticate to find out. A key that was written cannot be read back and
+        /// cannot be proved by an authentication: whether to write it again is for the person to decide.
         /// </summary>
         MayHaveTakenEffect,
 
@@ -262,8 +264,17 @@ namespace RFiDGear.Services.Sam
             }
             catch (SamException e)
             {
-                // Success of the last command with a proof that does not check out: the SAM may be activated all the same.
-                return Record("activate", e.StatusWord == SuccessStatus ? SamStepResult.MayHaveTakenEffect : SamStepResult.Refused, e.StatusWord);
+                if (e.StatusWord != SuccessStatus)
+                {
+                    return Record("activate", SamStepResult.Refused, e.StatusWord);
+                }
+
+                // Success of the last command with a proof that does not check out: the SAM may be activated all the same. What the
+                // window knows of it is not to be trusted any more (it may still offer an activation), so the connection ends and
+                // the next step has to start with a fresh check.
+                Close();
+
+                return Record("activate", SamStepResult.MayHaveTakenEffect, e.StatusWord);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {
@@ -314,7 +325,9 @@ namespace RFiDGear.Services.Sam
             }
             catch (SamException e)
             {
-                return Record("write", SamStepResult.Refused, e.StatusWord);
+                // The library throws with 9000 when the SAM said success and its CMAC is missing or wrong: the entry may have been
+                // written, and "refused" would say that it was not. The session is gone either way (the library discards it).
+                return Record("write", e.StatusWord == SuccessStatus ? SamStepResult.MayHaveTakenEffect : SamStepResult.Refused, e.StatusWord);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {

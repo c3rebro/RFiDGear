@@ -114,17 +114,19 @@ namespace RFiDGear.Services.Sam
 
     /// <summary>
     /// Turns a <see cref="SamKeySource"/> into the sixteen bytes a SAM step needs, in a buffer the caller erases. A key
-    /// that is not there, or is not an AES-128 key, ends the step before the card is touched.
+    /// that is not there, or is not an AES-128 key, ends the step before the card is touched. A stored key is asked of the
+    /// registry, as every other key of the application is: the call runs on a worker thread under a time limit, so a vault
+    /// that does not answer cannot hold up the window, and a key that arrives late is disposed.
     /// </summary>
     internal sealed class SamKeyReader
     {
-        private readonly ISecureKeyProvider _provider;
+        private readonly SecureKeyRegistry _registry;
 
-        /// <summary>Creates a reader that takes stored keys from a provider.</summary>
-        /// <param name="provider">The provider of the stored keys (the Credential Manager).</param>
-        internal SamKeyReader(ISecureKeyProvider provider)
+        /// <summary>Creates a reader that takes stored keys from the Credential Manager provider of a registry.</summary>
+        /// <param name="registry">The registry that holds the provider <see cref="WindowsCredentialKeyProvider.ProviderId"/>.</param>
+        internal SamKeyReader(SecureKeyRegistry registry)
         {
-            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         }
 
         /// <summary>Reads the key of a source.</summary>
@@ -179,29 +181,19 @@ namespace RFiDGear.Services.Sam
                 return SamKeyRead.Failed(SamStepResult.KeyUnavailable);
             }
 
-            SecureKeyResolution resolution;
-
-            try
-            {
-                resolution = await _provider.ResolveAsync(
-                    new SecureKeyRequest
-                    {
-                        SlotId = slotId,
-                        Reference = reference,
-                        Algorithm = SecureKeyAlgorithm.Aes128,
-                        Usage = usage,
-                        Interactive = true,
-                    },
-                    CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (Exception e) when (e is not OperationCanceledException)
-            {
-                // A provider that throws is a provider that cannot answer. Only the type is logged, never its text.
-                Log.ForContext<SamKeyReader>().Warning("SAM key: the provider failed ({ExceptionType}).", e.GetType().Name);
-                return SamKeyRead.Failed(SamStepResult.KeyUnavailable);
-            }
-
-            using (resolution)
+            // The registry never throws for anything a provider does: a provider that throws, or does not answer in time, is a
+            // failed answer, and it logs the type of the exception and never its text. The Credential Manager asks nobody.
+            using (var resolution = await _registry.ResolveAsync(
+                WindowsCredentialKeyProvider.ProviderId,
+                new SecureKeyRequest
+                {
+                    SlotId = slotId,
+                    Reference = reference,
+                    Algorithm = SecureKeyAlgorithm.Aes128,
+                    Usage = usage,
+                    Interactive = false,
+                },
+                CancellationToken.None).ConfigureAwait(false))
             {
                 if (!(resolution.Key is SecureKeyLease lease))
                 {

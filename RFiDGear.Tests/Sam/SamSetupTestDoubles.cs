@@ -1,4 +1,7 @@
+using RFiDGear.Contracts;
+using RFiDGear.ExtensionSdk;
 using RFiDGear.Services.Sam;
+using RFiDGear.Services.SecureKeys;
 
 using System;
 using System.Collections.Generic;
@@ -86,6 +89,15 @@ namespace RFiDGear.Tests.Sam
             KeyArrays.Add(key);
             KeyCopies.Add((byte[])key.Clone());
         }
+    }
+
+    /// <summary>A registry that holds one provider under the id of the Credential Manager provider, as the window's registry does.</summary>
+    internal static class SamTestKeys
+    {
+        internal static SecureKeyRegistry RegistryOf(ISecureKeyProvider provider) =>
+            SecureKeyRegistry.Create(
+                new[] { new SecureKeyProviderRegistration(WindowsCredentialKeyProvider.ProviderId, WindowsCredentialKeyProvider.DisplayName, provider) },
+                Array.Empty<Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>>());
     }
 
     /// <summary>The questions of the setup, answered by a test.</summary>

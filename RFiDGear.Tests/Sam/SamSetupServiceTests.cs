@@ -44,7 +44,7 @@ namespace RFiDGear.Tests.Sam
                 Source = new FakeSamReaderSource { Answer = apdu => Convert.ToHexString(apdu) == "8060000000" ? SamTestData.VersionAnswer() : new byte[] { 0x90, 0x00 } }
                     .With(ReaderName, SamTestData.SamAtr);
                 Provider = provider ?? ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes());
-                Service = new SamSetupService(new SamReaderFinder(Source), _ => Session, Dialogs, new SamKeyReader(Provider));
+                Service = new SamSetupService(new SamReaderFinder(Source), _ => Session, Dialogs, new SamKeyReader(SamTestKeys.RegistryOf(Provider)));
 
                 if (connect)
                 {
@@ -406,6 +406,12 @@ namespace RFiDGear.Tests.Sam
             var outcome = await rig.Service.ActivateAsync(SamKeySource.Factory());
 
             Assert.Equal(SamStepResult.MayHaveTakenEffect, outcome.Result);
+
+            // What is known of the SAM is not to be trusted any more: the next step starts from a fresh check, which is what the
+            // window needs to stop offering the activation.
+            Assert.False(rig.Service.IsConnected);
+            Assert.True(rig.Session.Disposed);
+            Assert.True(rig.Card.Disposed);
         }
 
         [Fact]
@@ -525,6 +531,25 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public async Task A_success_whose_cmac_is_missing_or_wrong_may_have_written_the_key_and_is_no_refusal()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+
+            // What the library throws when the SAM said success and the CMAC of its answer does not check out.
+            rig.Session.ChangeFails = new SamException("The CMAC of the SAM response is invalid.", 0x9000);
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.MayHaveTakenEffect, 0x9000), outcome);
+            Assert.Single(rig.Session.Calls.Where(c => c.StartsWith("change", StringComparison.Ordinal)));
+
+            // The session is gone (the library discards it): a new authentication is needed. The connection is still there.
+            Assert.False(rig.Service.IsAuthenticated);
+            Assert.True(rig.Service.IsConnected);
+        }
+
+        [Fact]
         public async Task A_reader_that_fails_while_the_key_is_written_ends_the_connection()
         {
             using var rig = new Rig();
@@ -589,7 +614,7 @@ namespace RFiDGear.Tests.Sam
             var finder = new SamReaderFinder(source);
             var provider = ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes());
             var dialogs = new ScriptedSamDialogs();
-            var keys = new SamKeyReader(provider);
+            var keys = new SamKeyReader(SamTestKeys.RegistryOf(provider));
             Func<Elatec.NET.Interfaces.ISamApduChannel, ISamHostSession> sessions = _ => new FakeHostSession();
 
             Assert.Throws<ArgumentNullException>(() => new SamSetupService(null!, sessions, dialogs, keys));
@@ -615,7 +640,7 @@ namespace RFiDGear.Tests.Sam
                 new SamReaderFinder(source),
                 channel => new Av3HostSession(channel),
                 new ScriptedSamDialogs(),
-                new SamKeyReader(ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes())));
+                new SamKeyReader(SamTestKeys.RegistryOf(ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes()))));
             await service.ConnectAsync(ReaderName);
 
             var outcome = await service.AuthenticateAsync(SamKeySource.Factory());
@@ -637,7 +662,7 @@ namespace RFiDGear.Tests.Sam
                 new SamReaderFinder(source),
                 channel => new Av3HostSession(channel),
                 new ScriptedSamDialogs(),
-                new SamKeyReader(ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes())));
+                new SamKeyReader(SamTestKeys.RegistryOf(ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes()))));
             await service.ConnectAsync(ReaderName);
 
             var outcome = await service.AuthenticateAsync(SamKeySource.Factory());
@@ -674,7 +699,7 @@ namespace RFiDGear.Tests.Sam
                 new SamReaderFinder(source),
                 channel => new Av3HostSession(channel),
                 new ScriptedSamDialogs(),
-                new SamKeyReader(ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes())));
+                new SamKeyReader(SamTestKeys.RegistryOf(ScriptedSecureKeyProvider.Returning(SecureKeyTestData.SixteenBytes()))));
             await service.ConnectAsync(ReaderName);
             var sentBefore = source.Handed.Single().Transport.Sent.Count;
 
