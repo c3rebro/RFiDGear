@@ -123,8 +123,11 @@ namespace RFiDGear.Tests
                 // Pages 44 to 47 hold the key, which cannot be read: a read that reached them would show page 0 for them.
                 Assert.Equal(44, Assert.Single(reader.UltralightCalls).PageCount);
                 Assert.True(node.Children[43].IsAuthenticated);
-                Assert.False(node.Children[44].IsAuthenticated);
+
+                // No mark: false would paint the key pages red, as a failure, and they were left out on purpose.
+                Assert.Null(node.Children[44].IsAuthenticated);
                 Assert.Empty(node.Children[44].Children);
+                Assert.Equal(new byte[4], node.Children[44].PageModel.Data);
             });
         }
 
@@ -144,8 +147,32 @@ namespace RFiDGear.Tests
                 Assert.Equal(new byte[] { 5, 6, 7, 8 }, node.Children[1].PageModel.Data);
                 Assert.True(node.Children[0].IsAuthenticated);
                 Assert.True(node.Children[1].IsAuthenticated);
-                Assert.False(node.Children[2].IsAuthenticated);
+                Assert.Null(node.Children[2].IsAuthenticated);
                 Assert.Empty(node.Children[2].Children);
+            });
+        }
+
+        [Fact]
+        public async Task AReadThatFailsAfterASuccessfulOne_DoesNotKeepTheOldBytes()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var node = NodeOf(CARD_TYPE.MifareUltralight);
+                var reader = new KeyRecordingReader();
+
+                await node.ReadUltralightPagesAsync(reader);
+                Assert.Equal(new byte[] { 20, 21, 22, 23 }, node.Children[5].PageModel.Data);
+
+                // The second check gets two pages and then a refusal.
+                reader.ScriptedUltralightResult = new UltralightResult(ERROR.PermissionDenied, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, UltralightVariant.Plain, false, 2, 2);
+                await node.ReadUltralightPagesAsync(reader);
+
+                Assert.Equal(new byte[] { 5, 6, 7, 8 }, node.Children[1].PageModel.Data);
+
+                // What the first check showed of the other pages is gone: neither its bytes nor its mark nor its line.
+                Assert.Equal(new byte[4], node.Children[5].PageModel.Data);
+                Assert.Null(node.Children[5].IsAuthenticated);
+                Assert.Empty(node.Children[5].Children);
             });
         }
 

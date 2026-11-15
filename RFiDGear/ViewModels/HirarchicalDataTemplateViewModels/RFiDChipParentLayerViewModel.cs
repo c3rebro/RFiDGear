@@ -766,7 +766,10 @@ namespace RFiDGear.ViewModel
                 }
                 else
                 {
-                    page.IsAuthenticated = false;
+                    // Not read: no bytes of an earlier check, no line, and no mark. The mark is null and not false, which the tree paints
+                    // red as a failure: the key pages of an Ultralight C are left out on purpose.
+                    page.PageModel.Data = new byte[UltralightMemoryMap.PageSize];
+                    page.IsAuthenticated = null;
                 }
             }
         }
