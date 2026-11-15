@@ -126,10 +126,19 @@ Each item says what to look for. Mark it when you have done it.
   above 0.
 - **A plain Ultralight.** Run the four cases with each reader. The write case
   on a PC/SC reader is the one that is not covered by an NTAG.
-- **An Ultralight C and an EV1, the four cases.** The cases check the page
-  layout of each chip (the C has 48 pages and its key pages cannot be read; an
-  EV1 has 20 or 41): run them once with each of these cards and with each
-  reader.
+- **An Ultralight C and an EV1, the four cases.** The cases are workflow
+  checks: they touch pages 3, 4 to 7 and 10 and say nothing about the end of
+  the memory or the page layout of the chip. Run them once with each of these
+  cards and with each reader. On an Elatec reader a physical Ultralight C is
+  reported as a plain Ultralight, so the cases treat it as one.
+- **The boundaries of the page layout.** Not automated, and none of the four
+  cases checks them. With a card of each kind set up read tasks that name the
+  chip and look at: the last page of the chip (an Ultralight 15, a C 43 (the
+  last page that can be read), MF0UL11 19, MF0UL21 40, NTAG213 44, NTAG215 134,
+  NTAG216 230), which has to be read; the page after it, which has to be
+  refused as a protocol constraint with nothing read; and, on a C, the key
+  pages 44 to 47, which have to be refused. The password and the PACK of an EV1
+  or an NTAG (its last two pages) read as zeros, whatever they hold.
 - **A card of another family on the reader.** The four cases skip. In the
   application, set up a read task for an Ultralight and run it with a DESFire
   card on the reader: it must end with a protocol constraint, not hang and not
