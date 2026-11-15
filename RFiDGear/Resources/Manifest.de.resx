@@ -2411,4 +2411,169 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.UltralightAuth.Password" xml:space="preserve">
     <value>Passwort und PACK (EV1, NTAG)</value>
   </data>
+  <data name="menuItemSamSetup" xml:space="preserve">
+    <value>MIFARE-SAM-AV3-Einrichtung...</value>
+  </data>
+  <data name="windowTitleSamSetup" xml:space="preserve">
+    <value>MIFARE-SAM-AV3-Einrichtung</value>
+  </data>
+  <data name="labelSamSetupIntro" xml:space="preserve">
+    <value>Richtet eine MIFARE SAM AV3 ein, die in einem PC/SC-Leser steckt: finden, eine neue aktivieren, sich als Host authentifizieren und einen Schlüssel in einen Schlüsseleintrag schreiben. Die Suche liest nur die Rücksetzantwort (ATR) der Karte in jedem Leser. Solange dieses Fenster offen ist, gehört der Leser ihm allein.</value>
+  </data>
+  <data name="labelSamSetupReader" xml:space="preserve">
+    <value>SAM im Leser</value>
+  </data>
+  <data name="buttonContentSamSetupRefresh" xml:space="preserve">
+    <value>Erneut suchen</value>
+  </data>
+  <data name="buttonContentSamSetupCheck" xml:space="preserve">
+    <value>SAM prüfen</value>
+  </data>
+  <data name="toolTipSamSetupCheck" xml:space="preserve">
+    <value>Verbindet sich mit der SAM und fragt nach ihrer Version (SAM_GetVersion). Es wird kein Schlüssel verwendet und nichts verändert.</value>
+  </data>
+  <data name="labelSamSetupStateNoReader" xml:space="preserve">
+    <value>Keine MIFARE SAM AV3 gefunden.</value>
+  </data>
+  <data name="labelSamSetupStateFound" xml:space="preserve">
+    <value>Eine SAM wurde gefunden. Prüfen Sie sie, um sich zu verbinden.</value>
+  </data>
+  <data name="labelSamSetupStateConnected" xml:space="preserve">
+    <value>Verbunden. Ob die SAM aktiviert ist, ist noch nicht bekannt.</value>
+  </data>
+  <data name="labelSamSetupStateNotActivated" xml:space="preserve">
+    <value>Die SAM ist nicht aktiviert.</value>
+  </data>
+  <data name="labelSamSetupStateAuthenticated" xml:space="preserve">
+    <value>Als Host authentifiziert. Ein Schlüsseleintrag kann geschrieben werden.</value>
+  </data>
+  <data name="labelSamSetupVersion" xml:space="preserve">
+    <value>Hardware-Information {0}, Software-Information {1}</value>
+  </data>
+  <data name="messageSamSetupNoVersion" xml:space="preserve">
+    <value>Die SAM hat ihre Version nicht genannt.</value>
+  </data>
+  <data name="labelSamSetupMasterKey" xml:space="preserve">
+    <value>Hauptschlüssel (Schlüsseleintrag 0, Version 0)</value>
+  </data>
+  <data name="labelSamSetupFactoryKey" xml:space="preserve">
+    <value>Werksschlüssel (nur Nullen, eine neue SAM)</value>
+  </data>
+  <data name="toolTipSamSetupFactoryKey" xml:space="preserve">
+    <value>Eine neue SAM hat einen Hauptschlüssel aus sechzehn Null-Bytes. Entfernen Sie das Häkchen, um einen anderen Schlüssel zu verwenden.</value>
+  </data>
+  <data name="labelSamSetupStoredKey" xml:space="preserve">
+    <value>Gespeicherter Schlüssel</value>
+  </data>
+  <data name="toolTipSamSetupStoredKey" xml:space="preserve">
+    <value>Ein Schlüssel aus der Windows-Anmeldeinformationsverwaltung. Um den Schlüssel stattdessen einzutippen, wählen Sie den ersten Eintrag.</value>
+  </data>
+  <data name="labelSamSetupEnterBelow" xml:space="preserve">
+    <value>(Schlüssel unten eingeben)</value>
+  </data>
+  <data name="labelSamSetupKeyDigits" xml:space="preserve">
+    <value>Schlüssel (32 Hexadezimalziffern)</value>
+  </data>
+  <data name="buttonContentSamSetupAuthenticate" xml:space="preserve">
+    <value>Authentifizieren</value>
+  </data>
+  <data name="toolTipSamSetupAuthenticate" xml:space="preserve">
+    <value>Host-Authentifizierung mit dem Hauptschlüssel. Eine neue SAM antwortet, dass sie nie aktiviert wurde; dabei wird kein Schlüssel verwendet. Ein falscher Schlüssel zählt als Verwendung des Schlüssels, wenn dem Schlüsseleintrag ein Verwendungszähler zugeordnet ist.</value>
+  </data>
+  <data name="buttonContentSamSetupActivate" xml:space="preserve">
+    <value>SAM aktivieren...</value>
+  </data>
+  <data name="toolTipSamSetupActivate" xml:space="preserve">
+    <value>Nur für eine neue SAM, die 'nicht aktiviert' geantwortet hat. Fragt vorher nach. Die Aktivierung lässt sich nicht rückgängig machen.</value>
+  </data>
+  <data name="labelSamSetupNewKey" xml:space="preserve">
+    <value>Zu schreibender Schlüssel (AES-128-Schlüssel für Karten, ein PICC-Schlüssel)</value>
+  </data>
+  <data name="labelSamSetupEntry" xml:space="preserve">
+    <value>Schlüsseleintrag (1 bis 127)</value>
+  </data>
+  <data name="toolTipSamSetupEntry" xml:space="preserve">
+    <value>Der Schlüsseleintrag, der den Schlüssel als Version 0 erhält. Eintrag 0 ist der Hauptschlüssel und wird hier nie geschrieben. Der Hauptschlüssel bleibt der Schlüssel, mit dem der Eintrag später geändert werden kann.</value>
+  </data>
+  <data name="buttonContentSamSetupWrite" xml:space="preserve">
+    <value>Schlüssel schreiben</value>
+  </data>
+  <data name="toolTipSamSetupWrite" xml:space="preserve">
+    <value>Schreibt den Schlüssel in den Schlüsseleintrag. Setzt zuvor die Host-Authentifizierung voraus. Eine SAM gibt einen Schlüssel nie wieder heraus.</value>
+  </data>
+  <data name="labelSamSetupStatus" xml:space="preserve">
+    <value>Meldungen</value>
+  </data>
+  <data name="messageSamSetupConfirmActivate" xml:space="preserve">
+    <value>Die MIFARE SAM AV3 aktivieren?&#10;&#10;Das lässt sich nicht rückgängig machen. Tun Sie es nur bei einer neuen SAM, die Sie verwenden wollen, und mit ihrem Hauptschlüssel (eine neue SAM hat den Werksschlüssel aus sechzehn Null-Bytes).&#10;&#10;Der Befehl für die Aktivierung stammt von der MIFARE SAM AV2 und wurde an einer SAM AV3 noch nicht geprüft. Er kann abgelehnt werden und etwas anderes bewirken als erwartet.</value>
+  </data>
+  <data name="messageSamSetupReaderBusy" xml:space="preserve">
+    <value>Der Leser wird gerade von einem anderen Teil von RFiDGear verwendet. Warten Sie, bis er fertig ist, und versuchen Sie es erneut.</value>
+  </data>
+  <data name="messageSamSetupSearchFailed" xml:space="preserve">
+    <value>Die PC/SC-Leser konnten nicht aufgelistet werden. Läuft der Dienst für Smartcards?</value>
+  </data>
+  <data name="messageSamSetupSearchNone" xml:space="preserve">
+    <value>In den PC/SC-Lesern wurde keine MIFARE SAM AV3 gefunden. Stecken Sie sie ein und suchen Sie erneut.</value>
+  </data>
+  <data name="messageSamSetupSearchFound" xml:space="preserve">
+    <value>Eine MIFARE SAM AV3 in {0} Leser(n) gefunden.</value>
+  </data>
+  <data name="messageSamSetupConnected" xml:space="preserve">
+    <value>Mit der SAM in '{0}' verbunden.</value>
+  </data>
+  <data name="messageSamSetupNoSam" xml:space="preserve">
+    <value>In '{0}' ist keine MIFARE SAM AV3 (mehr).</value>
+  </data>
+  <data name="messageSamSetupNotConnected" xml:space="preserve">
+    <value>Es besteht keine Verbindung zu einer SAM. Prüfen Sie zuerst die SAM.</value>
+  </data>
+  <data name="messageSamSetupReaderError" xml:space="preserve">
+    <value>Der Leser ist ausgefallen. Die Verbindung wurde geschlossen, und die SAM kann in jedem Zustand sein. Suchen Sie erneut.</value>
+  </data>
+  <data name="messageSamSetupFailed" xml:space="preserve">
+    <value>Der Schritt ist unerwartet fehlgeschlagen (das Protokoll nennt die Art des Fehlers). Die Verbindung wurde geschlossen.</value>
+  </data>
+  <data name="messageSamSetupAuthenticated" xml:space="preserve">
+    <value>Host-Authentifizierung erfolgreich.</value>
+  </data>
+  <data name="messageSamSetupNotActivated" xml:space="preserve">
+    <value>Die SAM hat mit 6985 geantwortet: Sie wurde nie aktiviert. Es wurde kein Schlüssel verwendet. Aktivieren Sie eine neue SAM mit ihrem Hauptschlüssel.</value>
+  </data>
+  <data name="messageSamSetupAuthFailed" xml:space="preserve">
+    <value>Die SAM hat die Authentifizierung nicht akzeptiert (Status {0}). Ein falscher Schlüssel zählt als Verwendung des Schlüssels, wenn dem Schlüsseleintrag ein Verwendungszähler zugeordnet ist.</value>
+  </data>
+  <data name="messageSamSetupActivated" xml:space="preserve">
+    <value>Die SAM wurde aktiviert. Authentifizieren Sie sich jetzt.</value>
+  </data>
+  <data name="messageSamSetupDeclined" xml:space="preserve">
+    <value>Nicht aktiviert.</value>
+  </data>
+  <data name="messageSamSetupMayHaveActivated" xml:space="preserve">
+    <value>Die Aktivierung endete mit einem Fehler, aber die SAM kann trotzdem aktiviert sein. Prüfen Sie die SAM und authentifizieren Sie sich dann.</value>
+  </data>
+  <data name="messageSamSetupRefused" xml:space="preserve">
+    <value>Die SAM hat den Befehl abgelehnt (Status {0}).</value>
+  </data>
+  <data name="messageSamSetupKeyUnavailable" xml:space="preserve">
+    <value>Der Schlüssel konnte nicht aus der Anmeldeinformationsverwaltung gelesen werden. Es wurde nichts an die SAM gesendet.</value>
+  </data>
+  <data name="messageSamSetupKeyInvalid" xml:space="preserve">
+    <value>Das ist kein Schlüssel aus 16 Bytes (32 Hexadezimalziffern). Es wurde nichts an die SAM gesendet.</value>
+  </data>
+  <data name="messageSamSetupNotAuthenticated" xml:space="preserve">
+    <value>Ein Schlüssel kann erst nach der Host-Authentifizierung geschrieben werden. Authentifizieren Sie sich zuerst.</value>
+  </data>
+  <data name="messageSamSetupEntryInvalid" xml:space="preserve">
+    <value>Der Schlüsseleintrag muss eine Zahl von 1 bis 127 sein. Eintrag 0 ist der Hauptschlüssel und wird hier nicht geschrieben.</value>
+  </data>
+  <data name="messageSamSetupNoKeyEntered" xml:space="preserve">
+    <value>Geben Sie den Schlüssel ein oder wählen Sie einen gespeicherten.</value>
+  </data>
+  <data name="messageSamSetupWritten" xml:space="preserve">
+    <value>Der Schlüssel wurde in Schlüsseleintrag {0} geschrieben. Die SAM hat mit Erfolg geantwortet; ein Schlüssel lässt sich aus ihr nicht zurücklesen.</value>
+  </data>
+  <data name="messageSamSetupMayHaveWritten" xml:space="preserve">
+    <value>Die SAM hat mit Erfolg geantwortet, aber ihre Antwort ließ sich nicht prüfen: Der Schlüssel kann in Schlüsseleintrag {0} geschrieben worden sein. Ein Schlüssel lässt sich nicht zurücklesen, und eine Authentifizierung kann einen PICC-Schlüssel nicht beweisen. Authentifizieren Sie sich erneut; ob Sie den Schlüssel noch einmal schreiben, entscheiden Sie.</value>
+  </data>
 </root>

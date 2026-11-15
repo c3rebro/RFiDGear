@@ -37,10 +37,18 @@ namespace RFiDGear.Tests.Sam
 
         public bool IsAuthenticated { get; set; }
 
-        public Task AuthenticateHostAsync(byte keyNo, byte keyVersion, byte[] key)
+        /// <summary>When set, the authentication waits for it before it answers: a step that is still running.</summary>
+        internal Task? AuthenticateBlocker { get; set; }
+
+        public async Task AuthenticateHostAsync(byte keyNo, byte keyVersion, byte[] key)
         {
             Calls.Add("authenticate " + keyNo + " " + keyVersion);
             Remember(key);
+
+            if (AuthenticateBlocker != null)
+            {
+                await AuthenticateBlocker;
+            }
 
             if (AuthenticateFails != null)
             {
@@ -49,7 +57,6 @@ namespace RFiDGear.Tests.Sam
             }
 
             IsAuthenticated = true;
-            return Task.CompletedTask;
         }
 
         public Task ActivateSamAsync(byte keyNo, byte keyVersion, byte[] key)

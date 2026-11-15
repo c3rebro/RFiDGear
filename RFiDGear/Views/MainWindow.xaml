@@ -547,6 +547,7 @@
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemOptionsHeader'}"
                     RenderTransformOrigin="0.5,0.5">
                     <MenuItem Command="{Binding NewReaderSetupDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemReaderSettingsHeader'}" />
+                    <MenuItem Command="{Binding OpenSamSetupCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSamSetup'}" />
                     <MenuItem Header="_Language">
                         <RadioButton
                             x:Name="radioButtonGerman"

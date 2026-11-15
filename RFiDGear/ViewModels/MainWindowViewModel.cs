@@ -1,4 +1,4 @@
-﻿/// <summary>
+/// <summary>
 /// Main application view model that orchestrates startup, UI binding, reader monitoring,
 /// and task execution lifecycles. Instances are exported via MEF under the name
 /// <c>"MainWin"</c> so XAML bindings can resolve this view model from the shared locator.
@@ -30,6 +30,7 @@ using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.AutoMode;
 using RFiDGear.Services.ExternalControl;
+using RFiDGear.Services.Sam;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
@@ -2053,6 +2054,19 @@ namespace RFiDGear.ViewModel
         public IRelayCommand OpenKeyManagerCommand => new RelayCommand(OnOpenKeyManager);
         private void OnOpenKeyManager() => StoredKeysLauncher.Show(mw);
 
+        /// <summary>Gets or sets how the SAM setup of the menu is shown; the tests replace it.</summary>
+        internal ISamSetupLauncher SamSetupLauncher { get; set; } = new RFiDGear.View.WpfSamSetupLauncher();
+
+        /// <summary>
+        /// Opens the setup of a MIFARE SAM AV3 in a PC/SC reader: find the SAM, activate a new one, authenticate as host and write one
+        /// key entry. It needs no project. It holds the gate of the reader and the scan slot of the coordinator while it is open, so
+        /// the reader monitor, the automatic mode, the tasks and the reads of the window leave the reader alone; if a run, a load, an
+        /// edit or a scan is in progress, somebody holds the gate, or the window says that it uses the reader (the quick check, which
+        /// works on the reader without the coordinator and the gate, says so with the busy flag only), the window does not open.
+        /// </summary>
+        public IRelayCommand OpenSamSetupCommand => new RelayCommand(OnOpenSamSetup);
+        private void OnOpenSamSetup() => SamSetupLauncher.Show(mw, _readerGate, _coordinator, () => IsReaderBusy, busy => IsReaderBusy = busy);
+
         /// <summary>Logs a project-open failure without changing the currently loaded project.</summary>
         private static void LogProjectOpenFailure(string path, ProjectOpenError error) =>
             Log.ForContext<MainWindowViewModel>()
@@ -3003,12 +3017,7 @@ namespace RFiDGear.ViewModel
 
                     if (result != null)
                     {
-                        if (result.ChangesBusy)
-                        {
-                            IsReaderBusy = result.Busy;
-                        }
-
-                        CurrentReader = result.Label;
+                        ApplyProbeResult(result);
                     }
 
                     // The first look that reached the reader ends the start-up, whatever it found. Without a reader
@@ -3032,6 +3041,22 @@ namespace RFiDGear.ViewModel
             {
                 readerMonitor?.Resume();
             }
+        }
+
+        /// <summary>
+        /// Shows what a look at the reader found. A look that ends while somebody else has taken the reader meanwhile (the SAM setup,
+        /// a scan, a read of the window) must not say that the reader is free: the busy state is left to the one who holds the gate.
+        /// The look itself opens the reader and not the card, so it cannot disturb what a holder of the gate is doing.
+        /// </summary>
+        /// <param name="result">What the look found.</param>
+        internal void ApplyProbeResult(ReaderProbeResult result)
+        {
+            if (result.ChangesBusy && !_readerGate.IsHeld)
+            {
+                IsReaderBusy = result.Busy;
+            }
+
+            CurrentReader = result.Label;
         }
 
         private bool ContainsAny(string haystack, params string[] needles)
