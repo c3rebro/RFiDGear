@@ -26,8 +26,9 @@ namespace RFiDGear.Services.Sam
         /// <summary>Shows the setup and returns when the person closed it.</summary>
         /// <param name="owner">The window it belongs to; <see langword="null"/> for none.</param>
         /// <param name="gate">The gate of the reader: the setup holds it while it is open, so that nothing else uses the reader.</param>
+        /// <param name="coordinator">The coordinator of the operations: the setup takes its slot while it is open, and is not opened while an operation is in progress.</param>
         /// <param name="setBusy">Tells the main window whether the reader is in use.</param>
-        void Show(Window? owner, ReaderAccessGate gate, Action<bool?> setBusy);
+        void Show(Window? owner, ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Action<bool?> setBusy);
     }
 
     /// <summary>Where the setup is, as far as the person needs to know.</summary>
@@ -537,6 +538,11 @@ namespace RFiDGear.Services.Sam
                 if (outcome.Result == SamStepResult.Done)
                 {
                     AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupWritten"), entry), false);
+                }
+                else if (outcome.Result == SamStepResult.MayHaveTakenEffect)
+                {
+                    // The SAM said success, and its answer could not be checked: not a refusal, and nothing says that it was written.
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupMayHaveWritten"), entry), true);
                 }
                 else
                 {

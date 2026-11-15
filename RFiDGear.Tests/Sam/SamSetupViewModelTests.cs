@@ -48,7 +48,7 @@ namespace RFiDGear.Tests.Sam
                 }
 
                 KeyStore = new WindowsCredentialKeyProvider(Store);
-                Service = new SamSetupService(new SamReaderFinder(Source), _ => Session, Dialogs, new SamKeyReader(KeyStore));
+                Service = new SamSetupService(new SamReaderFinder(Source), _ => Session, Dialogs, new SamKeyReader(SamTestKeys.RegistryOf(KeyStore)));
                 ViewModel = SamSetupViewModel.Create(Service, KeyStore, TestText.In(culture));
             }
 
@@ -297,6 +297,12 @@ namespace RFiDGear.Tests.Sam
 
             Assert.True(rig.ViewModel.ResultIsError);
             Assert.Contains("may be activated all the same", rig.ViewModel.ResultText, StringComparison.Ordinal);
+
+            // What the window knew is not to be trusted: it does not offer another activation, and asks for a fresh check first.
+            Assert.Equal(SamSetupState.Found, rig.ViewModel.State);
+            Assert.False(rig.ViewModel.CanActivate);
+            Assert.False(rig.ViewModel.CanAuthenticate);
+            Assert.True(rig.ViewModel.CanCheck);
         }
 
         [Fact]
@@ -484,6 +490,27 @@ namespace RFiDGear.Tests.Sam
             Assert.True(tried);
             Assert.True(rig.ViewModel.ResultIsError);
             Assert.Contains("6A80", rig.ViewModel.ResultText, StringComparison.Ordinal);
+            Assert.Equal(SamSetupState.Connected, rig.ViewModel.State);
+            Assert.False(rig.ViewModel.CanWrite);
+        }
+
+        [Fact]
+        public async Task A_write_whose_answer_could_not_be_checked_says_that_the_key_may_have_been_written_and_is_no_refusal()
+        {
+            using var rig = new Rig();
+            await rig.AuthenticatedAsync();
+            rig.Session.ChangeFails = new SamException("The CMAC of the SAM response is invalid.", 0x9000);
+            rig.ViewModel.EntryNumberText = "4";
+            using var typed = TestText.Secure(TypedKeyHex);
+
+            var tried = await rig.ViewModel.WriteKeyAsync(typed);
+
+            Assert.True(tried);
+            Assert.True(rig.ViewModel.ResultIsError);
+            Assert.Contains("may have been written to key entry 4", rig.ViewModel.ResultText, StringComparison.Ordinal);
+            Assert.DoesNotContain("refused", rig.ViewModel.ResultText, StringComparison.OrdinalIgnoreCase);
+
+            // The session is gone: another write needs another authentication.
             Assert.Equal(SamSetupState.Connected, rig.ViewModel.State);
             Assert.False(rig.ViewModel.CanWrite);
         }

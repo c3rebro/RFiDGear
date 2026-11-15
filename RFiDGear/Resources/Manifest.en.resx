@@ -2551,4 +2551,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageSamSetupWritten" xml:space="preserve">
     <value>The key was written to key entry {0}. The SAM answered with success; a key cannot be read back from it.</value>
   </data>
+  <data name="messageSamSetupMayHaveWritten" xml:space="preserve">
+    <value>The SAM answered with success, but its answer could not be checked: the key may have been written to key entry {0}. A key cannot be read back, and an authentication cannot prove a PICC key. Authenticate again; whether to write the key again is up to you.</value>
+  </data>
 </root>

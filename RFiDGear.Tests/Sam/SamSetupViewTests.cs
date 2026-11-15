@@ -68,7 +68,7 @@ namespace RFiDGear.Tests.Sam
             internal SamSetupViewModel Create()
             {
                 var keyStore = new WindowsCredentialKeyProvider(Store);
-                var service = new SamSetupService(new SamReaderFinder(Source), _ => Session, Dialogs, new SamKeyReader(keyStore));
+                var service = new SamSetupService(new SamReaderFinder(Source), _ => Session, Dialogs, new SamKeyReader(SamTestKeys.RegistryOf(keyStore)));
 
                 return SamSetupViewModel.Create(service, keyStore, TestText.In(Culture));
             }
@@ -477,6 +477,10 @@ namespace RFiDGear.Tests.Sam
                     Assert.Equal(1, launcher.Shown);
                     Assert.Same(viewModel.ReaderGate, launcher.Gate);
 
+                    // The coordinator of the main window: the one that a run, a load and a scan of an extension are admitted by.
+                    var coordinator = typeof(RFiDGear.ViewModel.MainWindowViewModel).GetField("_coordinator", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(viewModel);
+                    Assert.Same(coordinator, launcher.Coordinator);
+
                     // The view model of this test has no main window, so the window would have no owner (as for the Key manager).
                     Assert.Null(launcher.Owner);
 
@@ -501,13 +505,16 @@ namespace RFiDGear.Tests.Sam
 
             public ReaderAccessGate? Gate { get; private set; }
 
+            public ExtensionOperationCoordinator? Coordinator { get; private set; }
+
             public Action<bool?>? SetBusy { get; private set; }
 
-            public void Show(Window? owner, ReaderAccessGate gate, Action<bool?> setBusy)
+            public void Show(Window? owner, ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Action<bool?> setBusy)
             {
                 Shown++;
                 Owner = owner;
                 Gate = gate;
+                Coordinator = coordinator;
                 SetBusy = setBusy;
             }
         }

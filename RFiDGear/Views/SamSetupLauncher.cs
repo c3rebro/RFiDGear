@@ -3,6 +3,8 @@ using System;
 using System.Linq;
 using System.Windows;
 
+using RFiDGear.Contracts;
+using RFiDGear.ExtensionSdk;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.Services.Sam;
@@ -17,9 +19,9 @@ namespace RFiDGear.View
     internal sealed class WpfSamSetupLauncher : ISamSetupLauncher
     {
         /// <inheritdoc />
-        public void Show(Window? owner, ReaderAccessGate gate, Action<bool?> setBusy)
+        public void Show(Window? owner, ReaderAccessGate gate, ExtensionOperationCoordinator coordinator, Action<bool?> setBusy)
         {
-            if (!SamSetupGate.RunExclusive(gate, setBusy, () => ShowWindow(owner)))
+            if (!SamSetupGate.RunExclusive(gate, coordinator, setBusy, () => ShowWindow(owner)))
             {
                 var text = ResourceLoader.GetResource("messageSamSetupReaderBusy");
                 var caption = ResourceLoader.GetResource("windowTitleSamSetup");
@@ -38,12 +40,18 @@ namespace RFiDGear.View
         private static void ShowWindow(Window? owner)
         {
             var keyStore = new WindowsCredentialKeyProvider(new NativeCredentialStore());
+
+            // A stored key is asked of a registry, like every key of the application: a worker thread and a time limit. The window needs
+            // only the Credential Manager, so the registry holds that one provider (the same that lists the names).
+            var registry = SecureKeyRegistry.Create(
+                new[] { new SecureKeyProviderRegistration(WindowsCredentialKeyProvider.ProviderId, WindowsCredentialKeyProvider.DisplayName, keyStore) },
+                Array.Empty<Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>>());
             var dialogs = new WpfSamSetupDialogs(() => Application.Current?.Windows.OfType<Window>().FirstOrDefault(candidate => candidate.IsActive) ?? owner);
             var service = new SamSetupService(
                 new SamReaderFinder(new LlaSamReaderSource()),
                 channel => new Av3HostSession(channel),
                 dialogs,
-                new SamKeyReader(keyStore));
+                new SamKeyReader(registry));
 
             using var viewModel = SamSetupViewModel.Create(service, keyStore);
 

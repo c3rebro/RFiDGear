@@ -594,6 +594,37 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task ALookThatEndsAfterTheReaderWasTaken_DoesNotSayThatTheReaderIsFree()
+        {
+            await WithViewModel((viewModel, _, _) =>
+            {
+                // The SAM setup (like a scan) took the reader while the look was under way: it has said that the reader is busy.
+                viewModel.IsReaderBusy = true;
+                Assert.True(viewModel.ReaderGate.TryEnter());
+
+                viewModel.ApplyProbeResult(new RFiDGear.Services.ReaderProbeResult(true, false, "the label"));
+
+                Assert.True(viewModel.IsReaderBusy);
+                Assert.Equal("the label", viewModel.CurrentReader);
+
+                // Nobody holds the reader: what the look found is what the status bar shows.
+                viewModel.ReaderGate.Exit();
+                viewModel.ApplyProbeResult(new RFiDGear.Services.ReaderProbeResult(true, false, "the next label"));
+
+                Assert.False(viewModel.IsReaderBusy);
+                Assert.Equal("the next label", viewModel.CurrentReader);
+
+                // A look that does not change the busy state never does, with the gate held or free.
+                viewModel.IsReaderBusy = true;
+                viewModel.ApplyProbeResult(new RFiDGear.Services.ReaderProbeResult(false, null, "still"));
+
+                Assert.True(viewModel.IsReaderBusy);
+
+                return Task.CompletedTask;
+            });
+        }
+
+        [Fact]
         public async Task TheMonitorProbe_IsToldTheReaderIsBusy_WhileAScanHoldsIt()
         {
             await WithViewModel((viewModel, _, _) =>

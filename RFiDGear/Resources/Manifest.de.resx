@@ -2573,4 +2573,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageSamSetupWritten" xml:space="preserve">
     <value>Der Schlüssel wurde in Schlüsseleintrag {0} geschrieben. Die SAM hat mit Erfolg geantwortet; ein Schlüssel lässt sich aus ihr nicht zurücklesen.</value>
   </data>
+  <data name="messageSamSetupMayHaveWritten" xml:space="preserve">
+    <value>Die SAM hat mit Erfolg geantwortet, aber ihre Antwort ließ sich nicht prüfen: Der Schlüssel kann in Schlüsseleintrag {0} geschrieben worden sein. Ein Schlüssel lässt sich nicht zurücklesen, und eine Authentifizierung kann einen PICC-Schlüssel nicht beweisen. Authentifizieren Sie sich erneut; ob Sie den Schlüssel noch einmal schreiben, entscheiden Sie.</value>
+  </data>
 </root>
