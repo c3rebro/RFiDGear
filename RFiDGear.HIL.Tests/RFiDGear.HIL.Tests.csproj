@@ -14,7 +14,7 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Elatec.NET" Version="0.7.0-beta.1" />
+    <PackageReference Include="Elatec.NET" Version="0.7.0-beta.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <!-- xunit.v3 without Microsoft.Testing.Platform: the .NET 10 SDK refuses to run a test project that is built on it through
          the VSTest path of dotnet test, and Run-HilTests.ps1 and the filters of this repository use that path. -->

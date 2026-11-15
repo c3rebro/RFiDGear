@@ -1700,8 +1700,14 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_8K" xml:space="preserve">
     <value>Desfire EV3 8K (Emulated - SmartMX)</value>
   </data>
-  <data name="ENUM.CARD_TYPE.MifareUltralightC_EV1" xml:space="preserve">
-    <value>Mifare Ultralight C EV1</value>
+  <data name="ENUM.CARD_TYPE.MifareUltralight_EV1" xml:space="preserve">
+    <value>Mifare Ultralight EV1</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareUltralight_EV1_MF0UL11" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL11)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareUltralight_EV1_MF0UL21" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL21)</value>
   </data>
   <data name="ENUM.CARD_TYPE.NTAG_210" xml:space="preserve">
     <value>NTAG 210</value>

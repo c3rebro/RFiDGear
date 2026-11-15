@@ -839,7 +839,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return (ERROR.NoError, UltralightMemoryMap.For(expected == UltralightExpectation.C ? UltralightVariant.C : UltralightVariant.Plain));
         }
 
-        // The sub types of Elatec.NET that are chips of this family: Ultralight (0x90), Ultralight C (0x91), Ultralight EV1 (0x92), NTAG21x (0xA0-0xA6).
+        // The sub types of Elatec.NET that are chips of this family: Ultralight (0x90), Ultralight C (0x91), Ultralight EV1 of another
+        // size (0x92), the EV1 MF0UL11 (0x93) and MF0UL21 (0x94), NTAG21x (0xA0-0xA6). Since 0.7.0-beta.2 the library asks an
+        // Ultralight-class chip for GET_VERSION itself and reports an EV1 or an NTAG as such; the answer of GET_VERSION that this
+        // reader layer asks for again is what names the layout.
         private static bool IsUltralightFamily(MifareChipSubType? subType)
         {
             if (!subType.HasValue)
@@ -849,7 +852,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             var value = (int)subType.Value;
 
-            return (value >= 0x90 && value <= 0x92) || (value >= 0xA0 && value <= 0xA6);
+            return (value >= 0x90 && value <= 0x94) || (value >= 0xA0 && value <= 0xA6);
         }
 
         // One READ returns four pages, and only the first is the one that was asked for: after it come the next pages or, where a
