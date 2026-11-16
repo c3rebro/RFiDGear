@@ -28,25 +28,25 @@ namespace RFiDGear.Infrastructure.Classic
     public static class ClassicLayout
     {
         /// <summary>The size of a block in bytes.</summary>
-        public const int BytesPerBlock = 16;
+        internal const int BytesPerBlock = 16;
 
         /// <summary>The number of blocks of a sector below sector 32.</summary>
-        public const int SmallSectorBlocks = 4;
+        internal const int SmallSectorBlocks = 4;
 
         /// <summary>The number of blocks of a sector from sector 32 on.</summary>
-        public const int LargeSectorBlocks = 16;
+        internal const int LargeSectorBlocks = 16;
 
         /// <summary>The first sector with 16 blocks.</summary>
-        public const int FirstLargeSector = 32;
+        internal const int FirstLargeSector = 32;
 
         /// <summary>The first block of the first sector with 16 blocks.</summary>
-        public const int FirstLargeBlock = 128;
+        internal const int FirstLargeBlock = 128;
 
         /// <summary>The highest sector number of any chip (a 4K has the sectors 0 to 39).</summary>
-        public const int MaxSector = 39;
+        internal const int MaxSector = 39;
 
         /// <summary>The highest block number of any chip.</summary>
-        public const int MaxBlock = 255;
+        internal const int MaxBlock = 255;
 
         /// <summary>Tells how many sectors a chip of the size has.</summary>
         /// <param name="size">The size of the chip.</param>

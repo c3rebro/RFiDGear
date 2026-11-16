@@ -22,25 +22,25 @@ namespace RFiDGear.Infrastructure.Classic
     public static class ClassicMadAid
     {
         /// <summary>The sector is free.</summary>
-        public const ushort Free = 0x0000;
+        internal const ushort Free = 0x0000;
 
         /// <summary>The sector is defect.</summary>
-        public const ushort Defect = 0x0001;
+        internal const ushort Defect = 0x0001;
 
         /// <summary>The sector is reserved.</summary>
-        public const ushort Reserved = 0x0002;
+        internal const ushort Reserved = 0x0002;
 
         /// <summary>The sector holds further directory information (it continues the directory).</summary>
-        public const ushort Continuation = 0x0003;
+        internal const ushort Continuation = 0x0003;
 
         /// <summary>The sector holds card holder information.</summary>
-        public const ushort CardHolderInformation = 0x0004;
+        internal const ushort CardHolderInformation = 0x0004;
 
         /// <summary>The sector is not applicable (it lies beyond the memory of the chip).</summary>
-        public const ushort NotApplicable = 0x0005;
+        internal const ushort NotApplicable = 0x0005;
 
         /// <summary>The AID of an NFC Forum NDEF application.</summary>
-        public const ushort NdefApplication = 0xE103;
+        internal const ushort NdefApplication = 0xE103;
 
         /// <summary>Makes an AID from its two parts.</summary>
         /// <param name="functionCluster">The function cluster code (the high byte).</param>
@@ -136,34 +136,34 @@ namespace RFiDGear.Infrastructure.Classic
     public sealed class ClassicMad
     {
         /// <summary>The length of MAD1 in bytes (blocks 1 and 2 of sector 0).</summary>
-        public const int Mad1Length = 32;
+        internal const int Mad1Length = 32;
 
         /// <summary>The length of MAD2 in bytes (blocks 0 to 2 of sector 16).</summary>
-        public const int Mad2Length = 48;
+        internal const int Mad2Length = 48;
 
         /// <summary>The sector of MAD1.</summary>
-        public const int Mad1Sector = 0;
+        internal const int Mad1Sector = 0;
 
         /// <summary>The sector of MAD2.</summary>
-        public const int Mad2Sector = 16;
+        internal const int Mad2Sector = 16;
 
         /// <summary>The first block of MAD1 (it has two blocks).</summary>
-        public const int Mad1FirstBlock = 1;
+        internal const int Mad1FirstBlock = 1;
 
         /// <summary>The first block of MAD2 (it has three blocks).</summary>
-        public const int Mad2FirstBlock = 64;
+        internal const int Mad2FirstBlock = 64;
 
         /// <summary>The sector trailer of the MAD1 sector.</summary>
-        public const int Mad1TrailerBlock = 3;
+        internal const int Mad1TrailerBlock = 3;
 
         /// <summary>The sector trailer of the MAD2 sector.</summary>
-        public const int Mad2TrailerBlock = 67;
+        internal const int Mad2TrailerBlock = 67;
 
         /// <summary>The key A that the MAD prescribes for the MAD sectors, as 12 hexadecimal digits. It is public: it is only for reading.</summary>
-        public const string DefaultKeyA = "A0A1A2A3A4A5";
+        internal const string DefaultKeyA = "A0A1A2A3A4A5";
 
         /// <summary>The key A of a sector that is formatted for NFC Forum NDEF, as 12 hexadecimal digits. It is public.</summary>
-        public const string NfcForumKeyA = "D3F7D3F7D3F7";
+        internal const string NfcForumKeyA = "D3F7D3F7D3F7";
 
         private const int CrcStart = 0xC7;
         private const int CrcPolynomial = 0x1D;

@@ -44,10 +44,10 @@ namespace RFiDGear.Infrastructure.Classic
     public sealed class ClassicAccessBits : IEquatable<ClassicAccessBits>
     {
         /// <summary>The number of groups: three groups of data blocks, and the trailer.</summary>
-        public const int GroupCount = 4;
+        internal const int GroupCount = 4;
 
         /// <summary>The group number of the sector trailer.</summary>
-        public const int TrailerGroup = 3;
+        internal const int TrailerGroup = 3;
 
         private const int ConditionCount = 8;
 
