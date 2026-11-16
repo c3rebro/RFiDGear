@@ -150,6 +150,29 @@ namespace RFiDGear.Infrastructure.Classic
         public static ClassicWriteDecision CheckSector(int sector, byte[]? data, ClassicWriteOptions options) =>
             CheckSector(ClassicCardSize.K4, sector, data, options);
 
+        /// <summary>Decides whether the first data blocks of one sector may be written: whole blocks, at least one, and not more than the sector has.</summary>
+        /// <param name="size">The size of the chip.</param>
+        /// <param name="sector">The sector, 0 to 39.</param>
+        /// <param name="data">The bytes of the first blocks.</param>
+        /// <param name="options">What may be written.</param>
+        /// <returns>The decision.</returns>
+        public static ClassicWriteDecision CheckSectorPart(ClassicCardSize size, int sector, byte[]? data, ClassicWriteOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
+            if (!ClassicLayout.HasSector(size, sector))
+            {
+                return Refuse(ClassicWriteViolation.OutsideTheChip);
+            }
+
+            return data != null
+                   && data.Length > 0
+                   && data.Length % ClassicLayout.BytesPerBlock == 0
+                   && data.Length <= SectorDataLength(sector, options)
+                ? Allow()
+                : Refuse(ClassicWriteViolation.WrongLength);
+        }
+
         private static ClassicWriteDecision CheckTrailer(byte[] data, ClassicWriteOptions options)
         {
             if (!options.AllowTrailer)

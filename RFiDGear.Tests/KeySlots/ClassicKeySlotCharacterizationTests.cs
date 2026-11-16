@@ -60,7 +60,7 @@ namespace RFiDGear.Tests.KeySlots
                 vm.UseMadAuth = authenticateWithMad;
             });
 
-            Assert.Equal("ReadMifareClassicWithMAD[ACurrent,BCurrent,MadACurrent,MadBCurrent]", run.Calls);
+            Assert.Equal("ReadMifareClassicApplicationAsync[ACurrent,BCurrent,MadACurrent,MadBCurrent]", run.Calls);
             Assert.Equal(ERROR.NoError, run.Error);
         }
 

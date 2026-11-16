@@ -2122,17 +2122,22 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             Need(SecureKeySlots.ClassicMadACurrent),
                             Need(SecureKeySlots.ClassicMadBCurrent));
 
+                        // The read is made before the answers are looked at; a key that is not there is no read. The bytes come back with the answer:
+                        // the property of the reader is shared by every call on it.
+                        var madRead = madKeys.Failed
+                            ? (Error: ERROR.Unknown, Data: (byte[])null)
+                            : await device.ReadMifareClassicApplicationAsync(appNumberAsInt,
+                                madKeys.Hex(SecureKeySlots.ClassicACurrent), madKeys.Hex(SecureKeySlots.ClassicBCurrent),
+                                madKeys.Hex(SecureKeySlots.ClassicMadACurrent), madKeys.Hex(SecureKeySlots.ClassicMadBCurrent), fileSizeAsInt);
+
                         if (madKeys.Failed)
                         {
                             ReportKeyUnavailable(madKeys);
                         }
-                        else if (await device.ReadMifareClassicWithMAD(appNumberAsInt,
-                            madKeys.Hex(SecureKeySlots.ClassicACurrent), madKeys.Hex(SecureKeySlots.ClassicBCurrent),
-                            madKeys.Hex(SecureKeySlots.ClassicMadACurrent), madKeys.Hex(SecureKeySlots.ClassicMadBCurrent), fileSizeAsInt,
-                            madGPB, UseMAD, useMADAuth) == ERROR.NoError)
+                        else if (madRead.Error == ERROR.NoError)
                         {
-                            ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
-                            ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
+                            ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = madRead.Data;
+                            ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = madRead.Data;
 
                             ChildNodeViewModelTemp.Children.Single().RequestRefresh();
                             ChildNodeViewModelFromChip.Children.Single().RequestRefresh();

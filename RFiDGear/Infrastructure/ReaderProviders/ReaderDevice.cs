@@ -346,16 +346,241 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        // Todo: add XML comments
-        public abstract Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
+        /// <summary>
+        /// Writes an application through the MAD (the MIFARE Application Directory): the data exactly as given (what lies behind it in the last
+        /// sector stays), the entry of the directory, and, when new keys or access bits are given, the trailers of the sectors of the application. A chip
+        /// without a MAD gets one. The same code runs for every reader (see <see cref="ClassicMadOperations"/>); a refusal before the first block is
+        /// written (no key, an AID of the administration, a sector that belongs to another application) writes nothing.
+        /// </summary>
+        /// <param name="_madApplicationID">The AID, 6 to 65535.</param>
+        /// <param name="_madStartSector">The first sector of the application, or 0 for the sectors that the MAD already lists for the AID.</param>
+        /// <param name="_aKeyToUse">Key A of the sectors of the application now.</param>
+        /// <param name="_bKeyToUse">Key B of the sectors of the application now.</param>
+        /// <param name="_aKeyToWrite">The key A that the sectors of the application are to get; empty or the same for no change.</param>
+        /// <param name="_bKeyToWrite">The key B that the sectors of the application are to get; empty or the same for no change.</param>
+        /// <param name="_madAKeyToUse">Key A of the MAD sectors now.</param>
+        /// <param name="_madBKeyToUse">Key B of the MAD sectors now.</param>
+        /// <param name="_madAKeyToWrite">The key A that the MAD sectors are to get; empty or the same for no change.</param>
+        /// <param name="_madBKeyToWrite">The key B that the MAD sectors are to get; empty or the same for no change.</param>
+        /// <param name="buffer">The data.</param>
+        /// <param name="_madGPB">The general purpose byte of the MAD sectors when they are written (see <see cref="ClassicMadGpb"/>).</param>
+        /// <param name="_sab">The access bits that the sectors of the application are to get; the default value (all zero) is none, and the card keeps its own. Bits that can never be changed again are refused.</param>
+        /// <param name="_useMADToAuth">Not used any more: the MAD is always used.</param>
+        /// <param name="_keyToWriteUseMAD">Whether the MAD is used; <c>false</c> is refused (a sector without the MAD is written with the sector write).</param>
+        /// <returns>
+        /// <see cref="ERROR.NoError"/> when everything was written and read back, <see cref="ERROR.ProtocolConstraint"/> for a refusal before the chip
+        /// (see <see cref="ClassicMadStatus"/>), <see cref="ERROR.PermissionDenied"/>, <see cref="ERROR.AuthFailure"/>, <see cref="ERROR.TransportError"/> and
+        /// <see cref="ERROR.Unknown"/> as for <see cref="WriteMifareClassicSingleBlock(int, string, string, byte[])"/>.
+        /// </returns>
+        public virtual async Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
                                                string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-                                               byte[] buffer, byte _madGPB, AccessControl.SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD);
+                                               byte[] buffer, byte _madGPB, AccessControl.SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD)
+        {
+            if (!_keyToWriteUseMAD || _madApplicationID < 0 || _madApplicationID > ushort.MaxValue)
+            {
+                return ERROR.ProtocolConstraint;
+            }
 
-        // Todo: add XML comments
-        public abstract Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse,
+            var accessBits = ClassicAccessBitsOf(_sab, out var accessBitsValid);
+
+            // Access bits that are no access bits are refused before any key is made.
+            if (!accessBitsValid)
+            {
+                return ERROR.ProtocolConstraint;
+            }
+
+            // Keys that hold no key at all cannot log in to anything: they are no keys either.
+            var applicationKeysOk = ClassicSectorKeys.TryCreate(_aKeyToUse, _bKeyToUse, out var current) && ClassicMadOperations.HasAKey(current);
+            var madKeysOk = ClassicSectorKeys.TryCreate(_madAKeyToUse, _madBKeyToUse, out var madCurrent) && ClassicMadOperations.HasAKey(madCurrent);
+            var applicationNewOk = NewKeysOf(_aKeyToUse, _bKeyToUse, _aKeyToWrite, _bKeyToWrite, out var applicationNew);
+            var madNewOk = NewKeysOf(_madAKeyToUse, _madBKeyToUse, _madAKeyToWrite, _madBKeyToWrite, out var madNew);
+
+            using (current)
+            using (madCurrent)
+            using (applicationNew)
+            using (madNew)
+            {
+                // A key that is no key never reaches the chip.
+                if (!applicationKeysOk || !madKeysOk || !applicationNewOk || !madNewOk)
+                {
+                    return ERROR.AuthFailure;
+                }
+
+                var request = new ClassicApplicationWrite
+                {
+                    Aid = (ushort)_madApplicationID,
+                    StartSector = _madStartSector,
+                    Data = (byte[])buffer?.Clone(),
+                    ApplicationKeys = current,
+                    MadKeys = madCurrent,
+                    NewApplicationKeys = applicationNew,
+                    NewMadKeys = madNew,
+                    NewAccessBits = accessBits,
+                    CreateMad = true,
+                    MadGeneralPurposeByte = _madGPB
+                };
+
+                // What needs no card is decided first: a request that cannot be carried out does not select the chip.
+                if (!ClassicMadOperations.IsPossible(request))
+                {
+                    return ERROR.ProtocolConstraint;
+                }
+
+                return await RunClassicAsync(async operations => (await new ClassicMadOperations(operations).WriteApplicationAsync(request)).Error);
+            }
+        }
+
+        /// <summary>
+        /// Reads the data of an application through the MAD: the sectors that the directory lists for the AID, their data blocks in order. The
+        /// bytes are in <see cref="MifareClassicData"/>. The same code runs for every reader (see <see cref="ClassicMadOperations"/>).
+        /// </summary>
+        /// <param name="madApplicationID">The AID, 6 to 65535.</param>
+        /// <param name="_aKeyToUse">Key A of the sectors of the application.</param>
+        /// <param name="_bKeyToUse">Key B of the sectors of the application.</param>
+        /// <param name="_madAKeyToUse">Key A of the MAD sectors.</param>
+        /// <param name="_madBKeyToUse">Key B of the MAD sectors.</param>
+        /// <param name="_length">How many bytes.</param>
+        /// <param name="_madGPB">Not used: the MAD says itself which version it is.</param>
+        /// <param name="_useMADToAuth">Not used any more: the MAD is always used.</param>
+        /// <param name="_aiToUseIsMAD">Not used any more.</param>
+        /// <returns>
+        /// <see cref="ERROR.NoError"/> when the data was read, <see cref="ERROR.ProtocolConstraint"/> when the chip has no (usable) MAD, no sector of the AID,
+        /// or fewer bytes than asked for (see <see cref="ClassicMadStatus"/>), <see cref="ERROR.AuthFailure"/> when no key logged in,
+        /// <see cref="ERROR.PermissionDenied"/> when a block of the application cannot be read with the keys, and <see cref="ERROR.TransportError"/>.
+        /// </returns>
+        public virtual async Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse,
                                                 string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB,
-                                                bool _useMADToAuth, bool _aiToUseIsMAD);
+                                                bool _useMADToAuth, bool _aiToUseIsMAD)
+        {
+            return (await ReadApplicationAsync(madApplicationID, _aKeyToUse, _bKeyToUse, _madAKeyToUse, _madBKeyToUse, _length, publish: true)).Error;
+        }
+
+        /// <summary>
+        /// Reads the data of an application through the MAD like <see cref="ReadMifareClassicWithMAD(int, string, string, string, string, int, byte, bool, bool)"/>
+        /// and hands the bytes back with the answer. <see cref="MifareClassicData"/> is shared by every call on the reader, so a caller that reads it
+        /// after an <c>await</c> may get the bytes of another call.
+        /// </summary>
+        /// <param name="madApplicationID">The AID, 6 to 65535.</param>
+        /// <param name="aKey">Key A of the sectors of the application.</param>
+        /// <param name="bKey">Key B of the sectors of the application.</param>
+        /// <param name="madAKey">Key A of the MAD sectors.</param>
+        /// <param name="madBKey">Key B of the MAD sectors.</param>
+        /// <param name="length">How many bytes.</param>
+        /// <returns>The answer (see the other call), and the bytes: <c>null</c> when nothing was read.</returns>
+        public virtual async Task<(ERROR Error, byte[] Data)> ReadMifareClassicApplicationAsync(int madApplicationID, string aKey, string bKey,
+                                                string madAKey, string madBKey, int length)
+        {
+            return await ReadApplicationAsync(madApplicationID, aKey, bKey, madAKey, madBKey, length, publish: false);
+        }
+
+        // The read behind both. What needs no card is decided first (an AID that is no application, no bytes asked for, a key that is no key), and
+        // the property of the reader is set under the gate only, so that a call that waited cannot replace the bytes of another one.
+        private async Task<(ERROR Error, byte[] Data)> ReadApplicationAsync(int madApplicationID, string aKey, string bKey, string madAKey, string madBKey, int length, bool publish)
+        {
+            if (madApplicationID <= ClassicMadAid.NotApplicable || madApplicationID > ushort.MaxValue || length < 1)
+            {
+                return (ERROR.ProtocolConstraint, null);
+            }
+
+            // Keys that hold no key at all cannot log in to anything: they are no keys either.
+            var applicationKeysOk = ClassicSectorKeys.TryCreate(aKey, bKey, out var current) && ClassicMadOperations.HasAKey(current);
+            var madKeysOk = ClassicSectorKeys.TryCreate(madAKey, madBKey, out var madCurrent) && ClassicMadOperations.HasAKey(madCurrent);
+            byte[] data = null;
+
+            using (current)
+            using (madCurrent)
+            {
+                if (!applicationKeysOk || !madKeysOk)
+                {
+                    return (ERROR.AuthFailure, null);
+                }
+
+                var error = await RunClassicAsync(
+                    async operations =>
+                    {
+                        var read = await new ClassicMadOperations(operations).ReadApplicationAsync((ushort)madApplicationID, length, madCurrent, current);
+
+                        data = read.Data;
+
+                        if (publish)
+                        {
+                            MifareClassicData = data;
+                        }
+
+                        return read.Error;
+                    },
+                    () =>
+                    {
+                        if (publish)
+                        {
+                            MifareClassicData = null;
+                        }
+                    });
+
+                return (error, data);
+            }
+        }
+
+        // The keys that a call is to write: the new ones that are given and differ from the ones it has now. A new key that is no key makes the call
+        // fail (false); no new key at all is a call without new keys (true, and no keys).
+        private static bool NewKeysOf(string currentA, string currentB, string newA, string newB, out ClassicSectorKeys keys)
+        {
+            keys = null;
+
+            if (!ClassicSectorKeys.TryCreate(newA, newB, out var parsed))
+            {
+                return false;
+            }
+
+            parsed.Dispose();
+
+            var aDiffers = KeyDiffers(currentA, newA);
+            var bDiffers = KeyDiffers(currentB, newB);
+
+            // Only the keys that differ go in: a key that is not new is the current one.
+            if ((aDiffers || bDiffers) && ClassicSectorKeys.TryCreate(aDiffers ? newA : null, bDiffers ? newB : null, out var onlyNew))
+            {
+                keys = onlyNew;
+            }
+
+            return true;
+        }
+
+        private static bool KeyDiffers(string current, string wanted)
+        {
+            if (string.IsNullOrWhiteSpace(wanted))
+            {
+                return false;
+            }
+
+            return !(ClassicKey.TryParse(current, out var currentBytes) && ClassicKey.TryParse(wanted, out var wantedBytes) && currentBytes.AsSpan().SequenceEqual(wantedBytes));
+        }
+
+        // The access bits that a dialog holds (a condition of 0 to 7 per group, as three bits); the default value is none, and none is no change.
+        // A bit that is neither 0 nor 1 is no access bit: it is not valid, and it is never written as something else.
+        private static ClassicAccessBits ClassicAccessBitsOf(AccessControl.SectorAccessBits sab, out bool valid)
+        {
+            var groups = new[] { sab.d_data_block0_access_bits, sab.d_data_block1_access_bits, sab.d_data_block2_access_bits, sab.d_sector_trailer_access_bits };
+            var conditions = new int[groups.Length];
+
+            valid = true;
+
+            for (var i = 0; i < groups.Length; i++)
+            {
+                if (groups[i].c1 is < 0 or > 1 || groups[i].c2 is < 0 or > 1 || groups[i].c3 is < 0 or > 1)
+                {
+                    valid = false;
+
+                    return null;
+                }
+
+                conditions[i] = (int)groups[i].c1 | ((int)groups[i].c2 << 1) | ((int)groups[i].c3 << 2);
+            }
+
+            return Array.TrueForAll(conditions, c => c == 0) ? null : new ClassicAccessBits(conditions[0], conditions[1], conditions[2], conditions[3]);
+        }
+
         #endregion
 
         #region MifareUltralight
