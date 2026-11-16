@@ -25,6 +25,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using Serilog;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.Classic;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.UIExtensions;
@@ -1974,23 +1975,24 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     {
                         StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
-                        for (var i = 0; i < device.Sector.DataBlock.Count - 1; i++)
+                        // The sector is empty when every data block (the trailer is not looked at) was read and is all zeros. A block that no key
+                        // could read has no data and cannot be shown to be empty. (The loop used to set IsNotTrue and the line after it to NoError,
+                        // so the check never found anything.)
+                        // A reader that returns fewer blocks than the sector has (one that leaves out what it could not read) has not shown the
+                        // sector to be empty either.
+                        var isEmpty = device.Sector.IsAuthenticated
+                            && selectedClassicSectorCurrentAsInt >= 0
+                            && selectedClassicSectorCurrentAsInt <= ClassicLayout.MaxSector
+                            && device.Sector.DataBlock.Count == ClassicLayout.BlocksInSector(selectedClassicSectorCurrentAsInt);
+
+                        for (var i = 0; i < device.Sector.DataBlock.Count - 1 && isEmpty; i++)
                         {
-                            for (var j = 0; j < device.Sector.DataBlock[i].Data.Length; j++)
-                            {
-                                if (device.Sector.DataBlock[i].Data[j] == 0 && device.Sector.IsAuthenticated == true)
-                                {
-                                    continue;
-                                }
-                                else
-                                {
-                                    CurrentTaskErrorLevel = ERROR.IsNotTrue;
-                                    break;
-                                }
-                            }
+                            var data = device.Sector.DataBlock[i].Data;
+
+                            isEmpty = data != null && Array.TrueForAll(data, value => value == 0);
                         }
 
-                        CurrentTaskErrorLevel = ERROR.NoError;
+                        CurrentTaskErrorLevel = isEmpty ? ERROR.NoError : ERROR.IsNotTrue;
 
                     }
 
@@ -2077,7 +2079,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 }
                                 else
                                 {
-                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
+                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i].DataBlockNumberChipBased);
+
+                                    // What the dialog held before (an earlier read, an edit) is not what is on the chip: it must not stay on show,
+                                    // and it must not be written back as if it were.
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).ClearData();
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).ClearData();
                                 }
                             }
 
@@ -2187,6 +2194,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         if (keys.Failed)
                         {
                             ReportKeyUnavailable(keys);
+                        }
+                        else if (childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data is not { Length: ClassicLayout.BytesPerBlock })
+                        {
+                            // A block that was not read has no data, and a block is 16 bytes: nothing is sent to the chip.
+                            StatusText = StatusText + string.Format("{0}: There are no 16 bytes for this block: read it or enter its data first.\n", DateTime.Now);
+                            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
                         }
                         else
                         {

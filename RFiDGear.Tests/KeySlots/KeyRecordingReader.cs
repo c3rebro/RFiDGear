@@ -49,6 +49,15 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets the text of the exception thrown by <see cref="ThrowMethod"/>.</summary>
         public string ThrowText { get; set; } = "The reader failed.";
 
+        /// <summary>Gets or sets the position of a block of the sector that is read that no key could read (no data, not authenticated); <c>null</c> for none.</summary>
+        public int? UnreadableBlock { get; set; }
+
+        /// <summary>Gets or sets what the blocks of the sector that is read hold (every byte); 0 by default.</summary>
+        public byte BlockFill { get; set; }
+
+        /// <summary>Gets or sets how many blocks the sector that is read has (the trailer included); 4 by default. A reader that leaves out what it could not read returns fewer than the sector has.</summary>
+        public int BlockCount { get; set; } = 4;
+
         /// <summary>Gets or sets the card the reader finds when the chip is read; <c>null</c> for none.</summary>
         public GenericChipModel? Card { get; set; }
 
@@ -343,13 +352,16 @@ namespace RFiDGear.Tests.KeySlots
             return Task.FromResult(scripted);
         }
 
-        private static MifareClassicSectorModel NewSector(int sectorNumber)
+        private MifareClassicSectorModel NewSector(int sectorNumber)
         {
             var sector = new MifareClassicSectorModel { SectorNumber = sectorNumber, IsAuthenticated = true };
 
-            for (var block = 0; block < 4; block++)
+            for (var block = 0; block < BlockCount; block++)
             {
-                sector.DataBlock.Add(new MifareClassicDataBlockModel(sectorNumber * 4 + block, block) { Data = new byte[16], IsAuthenticated = true });
+                var unreadable = UnreadableBlock == block;
+                var data = unreadable ? null : Enumerable.Repeat(BlockFill, 16).ToArray();
+
+                sector.DataBlock.Add(new MifareClassicDataBlockModel(sectorNumber * 4 + block, block) { Data = data, IsAuthenticated = !unreadable });
             }
 
             return sector;

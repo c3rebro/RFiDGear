@@ -138,6 +138,111 @@ namespace RFiDGear.Tests.KeySlots
             Assert.Equal("ReadMifareClassicSingleSector[ACurrent,<unknown ZZ>]", run.Calls);
         }
 
+        [Fact]
+        public async Task An_empty_check_of_an_empty_sector_succeeds()
+        {
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck);
+
+            Assert.Equal(ERROR.NoError, run.Error);
+        }
+
+        [Fact]
+        public async Task An_empty_check_of_a_sector_that_holds_data_says_so()
+        {
+            // The loop used to set IsNotTrue and the line after it NoError, so the check never found anything.
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck, reader: reader => reader.BlockFill = 0x11);
+
+            Assert.Equal(ERROR.IsNotTrue, run.Error);
+        }
+
+        [Fact]
+        public async Task An_empty_check_does_not_fail_on_a_block_that_no_key_could_read()
+        {
+            // The block has no data: it cannot be shown to be empty, and asking for its length used to throw.
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck, reader: reader => reader.UnreadableBlock = 1);
+
+            Assert.Equal(ERROR.IsNotTrue, run.Error);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public async Task An_empty_check_does_not_call_a_sector_empty_that_a_reader_returned_in_part(int blocks)
+        {
+            // A reader that leaves out the blocks that it could not read gives fewer blocks than the sector has: all that it did show is zero,
+            // and that is not the sector.
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck, reader: reader => reader.BlockCount = blocks);
+
+            Assert.Equal(ERROR.IsNotTrue, run.Error);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(2)]
+        public async Task A_read_does_not_fail_on_a_block_that_no_key_could_read(int block)
+        {
+            // The message about the block used to ask for the block before it, which is none for the first one.
+            var run = await RunAsync(TaskType_MifareClassicTask.ReadData, reader: reader => reader.UnreadableBlock = block);
+
+            Assert.Equal(ERROR.NoError, run.Error);
+        }
+
+        [Fact]
+        public async Task A_read_empties_the_block_that_could_not_be_read_so_that_it_is_not_shown_or_written_back()
+        {
+            byte[]? readable = null;
+            byte[]? unreadable = null;
+            byte[]? other = null;
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var vm = NewViewModel(TaskType_MifareClassicTask.ReadData);
+                var recording = new KeyRecordingReader { BlockFill = 0x11 };
+
+                using (ReaderDeviceScope.Use(recording))
+                {
+                    // The first read fills the dialog with the data of the chip; the second finds the block 1 unreadable.
+                    await vm.CommandDelegator.ExecuteAsync(TaskType_MifareClassicTask.ReadData);
+
+                    recording.BlockFill = 0x22;
+                    recording.UnreadableBlock = 1;
+
+                    await vm.CommandDelegator.ExecuteAsync(TaskType_MifareClassicTask.ReadData);
+                }
+
+                readable = vm.ChildNodeViewModelTemp.Children[0].MifareClassicDataBlock.Data;
+                unreadable = vm.ChildNodeViewModelTemp.Children[1].MifareClassicDataBlock.Data;
+                other = vm.ChildNodeViewModelFromChip.Children[1].MifareClassicDataBlock.Data;
+            });
+
+            Assert.Equal(Enumerable.Repeat((byte)0x22, 16).ToArray(), readable);
+            Assert.Null(unreadable);
+            Assert.Null(other);
+        }
+
+        [Fact]
+        public async Task A_write_of_a_block_without_data_sends_nothing_to_the_chip()
+        {
+            var run = await RunAsync(
+                TaskType_MifareClassicTask.WriteData,
+                vm => vm.ChildNodeViewModelTemp.Children[(int)vm.SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data = null);
+
+            Assert.Equal(string.Empty, run.Calls);
+            Assert.Equal(ERROR.ProtocolConstraint, run.Error);
+        }
+
+        [Fact]
+        public async Task A_write_of_a_block_that_is_not_sixteen_bytes_sends_nothing_to_the_chip()
+        {
+            var run = await RunAsync(
+                TaskType_MifareClassicTask.WriteData,
+                vm => vm.ChildNodeViewModelTemp.Children[(int)vm.SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data = new byte[15]);
+
+            Assert.Equal(string.Empty, run.Calls);
+            Assert.Equal(ERROR.ProtocolConstraint, run.Error);
+        }
+
         private sealed record Run(string Calls, ERROR Error);
 
         private static async Task<Run> RunAsync(
