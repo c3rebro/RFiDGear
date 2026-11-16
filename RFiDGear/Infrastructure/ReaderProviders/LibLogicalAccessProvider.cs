@@ -90,8 +90,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             // start, or a SAM reader that was configured since) is never kept, whether or not the readers can be listed now.
             if (readerUnit != null && PcscReaderChoice.IsSamReader(readerUnit.getName(), samReaderName))
             {
-                readerUnit = null;
-                ReaderUnitName = null;
+                DropReaderUnit();
             }
 
             try
@@ -174,14 +173,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 // confirmed for the card (UpdateSelectedReader, the preview of the dialog, keeps the unit that it has).
                 if (readerUnit != null && PcscReaderChoice.IsOtherReader(readerUnit.getName(), selectedReaderName))
                 {
-                    ReleaseUnit(readerUnit);
-                    readerUnit = null;
-                    ReaderUnitName = null;
-
-                    // The chips of the old reader belong to a unit that is let go of: the file operations of a DESFire card use the chip that an
-                    // earlier operation left, and must not find the one of the old reader.
-                    card = null;
-                    ultralightChip = null;
+                    DropReaderUnit();
                 }
 
                 InitializeReaderProvider(ReaderTypes.PCSC);
@@ -189,6 +181,25 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             catch (Exception e)
             {
                 Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
+            }
+        }
+
+        // Lets go of the unit and of everything that belongs to it, whichever way the unit is dropped (it is the reader of the SAM now, or
+        // another reader was confirmed for the card). The chips that an operation took from it go with it: the file operations of a DESFire card
+        // use the chip that an earlier operation left, and must not find the one of a reader that is let go of, and least of all the one of the
+        // reader of the SAM.
+        private void DropReaderUnit()
+        {
+            var unit = readerUnit;
+
+            readerUnit = null;
+            ReaderUnitName = null;
+            card = null;
+            ultralightChip = null;
+
+            if (unit != null)
+            {
+                ReleaseUnit(unit);
             }
         }
 
