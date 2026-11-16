@@ -193,6 +193,31 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Theory]
+        [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover)]
+        public async Task The_line_names_the_application_that_the_operation_was_made_for_whatever_the_dialog_says_meanwhile(TaskType_MifareDesfireTask type)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The dialog stays editable while the SAM and the card work: the application number that a person types in the meantime is
+                // not the application that was authenticated or changed, and the line must not say so.
+                var task = NewTask(type);
+                task.KeyBindings = type == TaskType_MifareDesfireTask.AuthenticateApplication
+                    ? new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3) }
+                    : new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3), Sam(SecureKeySlots.DesfireAppNew, Entry4) };
+                var reader = new KeyRecordingReader { SupportsSam = true, WhileASamOperationRuns = () => task.AppNumberCurrent = "7" };
+
+                var run = await RunAsync(task, reader);
+                var messages = StatusLines.WithoutTimestamps(run.Status);
+
+                Assert.Equal(ERROR.NoError, run.Error);
+                Assert.Equal(1u, reader.SamAuthentications.Select(access => access.AppId).Concat(reader.SamChanges.Select(change => change.AppId)).Single());
+                Assert.Matches(@"AppID 1\b", messages);
+                Assert.DoesNotContain("AppID 7", messages, StringComparison.Ordinal);
+            });
+        }
+
+        [Theory]
         [InlineData(null)]
         [InlineData("")]
         public async Task A_list_that_is_filled_again_writes_nothing_and_changes_nothing_about_the_key_number(string? written)

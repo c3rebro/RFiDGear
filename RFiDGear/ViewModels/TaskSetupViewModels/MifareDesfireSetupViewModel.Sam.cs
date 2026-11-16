@@ -62,7 +62,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 return;
             }
 
-            var authKeyNo = GetAuthKeyNumberForChangeAppKey(AppNumberCurrentAsInt, GetChangeKeyModeForApplication(AppNumberCurrentAsInt), selectedDesfireAppKeyNumberCurrentAsInt);
+            // The dialog stays editable while the SAM and the card work: the application is read once, and the request and the line use it.
+            var appId = AppNumberCurrentAsInt;
+            var authKeyNo = GetAuthKeyNumberForChangeAppKey(appId, GetChangeKeyModeForApplication(appId), selectedDesfireAppKeyNumberCurrentAsInt);
 
             if (await RejectKeyNumbersThatTheCardDoesNotHaveAsync(authKeyNo))
             {
@@ -70,9 +72,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
 
             var result = await device.AuthenticateMifareDesfireWithSamAsync(
-                new DesfireSamAccess((uint)AppNumberCurrentAsInt, (byte)authKeyNo, SelectedDesfireAppKeyEncryptionTypeCurrent, keys.SamKey(SecureKeySlots.DesfireAppCurrent)));
+                new DesfireSamAccess((uint)appId, (byte)authKeyNo, SelectedDesfireAppKeyEncryptionTypeCurrent, keys.SamKey(SecureKeySlots.DesfireAppCurrent)));
 
-            await ReportSamResultAsync(result, "textBoxStatusSamAuthenticated", AppNumberCurrentAsInt, authKeyNo);
+            await ReportSamResultAsync(result, "textBoxStatusSamAuthenticated", appId, authKeyNo);
         }
 
         // Changes the PICC master key: the key that authenticates is the key that is replaced, and the new key is the second key of the SAM.
@@ -102,10 +104,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 return;
             }
 
+            // The application is read once (see AuthenticateApplicationWithSamAsync).
+            var appId = AppNumberCurrentAsInt;
             var authKey = keys.SamKey(SecureKeySlots.DesfireAppCurrent);
             var result = await device.ChangeMifareDesfireKeyWithSamAsync(
                 new DesfireSamKeyChange(
-                    (uint)AppNumberCurrentAsInt,
+                    (uint)appId,
                     (byte)authKeyNo,
                     SelectedDesfireAppKeyEncryptionTypeCurrent,
                     authKey,
@@ -114,7 +118,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     oldKeyIsOwnSlot ? keys.SamKey(SecureKeySlots.DesfireAppOld) : authKey,
                     keys.SamKey(SecureKeySlots.DesfireAppNew)));
 
-            await ReportSamResultAsync(result, "textBoxStatusSamKeyChanged", AppNumberCurrentAsInt, keyNumberForChange);
+            await ReportSamResultAsync(result, "textBoxStatusSamKeyChanged", appId, keyNumberForChange);
         }
 
         // A key number of a project that was edited by hand can be anything (256 is key 0 as a byte, and a text that is no number, or too big for

@@ -64,6 +64,9 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets what the two operations with a SAM answer.</summary>
         public SamPiccResult SamAnswer { get; set; } = SamPiccResult.Ok;
 
+        /// <summary>Gets or sets what happens while an operation with a SAM is under way (a person editing the dialog, for instance).</summary>
+        public Action? WhileASamOperationRuns { get; set; }
+
         /// <summary>Gets the authentications with a key of the SAM that reached the reader: references, never keys.</summary>
         public List<DesfireSamAccess> SamAuthentications { get; } = new List<DesfireSamAccess>();
 
@@ -77,6 +80,7 @@ namespace RFiDGear.Tests.KeySlots
         public override Task<SamPiccResult> AuthenticateMifareDesfireWithSamAsync(DesfireSamAccess access)
         {
             SamAuthentications.Add(access);
+            WhileASamOperationRuns?.Invoke();
 
             return Task.FromResult(SamAnswer);
         }
@@ -85,6 +89,7 @@ namespace RFiDGear.Tests.KeySlots
         public override Task<SamPiccResult> ChangeMifareDesfireKeyWithSamAsync(DesfireSamKeyChange change)
         {
             SamChanges.Add(change);
+            WhileASamOperationRuns?.Invoke();
 
             return Task.FromResult(SamAnswer);
         }
