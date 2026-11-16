@@ -362,12 +362,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return null;
             }
 
+            ClassicCardSize? size;
+
             try
             {
-                if (await readerDevice.SearchTagAsync() == null)
+                // The chip is selected here and tells what it is: the size is that of the chip that is on the reader now, and not the one of an
+                // earlier read (a card that was replaced meanwhile is another size). Reading it from the cache would send the first login of
+                // a 4K that replaced a 1K to a layer that thinks that sectors 16 to 39 do not exist.
+                var chip = await readerDevice.GetSingleChipAsync();
+
+                if (chip == null)
                 {
                     return null;
                 }
+
+                // A chip of another kind is no Classic chip, and then its size is not guessed.
+                size = chip is MifareChip mifare ? ElatecClassicPort.SizeOf(mifare.SubType) : null;
             }
             catch (Exception e)
             {
@@ -376,10 +386,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return null;
             }
 
-            // The size is what the last read of the chip found; a chip of another kind is no Classic chip, and then it is not guessed.
-            return new ElatecClassicPort(
-                readerDevice,
-                ClassicLayout.TryGetSize(GenericChip?.CardType ?? CARD_TYPE.NOTAG, out var size) ? size : null);
+            return new ElatecClassicPort(readerDevice, size);
         }
 
         /// <inheritdoc />

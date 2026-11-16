@@ -50,6 +50,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <returns>The byte for the login.</returns>
         internal static byte KeyTypeOf(ClassicKeyType keyType) => keyType == ClassicKeyType.KeyA ? KeyAType : KeyBType;
 
+        /// <summary>Maps the type of the chip that was just selected to the size of a Classic chip.</summary>
+        /// <param name="subType">The MIFARE sub type of the chip (what the reader says it is).</param>
+        /// <returns>The size, or <c>null</c> for a chip that is no Classic chip that the layer knows (it is not guessed: a chip of another kind, a SmartMX, the family without a size).</returns>
+        internal static ClassicCardSize? SizeOf(MifareChipSubType subType) =>
+            ClassicLayout.TryGetSize((CARD_TYPE)((short)subType << 8), out var size) ? size : null;
+
         /// <summary>Makes the answer of a block read: a short answer is no block.</summary>
         /// <param name="data">What the reader returned.</param>
         /// <returns>The block when there are 16 bytes, otherwise a refusal.</returns>
@@ -67,7 +73,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             switch (fault)
             {
-                case ReaderException readerFault when readerFault.ErrorNumber is ReaderError.NotOpen or ReaderError.NotInit or ReaderError.IsAlreadyOpen or ReaderError.Timeout:
+                // Elatec.NET leaves ErrorNumber as None at most of its throw sites and puts the name of the error in the message ("... error Timeout").
+                case ReaderException readerFault when ElatecUltralightErrors.TryGetReaderError(readerFault, out var number)
+                                                      && number is ReaderError.NotOpen or ReaderError.NotInit or ReaderError.IsAlreadyOpen or ReaderError.Timeout:
                 case IOException:
                 case TimeoutException:
                 case ObjectDisposedException:

@@ -218,6 +218,51 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(ERROR.TransportError, ElatecClassicPort.Map(new ReaderException("port", error)));
         }
 
+        [Theory]
+        [InlineData("Call was not successfull, error Timeout")]
+        [InlineData("Call was not successfull, error NotOpen")]
+        [InlineData("Call was not successfull, error NotInit")]
+        [InlineData("Call was not successfull, error IsAlreadyOpen")]
+        public void AReaderThatIsNotThere_IsATransportError_WhenOnlyTheMessageSaysSo(string message)
+        {
+            // Elatec.NET leaves ErrorNumber as None at most of its throw sites and puts the name of the error in the message.
+            Assert.Equal(ERROR.TransportError, ElatecClassicPort.Map(new ReaderException(message)));
+        }
+
+        [Theory]
+        [InlineData("Call was not successfull, error AccessDenied")]
+        [InlineData("Call was not successfull, error Banana")]
+        [InlineData("Call was not successfull, error 7")]
+        [InlineData("Call was not successfull")]
+        public void AnAnswerThatNamesNoReaderThatIsGone_IsARefusalOfTheChip(string message)
+        {
+            Assert.Equal(ERROR.AuthFailure, ElatecClassicPort.Map(new ReaderException(message)));
+        }
+
+        [Theory]
+        [InlineData(MifareChipSubType.Mifare1K, ClassicCardSize.K1)]
+        [InlineData(MifareChipSubType.Mifare2K, ClassicCardSize.K2)]
+        [InlineData(MifareChipSubType.Mifare4K, ClassicCardSize.K4)]
+        [InlineData(MifareChipSubType.MifarePlus_SL1_1K, ClassicCardSize.K1)]
+        [InlineData(MifareChipSubType.MifarePlus_SL1_2K, ClassicCardSize.K2)]
+        [InlineData(MifareChipSubType.MifarePlus_SL1_4K, ClassicCardSize.K4)]
+        public void TheSizeOfTheChipThatWasSelected_IsTheOneItIs(MifareChipSubType subType, ClassicCardSize expected)
+        {
+            Assert.Equal(expected, ElatecClassicPort.SizeOf(subType));
+        }
+
+        [Theory]
+        [InlineData(MifareChipSubType.NOTAG)]
+        [InlineData(MifareChipSubType.Unspecified)]
+        [InlineData(MifareChipSubType.MifareClassic)]
+        [InlineData(MifareChipSubType.MifarePlus_SL3_4K)]
+        [InlineData(MifareChipSubType.DESFireEV1_4K)]
+        [InlineData(MifareChipSubType.MifareUltralight)]
+        public void AChipThatIsNoClassicChipOfAKnownSize_HasNoSize_AndIsNotGuessed(MifareChipSubType subType)
+        {
+            Assert.Null(ElatecClassicPort.SizeOf(subType));
+        }
+
         [Fact]
         public void AnAnswerOfTheReader_IsARefusalOfTheChip()
         {
