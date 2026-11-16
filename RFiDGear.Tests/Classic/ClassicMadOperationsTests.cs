@@ -341,6 +341,7 @@ namespace RFiDGear.Tests.Classic
         [InlineData(0xC2)]
         [InlineData(0x00)]
         [InlineData(0x69)]
+        [InlineData(0x41)]
         public async Task AGeneralPurposeByteThatIsNotOfTheVersionOfTheMad_IsReplaced(byte madGpb)
         {
             // MAD2 and no MAD byte at all on a chip that gets a MAD1.
@@ -355,7 +356,7 @@ namespace RFiDGear.Tests.Classic
         public async Task AChipWithoutAMad_IsLeftAlone_WhenTheRequestDoesNotAllowToMakeOne()
         {
             var chip = new SimulatedClassicChip();
-            var result = await Ops(chip).WriteApplicationAsync(Request(createMad: false).WithMadKeys(Keys(Ff, Ff)));
+            var result = await Ops(chip).WriteApplicationAsync(Request().WithMadKeys(Keys(Ff, Ff)));
 
             Assert.Equal(ERROR.ProtocolConstraint, result.Error);
             Assert.Equal(ClassicMadStatus.NoMad, result.Status);
@@ -467,7 +468,7 @@ namespace RFiDGear.Tests.Classic
         public async Task AnApplication_IsAddedToAnExistingDirectory_WithoutTouchingTheOthers()
         {
             var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(5, 0x4321));
-            var result = await Ops(chip).WriteApplicationAsync(Request(start: 1, data: Pattern(0x10, 60)));
+            var result = await Ops(chip).WriteApplicationAsync(Request(data: Pattern(0x10, 60)));
 
             Assert.True(result.Succeeded);
             Assert.Equal(new[] { 1, 2 }, result.Sectors);
@@ -485,7 +486,7 @@ namespace RFiDGear.Tests.Classic
         public async Task ASectorOfAnotherApplication_IsNotTaken_AndNothingIsWritten()
         {
             var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(2, 0x4321));
-            var result = await Ops(chip).WriteApplicationAsync(Request(start: 1, data: Pattern(0x10, 60)));
+            var result = await Ops(chip).WriteApplicationAsync(Request(data: Pattern(0x10, 60)));
 
             Assert.Equal(ERROR.ProtocolConstraint, result.Error);
             Assert.Equal(ClassicMadStatus.SectorTaken, result.Status);
@@ -556,6 +557,10 @@ namespace RFiDGear.Tests.Classic
 
                 // No keys for the sectors of the application.
                 new ClassicApplicationWrite { Aid = Aid, StartSector = 1, Data = Pattern(0x10, 20), MadKeys = Keys(KeyAText, KeyBText) },
+
+                // Keys that hold no key at all (for the sectors of the application, and for the MAD sectors).
+                Request(applicationKeys: Keys(null, null)),
+                new ClassicApplicationWrite { Aid = Aid, StartSector = 1, Data = Pattern(0x10, 20), MadKeys = Keys(null, null), ApplicationKeys = Keys(Ff, Ff) },
                 Request(bits: new ClassicAccessBits(0, 0, 0, 7))
             };
 
@@ -584,14 +589,146 @@ namespace RFiDGear.Tests.Classic
         }
 
         [Fact]
-        public async Task ADirectoryThatIsMadeWithoutBothKeys_IsFoundBeforeTheFirstBlock()
+        public async Task ADirectoryThatIsMadeWithoutAKeyThatNothingGives_IsFoundBeforeTheFirstBlock()
+        {
+            // Key B is neither new nor one of the current keys: the trailer of the MAD sectors cannot be built.
+            var chip = new SimulatedClassicChip();
+
+            var result = await Ops(chip).WriteApplicationAsync(Request(createMad: true, newMadKeys: Keys(KeyAText, null)).WithMadKeys(Keys(Ff, null)));
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Equal(ClassicMadStatus.KeysMissing, result.Status);
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task ADirectoryThatIsMadeWithOneNewKey_KeepsTheCurrentKeyOfTheOtherOne()
         {
             var chip = new SimulatedClassicChip();
 
             var result = await Ops(chip).WriteApplicationAsync(Request(createMad: true, newMadKeys: Keys(KeyAText, null)).WithMadKeys(Keys(Ff, Ff)));
 
+            Assert.True(result.Succeeded);
+            Assert.Equal(ClassicAccessBits.MadStandard.BuildTrailer(KeyA, 0xC2, Ff6), chip.Peek(3));
+            Assert.Equal(ClassicAccessBits.MadStandard.BuildTrailer(KeyA, 0xC2, Ff6), chip.Peek(67));
+        }
+
+        [Fact]
+        public async Task OneKeyOfAnExistingMad_CanChangeWhileTheOtherStays()
+        {
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+            var newKey = Convert.FromHexString("010203040506");
+
+            var result = await Ops(chip).WriteApplicationAsync(Request(newMadKeys: Keys("010203040506", null)));
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(ClassicAccessBits.MadStandard.BuildTrailer(newKey, ClassicMadGpb.Create(ClassicMadVersion.Mad1, true), KeyB), chip.Peek(3));
+        }
+
+        [Theory]
+        [InlineData(0xC3)]
+        [InlineData(0xC0)]
+        [InlineData(0x83)]
+        public async Task ADirectoryThatTheChipAnnouncesAndThatIsNoDirectoryOfAKnownVersion_IsDamaged_AndNotReplaced(byte gpb)
+        {
+            // The DA bit says that there is a MAD. A version that is none (or a bit that is reserved) is a damaged one, which nothing replaces.
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(0, KeyA, ClassicAccessBits.MadStandard, gpb, KeyB);
+
+            var read = await Ops(chip).ReadMadAsync(Keys(KeyAText, null));
+            var write = await Ops(chip).WriteApplicationAsync(Request(createMad: true, newMadKeys: Keys(KeyAText, KeyBText)));
+
+            Assert.Equal(ClassicMadStatus.Damaged, read.Status);
+            Assert.Equal(ClassicMadStatus.Damaged, write.Status);
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task AGeneralPurposeByteWithoutTheDirectoryBit_IsNoMad_WhateverElseItSays()
+        {
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(0, KeyA, ClassicAccessBits.MadStandard, 0x41, KeyB);
+
+            var read = await Ops(chip).ReadMadAsync(Keys(KeyAText, null));
+
+            Assert.Equal(ClassicMadStatus.NoMad, read.Status);
+        }
+
+        [Fact]
+        public async Task ADirectoryThatListsASectorTheChipDoesNotHave_IsNoRoom_AndNothingIsWritten()
+        {
+            // A Mini has the sectors 0 to 4. The directory lists the sectors 4 and 5 for the AID: 60 bytes reach sector 5, and not a block is written before that is found out.
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.Mini, mad =>
+            {
+                mad.SetAid(4, Aid);
+                mad.SetAid(5, Aid);
+            });
+
+            var result = await Ops(chip).WriteApplicationAsync(Request(start: 0, data: Pattern(0x10, 60)));
+
             Assert.Equal(ERROR.ProtocolConstraint, result.Error);
-            Assert.Equal(ClassicMadStatus.KeysMissing, result.Status);
+            Assert.Equal(ClassicMadStatus.NoRoom, result.Status);
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task AnApplicationRead_NeedsOnlyTheBlocksThatTheBytesReach()
+        {
+            // Block 6 (the third of sector 1) is unreadable for every key. 32 bytes are the blocks 4 and 5; 33 reach block 6.
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+
+            chip.SetTrailer(1, Ff6, new ClassicAccessBits(0, 0, 7, 4), 0x69, Ff6);
+
+            var enough = await Ops(chip).ReadApplicationAsync(Aid, 32, Keys(KeyAText, null), Keys(Ff, null));
+            var tooMuch = await Ops(chip).ReadApplicationAsync(Aid, 33, Keys(KeyAText, null), Keys(Ff, null));
+
+            Assert.True(enough.Succeeded);
+            Assert.Equal(32, enough.Data!.Length);
+            Assert.Equal(ERROR.PermissionDenied, tooMuch.Error);
+            Assert.Null(tooMuch.Data);
+        }
+
+        [Fact]
+        public async Task AShortWrite_WritesOnlyTheBlocksThatTheDataReaches()
+        {
+            // 16 bytes reach block 4. Block 6 cannot be written by any key, and it is none of this write's business.
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+
+            chip.SetTrailer(1, Ff6, new ClassicAccessBits(0, 0, 7, 4), 0x69, Ff6);
+
+            var data = Pattern(0x40, 16);
+            var result = await Ops(chip).WriteApplicationAsync(Request(start: 0, data: data));
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(new[] { 4 }, WrittenBlocks(chip));
+            Assert.Equal(data, chip.Peek(4));
+        }
+
+        [Fact]
+        public async Task AShortWrite_WhoseLastBlockCannotBeReadWithTheKeys_IsAnAuthFailure_WhenTheKeyIsWrong()
+        {
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+
+            // 20 bytes: the second block is only partly covered and has to be read first, with a key that the sector does not take.
+            var result = await Ops(chip).WriteApplicationAsync(Request(start: 0, data: Pattern(0x10, 20), applicationKeys: Keys("111111111111", null)));
+
+            Assert.Equal(ERROR.AuthFailure, result.Error);
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task AShortWrite_WhoseLastBlockCannotBeReadByAnyKeyThatLoggedIn_IsPermissionDenied()
+        {
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+
+            // Block 5 is unreadable for every key: the key logs in, and the block that has to be merged cannot be shown.
+            chip.SetTrailer(1, Ff6, new ClassicAccessBits(0, 7, 0, 4), 0x69, Ff6);
+
+            var result = await Ops(chip).WriteApplicationAsync(Request(start: 0, data: Pattern(0x10, 20)));
+
+            Assert.Equal(ERROR.PermissionDenied, result.Error);
             Assert.Equal(0, chip.Writes);
         }
 

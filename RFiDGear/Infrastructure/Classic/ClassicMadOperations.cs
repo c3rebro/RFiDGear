@@ -189,6 +189,9 @@ namespace RFiDGear.Infrastructure.Classic
         private static readonly ClassicWriteOptions DataOnly = ClassicWriteOptions.DataOnly;
         private static readonly ClassicWriteOptions WithTrailer = new ClassicWriteOptions { AllowTrailer = true };
 
+        // The DA bit of the general purpose byte of sector 0: the chip says that it has a directory.
+        private const byte DirectoryAvailableBit = 0x80;
+
         private readonly ClassicOperations operations;
 
         /// <summary>Creates the MAD operations.</summary>
@@ -218,9 +221,16 @@ namespace RFiDGear.Infrastructure.Classic
 
             var trailer = first.Blocks[^1].Data!;
 
-            if (!ClassicMadGpb.TryParse(trailer[9], out var gpb) || !gpb.MadAvailable)
+            // Without the DA bit there is no MAD. With it the chip says that it has one: a byte that is no MAD byte (a version that is none, a
+            // reserved bit) is a damaged directory, which nothing may replace, and not a chip without one.
+            if ((trailer[9] & DirectoryAvailableBit) == 0)
             {
                 return new ClassicMadReadResult(ERROR.ProtocolConstraint, ClassicMadStatus.NoMad, null, trailer[9]);
+            }
+
+            if (!ClassicMadGpb.TryParse(trailer[9], out var gpb) || !gpb.MadAvailable)
+            {
+                return new ClassicMadReadResult(ERROR.ProtocolConstraint, ClassicMadStatus.Damaged, null, trailer[9]);
             }
 
             var mad1 = BlockBytes(first, 1, 2);
@@ -273,7 +283,7 @@ namespace RFiDGear.Infrastructure.Classic
             ArgumentNullException.ThrowIfNull(madKeys);
             ArgumentNullException.ThrowIfNull(applicationKeys);
 
-            if (aid <= ClassicMadAid.NotApplicable || length < 1)
+            if (aid <= ClassicMadAid.NotApplicable || length < 1 || !HasAKey(madKeys) || !HasAKey(applicationKeys))
             {
                 return new ClassicApplicationReadResult(ERROR.ProtocolConstraint, ClassicMadStatus.WrongRequest, null, Array.Empty<int>());
             }
@@ -297,7 +307,9 @@ namespace RFiDGear.Infrastructure.Classic
             foreach (var sector in sectors)
             {
                 var read = await operations.ReadSectorAsync(sector, applicationKeys);
-                var data = read.IsAuthenticated ? DataBlocksOf(read) : null;
+
+                // Only the blocks that the bytes asked for reach have to be readable: a block behind them is none of this read's business.
+                var data = read.IsAuthenticated ? DataBlocksOf(read, Math.Min(DataBytes(sector), length - bytes.Count)) : null;
 
                 if (data == null)
                 {
@@ -391,15 +403,18 @@ namespace RFiDGear.Infrastructure.Classic
             request.Aid > ClassicMadAid.NotApplicable
             && request.StartSector >= 0
             && request.Data is { Length: > 0 }
-            && request.MadKeys != null
-            && request.ApplicationKeys != null
+            && HasAKey(request.MadKeys)
+            && HasAKey(request.ApplicationKeys)
             // Access bits that can never be written again are for good, and a call that has written data and a directory first must not find that out.
             && request.NewAccessBits is not { AccessBitsAreFinal: true };
 
+        // Keys that hold no key at all cannot log in to anything: a request with them is refused before the chip is asked.
+        internal static bool HasAKey(ClassicSectorKeys? keys) => keys != null && (keys.HasKeyA || keys.HasKeyB);
+
         private static bool KeysAreThere(ClassicApplicationWrite request, Directory directory)
         {
-            var madKeys = request.NewMadKeys ?? request.MadKeys!;
-            var madOk = !(directory.Created || request.NewMadKeys != null) || (madKeys.HasKeyA && madKeys.HasKeyB);
+            var madTrailers = directory.Created || request.NewMadKeys != null;
+            var madOk = !madTrailers || (MadKeyOf(ClassicKeyType.KeyA, request) != null && MadKeyOf(ClassicKeyType.KeyB, request) != null);
             var rekeys = request.NewApplicationKeys != null || request.NewAccessBits != null;
 
             return madOk && (!rekeys || (KeyOf(ClassicKeyType.KeyA, request) != null && KeyOf(ClassicKeyType.KeyB, request) != null));
@@ -507,6 +522,12 @@ namespace RFiDGear.Infrastructure.Classic
                         break;
                     }
 
+                    // The directory can list a sector that this chip does not have (a MAD1 lists up to sector 15 on a Mini): nothing is written then.
+                    if (!ClassicLayout.HasSector(operations.ChipSize, listedSector))
+                    {
+                        return new SectorPlan(ClassicMadStatus.NoRoom, covered);
+                    }
+
                     covered.Add(listedSector);
                     needed -= DataBytes(listedSector);
                 }
@@ -558,14 +579,15 @@ namespace RFiDGear.Infrastructure.Classic
             {
                 var size = DataBytes(sector);
                 var chunk = all.AsSpan(offset, Math.Min(size, all.Length - offset)).ToArray();
-                var whole = chunk.Length == size ? chunk : await CompleteWithWhatIsThereAsync(sector, chunk, request.ApplicationKeys!);
+                var reached = await BlocksReachedAsync(sector, chunk, request.ApplicationKeys!);
 
-                if (whole == null)
+                if (reached.Bytes == null)
                 {
-                    return Failed(ERROR.PermissionDenied, sectors, written, ClassicLayout.FirstBlock(sector));
+                    return Failed(reached.Error, sectors, written, ClassicLayout.FirstBlock(sector));
                 }
 
-                var result = await operations.WriteSectorAsync(sector, whole, request.ApplicationKeys!, DataOnly);
+                // Only the blocks that the data reaches are written: a block behind the data needs no right to write and gets no write.
+                var result = await operations.WriteSectorPartAsync(sector, reached.Bytes, request.ApplicationKeys!, DataOnly);
 
                 written += result.BlocksWritten;
 
@@ -582,20 +604,39 @@ namespace RFiDGear.Infrastructure.Classic
             return Complete(sectors, written);
         }
 
-        // The last sector is only partly covered: what lies behind the data stays as it is, so the sector is read first.
-        private async Task<byte[]?> CompleteWithWhatIsThereAsync(int sector, byte[] chunk, ClassicSectorKeys keys)
+        // The blocks of a sector that the data reaches: whole blocks as they are. A last block that the data covers in part keeps what it holds
+        // behind the data, so that block (and only that one) is read first; why that read failed is the answer (a wrong key is an AuthFailure, a chip that
+        // is gone a TransportError, and only a block that an authenticated read could not show is a PermissionDenied).
+        private async Task<(byte[]? Bytes, ERROR Error)> BlocksReachedAsync(int sector, byte[] chunk, ClassicSectorKeys keys)
         {
-            var read = await operations.ReadSectorAsync(sector, keys);
-            var current = read.IsAuthenticated ? DataBlocksOf(read) : null;
+            var behind = chunk.Length % ClassicLayout.BytesPerBlock;
 
-            if (current == null)
+            if (behind == 0)
             {
-                return null;
+                return (chunk, ERROR.NoError);
             }
 
-            chunk.CopyTo(current, 0);
+            var blocks = chunk.Length / ClassicLayout.BytesPerBlock + 1;
+            var read = await operations.ReadSectorAsync(sector, keys);
 
-            return current;
+            if (!read.IsAuthenticated)
+            {
+                return (null, read.Error);
+            }
+
+            var last = read.Blocks[blocks - 1].Data;
+
+            if (last == null)
+            {
+                return (null, ERROR.PermissionDenied);
+            }
+
+            var bytes = new byte[blocks * ClassicLayout.BytesPerBlock];
+
+            chunk.CopyTo(bytes, 0);
+            last.AsSpan(behind).CopyTo(bytes.AsSpan(chunk.Length));
+
+            return (bytes, ERROR.NoError);
         }
 
         // ── the directory entries ──
@@ -669,17 +710,20 @@ namespace RFiDGear.Infrastructure.Classic
                 return Complete(sectors, writtenBefore);
             }
 
-            var keys = request.NewMadKeys ?? request.MadKeys!;
+            // Each key is the new one or, when only the other one changes, the one that the sector has now.
+            var keyA = MadKeyOf(ClassicKeyType.KeyA, request);
+            var keyB = MadKeyOf(ClassicKeyType.KeyB, request);
 
-            if (!keys.HasKeyA || !keys.HasKeyB)
+            if (keyA == null || keyB == null)
             {
                 return Refused(ClassicMadStatus.KeysMissing);
             }
 
-            var gpb = ClassicMadGpb.TryParse(request.MadGeneralPurposeByte, out var parsed) && parsed.Version == directory.Mad!.Version
+            // A byte that is no MAD byte of this version, or that does not say that there is a directory (the DA bit), would hide it.
+            var gpb = ClassicMadGpb.TryParse(request.MadGeneralPurposeByte, out var parsed) && parsed.MadAvailable && parsed.Version == directory.Mad!.Version
                 ? request.MadGeneralPurposeByte
                 : ClassicMadGpb.Create(directory.Mad!.Version, true);
-            var trailer = ClassicAccessBits.MadStandard.BuildTrailer(keys.Get(ClassicKeyType.KeyA), gpb, keys.Get(ClassicKeyType.KeyB));
+            var trailer = ClassicAccessBits.MadStandard.BuildTrailer(keyA, gpb, keyB);
             var written = writtenBefore;
 
             foreach (var block in directory.Mad.Version == ClassicMadVersion.Mad2
@@ -757,6 +801,17 @@ namespace RFiDGear.Infrastructure.Classic
             return request.ApplicationKeys!.Has(type) ? request.ApplicationKeys.Get(type) : null;
         }
 
+        // The key that goes into the trailers of the MAD sectors: the new one when there is one, otherwise the one that the sectors have now.
+        private static byte[]? MadKeyOf(ClassicKeyType type, ClassicApplicationWrite request)
+        {
+            if (request.NewMadKeys != null && request.NewMadKeys.Has(type))
+            {
+                return request.NewMadKeys.Get(type);
+            }
+
+            return request.MadKeys!.Has(type) ? request.MadKeys.Get(type) : null;
+        }
+
         // ── helpers ──
 
         // The blocks of a sector that was read, joined; null when one of them could not be read.
@@ -779,8 +834,12 @@ namespace RFiDGear.Infrastructure.Classic
             return bytes.ToArray();
         }
 
-        // All data blocks of a sector that was read (not the trailer), joined; null when one of them could not be read.
-        private static byte[]? DataBlocksOf(ClassicSectorRead read) =>
-            BlockBytes(read, Enumerable.Range(0, read.Blocks.Count - 1).ToArray());
+        // The data blocks of a sector that was read (never the trailer) that the given number of bytes reach, joined; null when one of them could not be read.
+        private static byte[]? DataBlocksOf(ClassicSectorRead read, int bytesReached)
+        {
+            var blocks = Math.Min((bytesReached + ClassicLayout.BytesPerBlock - 1) / ClassicLayout.BytesPerBlock, read.Blocks.Count - 1);
+
+            return BlockBytes(read, Enumerable.Range(0, blocks).ToArray());
+        }
     }
 }

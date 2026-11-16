@@ -199,6 +199,8 @@ namespace RFiDGear.Tests.Reader
         [InlineData("error 1", Ff, Ff, Ff)]
         [InlineData(Ff, "GGGGGGGGGGGG", Ff, Ff)]
         [InlineData(Ff, Ff, "FFFFFFFFFFF", Ff)]
+        [InlineData("", "", Ff, Ff)] // no key at all for the sectors of the application
+        [InlineData(Ff, Ff, "", "")] // no key at all for the MAD sectors
         public async Task AKeyThatIsNoKey_NeverReachesTheChip(string keyA, string keyB, string madKeyA, string madKeyB)
         {
             var reader = new MadPcscReader(new SimulatedClassicChip());

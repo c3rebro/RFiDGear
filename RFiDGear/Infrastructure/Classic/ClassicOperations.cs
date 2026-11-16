@@ -241,14 +241,31 @@ namespace RFiDGear.Infrastructure.Classic
         /// <param name="keys">The keys that there are.</param>
         /// <param name="options">What may be written.</param>
         /// <returns>The result; <see cref="ClassicWriteResult.BlocksWritten"/> says how far it came.</returns>
-        public async Task<ClassicWriteResult> WriteSectorAsync(int sector, byte[] data, ClassicSectorKeys keys, ClassicWriteOptions options)
+        public Task<ClassicWriteResult> WriteSectorAsync(int sector, byte[] data, ClassicSectorKeys keys, ClassicWriteOptions options) =>
+            WriteDataBlocksAsync(sector, data, keys, options, wholeSector: true);
+
+        /// <summary>
+        /// Writes the first data blocks of one sector (as many as the data has whole blocks), like <see cref="WriteSectorAsync(int, byte[], ClassicSectorKeys, ClassicWriteOptions)"/>
+        /// but without touching the blocks behind them: only the blocks that are written need a key that may write them.
+        /// </summary>
+        /// <param name="sector">The sector number.</param>
+        /// <param name="data">The bytes of the first blocks, a multiple of 16 and not more than the data blocks of the sector.</param>
+        /// <param name="keys">The keys that there are.</param>
+        /// <param name="options">What may be written.</param>
+        /// <returns>The result; <see cref="ClassicWriteResult.BlocksWritten"/> says how far it came.</returns>
+        internal Task<ClassicWriteResult> WriteSectorPartAsync(int sector, byte[] data, ClassicSectorKeys keys, ClassicWriteOptions options) =>
+            WriteDataBlocksAsync(sector, data, keys, options, wholeSector: false);
+
+        private async Task<ClassicWriteResult> WriteDataBlocksAsync(int sector, byte[] data, ClassicSectorKeys keys, ClassicWriteOptions options, bool wholeSector)
         {
             ArgumentNullException.ThrowIfNull(keys);
             ArgumentNullException.ThrowIfNull(options);
 
             // Copied before it is checked, as in WriteBlockAsync.
             var approved = data?.ToArray();
-            var decision = ClassicWritePolicy.CheckSector(Size, sector, approved, options);
+            var decision = wholeSector
+                ? ClassicWritePolicy.CheckSector(Size, sector, approved, options)
+                : ClassicWritePolicy.CheckSectorPart(Size, sector, approved, options);
 
             if (!decision.IsAllowed)
             {
@@ -269,7 +286,7 @@ namespace RFiDGear.Infrastructure.Classic
                 return ClassicWriteResult.Refused(ClassicWriteViolation.AccessBitsUnknown);
             }
 
-            var plan = state.PlanDataWrites(sector == 0 && !options.AllowManufacturerBlock ? 1 : 0);
+            var plan = state.PlanDataWrites(sector == 0 && !options.AllowManufacturerBlock ? 1 : 0, snapshot.Length / ClassicLayout.BytesPerBlock);
 
             if (plan == null)
             {
@@ -600,12 +617,13 @@ namespace RFiDGear.Infrastructure.Classic
 
             /// <summary>Plans the write of the data blocks of the sector: each block, from the given position on and without the trailer, with the key that may write it.</summary>
             /// <param name="firstPosition">The position in the sector of the first block (1 skips block 0 of sector 0).</param>
+            /// <param name="count">How many blocks (at most the data blocks that are left).</param>
             /// <returns>The plan, or <c>null</c> when a key that there is cannot write one of the blocks.</returns>
-            public List<(int Block, ClassicKeyType Key)>? PlanDataWrites(int firstPosition)
+            public List<(int Block, ClassicKeyType Key)>? PlanDataWrites(int firstPosition, int count)
             {
                 var plan = new List<(int Block, ClassicKeyType Key)>();
 
-                for (var block = First + firstPosition; block < TrailerBlock; block++)
+                for (var block = First + firstPosition; block < TrailerBlock && plan.Count < count; block++)
                 {
                     if (!TryChooseWriteKey(block, Array.Empty<byte>(), out var key))
                     {

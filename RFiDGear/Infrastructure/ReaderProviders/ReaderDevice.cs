@@ -390,8 +390,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return ERROR.ProtocolConstraint;
             }
 
-            var applicationKeysOk = ClassicSectorKeys.TryCreate(_aKeyToUse, _bKeyToUse, out var current);
-            var madKeysOk = ClassicSectorKeys.TryCreate(_madAKeyToUse, _madBKeyToUse, out var madCurrent);
+            // Keys that hold no key at all cannot log in to anything: they are no keys either.
+            var applicationKeysOk = ClassicSectorKeys.TryCreate(_aKeyToUse, _bKeyToUse, out var current) && ClassicMadOperations.HasAKey(current);
+            var madKeysOk = ClassicSectorKeys.TryCreate(_madAKeyToUse, _madBKeyToUse, out var madCurrent) && ClassicMadOperations.HasAKey(madCurrent);
             var applicationNewOk = NewKeysOf(_aKeyToUse, _bKeyToUse, _aKeyToWrite, _bKeyToWrite, out var applicationNew);
             var madNewOk = NewKeysOf(_madAKeyToUse, _madBKeyToUse, _madAKeyToWrite, _madBKeyToWrite, out var madNew);
 
@@ -482,8 +483,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return (ERROR.ProtocolConstraint, null);
             }
 
-            var applicationKeysOk = ClassicSectorKeys.TryCreate(aKey, bKey, out var current);
-            var madKeysOk = ClassicSectorKeys.TryCreate(madAKey, madBKey, out var madCurrent);
+            // Keys that hold no key at all cannot log in to anything: they are no keys either.
+            var applicationKeysOk = ClassicSectorKeys.TryCreate(aKey, bKey, out var current) && ClassicMadOperations.HasAKey(current);
+            var madKeysOk = ClassicSectorKeys.TryCreate(madAKey, madBKey, out var madCurrent) && ClassicMadOperations.HasAKey(madCurrent);
             byte[] data = null;
 
             using (current)
