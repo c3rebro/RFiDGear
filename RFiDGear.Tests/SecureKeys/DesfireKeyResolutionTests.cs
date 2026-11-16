@@ -170,7 +170,7 @@ namespace RFiDGear.Tests.SecureKeys
                 Assert.Equal(string.Empty, run.Calls);
                 Assert.Equal(ERROR.KeyUnavailable, run.Error);
                 Assert.Contains("desfire.", run.Status, StringComparison.Ordinal);
-                Assert.DoesNotContain("1:0", run.Status, StringComparison.Ordinal);
+                Assert.DoesNotContain("1:0", StatusLines.WithoutTimestamps(run.Status), StringComparison.Ordinal);
                 Assert.Empty(vault.Requests);
                 AssertNothingSecretIn(run.Status);
             });

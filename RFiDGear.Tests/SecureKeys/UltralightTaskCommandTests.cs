@@ -247,7 +247,7 @@ namespace RFiDGear.Tests.SecureKeys
                 Assert.Equal(ERROR.KeyUnavailable, run.Error);
                 Assert.False(run.Completed);
                 Assert.Equal(0, run.ReaderCalls);
-                Assert.DoesNotContain("1:0", run.Status, StringComparison.Ordinal);
+                Assert.DoesNotContain("1:0", StatusLines.WithoutTimestamps(run.Status), StringComparison.Ordinal);
                 Assert.Empty(vault.Requests);
             });
         }

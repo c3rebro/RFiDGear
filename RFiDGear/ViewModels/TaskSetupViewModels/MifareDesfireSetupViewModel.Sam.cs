@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 
 using RFiDGear.Infrastructure;
@@ -62,6 +63,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
 
             var authKeyNo = GetAuthKeyNumberForChangeAppKey(AppNumberCurrentAsInt, GetChangeKeyModeForApplication(AppNumberCurrentAsInt), selectedDesfireAppKeyNumberCurrentAsInt);
+
+            if (await RejectKeyNumbersThatTheCardDoesNotHaveAsync(authKeyNo))
+            {
+                return;
+            }
+
             var result = await device.AuthenticateMifareDesfireWithSamAsync(
                 new DesfireSamAccess((uint)AppNumberCurrentAsInt, (byte)authKeyNo, SelectedDesfireAppKeyEncryptionTypeCurrent, keys.SamKey(SecureKeySlots.DesfireAppCurrent)));
 
@@ -90,6 +97,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         // new key are all keys of the SAM.
         private async Task ChangeApplicationKeyWithSamAsync(ReaderDevice device, AcquiredKeys keys, int authKeyNo, int keyNumberForChange, bool oldKeyIsOwnSlot)
         {
+            if (await RejectKeyNumbersThatTheCardDoesNotHaveAsync(authKeyNo, keyNumberForChange))
+            {
+                return;
+            }
+
             var authKey = keys.SamKey(SecureKeySlots.DesfireAppCurrent);
             var result = await device.ChangeMifareDesfireKeyWithSamAsync(
                 new DesfireSamKeyChange(
@@ -103,6 +115,28 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     keys.SamKey(SecureKeySlots.DesfireAppNew)));
 
             await ReportSamResultAsync(result, "textBoxStatusSamKeyChanged", AppNumberCurrentAsInt, keyNumberForChange);
+        }
+
+        // A key number of a project that was edited by hand can be anything (256 is key 0 as a byte): a card has the keys 0 to 13, and a number
+        // that is not one of them is no request, whatever it would wrap to. Nothing is sent.
+        private async Task<bool> RejectKeyNumbersThatTheCardDoesNotHaveAsync(params int[] keyNumbers)
+        {
+            if (keyNumbers.All(keyNumber => keyNumber >= 0 && keyNumber <= 0x0D))
+            {
+                return false;
+            }
+
+            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+            StatusText += LocalizedStatusLine(
+                "textBoxStatusSamFailed",
+                DateTime.Now,
+                SamPiccFailure.InvalidRequest,
+                0.ToString("X4", CultureInfo.InvariantCulture),
+                0.ToString("X4", CultureInfo.InvariantCulture));
+
+            await UpdateReaderStatusCommand.ExecuteAsync(false);
+
+            return true;
         }
 
         // The line for what the SAM and the card did, and the error level of the task. The lines hold the numbers of an application and a key, the

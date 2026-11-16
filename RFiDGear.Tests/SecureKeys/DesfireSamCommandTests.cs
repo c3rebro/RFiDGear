@@ -157,6 +157,36 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Theory]
+        [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, "14")]
+        [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, "256")]
+        [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, "257")]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "14")]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "256")]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "257")]
+        public async Task A_key_number_that_the_card_does_not_have_is_refused_before_the_reader_and_never_wraps_to_another_key(TaskType_MifareDesfireTask type, string chosenKeyNumber)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // With the setting that changes a key with the targeted key number the chosen number is the key that authenticates, and for the
+                // change it is the key that is replaced: a number of a project that was edited by hand (256 is key 0 as a byte) is no key.
+                var task = NewTask(type);
+                task.SelectedDesfireAppKeyNumberCurrent = chosenKeyNumber;
+                task.SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo;
+                task.KeyBindings = type == TaskType_MifareDesfireTask.AuthenticateApplication
+                    ? new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3) }
+                    : new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3), Sam(SecureKeySlots.DesfireAppNew, Entry4) };
+                var reader = new KeyRecordingReader { SupportsSam = true };
+
+                var run = await RunAsync(task, reader);
+
+                Assert.Equal(ERROR.ProtocolConstraint, run.Error);
+                Assert.Empty(reader.SamAuthentications);
+                Assert.Empty(reader.SamChanges);
+                Assert.Empty(reader.Calls);
+            });
+        }
+
+        [Theory]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
         [InlineData(TaskType_MifareDesfireTask.CheckFileSettings)]
@@ -312,6 +342,18 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Fact]
+        public void The_time_that_starts_a_line_of_the_status_is_not_part_of_what_is_looked_at()
+        {
+            // 11:05 holds the text of a reference, 1:0; the message does not.
+            var status = "16.11.2026 11:05:09: The operation did not work.\n11/16/2026 1:05:09 PM: The card may hold the key.\n";
+
+            Assert.Contains("1:0", status, StringComparison.Ordinal);
+            Assert.DoesNotContain("1:0", StatusLines.WithoutTimestamps(status), StringComparison.Ordinal);
+            Assert.Equal("The operation did not work.\nThe card may hold the key.\n", StatusLines.WithoutTimestamps(status));
+            Assert.Equal("a line without a time: 1:0", StatusLines.WithoutTimestamps("a line without a time: 1:0"));
+        }
+
         // ── what the reader answers is what the task ends with ──
 
         public static IEnumerable<object[]> Answers() => new[]
@@ -353,8 +395,9 @@ namespace RFiDGear.Tests.SecureKeys
                     Assert.Contains("91AE", run.Status, StringComparison.Ordinal);
                 }
 
-                Assert.DoesNotContain("2:0", run.Status, StringComparison.Ordinal);
-                Assert.DoesNotContain("1:0", run.Status, StringComparison.Ordinal);
+                var messages = StatusLines.WithoutTimestamps(run.Status);
+                Assert.DoesNotContain("2:0", messages, StringComparison.Ordinal);
+                Assert.DoesNotContain("1:0", messages, StringComparison.Ordinal);
                 Assert.DoesNotContain(EmbeddedAes, run.Status, StringComparison.OrdinalIgnoreCase);
             });
         }
