@@ -52,12 +52,12 @@ namespace RFiDGear.Tests.SecureKeys
             ["EmptyCheck"] = new Scenario(
                 TaskType_MifareClassicTask.EmptyCheck,
                 false,
-                "ReadMifareClassicSingleSector[ACurrent,BCurrent]",
+                "ReadMifareClassicSectorAsync[ACurrent,BCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent }),
             ["Read"] = new Scenario(
                 TaskType_MifareClassicTask.ReadData,
                 false,
-                "ReadMifareClassicSingleSector[ACurrent,BCurrent]",
+                "ReadMifareClassicSectorAsync[ACurrent,BCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent }),
             ["ReadMad"] = new Scenario(
                 TaskType_MifareClassicTask.ReadData,
@@ -363,7 +363,7 @@ namespace RFiDGear.Tests.SecureKeys
 
                 var run = await RunAsync(task);
 
-                Assert.Equal("ReadMifareClassicSingleSector[embedded:ACurrent,BCurrent]", run.Calls);
+                Assert.Equal("ReadMifareClassicSectorAsync[embedded:ACurrent,BCurrent]", run.Calls);
                 Assert.Equal(SecureKeySlots.ClassicBCurrent, Assert.Single(vault.Requests).SlotId);
             });
         }
@@ -541,6 +541,9 @@ namespace RFiDGear.Tests.SecureKeys
                 SelectedTaskType = scenario.Type,
                 CurrentTaskIndex = "0",
                 UseMAD = scenario.UseMad,
+
+                // Sector 1: block 0 of sector 0 is the manufacturer block, which no write is allowed to touch.
+                SelectedClassicSectorCurrent = "1",
             };
 
             if (withEmbeddedKeys)

@@ -1964,14 +1964,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
 
+                    // The read is made before the answers are looked at; a key that is not there is no read.
+                    var read = keys.Failed
+                        ? (Error: ERROR.Unknown, Sector: new MifareClassicSectorModel())
+                        : await device.ReadMifareClassicSectorAsync(
+                            selectedClassicSectorCurrentAsInt,
+                            keys.Hex(SecureKeySlots.ClassicACurrent),
+                            keys.Hex(SecureKeySlots.ClassicBCurrent));
+
                     if (keys.Failed)
                     {
                         ReportKeyUnavailable(keys);
                     }
-                    else if (await device.ReadMifareClassicSingleSector(
-                        selectedClassicSectorCurrentAsInt,
-                        keys.Hex(SecureKeySlots.ClassicACurrent),
-                        keys.Hex(SecureKeySlots.ClassicBCurrent)) == ERROR.NoError)
+                    else if (read.Error == ERROR.NoError)
                     {
                         StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
@@ -1980,14 +1985,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         // so the check never found anything.)
                         // A reader that returns fewer blocks than the sector has (one that leaves out what it could not read) has not shown the
                         // sector to be empty either.
-                        var isEmpty = device.Sector.IsAuthenticated
+                        var isEmpty = read.Sector.IsAuthenticated
                             && selectedClassicSectorCurrentAsInt >= 0
                             && selectedClassicSectorCurrentAsInt <= ClassicLayout.MaxSector
-                            && device.Sector.DataBlock.Count == ClassicLayout.BlocksInSector(selectedClassicSectorCurrentAsInt);
+                            && read.Sector.DataBlock.Count == ClassicLayout.BlocksInSector(selectedClassicSectorCurrentAsInt);
 
-                        for (var i = 0; i < device.Sector.DataBlock.Count - 1 && isEmpty; i++)
+                        for (var i = 0; i < read.Sector.DataBlock.Count - 1 && isEmpty; i++)
                         {
-                            var data = device.Sector.DataBlock[i].Data;
+                            var data = read.Sector.DataBlock[i].Data;
 
                             isEmpty = data != null && Array.TrueForAll(data, value => value == 0);
                         }
@@ -2044,14 +2049,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     {
                         var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
 
+                        // The read is made before the answers are looked at; a key that is not there is no read.
+                        var read = keys.Failed
+                            ? (Error: ERROR.Unknown, Sector: new MifareClassicSectorModel())
+                            : await device.ReadMifareClassicSectorAsync(
+                                selectedClassicSectorCurrentAsInt,
+                                keys.Hex(SecureKeySlots.ClassicACurrent),
+                                keys.Hex(SecureKeySlots.ClassicBCurrent));
+
                         if (keys.Failed)
                         {
                             ReportKeyUnavailable(keys);
                         }
-                        else if (await device.ReadMifareClassicSingleSector(
-                            selectedClassicSectorCurrentAsInt,
-                            keys.Hex(SecureKeySlots.ClassicACurrent),
-                            keys.Hex(SecureKeySlots.ClassicBCurrent)) == ERROR.NoError)
+                        else if (read.Error == ERROR.NoError)
                         {
 
                             childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
@@ -2059,27 +2069,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
-                            for (var i = 0; i < device.Sector.DataBlock.Count; i++)
+                            for (var i = 0; i < read.Sector.DataBlock.Count; i++)
                             {
                                 childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
                                 childNodeViewModelTemp.Children[i].DataBlockNumber = i;
 
-                                childNodeViewModelFromChip.Children[i].MifareClassicDataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
+                                childNodeViewModelFromChip.Children[i].MifareClassicDataBlock.DataBlockNumberChipBased = read.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
 
-                                if (device.Sector.DataBlock[i].IsAuthenticated)
+                                if (read.Sector.DataBlock[i].IsAuthenticated)
                                 {
-                                    StatusText += string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
-                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+                                    StatusText += string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, read.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(read.Sector.DataBlock[i].Data));
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = read.Sector.DataBlock[i].Data;
                                     childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
 
-                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = read.Sector.DataBlock[i].Data;
                                     childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
 
                                     CurrentTaskErrorLevel = ERROR.NoError;
                                 }
                                 else
                                 {
-                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i].DataBlockNumberChipBased);
+                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, read.Sector.DataBlock[i].DataBlockNumberChipBased);
 
                                     // What the dialog held before (an earlier read, an edit) is not what is on the chip: it must not stay on show,
                                     // and it must not be written back as if it were.
@@ -2189,37 +2199,59 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
                         childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 
+                        // The bytes of the block are copied once, here: the editor of the dialog can change them while the write waits for the reader,
+                        // and what is checked is what is written. What needs no card is decided before a key is asked for and before the chip is
+                        // selected: a block without 16 bytes, block 0, or a trailer whose access bits are not consistent is never sent.
+                        var block = CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite);
+                        var blockData = childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data?.ToArray();
+                        var preflight = ClassicWritePolicy.CheckBlock(block, blockData, new ClassicWriteOptions { AllowTrailer = true });
+
+                        if (!preflight.IsAllowed)
+                        {
+                            StatusText = StatusText + string.Format(
+                                "{0}: {1}\n",
+                                DateTime.Now,
+                                preflight.Violation == ClassicWriteViolation.WrongLength
+                                    ? "There are no 16 bytes for this block: read it or enter its data first."
+                                    : "This block cannot be written (" + preflight.Violation + "): nothing was sent to the chip.");
+                            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                            IsTaskCompletedSuccessfully = false;
+
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+
+                            return;
+                        }
+
                         var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
 
                         if (keys.Failed)
                         {
                             ReportKeyUnavailable(keys);
                         }
-                        else if (childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data is not { Length: ClassicLayout.BytesPerBlock })
-                        {
-                            // A block that was not read has no data, and a block is 16 bytes: nothing is sent to the chip.
-                            StatusText = StatusText + string.Format("{0}: There are no 16 bytes for this block: read it or enter its data first.\n", DateTime.Now);
-                            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
-                        }
                         else
                         {
                             await device.ReadChipPublic();
 
-                            if (await device.WriteMifareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
+                            var writeError = await device.WriteMifareClassicSingleBlock(block,
                                                                     keys.Hex(SecureKeySlots.ClassicACurrent),
                                                                     keys.Hex(SecureKeySlots.ClassicBCurrent),
-                                                                    childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
+                                                                    blockData);
+
+                            if (writeError == ERROR.NoError)
                             {
                                 StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
                                                                         DateTime.Now,
                                                                         childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-                                                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
+                                                                        CustomConverter.HexToString(blockData));
                                 CurrentTaskErrorLevel = ERROR.NoError;
                             }
                             else
                             {
-                                StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                                CurrentTaskErrorLevel = ERROR.AuthFailure;
+                                // The task ends with what the reader answered: a block that did not read back as written, or keys that may not write,
+                                // are no refused key, and a project routes on the difference (a card that was written to must not start the
+                                // authentication fallbacks).
+                                StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ClassicFailureText(writeError, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate")));
+                                CurrentTaskErrorLevel = writeError;
                             }
                         }
                     }
@@ -2315,6 +2347,35 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Says in the words of the status text why a call of the reader failed. Only <see cref="ERROR.AuthFailure"/> means that a key was refused;
+        /// a chip that is not there, a request that does not fit the chip, keys that may not do it and a block that did not read back as written
+        /// are none of that, and the text must not claim it.
+        /// </summary>
+        /// <param name="error">The answer of the reader.</param>
+        /// <param name="refusedKeysText">The text for a key that was refused (the answer for <see cref="ERROR.AuthFailure"/> and for what is not known).</param>
+        /// <returns>The text.</returns>
+        internal static string ClassicFailureText(ERROR error, string refusedKeysText)
+        {
+            switch (error)
+            {
+                case ERROR.TransportError:
+                    return "No chip answered: there is no reader or no chip on it, or the chip was taken away.";
+
+                case ERROR.ProtocolConstraint:
+                    return "The chip cannot do that: the sector or the data does not fit the chip, or the MIFARE Application Directory is missing or damaged.";
+
+                case ERROR.PermissionDenied:
+                    return "The keys that were given are not allowed to do that: see the access bits of the sector.";
+
+                case ERROR.Unknown:
+                    return "The chip did not keep the data as it was written (it read back differently).";
+
+                default:
+                    return refusedKeysText;
+            }
         }
 
         #endregion Commands

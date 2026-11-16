@@ -149,15 +149,52 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
-        public async Task TheSectorWrite_IsRefused_AndTouchesNoChip()
+        public async Task TheSectorWrite_GoesToTheBlocksOfTheSector_AndNotToTheBlocks0To3()
         {
-            // The method that was here wrote the data to the blocks 0 to 3, whatever sector was meant.
+            // The method that was here wrote the data to the blocks 0 to 3, whatever sector was meant (issue #318).
+            var chip = new SimulatedClassicChip();
+            var reader = new ElatecClassicTestReader(chip);
+            var before = Enumerable.Range(0, 4).Select(chip.Peek).ToArray();
+            var data = Enumerable.Range(1, 48).Select(i => (byte)i).ToArray();
+
+            Assert.Equal(ERROR.NoError, await reader.WriteMifareClassicSingleSector(5, Ff, Ff, data));
+
+            Assert.Equal(data.Take(16), chip.Peek(20));
+            Assert.Equal(data.Skip(16).Take(16), chip.Peek(21));
+            Assert.Equal(data.Skip(32), chip.Peek(22));
+            Assert.Equal(before, Enumerable.Range(0, 4).Select(chip.Peek).ToArray());
+        }
+
+        [Fact]
+        public async Task TheSectorWrite_OfTheWrongLength_TouchesNoChipBlock()
+        {
             var chip = new SimulatedClassicChip();
             var reader = new ElatecClassicTestReader(chip);
 
             Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleSector(5, Ff, Ff, new byte[16]));
-            Assert.Equal(0, reader.Opened);
             Assert.Empty(chip.Log);
+        }
+
+        [Fact]
+        public async Task ABlockWrite_WritesTheBlock_AfterTheLoginWithKeyAWorked()
+        {
+            // Issue #316: the block was only written when both logins had failed, so a card that took key A was never written and the call said success.
+            var chip = new SimulatedClassicChip();
+            var reader = new ElatecClassicTestReader(chip);
+            var data = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+
+            Assert.Equal(ERROR.NoError, await reader.WriteMifareClassicSingleBlock(5, Ff, Ff, data));
+            Assert.Equal(data, chip.Peek(5));
+        }
+
+        [Fact]
+        public async Task ABlockWrite_ThatTheChipRefuses_IsAnAuthFailure_AndWritesNothing()
+        {
+            var chip = new SimulatedClassicChip();
+            var reader = new ElatecClassicTestReader(chip);
+
+            Assert.Equal(ERROR.AuthFailure, await reader.WriteMifareClassicSingleBlock(5, "000000000000", "111111111111", new byte[16]));
+            Assert.Equal(0, chip.Writes);
         }
 
         [Theory]
