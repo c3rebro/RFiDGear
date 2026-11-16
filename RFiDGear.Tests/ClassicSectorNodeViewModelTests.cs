@@ -82,6 +82,11 @@ namespace RFiDGear.Tests
 
                 Assert.Contains(key, node.Children);
                 Assert.Equal(16, node.Children.Count(child => child.MifareClassicDataBlock != null));
+
+                // The nodes of the blocks come first, by the number of the block, and the key after them: the sector is read by index.
+                Assert.All(node.Children.Take(16), child => Assert.NotNull(child.MifareClassicDataBlock));
+                Assert.Equal(Enumerable.Range(0, 16), node.Children.Take(16).Select(child => child.MifareClassicDataBlock.DataBlockNumberSectorBased));
+                Assert.Same(key, node.Children[16]);
             });
         }
 

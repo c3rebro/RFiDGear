@@ -472,12 +472,17 @@ namespace RFiDGear.ViewModel
                 return;
             }
 
-            foreach (var block in children.Where(child => child.MifareClassicDataBlock != null).ToList())
-            {
-                children.Remove(block);
-            }
+            // The nodes of the blocks come first, as they are made, and the others (a key that was found) after them: the code that reads a sector
+            // goes through the children by the number of the block.
+            var others = children.Where(child => child.MifareClassicDataBlock == null).ToList();
 
+            children.Clear();
             LoadChildren();
+
+            foreach (var other in others)
+            {
+                children.Add(other);
+            }
         }
 
         /// <summary>

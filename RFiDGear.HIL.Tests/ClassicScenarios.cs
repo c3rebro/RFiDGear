@@ -100,8 +100,7 @@ namespace RFiDGear.HIL.Tests
         /// <returns>The task of the case.</returns>
         internal static async Task ABlockIsWrittenReadBackAndPutBackAsync(ReaderDevice device, Func<Task<string?>> whoIsOnTheReader)
         {
-            var before = await ReadFactorySectorOrSkipAsync(device, WriteSector);
-            var uid = await whoIsOnTheReader();
+            var (uid, before) = await SnapshotOfTheCardAsync(whoIsOnTheReader, () => ReadFactorySectorOrSkipAsync(device, WriteSector));
             var old = before.DataBlock[1].Data ?? throw SkipException.ForSkip("Block 5 cannot be read with the factory key: the card is not as it left the factory.");
             var changed = old.Select(b => (byte)(b ^ 0xFF)).ToArray();
 
@@ -142,8 +141,7 @@ namespace RFiDGear.HIL.Tests
 
         private static async Task SectorRoundTripAsync(ReaderDevice device, int sector, Func<Task<string?>> whoIsOnTheReader)
         {
-            var before = await ReadFactorySectorOrSkipAsync(device, sector);
-            var uid = await whoIsOnTheReader();
+            var (uid, before) = await SnapshotOfTheCardAsync(whoIsOnTheReader, () => ReadFactorySectorOrSkipAsync(device, sector));
             var dataBlocks = before.DataBlock.Count - 1;
 
             if (before.DataBlock.Take(dataBlocks).Any(block => block.Data == null))
@@ -193,7 +191,7 @@ namespace RFiDGear.HIL.Tests
 
             // The chip gets a MAD2 where it has the sector for it: the same test as the writer.
             var madSectors = MadSectorsOf(size);
-            var before = await FactoryProblemsAsync(device, madSectors);
+            var (uid, before) = await SnapshotOfTheCardAsync(whoIsOnTheReader, () => FactoryProblemsAsync(device, madSectors));
 
             // Whatever is not as the put-back writes it (a MAD, data, another general purpose byte) would be overwritten: the card is left alone.
             if (before.Count > 0)
@@ -201,7 +199,6 @@ namespace RFiDGear.HIL.Tests
                 throw SkipException.ForSkip("The card is not as it left the factory, and the case would overwrite it: " + before[0]);
             }
 
-            var uid = await whoIsOnTheReader();
             var data = Enumerable.Range(1, 20).Select(i => (byte)i).ToArray();
 
             try
@@ -305,6 +302,27 @@ namespace RFiDGear.HIL.Tests
             }
         }
 
+
+        // What the card holds, read while it is known who is on the reader: the card is asked for before and after the read, and the two answers must be
+        // the same (and say something), so that a card that is replaced during the read is never taken for the one that is put back.
+        private static async Task<(string Uid, T Value)> SnapshotOfTheCardAsync<T>(Func<Task<string?>> whoIsOnTheReader, Func<Task<T>> read)
+        {
+            var uid = await whoIsOnTheReader();
+
+            if (string.IsNullOrEmpty(uid))
+            {
+                throw SkipException.ForSkip("The reader does not say who is on it: a card that is replaced during the case could not be told, so nothing is written.");
+            }
+
+            var value = await read();
+
+            if (await whoIsOnTheReader() != uid)
+            {
+                throw SkipException.ForSkip("The card on the reader changed while it was read: nothing was written.");
+            }
+
+            return (uid, value);
+        }
 
         private static async Task<MifareClassicSectorModel> ReadFactorySectorOrSkipAsync(ReaderDevice device, int sector)
         {

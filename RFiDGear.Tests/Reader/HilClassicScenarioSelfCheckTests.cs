@@ -169,12 +169,47 @@ namespace RFiDGear.Tests.Reader
             var chip = new SimulatedClassicChip();
             var asked = 0;
 
-            // The first answer is the card that the case starts with; every later one is another card.
-            Task<string?> Replaced() => Task.FromResult<string?>(asked++ == 0 ? "04AABBCC" : "04112233");
+            // The first two answers (before and after the card is read) are the card that the case starts with; every later one is another card.
+            Task<string?> Replaced() => Task.FromResult<string?>(asked++ < 2 ? "04AABBCC" : "04112233");
 
             var failure = await FailureOf(() => ClassicScenarios.ABlockIsWrittenReadBackAndPutBackAsync(new ScenarioReader(chip), Replaced));
 
             Assert.NotNull(failure);
+            Assert.Equal(0, chip.Writes);
+        }
+
+        public static TheoryData<string> WritingCases => new TheoryData<string> { "block", "sector", "mad" };
+
+        private static Task RunWritingCase(string name, ScenarioReader reader, Func<Task<string?>> who) => name switch
+        {
+            "block" => ClassicScenarios.ABlockIsWrittenReadBackAndPutBackAsync(reader, who),
+            "sector" => ClassicScenarios.ASectorIsWrittenReadBackAndPutBackAsync(reader, ClassicCardSize.K4, who),
+            _ => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(reader, ClassicCardSize.K4, who)
+        };
+
+        [Theory]
+        [MemberData(nameof(WritingCases))]
+        public async Task ACardThatIsReplacedWhileItIsRead_MakesTheWritingCaseSkip_AndWritesNothing(string name)
+        {
+            // The card that is read is not the card that was there when the case started: whatever it held is no snapshot to put back.
+            var chip = new SimulatedClassicChip();
+            var asked = 0;
+
+            Task<string?> Replaced() => Task.FromResult<string?>(asked++ == 0 ? "04AABBCC" : "04112233");
+
+            await SkipOf(() => RunWritingCase(name, new ScenarioReader(chip), Replaced));
+
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Theory]
+        [MemberData(nameof(WritingCases))]
+        public async Task AReaderThatDoesNotSayWhoIsOnIt_MakesTheWritingCaseSkip_AndWritesNothing(string name)
+        {
+            var chip = new SimulatedClassicChip();
+
+            await SkipOf(() => RunWritingCase(name, new ScenarioReader(chip), () => Task.FromResult<string?>(null)));
+
             Assert.Equal(0, chip.Writes);
         }
 
