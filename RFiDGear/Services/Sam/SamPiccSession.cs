@@ -13,7 +13,7 @@ using Serilog;
 namespace RFiDGear.Services.Sam
 {
     /// <summary>Why a PICC authentication or key change through the SAM did not end well; <see cref="SamPiccResult.Error"/> is what the task sees.</summary>
-    internal enum SamPiccFailure
+    public enum SamPiccFailure
     {
         /// <summary>Nothing went wrong.</summary>
         None,
@@ -33,8 +33,15 @@ namespace RFiDGear.Services.Sam
         /// <summary>The SAM refused a command (the status word says which): no key entry like that, an entry that is no PICC key, a SAM that does not allow the key change.</summary>
         SamRefused,
 
-        /// <summary>The card refused a command (the status word says which).</summary>
+        /// <summary>The card refused a command after the SAM had been asked (the status word says which): the key, or the change.</summary>
         CardRefused,
+
+        /// <summary>
+        /// The card refused the select or its first authentication command, before the SAM was asked anything: no such application, or a card that
+        /// holds no key of this kind at this key number (an AES authentication on a card with a DES key answers <c>91AE</c> at once). It says
+        /// nothing about the key of the SAM.
+        /// </summary>
+        CardRefusedBeforeSam,
 
         /// <summary>The card accepted the SAM's first message, and the SAM did not accept the card's answer (<c>901E</c> was seen when the key entry lacked Keep IV).</summary>
         SamIntegrity,
@@ -47,6 +54,15 @@ namespace RFiDGear.Services.Sam
 
         /// <summary>The request cannot be sent: an application number of more than 24 bits, a key number of the card that does not exist, or a SAM key that is no reference (entry 0). Nothing was sent.</summary>
         InvalidRequest,
+
+        /// <summary>The reader cannot make the call at all (the reader of the TWN4 cannot see the SAM, and a base reader has no such operation). Nothing was sent.</summary>
+        NotSupported,
+
+        /// <summary>No card on the reader, or it could not be connected to. The SAM had been opened already and nothing was sent to it.</summary>
+        NoCard,
+
+        /// <summary>The card on the reader is no DESFire card, so nothing of a DESFire authentication was sent to it.</summary>
+        NotDesfire,
     }
 
     /// <summary>
@@ -57,13 +73,35 @@ namespace RFiDGear.Services.Sam
     /// <param name="SamStatus">The status word of the SAM that ended it, or 0.</param>
     /// <param name="CardStatus">The status word of the card that ended it, or 0.</param>
     /// <param name="KeyMayHaveChanged">Whether the card may hold the new key although the result is not a success: the cryptogram was sent and the answer is not known.</param>
-    internal sealed record SamPiccResult(ERROR Error, SamPiccFailure Failure = SamPiccFailure.None, ushort SamStatus = 0, ushort CardStatus = 0, bool KeyMayHaveChanged = false)
+    public sealed record SamPiccResult(ERROR Error, SamPiccFailure Failure = SamPiccFailure.None, ushort SamStatus = 0, ushort CardStatus = 0, bool KeyMayHaveChanged = false)
     {
         /// <summary>Gets the result of a step that worked.</summary>
-        internal static SamPiccResult Ok { get; } = new SamPiccResult(ERROR.NoError);
+        public static SamPiccResult Ok { get; } = new SamPiccResult(ERROR.NoError);
 
         /// <summary>Gets whether it worked.</summary>
-        internal bool Succeeded => Error == ERROR.NoError;
+        public bool Succeeded => Error == ERROR.NoError;
+
+        /// <summary>Gets the result of a call that was refused before anything was sent to a card.</summary>
+        /// <param name="error">What the task sees.</param>
+        /// <param name="failure">Why.</param>
+        /// <returns>The result.</returns>
+        internal static SamPiccResult Refused(ERROR error, SamPiccFailure failure) => new SamPiccResult(error, failure);
+
+        /// <summary>
+        /// Gets what a task sees when the SAM could not be opened. A SAM that is not set up, not there, in use or the reader of the card is a key
+        /// that cannot be had (<see cref="ERROR.KeyUnavailable"/>, which is not routed to the fallbacks of a project); a reader that failed is a
+        /// transport error.
+        /// </summary>
+        /// <param name="failure">Why the SAM was not opened.</param>
+        /// <returns>The result.</returns>
+        internal static SamPiccResult OfOpenFailure(SamPiccFailure failure) =>
+            new SamPiccResult(failure == SamPiccFailure.ReaderFailure ? ERROR.TransportError : ERROR.KeyUnavailable, failure);
+
+        /// <summary>Gets what a task sees when the SAM was opened and the card could not be used: no card, or a reader that failed, is a transport error; another kind of card is a protocol constraint.</summary>
+        /// <param name="failure">Why the card could not be used.</param>
+        /// <returns>The result.</returns>
+        internal static SamPiccResult OfCardFailure(SamPiccFailure failure) =>
+            new SamPiccResult(failure == SamPiccFailure.NotDesfire ? ERROR.ProtocolConstraint : ERROR.TransportError, failure);
     }
 
     /// <summary>The key change of a DESFire card through the SAM: which key authenticates, which key is replaced, and by which key.</summary>
@@ -225,9 +263,9 @@ namespace RFiDGear.Services.Sam
 
                 if (selected != SamPiccFrames.CardSuccess)
                 {
-                    Record(step + ": select", "CardRefused", 0, selected);
+                    Record(step + ": select", "CardRefusedBeforeSam", 0, selected);
 
-                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(selected), SamPiccFailure.CardRefused, CardStatus: selected);
+                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(selected), SamPiccFailure.CardRefusedBeforeSam, CardStatus: selected);
                 }
 
                 var length = SamPiccFrames.RandomLength(type);
@@ -235,9 +273,9 @@ namespace RFiDGear.Services.Sam
 
                 if (cardPart1 != SamPiccFrames.CardMoreFrames || challenge.Length != length)
                 {
-                    Record(step + ": card part 1", "CardRefused", 0, cardPart1);
+                    Record(step + ": card part 1", "CardRefusedBeforeSam", 0, cardPart1);
 
-                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(cardPart1), SamPiccFailure.CardRefused, CardStatus: cardPart1);
+                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(cardPart1), SamPiccFailure.CardRefusedBeforeSam, CardStatus: cardPart1);
                 }
 
                 part1Sent = true;
@@ -330,7 +368,7 @@ namespace RFiDGear.Services.Sam
         }
 
         // An application number has 24 bits (the select sends three bytes), and a key of a card has a number from 0 to 13.
-        private static bool IsValidTarget(uint appId, byte keyNo) => appId <= 0xFFFFFF && keyNo <= 0x0D;
+        internal static bool IsValidTarget(uint appId, byte keyNo) => appId <= 0xFFFFFF && keyNo <= 0x0D;
 
         private static SamPiccResult Invalid(string step)
         {

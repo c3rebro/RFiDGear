@@ -155,7 +155,7 @@ namespace RFiDGear.Tests.Sam
             var result = await rig.Session.AuthenticateAsync(5, 0, SamPiccKeyType.Aes128, Aes);
 
             Assert.Equal(ERROR.ProtocolConstraint, result.Error);
-            Assert.Equal(SamPiccFailure.CardRefused, result.Failure);
+            Assert.Equal(SamPiccFailure.CardRefusedBeforeSam, result.Failure);
             Assert.Equal(new[] { Kill }, rig.SamFrames);
             Assert.Single(rig.CardFrames);
         }
@@ -181,7 +181,7 @@ namespace RFiDGear.Tests.Sam
             var result = await rig.Session.AuthenticateAsync(0, 0, SamPiccKeyType.Aes128, Aes);
 
             Assert.False(result.Succeeded);
-            Assert.Equal(SamPiccFailure.CardRefused, result.Failure);
+            Assert.Equal(SamPiccFailure.CardRefusedBeforeSam, result.Failure);
             Assert.Equal((ushort)0x91CA, result.CardStatus);
             Assert.Equal(2, rig.CardFrames.Count());
         }
@@ -195,6 +195,22 @@ namespace RFiDGear.Tests.Sam
             var result = await rig.Session.AuthenticateAsync(0, 0, SamPiccKeyType.Aes128, Aes);
 
             Assert.False(result.Succeeded);
+            Assert.Equal(SamPiccFailure.CardRefusedBeforeSam, result.Failure);
+            Assert.Equal(new[] { Kill }, rig.SamFrames);
+        }
+
+        [Fact]
+        public async Task A_card_that_refuses_its_first_authentication_command_is_refused_before_the_sam_and_is_no_refusal_of_the_key()
+        {
+            // A card that holds no key of this kind at this key number (an AES authentication on a card with a DES key) answers 91AE at once.
+            var rig = new PiccRig();
+            rig.CardOverride = apdu => apdu[1] == 0xAA ? PiccRig.WithStatus(Array.Empty<byte>(), 0x91AE) : null;
+
+            var result = await rig.Session.AuthenticateAsync(0, 0, SamPiccKeyType.Aes128, Aes);
+
+            Assert.Equal(ERROR.AuthFailure, result.Error);
+            Assert.Equal(SamPiccFailure.CardRefusedBeforeSam, result.Failure);
+            Assert.Equal((ushort)0x91AE, result.CardStatus);
             Assert.Equal(new[] { Kill }, rig.SamFrames);
         }
 
