@@ -265,6 +265,19 @@ namespace RFiDGear.Tests.Classic
         }
 
         [Fact]
+        public async Task ARead_WithKeysThatHoldNoKey_IsRefused_AndTheChipIsNotAsked()
+        {
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+
+            var withoutMadKeys = await Ops(chip).ReadApplicationAsync(Aid, 16, Keys(null, null), Keys(Ff, Ff));
+            var withoutApplicationKeys = await Ops(chip).ReadApplicationAsync(Aid, 16, Keys(KeyAText, null), Keys(null, null));
+
+            Assert.Equal(ClassicMadStatus.WrongRequest, withoutMadKeys.Status);
+            Assert.Equal(ClassicMadStatus.WrongRequest, withoutApplicationKeys.Status);
+            Assert.Empty(chip.Log);
+        }
+
+        [Fact]
         public async Task AnApplicationSectorThatTheKeysDoNotOpen_IsAnAuthFailure()
         {
             var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));

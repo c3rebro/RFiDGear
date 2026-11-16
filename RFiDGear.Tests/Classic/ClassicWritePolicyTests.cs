@@ -130,6 +130,32 @@ namespace RFiDGear.Tests.Classic
             Assert.Equal(ClassicWriteViolation.OutsideTheChip, ClassicWritePolicy.CheckSector(ClassicCardSize.K4, -1, new byte[48], ClassicWriteOptions.DataOnly).Violation);
         }
 
+        [Theory]
+        [InlineData(2, 16, ClassicWriteViolation.None)]
+        [InlineData(2, 32, ClassicWriteViolation.None)]
+        [InlineData(2, 48, ClassicWriteViolation.None)]
+        [InlineData(2, 0, ClassicWriteViolation.WrongLength)]
+        [InlineData(2, 15, ClassicWriteViolation.WrongLength)]
+        [InlineData(2, 17, ClassicWriteViolation.WrongLength)]
+        [InlineData(2, 64, ClassicWriteViolation.WrongLength)]
+        [InlineData(0, 32, ClassicWriteViolation.None)]
+        [InlineData(0, 48, ClassicWriteViolation.WrongLength)]
+        [InlineData(33, 240, ClassicWriteViolation.None)]
+        [InlineData(33, 256, ClassicWriteViolation.WrongLength)]
+        public void TheFirstBlocksOfASector_AreWholeBlocks_AndNotMoreThanTheSectorHas(int sector, int length, ClassicWriteViolation expected)
+        {
+            Assert.Equal(expected, ClassicWritePolicy.CheckSectorPart(ClassicCardSize.K4, sector, new byte[length], ClassicWriteOptions.DataOnly).Violation);
+        }
+
+        [Fact]
+        public void TheFirstBlocksOfASector_NeedDataAndASectorThatTheChipHas()
+        {
+            Assert.Equal(ClassicWriteViolation.WrongLength, ClassicWritePolicy.CheckSectorPart(ClassicCardSize.K4, 2, null, ClassicWriteOptions.DataOnly).Violation);
+            Assert.Equal(ClassicWriteViolation.OutsideTheChip, ClassicWritePolicy.CheckSectorPart(ClassicCardSize.K1, 16, new byte[16], ClassicWriteOptions.DataOnly).Violation);
+            Assert.Equal(ClassicWriteViolation.OutsideTheChip, ClassicWritePolicy.CheckSectorPart(ClassicCardSize.K4, -1, new byte[16], ClassicWriteOptions.DataOnly).Violation);
+            Assert.Throws<ArgumentNullException>(() => ClassicWritePolicy.CheckSectorPart(ClassicCardSize.K4, 2, Block, null!));
+        }
+
         [Fact]
         public void NoOptions_AreRefused()
         {
