@@ -489,6 +489,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 try
                 {
+                    // The sector of this read, from here on: a read that waited for the gate must not show what the read before it left (and
+                    // a read that fails shows nothing, not the sector of another call).
+                    Sector = new MifareClassicSectorModel();
+
                     var port = await OpenClassicPortAsync();
 
                     if (port == null)

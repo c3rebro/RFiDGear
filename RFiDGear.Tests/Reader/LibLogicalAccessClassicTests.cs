@@ -21,11 +21,17 @@ namespace RFiDGear.Tests.Reader
         // A provider whose chip is the simulated one (or none).
         private sealed class ClassicPcscTestReader : LibLogicalAccessProvider
         {
-            private readonly IClassicPort? port;
+            private readonly Func<int, IClassicPort?> portOf;
 
             public ClassicPcscTestReader(IClassicPort? port)
+                : this(_ => port)
             {
-                this.port = port;
+            }
+
+            // The chip that the n-th operation finds (1 is the first), or none.
+            public ClassicPcscTestReader(Func<int, IClassicPort?> portOf)
+            {
+                this.portOf = portOf;
             }
 
             public int Opened { get; private set; }
@@ -34,7 +40,7 @@ namespace RFiDGear.Tests.Reader
             {
                 Opened++;
 
-                return Task.FromResult(port!);
+                return Task.FromResult(portOf(Opened)!);
             }
         }
 
@@ -118,7 +124,7 @@ namespace RFiDGear.Tests.Reader
         [Fact]
         public async Task WithoutAChip_TheReadIsATransportError()
         {
-            var reader = new ClassicPcscTestReader(null);
+            var reader = new ClassicPcscTestReader((IClassicPort?)null);
 
             var result = await reader.ReadMifareClassicSingleSector(2, Ff, Ff);
 
@@ -164,6 +170,24 @@ namespace RFiDGear.Tests.Reader
 
             Assert.Equal(2, logins.Length);
             Assert.Equal(5, logins[1] - logins[0]);
+        }
+
+        [Fact]
+        public async Task ARead_ThatFailsAfterAnotherRead_DoesNotShowTheSectorOfTheOther()
+        {
+            // The second read waits for the gate while the first one runs, and then finds no chip. The sector that it leaves must be its own
+            // (nothing), not the authenticated sector that the first one finished with.
+            var chip = new SimulatedClassicChip { YieldsOnEveryCall = true };
+            var reader = new ClassicPcscTestReader(open => open == 1 ? chip : null);
+
+            var results = await Task.WhenAll(
+                reader.ReadMifareClassicSingleSector(1, Ff, Ff),
+                reader.ReadMifareClassicSingleSector(2, Ff, Ff));
+
+            Assert.Equal(ERROR.NoError, results[0]);
+            Assert.Equal(ERROR.TransportError, results[1]);
+            Assert.False(reader.Sector.IsAuthenticated);
+            Assert.Empty(reader.Sector.DataBlock);
         }
 
         [Theory]
