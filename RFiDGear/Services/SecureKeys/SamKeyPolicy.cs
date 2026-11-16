@@ -25,8 +25,20 @@ namespace RFiDGear.Services.SecureKeys
     /// <summary>The slots in which a key of the SAM is offered to the person: where a command can use one.</summary>
     internal static class SamKeySlots
     {
-        /// <summary>Gets the slots in which the key manager offers the SAM as a source of the key. None yet: the commands come with it.</summary>
-        internal static IReadOnlyCollection<string> Offered { get; } = Array.Empty<string>();
+        /// <summary>
+        /// Gets the slots in which the key manager offers the SAM as a source of the key: the keys of the authentication of a PICC or application
+        /// key and of the change of those keys. A command that uses one of them says so (<see cref="SamKeyPolicy.AllOrNothing"/>); every other
+        /// command that uses such a slot refuses a key of the SAM before it touches a card. The slots of the read and write keys of a file are not
+        /// in it: no command can use a key of the SAM for a file yet.
+        /// </summary>
+        internal static IReadOnlyCollection<string> Offered { get; } = new[]
+        {
+            SecureKeySlots.DesfirePiccCurrent,
+            SecureKeySlots.DesfirePiccNew,
+            SecureKeySlots.DesfireAppCurrent,
+            SecureKeySlots.DesfireAppOld,
+            SecureKeySlots.DesfireAppNew,
+        };
 
         /// <summary>Tells whether the SAM is offered as a source of the key of a slot.</summary>
         /// <param name="slotId">The slot.</param>

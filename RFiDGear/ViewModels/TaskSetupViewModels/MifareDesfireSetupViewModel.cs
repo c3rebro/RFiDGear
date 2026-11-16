@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Created by SharpDevelop.
  * Date: 10/11/2017
  * Time: 22:15
@@ -44,7 +44,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails, IKeySlotHost, IKeyMigrationHost
+    public partial class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails, IKeySlotHost, IKeyMigrationHost
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -1241,7 +1241,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         // from the property and checked as it always was. This method is the only place that reads the key properties on
         // the way to the card.
 
-        private async Task<AcquiredKeys> AcquireKeysAsync(params KeyNeed[] needs)
+        private Task<AcquiredKeys> AcquireKeysAsync(params KeyNeed[] needs) => AcquireKeysAsync(SamKeyPolicy.Refuse, needs);
+
+        // A command that can use keys of the SAM says so with the policy (see MifareDesfireSetupViewModel.Sam.cs); every other command
+        // refuses a slot that names one, before any card call.
+        private async Task<AcquiredKeys> AcquireKeysAsync(SamKeyPolicy samPolicy, params KeyNeed[] needs)
         {
             // While a provider answers the dialog does not take input: what a person changes in the meantime would no longer
             // be what the keys were asked for.
@@ -1249,7 +1253,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             try
             {
-                return await KeyAcquisition.AcquireAsync(needs, KeyBindings, SecureKeySlots.Desfire, EmbeddedKeyOf, KeyResolutionScope.Current);
+                return await KeyAcquisition.AcquireAsync(needs, KeyBindings, SecureKeySlots.Desfire, EmbeddedKeyOf, KeyResolutionScope.Current, samPolicy);
             }
             finally
             {
@@ -1310,6 +1314,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private void ReportKeyUnavailable(AcquiredKeys keys)
         {
             StatusText += LocalizedStatusLine("textBoxStatusKeyUnavailable", DateTime.Now, keys.Failure?.Slot ?? string.Empty);
+            StatusText += SamKeyProblemLine(keys.Failure);
             CurrentTaskErrorLevel = ERROR.KeyUnavailable;
         }
 
@@ -3755,11 +3760,26 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     needs.Add(Need(SecureKeySlots.DesfireAppNew, SelectedDesfireAppKeyEncryptionTypeTarget, SecureKeyUsage.ChangeKeyNew, AppNumberCurrentAsInt, keyNumberForChange));
 
-                    var keys = await AcquireKeysAsync(needs.ToArray());
+                    var keys = await AcquireKeysAsync(SamPolicyOf(device), needs.ToArray());
 
                     if (keys.Failed)
                     {
                         ReportKeyUnavailable(keys);
+                    }
+
+                    if (!keys.Failed && keys.IsSam(SecureKeySlots.DesfireAppCurrent))
+                    {
+                        if (IsValidAppNumberCurrent != false && IsValidAppNumberTarget != false)
+                        {
+                            await ChangeApplicationKeyWithSamAsync(device, keys, authKeyNo, keyNumberForChange, showOldInputs);
+                        }
+                        else
+                        {
+                            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                        }
+
+                        return;
                     }
 
                     var authKeyValue = keys.Failed ? null : keys.Hex(SecureKeySlots.DesfireAppCurrent);
@@ -4333,11 +4353,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, KeyNumberToTellAProvider(isCheckTask)));
+                    // The check tasks share this method and cannot use a key of the SAM: only the task that authenticates can.
+                    var keys = await AcquireKeysAsync(
+                        isCheckTask ? SamKeyPolicy.Refuse : SamPolicyOf(device),
+                        Need(SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, AppNumberCurrentAsInt, KeyNumberToTellAProvider(isCheckTask)));
 
                     if (keys.Failed)
                     {
                         ReportKeyUnavailable(keys);
+                    }
+
+                    if (!keys.Failed && keys.IsSam(SecureKeySlots.DesfireAppCurrent))
+                    {
+                        await AuthenticateApplicationWithSamAsync(device, keys);
+                        await FinalizeTaskAsync();
+                        return;
                     }
 
                     if (KeyIsUsable(keys, SecureKeySlots.DesfireAppCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent))
@@ -4394,12 +4424,20 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     // The key that authenticates is also the key being replaced and the key that authorizes the change; the new
                     // key is the second one. Both are obtained before the card is touched.
                     var keys = await AcquireKeysAsync(
+                        SamPolicyOf(device),
                         Need(SecureKeySlots.DesfirePiccCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, 0, 0),
                         Need(SecureKeySlots.DesfirePiccNew, SelectedDesfireMasterKeyEncryptionTypeTarget, SecureKeyUsage.ChangeKeyNew, 0, 0));
 
                     if (keys.Failed)
                     {
                         ReportKeyUnavailable(keys);
+                    }
+
+                    // Keys of the SAM: the SAM and the card do all of it, and nothing here knows a key.
+                    if (!keys.Failed && keys.IsSam(SecureKeySlots.DesfirePiccCurrent))
+                    {
+                        await ChangePiccMasterKeyWithSamAsync(device, keys);
+                        return;
                     }
 
                     var formattedMasterKey = string.Empty;
@@ -4504,11 +4542,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    var keys = await AcquireKeysAsync(Need(SecureKeySlots.DesfirePiccCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, 0, 0));
+                    var keys = await AcquireKeysAsync(SamPolicyOf(device), Need(SecureKeySlots.DesfirePiccCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent, SecureKeyUsage.Authenticate, 0, 0));
 
                     if (keys.Failed)
                     {
                         ReportKeyUnavailable(keys);
+                    }
+
+                    if (!keys.Failed && keys.IsSam(SecureKeySlots.DesfirePiccCurrent))
+                    {
+                        await AuthenticatePiccWithSamAsync(device, keys);
+                        return;
                     }
 
                     if (KeyIsUsable(keys, SecureKeySlots.DesfirePiccCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent))

@@ -97,10 +97,23 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
-        public void The_sam_is_offered_for_no_slot_yet()
+        public void The_sam_is_offered_for_the_keys_of_the_authentication_and_of_the_key_changes_and_for_no_other_slot()
         {
-            Assert.Empty(SamKeySlots.Offered);
-            Assert.All(SecureKeySlots.Desfire.Concat(SecureKeySlots.Classic).Concat(SecureKeySlots.Ultralight), slot => Assert.False(SamKeySlots.Offers(slot)));
+            var offered = new[]
+            {
+                SecureKeySlots.DesfirePiccCurrent,
+                SecureKeySlots.DesfirePiccNew,
+                SecureKeySlots.DesfireAppCurrent,
+                SecureKeySlots.DesfireAppOld,
+                SecureKeySlots.DesfireAppNew,
+            };
+
+            Assert.Equal(offered.OrderBy(slot => slot, StringComparer.Ordinal), SamKeySlots.Offered.OrderBy(slot => slot, StringComparer.Ordinal));
+
+            // The keys of a file, and every slot of the other kinds of task.
+            Assert.All(
+                SecureKeySlots.Desfire.Concat(SecureKeySlots.Classic).Concat(SecureKeySlots.Ultralight).Except(offered),
+                slot => Assert.False(SamKeySlots.Offers(slot), slot));
         }
 
         [Fact]
