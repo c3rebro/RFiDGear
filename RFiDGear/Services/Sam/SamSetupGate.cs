@@ -74,15 +74,27 @@ namespace RFiDGear.Services.Sam
                 }
                 finally
                 {
-                    // Only a flag that the setup set is cleared: when the window said that it uses the reader, that flag is the
-                    // window's, and the setup must not tell it that the reader is free.
-                    if (flagSet)
+                    // Whatever the busy notification does, both gates are given back: a callback that throws must not strand them.
+                    try
                     {
-                        setBusy(false);
+                        // Only a flag that the setup set is cleared: when the window said that it uses the reader, that flag is the
+                        // window's, and the setup must not tell it that the reader is free.
+                        if (flagSet)
+                        {
+                            setBusy(false);
+                        }
                     }
-
-                    SamPortGate.Exit();
-                    gate.Exit();
+                    finally
+                    {
+                        try
+                        {
+                            SamPortGate.Exit();
+                        }
+                        finally
+                        {
+                            gate.Exit();
+                        }
+                    }
                 }
             }
             finally

@@ -45,7 +45,7 @@ namespace RFiDGear.Services.Sam
         /// <summary>A reader or the channel to the SAM failed.</summary>
         ReaderFailure,
 
-        /// <summary>The request cannot be sent: an application number of more than 24 bits, or a key number of the card that does not exist. Nothing was sent.</summary>
+        /// <summary>The request cannot be sent: an application number of more than 24 bits, a key number of the card that does not exist, or a SAM key that is no reference (entry 0). Nothing was sent.</summary>
         InvalidRequest,
     }
 
@@ -117,7 +117,7 @@ namespace RFiDGear.Services.Sam
         /// <returns>The result; no key and no text of an exception is in it.</returns>
         internal async Task<SamPiccResult> AuthenticateAsync(uint appId, byte cardKeyNo, SamPiccKeyType type, SamKeyReference key)
         {
-            if (!IsValidTarget(appId, cardKeyNo))
+            if (!IsValidTarget(appId, cardKeyNo) || !key.IsValid)
             {
                 return Invalid("authenticate");
             }
@@ -142,7 +142,9 @@ namespace RFiDGear.Services.Sam
         /// <returns>The result; <see cref="SamPiccResult.KeyMayHaveChanged"/> says when the card may hold the new key although it did not end well.</returns>
         internal async Task<SamPiccResult> ChangeKeyAsync(SamPiccKeyChange change)
         {
-            if (!IsValidTarget(change.AppId, change.AuthKeyNo) || !IsValidTarget(change.AppId, change.TargetKeyNo))
+            // default(SamKeyReference) is entry 0, the master entry of the SAM: none of the three keys may be one.
+            if (!IsValidTarget(change.AppId, change.AuthKeyNo) || !IsValidTarget(change.AppId, change.TargetKeyNo)
+                || !change.AuthKey.IsValid || !change.CurrentKey.IsValid || !change.NewKey.IsValid)
             {
                 return Invalid("change key");
             }

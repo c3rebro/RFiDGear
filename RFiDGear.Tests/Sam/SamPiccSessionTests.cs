@@ -253,6 +253,25 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public async Task A_sam_key_that_is_no_reference_is_refused_before_anything_is_sent_whichever_of_the_keys_it_is()
+        {
+            // default(SamKeyReference) is entry 0: the master entry of the SAM, which no key of a card is in.
+            var rig = new PiccRig();
+            var none = default(SamKeyReference);
+
+            var authenticated = await rig.Session.AuthenticateAsync(0, 0, SamPiccKeyType.Aes128, none);
+            var noAuthKey = await rig.Session.ChangeKeyAsync(new SamPiccKeyChange(0, 0, SamPiccKeyType.Aes128, none, 0, SamPiccKeyType.Aes128, Aes, Des, true));
+            var noCurrentKey = await rig.Session.ChangeKeyAsync(new SamPiccKeyChange(0, 0, SamPiccKeyType.Aes128, Aes, 0, SamPiccKeyType.Aes128, none, Des, true));
+            var noNewKey = await rig.Session.ChangeKeyAsync(new SamPiccKeyChange(0, 0, SamPiccKeyType.Aes128, Aes, 0, SamPiccKeyType.Aes128, Aes, none, true));
+
+            Assert.All(new[] { authenticated, noAuthKey, noCurrentKey, noNewKey }, r =>
+            {
+                Assert.Equal(SamPiccFailure.InvalidRequest, r.Failure);
+                Assert.Equal(ERROR.ProtocolConstraint, r.Error);
+            });
+            Assert.Empty(rig.Frames);
+        }
+        [Fact]
         public async Task The_largest_application_number_of_a_card_is_sent_as_it_is()
         {
             var rig = new PiccRig();

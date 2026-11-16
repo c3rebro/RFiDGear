@@ -75,6 +75,23 @@ namespace RFiDGear.Tests.Sam
             }
         }
         [Fact]
+        public void A_busy_notification_that_throws_does_not_strand_the_gates()
+        {
+            var gate = new ReaderAccessGate();
+            var coordinator = new ExtensionOperationCoordinator();
+
+            // The window's callback fails when the setup says that the reader is free again.
+            Assert.Throws<InvalidOperationException>(() =>
+                SamSetupGate.RunExclusive(gate, coordinator, NotBusy, busy => { if (busy == false) { throw new InvalidOperationException("the window failed"); } }, () => { }));
+
+            Assert.False(gate.IsHeld);
+            Assert.False(SamPortGate.IsHeld);
+            Assert.True(coordinator.IsIdle);
+
+            // And the setup can be opened again.
+            Assert.True(SamSetupGate.RunExclusive(gate, coordinator, NotBusy, _ => { }, () => { }));
+        }
+        [Fact]
         public void While_the_setup_is_open_no_run_and_no_edit_is_admitted()
         {
             var gate = new ReaderAccessGate();
