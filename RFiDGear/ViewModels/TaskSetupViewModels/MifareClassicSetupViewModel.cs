@@ -25,6 +25,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using Serilog;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.Classic;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.UIExtensions;
@@ -2074,6 +2075,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 else
                                 {
                                     StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i].DataBlockNumberChipBased);
+
+                                    // What the dialog held before (an earlier read, an edit) is not what is on the chip: it must not stay on show,
+                                    // and it must not be written back as if it were.
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = null;
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
+
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = null;
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
                                 }
                             }
 
@@ -2183,6 +2192,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         if (keys.Failed)
                         {
                             ReportKeyUnavailable(keys);
+                        }
+                        else if (childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data is not { Length: ClassicLayout.BytesPerBlock })
+                        {
+                            // A block that was not read has no data, and a block is 16 bytes: nothing is sent to the chip.
+                            StatusText = StatusText + string.Format("{0}: There are no 16 bytes for this block: read it or enter its data first.\n", DateTime.Now);
+                            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
                         }
                         else
                         {
