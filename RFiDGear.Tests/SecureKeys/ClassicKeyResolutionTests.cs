@@ -203,6 +203,32 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Theory]
+        [MemberData(nameof(EveryScenario))]
+        public async Task A_slot_bound_to_a_key_of_the_sam_stops_every_task_before_the_card_is_touched(string name)
+        {
+            var scenario = Scenarios[name];
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A key of the SAM is never bytes, and no Classic command can hand a reference to the SAM: the task stops, asks no
+                // provider, and does not fall back to the embedded key.
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(scenario);
+                task.KeyBindings = Slots.Keys.Select(slot => new KeyBindingEntry { Slot = slot, ProviderId = SamKeyProvider.ProviderId, Reference = "1:0" }).ToArray();
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(0, run.ReadChipCalls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+                Assert.DoesNotContain("1:0", run.Status, StringComparison.Ordinal);
+                Assert.Empty(vault.Requests);
+                AssertNothingSecretIn(run.Status);
+            });
+        }
+
         [Fact]
         public async Task A_bound_key_B_that_cannot_be_obtained_does_not_leave_the_reader_to_try_key_A_alone()
         {

@@ -74,7 +74,7 @@ namespace RFiDGear.Services.SecureKeys
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _slotId = slotId ?? throw new ArgumentNullException(nameof(slotId));
-            _providers = providers ?? throw new ArgumentNullException(nameof(providers));
+            _providers = SamKeySlots.ProvidersFor(_slotId, providers ?? throw new ArgumentNullException(nameof(providers)), SamKeySlots.Offered);
             _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
             _keyStore = keyStore ?? throw new ArgumentNullException(nameof(keyStore));
             _text = CachedText.Of(text ?? RFiDGear.Infrastructure.ResourceLoader.GetResource);
@@ -132,7 +132,7 @@ namespace RFiDGear.Services.SecureKeys
         }
 
         /// <summary>Gets whether the reference is one that a provider could be asked for; empty is not.</summary>
-        public bool IsReferenceValid => SecureKeySyntax.IsValidReference(Reference);
+        public bool IsReferenceValid => SecureKeySyntax.IsValidReferenceFor(ProviderId, Reference);
 
         /// <summary>Gets whether the provider of the binding is one a key can be stored in from here: the Credential Manager is.</summary>
         public bool ProviderOffersStoreKey =>

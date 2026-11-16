@@ -11,8 +11,11 @@ namespace RFiDGear.Services.Sam
     /// </summary>
     public readonly struct SamKeyReference : IEquatable<SamKeyReference>
     {
+        /// <summary>The id of the key provider that stands for the SAM, as a constant for the places that need one (a <c>case</c> label).</summary>
+        internal const string ProviderIdText = "sam";
+
         /// <summary>The id of the key provider that stands for the SAM.</summary>
-        public static string ProviderId => "sam";
+        public static string ProviderId => ProviderIdText;
 
         /// <summary>The first key entry that holds a key of a card: entry 0 is the master key of the SAM, a host key.</summary>
         public static int FirstEntry => 1;

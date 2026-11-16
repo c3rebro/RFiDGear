@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 
 using RFiDGear.Infrastructure;
+using RFiDGear.Services.Sam;
 
 namespace RFiDGear.Services.SecureKeys
 {
@@ -76,6 +77,13 @@ namespace RFiDGear.Services.SecureKeys
                         _text("keySlotProviderToolTipBridgeClient"),
                         true);
 
+                case SamKeyReference.ProviderIdText:
+                    return new KeySlotProviderItem(
+                        info.Id,
+                        _text("keySlotProviderNameSam"),
+                        _text("keySlotProviderToolTipSam"),
+                        true);
+
                 default:
                     return new KeySlotProviderItem(
                         info.Id,
@@ -89,7 +97,8 @@ namespace RFiDGear.Services.SecureKeys
         {
             WindowsCredentialKeyProvider.ProviderId => 0,
             BridgeKeyProvider.ProviderId => 1,
-            _ => 2,
+            SamKeyReference.ProviderIdText => 2,
+            _ => 3,
         };
     }
 }

@@ -205,6 +205,53 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Theory]
+        [InlineData(TaskType_MifareUltralightTask.ReadData)]
+        [InlineData(TaskType_MifareUltralightTask.WriteData)]
+        public async Task ASlotBoundToAKeyOfTheSam_ThatTheCommandDoesNotUse_IsNotAskedFor_AsWithAnyProvider(TaskType_MifareUltralightTask type)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The refusal is for the slots that a command uses: a task that does not authenticate has no key to get, from the SAM as from a
+                // vault, and its card calls are the same as without the binding.
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(new Scenario(type, UltralightAuth.None, UltralightExpectation.Auto, new string[0], new SecureKeyAlgorithm[0], string.Empty));
+                task.KeyBindings = Slots.Keys.Select(slot => new KeyBindingEntry { Slot = slot, ProviderId = SamKeyProvider.ProviderId, Reference = "1:0" }).ToArray();
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(type == TaskType_MifareUltralightTask.ReadData ? "Read[]" : "Write[]", run.Calls);
+                Assert.Equal(ERROR.NoError, run.Error);
+                Assert.Empty(vault.Requests);
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(EveryScenario))]
+        public async Task ASlotBoundToAKeyOfTheSam_StopsTheTaskBeforeTheCard(string name)
+        {
+            var scenario = Scenarios[name];
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A key of the SAM is never bytes, and no Ultralight command can hand a reference to the SAM: the task stops, asks no
+                // provider, and does not fall back to the embedded key.
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(scenario);
+                task.KeyBindings = Slots.Keys.Select(slot => new KeyBindingEntry { Slot = slot, ProviderId = SamKeyProvider.ProviderId, Reference = "1:0" }).ToArray();
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+                Assert.False(run.Completed);
+                Assert.Equal(0, run.ReaderCalls);
+                Assert.DoesNotContain("1:0", run.Status, StringComparison.Ordinal);
+                Assert.Empty(vault.Requests);
+            });
+        }
+
         [Fact]
         public async Task ABindingForASlotOfAnotherTask_StopsTheTask_EvenWhenItDoesNotAuthenticate()
         {

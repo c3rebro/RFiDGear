@@ -58,6 +58,17 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void The_sam_is_no_provider_to_bind_a_slot_to_while_no_command_can_use_it()
+        {
+            var sam = new SecureKeyProviderInfo(SamKeyProvider.ProviderId, SamKeyProvider.DisplayName);
+
+            var state = NewState(new FakeHost(), new ScriptedDialogs(), new[] { CredentialManager, sam });
+
+            Assert.Equal(new[] { WindowsCredentialKeyProvider.ProviderId }, state.Providers.Select(provider => provider.Id));
+            Assert.False(state.ShowProviderChoice);
+        }
+
+        [Fact]
         public void A_task_without_a_key_is_switched_without_a_question()
         {
             var host = new FakeHost();

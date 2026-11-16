@@ -55,13 +55,13 @@ namespace RFiDGear.Services.SecureKeys
                 .ToList();
 
         /// <summary>
-        /// Gets the providers that are part of RFiDGear: the Windows Credential Manager, and the program that is connected to the
-        /// external control bridge (it answers "unavailable" until a program registers as supplier of keys). Their ids are
-        /// reserved; no extension can take one over.
+        /// Gets the providers that are part of RFiDGear: the Windows Credential Manager, the program that is connected to the
+        /// external control bridge (it answers "unavailable" until a program registers as supplier of keys), and the SAM (whose keys
+        /// are never bytes, so it hands out none). Their ids are reserved; no extension can take one over.
         /// </summary>
         /// <returns>The registrations.</returns>
         internal static IReadOnlyList<SecureKeyProviderRegistration> BuiltInProviders() =>
-            new[] { WindowsCredentialKeyProvider.Registration(), BridgeKeyProvider.Registration() };
+            new[] { WindowsCredentialKeyProvider.Registration(), BridgeKeyProvider.Registration(), SamKeyProvider.Registration() };
 
         /// <summary>
         /// Builds the registry from the built-in providers and the extensions of this installation, composing the extensions

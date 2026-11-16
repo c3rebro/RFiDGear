@@ -148,6 +148,51 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        // ── A key of the SAM ──
+
+        [Theory]
+        [MemberData(nameof(DesfireKeySlotCharacterizationTests.EveryTaskType), MemberType = typeof(DesfireKeySlotCharacterizationTests))]
+        public async Task A_slot_bound_to_a_key_of_the_sam_stops_every_task_before_the_card_is_touched(TaskType_MifareDesfireTask type, string expectedCalls)
+        {
+            Assert.NotEmpty(expectedCalls);
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // No command of this suite can use a key of the SAM yet: the key never reaches the card as bytes, and nothing falls back
+                // to the embedded key of the slot or asks a provider for one.
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(type);
+                task.KeyBindings = Slots.Keys.Select(slot => new KeyBindingEntry { Slot = slot, ProviderId = SamKeyProvider.ProviderId, Reference = "1:0" }).ToArray();
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+                Assert.Contains("desfire.", run.Status, StringComparison.Ordinal);
+                Assert.DoesNotContain("1:0", run.Status, StringComparison.Ordinal);
+                Assert.Empty(vault.Requests);
+                AssertNothingSecretIn(run.Status);
+            });
+        }
+
+        [Fact]
+        public async Task A_slot_bound_to_a_key_of_the_sam_that_is_none_ends_the_task_just_the_same()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                new Vault().Install();
+                var task = NewTask(TaskType_MifareDesfireTask.ReadData);
+                task.KeyBindings = new[] { new KeyBindingEntry { Slot = SecureKeySlots.DesfireRead, ProviderId = SamKeyProvider.ProviderId, Reference = "0:0" } };
+
+                var run = await RunAsync(task);
+
+                // Entry 0 is the master key of the SAM: it is no reference, and the binding is wrong before the command looks at it.
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+            });
+        }
+
         [Theory]
         [InlineData(SecureKeyFailureReason.NotFound)]
         [InlineData(SecureKeyFailureReason.NotAuthorized)]
