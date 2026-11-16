@@ -3,6 +3,8 @@ using System;
 
 using Elatec.NET.Interfaces;
 
+using Serilog;
+
 namespace RFiDGear.Services.Sam
 {
     /// <summary>The SAM, opened for one operation. It holds the SAM (<see cref="SamPortGate"/>) until it is disposed.</summary>
@@ -100,8 +102,11 @@ namespace RFiDGear.Services.Sam
                 {
                     connection = _finder.Open(samReaderName);
                 }
-                catch (SamReaderException)
+                catch (Exception e) when (e is not OperationCanceledException)
                 {
+                    // The library does not wrap every failure of a reader: the type is all that is known, and all that is logged.
+                    Log.ForContext<SamPiccConnector>().Warning("SAM PICC: opening the SAM failed ({ExceptionType}).", e.GetType().Name);
+
                     return new SamPiccOpen(null, SamPiccFailure.ReaderFailure);
                 }
 

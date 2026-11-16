@@ -44,6 +44,9 @@ namespace RFiDGear.Services.Sam
 
         /// <summary>A reader or the channel to the SAM failed.</summary>
         ReaderFailure,
+
+        /// <summary>The request cannot be sent: an application number of more than 24 bits, or a key number of the card that does not exist. Nothing was sent.</summary>
+        InvalidRequest,
     }
 
     /// <summary>
@@ -114,6 +117,11 @@ namespace RFiDGear.Services.Sam
         /// <returns>The result; no key and no text of an exception is in it.</returns>
         internal async Task<SamPiccResult> AuthenticateAsync(uint appId, byte cardKeyNo, SamPiccKeyType type, SamKeyReference key)
         {
+            if (!IsValidTarget(appId, cardKeyNo))
+            {
+                return Invalid("authenticate");
+            }
+
             try
             {
                 var result = await AuthenticateCoreAsync("authenticate", appId, cardKeyNo, type, key).ConfigureAwait(false);
@@ -134,6 +142,11 @@ namespace RFiDGear.Services.Sam
         /// <returns>The result; <see cref="SamPiccResult.KeyMayHaveChanged"/> says when the card may hold the new key although it did not end well.</returns>
         internal async Task<SamPiccResult> ChangeKeyAsync(SamPiccKeyChange change)
         {
+            if (!IsValidTarget(change.AppId, change.AuthKeyNo) || !IsValidTarget(change.AppId, change.TargetKeyNo))
+            {
+                return Invalid("change key");
+            }
+
             var cryptogramSent = false;
 
             try
@@ -300,17 +313,28 @@ namespace RFiDGear.Services.Sam
             }
         }
 
-        // One APDU to the card: the data and the status word (the last two bytes). An answer of less than two bytes has no status word (0).
+        // One APDU to the card: the data and the status word (the last two bytes). An answer of less than two bytes is a failure of the reader.
         private async Task<(byte[] Data, ushort Status)> ExchangeCardAsync(byte[] apdu)
         {
             var answer = await Task.Run(() => _card.Exchange(apdu)).ConfigureAwait(false);
 
+            // An answer without a status word is no answer: after the cryptogram of a key change it must not read as a refusal.
             if (answer == null || answer.Length < 2)
             {
-                return (Array.Empty<byte>(), 0);
+                throw new SamReaderException("The card answered without a status word.");
             }
 
             return (answer.Take(answer.Length - 2).ToArray(), (ushort)((answer[answer.Length - 2] << 8) | answer[answer.Length - 1]));
+        }
+
+        // An application number has 24 bits (the select sends three bytes), and a key of a card has a number from 0 to 13.
+        private static bool IsValidTarget(uint appId, byte keyNo) => appId <= 0xFFFFFF && keyNo <= 0x0D;
+
+        private static SamPiccResult Invalid(string step)
+        {
+            Record(step, "InvalidRequest", 0, 0);
+
+            return new SamPiccResult(ERROR.ProtocolConstraint, SamPiccFailure.InvalidRequest);
         }
 
         private static SamPiccResult Failed(string step, Exception e, bool keyMayHaveChanged)

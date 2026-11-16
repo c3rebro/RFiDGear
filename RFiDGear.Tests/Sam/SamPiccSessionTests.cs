@@ -234,6 +234,64 @@ namespace RFiDGear.Tests.Sam
             Assert.True(result.Succeeded);
         }
 
+        [Theory]
+        [InlineData(0x1000000u)]
+        [InlineData(0x1000001u)]
+        [InlineData(0xFFFFFFFFu)]
+        public async Task An_application_number_of_more_than_24_bits_is_refused_before_anything_is_sent(uint appId)
+        {
+            // The select sends three bytes: 0x01000001 would select application 1, and 0x01000000 the card itself.
+            var rig = new PiccRig();
+
+            var authenticated = await rig.Session.AuthenticateAsync(appId, 0, SamPiccKeyType.Aes128, Aes);
+            var changed = await rig.Session.ChangeKeyAsync(new SamPiccKeyChange(appId, 0, SamPiccKeyType.Aes128, Aes, 1, SamPiccKeyType.Aes128, Aes, Des, true));
+
+            Assert.Equal(ERROR.ProtocolConstraint, authenticated.Error);
+            Assert.Equal(SamPiccFailure.InvalidRequest, authenticated.Failure);
+            Assert.Equal(SamPiccFailure.InvalidRequest, changed.Failure);
+            Assert.Empty(rig.Frames);
+        }
+
+        [Fact]
+        public async Task The_largest_application_number_of_a_card_is_sent_as_it_is()
+        {
+            var rig = new PiccRig();
+
+            await rig.Session.AuthenticateAsync(0xFFFFFF, 0, SamPiccKeyType.Aes128, Aes);
+
+            Assert.Contains("CARD 905A000003FFFFFF00", rig.Frames);
+        }
+
+        [Theory]
+        [InlineData(14)]
+        [InlineData(255)]
+        public async Task A_key_number_that_a_card_does_not_have_is_refused_before_anything_is_sent(int keyNo)
+        {
+            var rig = new PiccRig();
+
+            var authenticated = await rig.Session.AuthenticateAsync(0, (byte)keyNo, SamPiccKeyType.Aes128, Aes);
+            var authKey = await rig.Session.ChangeKeyAsync(new SamPiccKeyChange(1, (byte)keyNo, SamPiccKeyType.Aes128, Aes, 1, SamPiccKeyType.Aes128, Aes, Des, true));
+            var target = await rig.Session.ChangeKeyAsync(new SamPiccKeyChange(1, 0, SamPiccKeyType.Aes128, Aes, (byte)keyNo, SamPiccKeyType.Aes128, Aes, Des, true));
+
+            Assert.Equal(SamPiccFailure.InvalidRequest, authenticated.Failure);
+            Assert.Equal(SamPiccFailure.InvalidRequest, authKey.Failure);
+            Assert.Equal(SamPiccFailure.InvalidRequest, target.Failure);
+            Assert.Empty(rig.Frames);
+        }
+
+        [Fact]
+        public async Task An_answer_of_the_card_without_a_status_word_is_a_transport_failure_and_nothing_follows()
+        {
+            var rig = new PiccRig();
+            rig.CardOverride = apdu => apdu[1] == 0x5A ? new byte[] { 0x91 } : null;
+
+            var result = await rig.Session.AuthenticateAsync(0, 0, SamPiccKeyType.Aes128, Aes);
+
+            Assert.Equal(ERROR.TransportError, result.Error);
+            Assert.Equal(SamPiccFailure.ReaderFailure, result.Failure);
+            Assert.False(result.KeyMayHaveChanged);
+            Assert.Single(rig.CardFrames);
+        }
         // ---- change key
 
         private static SamPiccKeyChange MasterChange(bool verify) =>
@@ -360,6 +418,20 @@ namespace RFiDGear.Tests.Sam
             Assert.True(result.KeyMayHaveChanged);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public async Task No_answer_or_one_byte_after_the_cryptogram_is_no_refusal_and_the_key_may_have_changed(int length)
+        {
+            var rig = new PiccRig();
+            rig.CardOverride = apdu => apdu[1] == 0xC4 ? new byte[length] : null;
+
+            var result = await rig.Session.ChangeKeyAsync(MasterChange(true));
+
+            Assert.Equal(ERROR.TransportError, result.Error);
+            Assert.Equal(SamPiccFailure.ReaderFailure, result.Failure);
+            Assert.True(result.KeyMayHaveChanged);
+        }
         [Fact]
         public async Task A_change_whose_check_fails_says_that_the_key_may_have_changed_and_could_not_be_verified()
         {

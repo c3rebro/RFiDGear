@@ -265,4 +265,4 @@ the SAM and never seen by the PC. Times are local.
 02:12:06.794  <- SW=9000
 02:12:06.797  RESULT 7: SAM part 1 on a new connection SW 90AF and the authe
     ntication completed: closing the connection reset the SAM
-```n
+```

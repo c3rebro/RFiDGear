@@ -111,6 +111,21 @@ namespace RFiDGear.Tests.Sam
             Assert.False(SamPortGate.IsHeld);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Any_failure_of_the_reader_source_is_a_reader_failure_and_the_gate_is_given_back(bool inTheAtr)
+        {
+            // The library does not wrap every failure of a reader: an ordinary exception must not escape and must not keep the SAM held.
+            var source = Source();
+            (inTheAtr ? source.AtrFails : source.ConnectFails)[SamReader] = new InvalidOperationException("reader text that must not be logged");
+
+            var open = new SamPiccConnector(new SamReaderFinder(source)).Open(SamReader, CardReader);
+
+            Assert.Null(open.Connection);
+            Assert.Equal(SamPiccFailure.ReaderFailure, open.Failure);
+            Assert.False(SamPortGate.IsHeld);
+        }
         [Fact]
         public void An_open_sam_holds_the_gate_until_it_is_disposed_and_then_lets_go_of_the_card_once()
         {
