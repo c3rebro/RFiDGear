@@ -65,13 +65,21 @@ one DESFire EV3 with a throwaway console (`SAM-PICC-FIRST-CONTACT.md` and
    bound to `2:0`. **This direction (AES to DES) has not been tried on a
    card.** Expect success and the factory key on the card; if it fails, write
    down the status words of the line and check which key the card holds.
-5. Create an application with a typed key (a task you know), then run the
-   task "Change Application Key" on it: the key that authenticates and the
-   key that is replaced bound to the SAM `1:0` (AES) and the new key to the
-   SAM `3:0` (another AES entry). **The change of an application key through
-   the SAM has not been tried on a card** (the P1 and the P2 of a key other
-   than the one that authenticated). Expect success and a check by
-   authentication with the new key.
+5. Create an application with AES keys that you know: its keys 0 and 1 both
+   hold the test key of the SAM entry `1:0`. **The change of an application
+   key through the SAM has not been tried on a card**; the two cases below are
+   what it needs.
+   a. Key number 0, so that the key that authenticates is the key that is
+      replaced: run "Change Application Key" with the application key bound
+      to the SAM `1:0` and the new key bound to `3:0` (another AES entry).
+      Expect success and a check by authentication with the new key.
+   b. Key number 1 with the key policy "change with the master key", so that
+      key 0 authenticates and key 1 is replaced (the P1 and the P2 of a key
+      other than the one that authenticated): the dialog shows a box for the
+      old key then. Bind the application key (key 0, the key that
+      authenticates) to the SAM `1:0`, the old application key (what key 1
+      holds now) to the SAM `1:0` as well, and the new key to `3:0`. Expect
+      success and a check by authentication of key 1 with the new key.
 6. Run the task "Check: App Key" for that application with the
    current key bound to the SAM `3:0`. Expect success.
 7. Leave the reader of the SAM empty in the reader settings and run any of the
