@@ -575,6 +575,96 @@ namespace RFiDGear.Tests.Sam
         // An entry as the setup wrote it before Keep IV was known: enabled, AES-128, PICC class, SET 0x0020.
         private const string EntryWithoutKeepIvAnswer = "000000000000000000FF200001";
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(127)]
+        public async Task A_native_key_is_written_by_its_own_path_with_version_0_and_read_back_as_a_native_picc_key(int entryNumber)
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            using var typed = Secure(TypedKeyHex);
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(entryNumber, SamKeySource.FromTyped(typed), SamEntryKind.NativeTdea);
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.Matches), outcome);
+            Assert.Equal("read " + entryNumber, rig.Session.Calls.Last());
+            Assert.Contains("writenative " + entryNumber, rig.Session.Calls);
+            Assert.DoesNotContain(rig.Session.Calls, call => call.StartsWith("change", StringComparison.Ordinal));
+            Assert.Equal((byte)entryNumber, rig.Session.LastEntryNumber);
+            Assert.Equal(0, rig.Session.LastNativeVersion);
+            Assert.Equal(TypedKeyHex, Convert.ToHexString(rig.Session.KeyCopies.Last()));
+
+            // The key is erased when the step is over, as for an AES key.
+            Assert.All(rig.Session.KeyArrays.Last(), b => Assert.Equal(0, b));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(128)]
+        public async Task A_native_key_is_never_written_to_the_master_entry_or_outside_the_sam_and_costs_no_key(int entryNumber)
+        {
+            using var rig = new Rig();
+            rig.Session.IsAuthenticated = true;
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(entryNumber, SamKeySource.FromStored(StoredReference), SamEntryKind.NativeTdea);
+
+            Assert.Equal(SamStepResult.InvalidEntry, outcome.Result);
+            Assert.Empty(rig.Session.Calls);
+            Assert.Empty(rig.Provider.Requests);
+        }
+
+        [Fact]
+        public async Task A_native_key_is_not_written_before_a_host_authentication()
+        {
+            using var rig = new Rig();
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference), SamEntryKind.NativeTdea);
+
+            Assert.Equal(SamStepResult.NotAuthenticated, outcome.Result);
+            Assert.Empty(rig.Session.Calls);
+        }
+
+        [Fact]
+        public async Task A_refused_native_key_is_reported_with_its_status_word_and_neither_read_back_nor_tried_again()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            rig.Session.ChangeFails = new SamException("refused", 0x6A80);
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference), SamEntryKind.NativeTdea);
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Refused, 0x6A80), outcome);
+            Assert.Single(rig.Session.Calls.Where(c => c.StartsWith("writenative", StringComparison.Ordinal)));
+            Assert.DoesNotContain(rig.Session.Calls, call => call.StartsWith("read", StringComparison.Ordinal));
+            Assert.False(rig.Service.IsAuthenticated);
+        }
+
+        [Fact]
+        public async Task A_native_entry_that_reads_back_as_an_aes_key_is_said_to_differ()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+
+            // An entry with SET 0x0024 (AES-128, Keep IV): what a native key must not turn out to be.
+            rig.Session.ReadAnswer = Convert.FromHexString("000000000000000000FF240001");
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference), SamEntryKind.NativeTdea);
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.WrongKind), outcome);
+        }
+
+        [Fact]
+        public async Task An_aes_key_is_still_written_by_the_helper_path_when_no_kind_is_given()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+
+            await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Contains("change 1", rig.Session.Calls);
+            Assert.DoesNotContain(rig.Session.Calls, call => call.StartsWith("writenative", StringComparison.Ordinal));
+        }
         [Fact]
         public async Task A_written_entry_that_is_still_disabled_is_said_to_be_so_and_the_write_is_still_done()
         {

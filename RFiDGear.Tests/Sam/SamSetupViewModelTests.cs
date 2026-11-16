@@ -499,6 +499,52 @@ namespace RFiDGear.Tests.Sam
             Assert.False(rig.ViewModel.ResultIsError);
         }
 
+        [Fact]
+        public async Task The_key_type_is_aes_until_the_person_chooses_another_and_both_kinds_are_offered()
+        {
+            using var rig = new Rig();
+
+            Assert.Equal(SamEntryKind.Aes128, rig.ViewModel.SelectedEntryKind);
+            Assert.Equal(new[] { SamEntryKind.Aes128, SamEntryKind.NativeTdea }, rig.ViewModel.EntryKinds.Select(k => k.Kind));
+            Assert.Equal(new[] { "AES-128 (DESFire)", "DES / 2K3DES (DESFire native)" }, rig.ViewModel.EntryKinds.Select(k => k.DisplayName));
+            Assert.False(string.IsNullOrWhiteSpace(rig.ViewModel.EntryKindLabel));
+            Assert.False(string.IsNullOrWhiteSpace(rig.ViewModel.EntryKindToolTip));
+
+            await Task.CompletedTask;
+        }
+
+        [Fact]
+        public async Task A_native_key_is_written_through_the_native_path_and_the_last_line_says_that_it_is_a_native_picc_key()
+        {
+            using var rig = new Rig();
+            await rig.AuthenticatedAsync();
+            rig.ViewModel.SelectedEntryKind = SamEntryKind.NativeTdea;
+            rig.ViewModel.EntryNumberText = "5";
+            using var typed = TestText.Secure(TypedKeyHex);
+
+            await rig.ViewModel.WriteKeyAsync(typed);
+
+            Assert.Contains("writenative 5", rig.Session.Calls);
+            Assert.Equal("read 5", rig.Session.Calls.Last());
+            Assert.Equal("Read back from the SAM: key entry 5 is enabled and holds a DES / 2K3DES key of the PICC key class, as written.", rig.ViewModel.ResultText);
+            Assert.False(rig.ViewModel.ResultIsError);
+        }
+
+        [Fact]
+        public async Task A_native_key_that_reads_back_as_something_else_is_said_in_red_with_the_native_text()
+        {
+            using var rig = new Rig();
+            await rig.AuthenticatedAsync();
+            rig.ViewModel.SelectedEntryKind = SamEntryKind.NativeTdea;
+            rig.Session.ReadAnswer = Convert.FromHexString("000000000000000000FF240001");
+            rig.ViewModel.EntryNumberText = "5";
+            using var typed = TestText.Secure(TypedKeyHex);
+
+            await rig.ViewModel.WriteKeyAsync(typed);
+
+            Assert.True(rig.ViewModel.ResultIsError);
+            Assert.Contains("is not a DES / 2K3DES key of the PICC key class", rig.ViewModel.ResultText, StringComparison.Ordinal);
+        }
         [Theory]
         [InlineData("000000000000000000FF200200", "is disabled (SET bit 9)")]
         [InlineData("000000000000000000FF200000", "is not an AES-128 key of the PICC key class")]
@@ -708,7 +754,7 @@ namespace RFiDGear.Tests.Sam
         [Fact]
         public void No_property_of_the_view_model_can_hold_a_key()
         {
-            var allowed = new[] { typeof(string), typeof(bool), typeof(int), typeof(SamSetupState), typeof(System.Windows.Input.ICommand), typeof(IReadOnlyList<string>), typeof(IReadOnlyList<SamKeyChoice>) };
+            var allowed = new[] { typeof(string), typeof(bool), typeof(int), typeof(SamSetupState), typeof(System.Windows.Input.ICommand), typeof(IReadOnlyList<string>), typeof(IReadOnlyList<SamKeyChoice>), typeof(IReadOnlyList<SamEntryKindChoice>), typeof(SamEntryKind) };
 
             foreach (var property in typeof(SamSetupViewModel).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {

@@ -191,8 +191,11 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   new SAM. A reader that fails is a `SamReaderException`; a SAM that says no is
   a plain `SamException` with a status word.
 - `SamSetupService` has the steps: connect (SAM_GetVersion), authenticate (key
-  entry 0, version 0), activate (SAM_LockUnlock), write a key entry (an AES-128
-  PICC key into 1 to 127, version 0). Each is one attempt and never repeated.
+  entry 0, version 0), activate (SAM_LockUnlock), write a key entry (a PICC
+  key into 1 to 127, version 0: AES-128 with Keep IV, SET `0x0024`, or a DESFire
+  native DES/2K3DES key, SET `0x0000`; Elatec.NET writes AES-128 only, so the
+  native entry is built by `SamKeyEntryFrame` and sent through `ExecuteSecureAsync`).
+  Each is one attempt and never repeated.
   **The activation worked on the one real SAM AV3 it was tried on (2026-11-15:
   `90AF`, `90AF`, `9000`, and the SAM stayed activated after it was taken out
   and put back). No way back is known, so it is treated as irreversible.** It

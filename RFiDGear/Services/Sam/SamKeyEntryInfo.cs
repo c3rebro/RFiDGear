@@ -102,12 +102,31 @@ namespace RFiDGear.Services.Sam
         /// <summary>Gets whether the entry is of the PICC key class.</summary>
         internal bool IsPiccKey => KeyClass == KeyClassPicc;
 
-        /// <summary>Gets what to say about the entry that was written: it is usable for authenticating a DESFire PICC, or why not.</summary>
-        internal SamKeyEntryCheck Verdict =>
-            !IsEnabled ? SamKeyEntryCheck.Disabled
-            : IsAes128 && IsPiccKey ? (HasKeepIv ? SamKeyEntryCheck.Matches : SamKeyEntryCheck.MissingKeepIv)
-            : SamKeyEntryCheck.WrongKind;
+        /// <summary>Gets what to say about an AES-128 entry that was written: it is usable for authenticating a DESFire PICC, or why not.</summary>
+        internal SamKeyEntryCheck Verdict => VerdictFor(SamEntryKind.Aes128);
 
+        /// <summary>Gets whether the type bits (3 to 5) say DESFire native TDEA: <c>000b</c>.</summary>
+        internal bool IsNativeTdea => (Set & KeyTypeMask) == 0;
+
+        /// <summary>
+        /// What to say about the entry that was written, for the kind of key that was meant: usable for authenticating a DESFire PICC, or why not.
+        /// A disabled entry is never usable. An AES-128 key needs the PICC class and Keep IV; a native TDEA key needs the PICC class, type
+        /// <c>000b</c> and Keep IV <b>clear</b> (NXP AN12696, table 1: the incorrect setting ends in an authentication error).
+        /// </summary>
+        /// <param name="kind">The kind of key that was written.</param>
+        /// <returns>The verdict.</returns>
+        internal SamKeyEntryCheck VerdictFor(SamEntryKind kind)
+        {
+            if (!IsEnabled)
+            {
+                return SamKeyEntryCheck.Disabled;
+            }
+
+            return kind == SamEntryKind.NativeTdea
+                ? (IsNativeTdea && IsPiccKey && !HasKeepIv ? SamKeyEntryCheck.Matches : SamKeyEntryCheck.WrongKind)
+                : IsAes128 && IsPiccKey ? (HasKeepIv ? SamKeyEntryCheck.Matches : SamKeyEntryCheck.MissingKeepIv)
+                : SamKeyEntryCheck.WrongKind;
+        }
         /// <summary>Reads the answer of SAM_GetKeyEntry.</summary>
         /// <param name="data">The decrypted data of the answer.</param>
         /// <returns>What the SAM said, or <c>null</c> when the answer is not 13 bytes long.</returns>

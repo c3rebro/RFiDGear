@@ -79,6 +79,10 @@ namespace RFiDGear.HIL.Tests
         private const byte Entry = 120;
         private const string TestKeyHex = "0F1E2D3C4B5A69788796A5B4C3D2E1F0";
 
+        // A second entry, for the native key. The key is a DES test key (two equal halves) and no secret.
+        private const byte NativeEntry = 121;
+        private const string NativeTestKeyHex = "11223344556677881122334455667788";
+
         /// <summary>
         /// A blank entry of a SAM is disabled (SET bit 9, AN12701 table 2). The entry that the application writes must be read back
         /// enabled, an AES-128 key, and of the PICC key class: otherwise the key in it could not be used to authenticate a PICC.
@@ -143,6 +147,75 @@ namespace RFiDGear.HIL.Tests
                 Assert.True(after.HasKeepIv);
                 Assert.Equal(1, after.KeyClass);
                 Assert.Equal(SamKeyEntryCheck.Matches, after.Verdict);
+                Assert.Equal(0xFF, after.RefNoKuc);
+                Assert.Equal(0, after.VersionA);
+            });
+
+        /// <summary>
+        /// The same for a DESFire native TDEA key (DES or 2K3DES, SET 0x0000): the entry that the application writes must be read back enabled, of
+        /// type 000b, of the PICC key class and without Keep IV, or the factory key of a DESFire card could not be used through the SAM.
+        /// </summary>
+        /// <returns>The task of the test.</returns>
+        [HilCardWriteFact]
+        public Task ANativeKeyEntryThatIsWritten_IsReadBack_AsANativePiccKeyWithoutKeepIv() =>
+            StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var finder = new SamReaderFinder(new LlaSamReaderSource());
+                var search = await Task.Run(() => finder.Find());
+
+                if (search.Readers.Count == 0)
+                {
+                    throw SkipException.ForSkip("No MIFARE SAM AV3 was found in a PC/SC reader.");
+                }
+
+                using var connection = finder.Open(search.Readers[0].Name);
+
+                Assert.NotNull(connection);
+
+                using var session = new Av3HostSession(connection!.Channel);
+
+                try
+                {
+                    // Only the factory key: a SAM that was never activated says 6985, and a SAM with another master key refuses.
+                    await session.AuthenticateHostAsync(0, 0, new byte[16]);
+                }
+                catch (SamException e)
+                {
+                    throw SkipException.ForSkip("The host authentication with the factory master key failed (status " + e.StatusWord.ToString("X4")
+                        + "): the SAM is not activated, or its master key is not the factory key. This case does neither activate nor change a master key.");
+                }
+
+                var before = await session.ReadKeyEntryAsync(NativeEntry);
+
+                Assert.NotNull(before);
+
+                // A blank entry is disabled. An enabled entry is in use: a key cannot be read back, so a key that this case wrote on an earlier run cannot be told from the key of somebody else, and neither is overwritten.
+                if (before!.IsEnabled)
+                {
+                    throw SkipException.ForSkip("Key entry " + NativeEntry + " is enabled, so it is in use (a key cannot be read back, so one of an earlier run cannot be told from another): it is left alone. The case writes only into a blank entry, once.");
+                }
+
+                var key = Convert.FromHexString(NativeTestKeyHex);
+
+                try
+                {
+                    await session.WriteNativeKeyEntryAsync(NativeEntry, key, 0);
+                }
+                finally
+                {
+                    Array.Clear(key, 0, key.Length);
+                }
+
+                var after = await session.ReadKeyEntryAsync(NativeEntry);
+
+                Assert.NotNull(after);
+                Assert.Equal(0, after!.Set & 0x0200);
+                Assert.True(after.IsEnabled);
+                Assert.True(after.IsNativeTdea);
+                Assert.False(after.IsAes128);
+                Assert.False(after.HasKeepIv);
+                Assert.Equal(1, after.KeyClass);
+                Assert.Equal(SamKeyEntryCheck.Matches, after.VerdictFor(SamEntryKind.NativeTdea));
                 Assert.Equal(0xFF, after.RefNoKuc);
                 Assert.Equal(0, after.VersionA);
             });

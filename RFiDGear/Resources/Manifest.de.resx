@@ -2585,7 +2585,24 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageSamSetupEntryDiffers" xml:space="preserve">
     <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist kein AES-128-Schlüssel der Schlüsselklasse PICC, wie er geschrieben wurde. Verwenden Sie ihn nicht.</value>
   </data>
-  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
+  <data name="labelSamSetupEntryKind" xml:space="preserve">
+    <value>Schlüsseltyp:</value>
+  </data>
+  <data name="toolTipSamSetupEntryKind" xml:space="preserve">
+    <value>Die Art des Schlüssels, den die DESFire-Karte hält. AES-128: eine Karte mit AES-Schlüssel (geschrieben mit SET 0x0024, „Keep IV“ gesetzt). DES / 2K3DES: eine Karte mit dem nativen Schlüsseltyp, etwa der Werksschlüssel einer neuen Karte (geschrieben mit SET 0x0000). Beides sind Schlüssel der Klasse PICC mit 16 Bytes (ein DES-Schlüssel besteht aus zwei gleichen Hälften).</value>
+  </data>
+  <data name="textSamSetupEntryKindAes" xml:space="preserve">
+    <value>AES-128 (DESFire)</value>
+  </data>
+  <data name="textSamSetupEntryKindNative" xml:space="preserve">
+    <value>DES / 2K3DES (DESFire nativ)</value>
+  </data>
+  <data name="messageSamSetupEntryVerifiedNative" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist aktiviert und enthält einen DES-/2K3DES-Schlüssel der Schlüsselklasse PICC, wie geschrieben.</value>
+  </data>
+  <data name="messageSamSetupEntryDiffersNative" xml:space="preserve">
+    <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist kein DES-/2K3DES-Schlüssel der Schlüsselklasse PICC, wie er geschrieben wurde. Verwenden Sie ihn nicht.</value>
+  </data>  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
     <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist aktiviert und enthält einen AES-128-Schlüssel der Schlüsselklasse PICC, aber „Keep IV“ (SET-Bit 2) ist nicht gesetzt. Eine DESFire-Karte lässt sich damit nicht authentisieren (die SAM weist die Antwort der Karte ab). Schreiben Sie den Schlüssel erneut.</value>
   </data>
   <data name="messageSamSetupEntryUnreadable" xml:space="preserve">

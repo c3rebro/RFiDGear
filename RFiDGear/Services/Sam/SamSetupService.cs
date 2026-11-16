@@ -284,14 +284,22 @@ namespace RFiDGear.Services.Sam
             }
         }
 
-        /// <summary>
-        /// Writes an AES-128 PICC key into a key entry of the SAM (version 0, changeable with the master key, no usage
-        /// counter). Needs a host authentication first. The master key entry is never written.
-        /// </summary>
+        /// <summary>Writes an AES-128 PICC key into a key entry of the SAM (<see cref="SamEntryKind.Aes128"/>).</summary>
         /// <param name="entryNumber">The key entry, 1 to 127.</param>
         /// <param name="key">The key to write.</param>
+        /// <returns>The outcome.</returns>
+        internal Task<SamStepOutcome> WriteKeyEntryAsync(int entryNumber, SamKeySource key) => WriteKeyEntryAsync(entryNumber, key, SamEntryKind.Aes128);
+
+        /// <summary>
+        /// Writes a PICC key into a key entry of the SAM (version 0, changeable with the master key, no usage counter): AES-128 with Keep IV
+        /// (SET <c>0x0024</c>), or a DESFire native TDEA key (SET <c>0x0000</c>). Needs a host authentication first. The master key entry is
+        /// never written.
+        /// </summary>
+        /// <param name="entryNumber">The key entry, 1 to 127.</param>
+        /// <param name="key">The key to write: 16 bytes.</param>
+        /// <param name="kind">The kind of key.</param>
         /// <returns>The outcome. The SAM's answer is proof that it was written; the key cannot be read back.</returns>
-        internal async Task<SamStepOutcome> WriteKeyEntryAsync(int entryNumber, SamKeySource key)
+        internal async Task<SamStepOutcome> WriteKeyEntryAsync(int entryNumber, SamKeySource key, SamEntryKind kind)
         {
             if (entryNumber < FirstWritableEntry || entryNumber > LastWritableEntry)
             {
@@ -317,11 +325,18 @@ namespace RFiDGear.Services.Sam
 
             try
             {
-                await _session.ChangeKeyEntryAsync((byte)entryNumber, SamKeyEntries.Aes128PiccKey(read.Key.Bytes, 0)).ConfigureAwait(false);
+                if (kind == SamEntryKind.NativeTdea)
+                {
+                    await _session.WriteNativeKeyEntryAsync((byte)entryNumber, read.Key.Bytes, 0).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _session.ChangeKeyEntryAsync((byte)entryNumber, SamKeyEntries.Aes128PiccKey(read.Key.Bytes, 0)).ConfigureAwait(false);
+                }
 
                 // The key cannot be read back, but the settings of its entry can: a blank entry is disabled (SET bit 9), and a key
                 // that was written to an entry that stays disabled is no key anybody can use.
-                return Record("write", SamStepResult.Done, 0, await ReadBackAsync((byte)entryNumber).ConfigureAwait(false));
+                return Record("write", SamStepResult.Done, 0, await ReadBackAsync((byte)entryNumber, kind).ConfigureAwait(false));
             }
             catch (SamReaderException e)
             {
@@ -381,13 +396,13 @@ namespace RFiDGear.Services.Sam
         }
 
         // The write is done when this runs; whatever it finds, it never turns the write into a failure.
-        private async Task<SamKeyEntryCheck> ReadBackAsync(byte entryNumber)
+        private async Task<SamKeyEntryCheck> ReadBackAsync(byte entryNumber, SamEntryKind kind)
         {
             try
             {
                 var info = await _session!.ReadKeyEntryAsync(entryNumber).ConfigureAwait(false);
 
-                return info?.Verdict ?? SamKeyEntryCheck.Unreadable;
+                return info?.VerdictFor(kind) ?? SamKeyEntryCheck.Unreadable;
             }
             catch (SamReaderException e)
             {

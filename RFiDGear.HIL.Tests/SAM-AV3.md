@@ -109,11 +109,14 @@ log. What the window looks like, as the tests render it with a scripted SAM
    second activation.
 6. Write a key: key entry 1, and a key of your own that is not a secret (for
    instance `0F1E2D3C4B5A69788796A5B4C3D2E1F0`), typed into the box (hidden
-   until you tick "Show key"). "Write key". The message says that the key was
-   written to key entry 1, and the box is empty afterwards. A second line says
-   what the SAM reports when the entry is read back: enabled, AES-128, PICC key
-   class, Keep IV set (green), or that the entry is still disabled, of another
-   kind, or lacks Keep IV (red).
+   until you tick "Show key"). The key type box says what the card holds:
+   AES-128, or DES / 2K3DES for the factory key of a new card (sixteen zero
+   bytes, "00000000000000000000000000000000"). "Write key". The message says
+   that the key was written to key entry 1, and the box is empty afterwards. A
+   second line says what the SAM reports when the entry is read back: enabled,
+   of the chosen type, PICC key class, and Keep IV as that type needs it (set
+   for AES-128, clear for DES / 2K3DES) (green), or that the entry is still
+   disabled, of another kind, or lacks Keep IV (red).
    If the SAM refuses the write, the message gives the status word: that is the
    interesting result, write it down. Nothing is repeated.
 7. Entries that must be refused: key entry 0 and key entry 128 turn the box pink
@@ -141,6 +144,13 @@ log. What the window looks like, as the tests render it with a scripted SAM
   case wrote earlier cannot be told from the key of somebody else, and an
   entry that is in use is never overwritten. So it runs once per SAM (it writes
   only into a blank entry 120), and the entry stays written.
+
+- **ANativeKeyEntryThatIsWritten_IsReadBack_AsANativePiccKeyWithoutKeepIv**: the
+  same for a DESFire native key (DES or 2K3DES): a test key (two equal halves)
+  into key entry 121 with SET `0x0000`, read back with SAM_GetKeyEntry, and
+  asserted: enabled, type `000b`, PICC class, Keep IV clear. The frame is built
+  by the application (Elatec.NET writes AES-128 only), so this case is what
+  proves it on a SAM. It writes only into a blank entry 121, once.
 
 **What this does not check:**
 

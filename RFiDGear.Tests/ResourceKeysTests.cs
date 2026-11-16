@@ -274,6 +274,12 @@ namespace RFiDGear.Tests
             "messageSamSetupEntryDisabled",
             "messageSamSetupEntryDiffers",
             "messageSamSetupEntryNoKeepIv",
+            "messageSamSetupEntryVerifiedNative",
+            "messageSamSetupEntryDiffersNative",
+            "labelSamSetupEntryKind",
+            "toolTipSamSetupEntryKind",
+            "textSamSetupEntryKindAes",
+            "textSamSetupEntryKindNative",
             "messageSamSetupEntryUnreadable",
         };
 
@@ -281,6 +287,7 @@ namespace RFiDGear.Tests
         private static readonly string[] SameInBothLanguages =
         {
             "labelContentMifareDesfireBytes",
+            "textSamSetupEntryKindAes",
             "statusHeaderReaderIsInitializing",
             "groupBoxHeaderMifareUltralightChip",
             "groupBoxHeaderMifareUltralightKeyC",
