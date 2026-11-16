@@ -1974,23 +1974,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     {
                         StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
-                        for (var i = 0; i < device.Sector.DataBlock.Count - 1; i++)
+                        // The sector is empty when every data block (the trailer is not looked at) was read and is all zeros. A block that no key
+                        // could read has no data and cannot be shown to be empty. (The loop used to set IsNotTrue and the line after it to NoError,
+                        // so the check never found anything.)
+                        var isEmpty = device.Sector.IsAuthenticated;
+
+                        for (var i = 0; i < device.Sector.DataBlock.Count - 1 && isEmpty; i++)
                         {
-                            for (var j = 0; j < device.Sector.DataBlock[i].Data.Length; j++)
-                            {
-                                if (device.Sector.DataBlock[i].Data[j] == 0 && device.Sector.IsAuthenticated == true)
-                                {
-                                    continue;
-                                }
-                                else
-                                {
-                                    CurrentTaskErrorLevel = ERROR.IsNotTrue;
-                                    break;
-                                }
-                            }
+                            var data = device.Sector.DataBlock[i].Data;
+
+                            isEmpty = data != null && Array.TrueForAll(data, value => value == 0);
                         }
 
-                        CurrentTaskErrorLevel = ERROR.NoError;
+                        CurrentTaskErrorLevel = isEmpty ? ERROR.NoError : ERROR.IsNotTrue;
 
                     }
 
@@ -2077,7 +2073,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 }
                                 else
                                 {
-                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
+                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i].DataBlockNumberChipBased);
                                 }
                             }
 

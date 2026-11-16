@@ -173,7 +173,9 @@ namespace RFiDGear.Infrastructure.Classic
 
             if (type != state.LoggedIn)
             {
-                var opened = await OpenSessionAsync(state, type, wakeFirst: true);
+                // The chip is awake here (the reads before this one worked, or this is the first login after a refusal that was followed by a
+                // wake): a wake is a login that is expected to fail, and on a chip that is awake it would halt it.
+                var opened = await OpenSessionAsync(state, type, wakeFirst: false);
 
                 if (opened.Error == ERROR.TransportError)
                 {

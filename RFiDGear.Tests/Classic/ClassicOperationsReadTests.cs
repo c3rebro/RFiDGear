@@ -191,11 +191,12 @@ namespace RFiDGear.Tests.Classic
             Assert.Equal(Enumerable.Repeat((byte)0x77, 16).ToArray(), read.Blocks[1].Data);
             Assert.Equal(ClassicKeyType.KeyA, read.LoginKey);
 
-            // Key A reads the blocks 24 and 26 first, then the chip is woken once for key B, which reads block 25: no read was refused.
+            // Key A reads the blocks 24 and 26 first, then key B logs in and reads block 25. Nothing was refused, so the chip was never woken:
+            // a wake is a login that fails, and on a chip that is awake it would halt it and make the login of key B fail.
             Assert.Equal(
-                new[] { "login 6 KeyA", "read 27", "read 24", "read 26", "reselect", "login 6 KeyB", "read 27", "read 25" },
+                new[] { "login 6 KeyA", "read 27", "read 24", "read 26", "login 6 KeyB", "read 27", "read 25" },
                 chip.Log);
-            Assert.Equal(1, chip.Reselects);
+            Assert.Equal(0, chip.Reselects);
         }
 
         [Fact]

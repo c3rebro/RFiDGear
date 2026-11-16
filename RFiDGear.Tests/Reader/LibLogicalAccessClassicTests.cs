@@ -149,7 +149,8 @@ namespace RFiDGear.Tests.Reader
         [Fact]
         public async Task TwoReadsInARow_DoNotRunTogether()
         {
-            var chip = new SimulatedClassicChip();
+            // Every call of the chip gives up the thread, so the two reads would interleave their calls if nothing held the second back.
+            var chip = new SimulatedClassicChip { YieldsOnEveryCall = true };
             var reader = new ClassicPcscTestReader(chip);
 
             var results = await Task.WhenAll(

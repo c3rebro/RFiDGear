@@ -93,6 +93,12 @@ namespace RFiDGear.Infrastructure.Classic
 
             if (!string.IsNullOrWhiteSpace(keyB) && !ClassicKey.TryParse(keyB, out b))
             {
+                // The key A that was read has no owner that could clear it: it is cleared here.
+                if (a != null)
+                {
+                    Array.Clear(a);
+                }
+
                 return false;
             }
 

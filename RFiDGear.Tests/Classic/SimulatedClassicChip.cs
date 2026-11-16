@@ -47,6 +47,9 @@ namespace RFiDGear.Tests.Classic
 
         public bool CardPresent { get; set; } = true;
 
+        /// <summary>Gets or sets a value that makes every call give up the thread before it is answered, so that two operations that are not held apart interleave their calls.</summary>
+        public bool YieldsOnEveryCall { get; set; }
+
         public List<string> Log { get; } = new List<string>();
 
         public int Logins { get; private set; }
@@ -72,7 +75,55 @@ namespace RFiDGear.Tests.Classic
         /// <summary>Makes the next read of a block fail once, as if the chip had refused it.</summary>
         public void FailNextReadOf(int block) => readFaults.Add(block);
 
-        public Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key)
+        public async Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key)
+        {
+            await PauseAsync();
+
+            return Login(block, keyType, key);
+        }
+
+        public async Task<ClassicBlockResult> ReadBlockAsync(int block)
+        {
+            await PauseAsync();
+
+            return Read(block);
+        }
+
+        public async Task<ClassicPortResult> WriteBlockAsync(int block, byte[] data)
+        {
+            await PauseAsync();
+            Writes++;
+            Log.Add("write " + block + " (" + data.Length + " bytes)");
+
+            return new ClassicPortResult(ERROR.ProtocolConstraint);
+        }
+
+        public async Task<ClassicPortResult> ReselectAsync()
+        {
+            await PauseAsync();
+            Log.Add("reselect");
+
+            if (!CardPresent)
+            {
+                return new ClassicPortResult(ERROR.TransportError);
+            }
+
+            Reselects++;
+            halted = false;
+            loggedSector = null;
+
+            return ClassicPortResult.Ok;
+        }
+
+        private async Task PauseAsync()
+        {
+            if (YieldsOnEveryCall)
+            {
+                await Task.Yield();
+            }
+        }
+
+        private ClassicPortResult Login(int block, ClassicKeyType keyType, byte[] key)
         {
             var sector = ClassicLayout.SectorOf(block);
 
@@ -80,7 +131,7 @@ namespace RFiDGear.Tests.Classic
 
             if (!CardPresent)
             {
-                return Task.FromResult(new ClassicPortResult(ERROR.TransportError));
+                return new ClassicPortResult(ERROR.TransportError);
             }
 
             Logins++;
@@ -89,7 +140,7 @@ namespace RFiDGear.Tests.Classic
             {
                 halted = false;
 
-                return Task.FromResult(new ClassicPortResult(ERROR.AuthFailure));
+                return new ClassicPortResult(ERROR.AuthFailure);
             }
 
             var trailer = memory[ClassicLayout.TrailerBlock(sector)];
@@ -101,16 +152,16 @@ namespace RFiDGear.Tests.Classic
             loginIsGood = stored.SequenceEqual(key) && bits != null && bits.AllowsLoginWith(keyType);
 
             // The reader says yes whatever the chip thinks.
-            return Task.FromResult(ClassicPortResult.Ok);
+            return ClassicPortResult.Ok;
         }
 
-        public Task<ClassicBlockResult> ReadBlockAsync(int block)
+        private ClassicBlockResult Read(int block)
         {
             Log.Add("read " + block);
 
             if (!CardPresent)
             {
-                return Task.FromResult(new ClassicBlockResult(ERROR.TransportError, null));
+                return new ClassicBlockResult(ERROR.TransportError, null);
             }
 
             Reads++;
@@ -119,21 +170,21 @@ namespace RFiDGear.Tests.Classic
             {
                 halted = false;
 
-                return Task.FromResult(new ClassicBlockResult(ERROR.AuthFailure, null));
+                return new ClassicBlockResult(ERROR.AuthFailure, null);
             }
 
             var sector = ClassicLayout.SectorOf(block);
 
             if (loggedSector != sector || !loginIsGood || readFaults.Remove(block))
             {
-                return Task.FromResult(Refuse());
+                return Refuse();
             }
 
             var bits = Bits(sector);
 
             if (bits == null)
             {
-                return Task.FromResult(Refuse());
+                return Refuse();
             }
 
             var data = (byte[])memory[block].Clone();
@@ -154,39 +205,12 @@ namespace RFiDGear.Tests.Classic
                     Array.Clear(data, 6, 3);
                 }
 
-                return Task.FromResult(new ClassicBlockResult(ERROR.NoError, data));
+                return new ClassicBlockResult(ERROR.NoError, data);
             }
 
-            if (!bits.GetDataBlockRights(ClassicLayout.AccessGroup(block)).Read.Allows(loggedType))
-            {
-                return Task.FromResult(Refuse());
-            }
-
-            return Task.FromResult(new ClassicBlockResult(ERROR.NoError, data));
-        }
-
-        public Task<ClassicPortResult> WriteBlockAsync(int block, byte[] data)
-        {
-            Writes++;
-            Log.Add("write " + block + " (" + data.Length + " bytes)");
-
-            return Task.FromResult(new ClassicPortResult(ERROR.ProtocolConstraint));
-        }
-
-        public Task<ClassicPortResult> ReselectAsync()
-        {
-            Log.Add("reselect");
-
-            if (!CardPresent)
-            {
-                return Task.FromResult(new ClassicPortResult(ERROR.TransportError));
-            }
-
-            Reselects++;
-            halted = false;
-            loggedSector = null;
-
-            return Task.FromResult(ClassicPortResult.Ok);
+            return bits.GetDataBlockRights(ClassicLayout.AccessGroup(block)).Read.Allows(loggedType)
+                ? new ClassicBlockResult(ERROR.NoError, data)
+                : Refuse();
         }
 
         private ClassicAccessBits? Bits(int sector) =>

@@ -138,6 +138,43 @@ namespace RFiDGear.Tests.KeySlots
             Assert.Equal("ReadMifareClassicSingleSector[ACurrent,<unknown ZZ>]", run.Calls);
         }
 
+        [Fact]
+        public async Task An_empty_check_of_an_empty_sector_succeeds()
+        {
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck);
+
+            Assert.Equal(ERROR.NoError, run.Error);
+        }
+
+        [Fact]
+        public async Task An_empty_check_of_a_sector_that_holds_data_says_so()
+        {
+            // The loop used to set IsNotTrue and the line after it NoError, so the check never found anything.
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck, reader: reader => reader.BlockFill = 0x11);
+
+            Assert.Equal(ERROR.IsNotTrue, run.Error);
+        }
+
+        [Fact]
+        public async Task An_empty_check_does_not_fail_on_a_block_that_no_key_could_read()
+        {
+            // The block has no data: it cannot be shown to be empty, and asking for its length used to throw.
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck, reader: reader => reader.UnreadableBlock = 1);
+
+            Assert.Equal(ERROR.IsNotTrue, run.Error);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(2)]
+        public async Task A_read_does_not_fail_on_a_block_that_no_key_could_read(int block)
+        {
+            // The message about the block used to ask for the block before it, which is none for the first one.
+            var run = await RunAsync(TaskType_MifareClassicTask.ReadData, reader: reader => reader.UnreadableBlock = block);
+
+            Assert.Equal(ERROR.NoError, run.Error);
+        }
+
         private sealed record Run(string Calls, ERROR Error);
 
         private static async Task<Run> RunAsync(
