@@ -70,16 +70,59 @@ namespace RFiDGear.Services.SecureKeys
                 return Fail(context, issues[0].Slot, string.Empty, issues[0].Problem.ToString());
             }
 
+            // The keys of the SAM are decided first, before any provider is asked: a provider may ask a person for a key, and a command that is
+            // refused anyway (it does not know the SAM, a key is wrong, or keys of the SAM are mixed with others) must not bother anybody, whatever
+            // the order of its keys.
+            var sam = new Dictionary<string, SamKeyReference>(StringComparer.Ordinal);
+            var others = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var need in needs)
+            {
+                if (sam.ContainsKey(need.Slot) || others.Contains(need.Slot))
+                {
+                    continue;
+                }
+
+                var binding = KeyBindingList.Find(bindings, need.Slot);
+
+                if (binding != null && string.Equals(binding.ProviderId, SamKeyProvider.ProviderId, StringComparison.Ordinal))
+                {
+                    var samCause = TakeSamKey(need, binding, samPolicy, out var reference);
+
+                    if (samCause != null)
+                    {
+                        return Fail(context, need.Slot, binding.ProviderId, samCause);
+                    }
+
+                    sam[need.Slot] = reference;
+                }
+                else
+                {
+                    others.Add(need.Slot);
+                }
+            }
+
+            // The SAM builds the cryptogram of a key change from the key that authenticated and the new key: both are keys of the SAM, or none.
+            if (sam.Count > 0 && others.Count > 0)
+            {
+                return Fail(context, sam.Keys.First(), SamKeyProvider.ProviderId, SamMixedKeys);
+            }
+
+            // A key of the SAM is no provider's key: nobody is asked, and no context is needed for that.
+            if (sam.Count > 0)
+            {
+                return AcquiredKeys.Obtained(new Dictionary<string, string?>(StringComparer.Ordinal), new HashSet<string>(sam.Keys, StringComparer.Ordinal), sam);
+            }
+
             var hex = new Dictionary<string, string?>(StringComparer.Ordinal);
             var bound = new HashSet<string>(StringComparer.Ordinal);
-            var sam = new Dictionary<string, SamKeyReference>(StringComparer.Ordinal);
             var started = false;
 
             try
             {
                 foreach (var need in needs)
                 {
-                    if (hex.ContainsKey(need.Slot) || sam.ContainsKey(need.Slot))
+                    if (hex.ContainsKey(need.Slot))
                     {
                         continue;
                     }
@@ -89,21 +132,6 @@ namespace RFiDGear.Services.SecureKeys
                     if (binding == null)
                     {
                         hex[need.Slot] = embeddedKeyOf(need.Slot);
-                        continue;
-                    }
-
-                    // A key of the SAM is no provider's key: nothing is asked of the registry, and no context is needed for that.
-                    if (string.Equals(binding.ProviderId, SamKeyProvider.ProviderId, StringComparison.Ordinal))
-                    {
-                        var samCause = TakeSamKey(need, binding, samPolicy, out var reference);
-
-                        if (samCause != null)
-                        {
-                            return Fail(context, need.Slot, binding.ProviderId, samCause);
-                        }
-
-                        sam[need.Slot] = reference;
-                        bound.Add(need.Slot);
                         continue;
                     }
 
@@ -137,13 +165,7 @@ namespace RFiDGear.Services.SecureKeys
                 }
             }
 
-            // The SAM builds the cryptogram of a key change from the key that authenticated and the new key: both are keys of the SAM, or none.
-            if (sam.Count > 0 && hex.Count > 0)
-            {
-                return Fail(context, sam.Keys.First(), SamKeyProvider.ProviderId, SamMixedKeys);
-            }
-
-            return sam.Count > 0 ? AcquiredKeys.Obtained(hex, bound, sam) : AcquiredKeys.Obtained(hex, bound);
+            return AcquiredKeys.Obtained(hex, bound);
         }
 
         // The cause for which a slot cannot be a key of the SAM, or null and the reference when it can.

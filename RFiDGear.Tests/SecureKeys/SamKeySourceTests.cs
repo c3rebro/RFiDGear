@@ -186,6 +186,35 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal(0, keys.SamKey(New.Slot).Version);
         }
 
+        [Theory]
+        [InlineData(false, KeyAcquisition.SamNotSupported)]
+        [InlineData(true, KeyAcquisition.SamMixedKeys)]
+        public async Task A_key_of_a_provider_that_comes_before_a_key_of_the_sam_is_not_asked_for_when_the_command_cannot_run(bool commandKnowsTheSam, string cause)
+        {
+            var vault = NewVault();
+            var policy = commandKnowsTheSam ? SamKeyPolicy.AllOrNothing : SamKeyPolicy.Refuse;
+
+            // A provider may ask a person for a key: not for a command that is refused anyway, whatever the order of its keys.
+            var keys = await AcquireAsync(new[] { New, Current }, new[] { Vault(New.Slot), Sam(Current.Slot) }, policy, vault);
+
+            Assert.True(keys.Failed);
+            Assert.Equal(cause, keys.Failure!.Cause);
+            Assert.Equal(Current.Slot, keys.Failure.Slot);
+            Assert.Empty(vault.Requests);
+        }
+
+        [Fact]
+        public async Task A_key_of_the_sam_that_is_wrong_ends_the_acquisition_before_any_provider_is_asked()
+        {
+            var vault = NewVault();
+            var triple = new KeyNeed(SecureKeySlots.DesfirePiccCurrent, SecureKeyAlgorithm.TripleDes3K, SecureKeyUsage.Authenticate, 0, 0);
+
+            var keys = await AcquireAsync(new[] { New, triple }, new[] { Vault(New.Slot), Sam(triple.Slot) }, SamKeyPolicy.AllOrNothing, vault);
+
+            Assert.Equal(SecureKeyFailureReason.Unsupported.ToString(), keys.Failure!.Cause);
+            Assert.Empty(vault.Requests);
+        }
+
         [Fact]
         public async Task A_key_of_the_sam_needs_no_context_because_nobody_is_asked()
         {
@@ -231,6 +260,9 @@ namespace RFiDGear.Tests.SecureKeys
             Assert.Equal(KeyAcquisition.SamMixedKeys, withProvider.Failure!.Cause);
             Assert.Equal(KeyAcquisition.SamMixedKeys, withEmbedded.Failure!.Cause);
             Assert.Equal(Current.Slot, withEmbedded.Failure!.Slot);
+
+            // Decided before anybody is asked: a provider that asks a person is not bothered for a command that cannot run.
+            Assert.Empty(vault.Requests);
         }
 
         [Fact]
