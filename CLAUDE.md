@@ -220,6 +220,18 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   `SamKeyEntryInfo`): a blank entry is disabled (SET bit 9), so the entry must
   read back enabled, AES-128 and of the PICC key class (ExtSET), or the key in
   it cannot be used. The key itself cannot be read back.
+- `SamPiccSession` authenticates a DESFire card, and changes its keys, with
+  keys that stay in the SAM (`SAM_AuthenticatePICC` INS `0A`,
+  `SAM_ChangeKeyPICC` INS `C4`): the PC relays between the SAM in the contact
+  slot and the card in the contactless slot, one attempt per step.
+  `SAM_KillAuthentication` (`80 CA 01 00`, **no Le**) comes before the first
+  step and after a part 1 that was not finished; a card that answers `91CA`
+  to the select gets the select once more (it changes nothing).
+  `SamKeyReference` (`entry:version`, provider id `sam`, entries 1 to 127)
+  names such a key and holds no secret; `SamPiccConnector` opens the SAM for
+  one operation under `SamPortGate`, which the setup window takes as well. It
+  is not wired into a task yet. What the SAM and the card did:
+  `RFiDGear.HIL.Tests/SAM-PICC-FIRST-CONTACT.md`.
 - Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (a read-only case, a case that
   writes a key entry, and the checklist for the window).
   `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md` is the record of the first

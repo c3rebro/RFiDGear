@@ -42,6 +42,56 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public void The_setup_holds_the_sam_too_and_is_not_opened_while_a_command_has_it()
+        {
+            var gate = new ReaderAccessGate();
+            var coordinator = new ExtensionOperationCoordinator();
+            var heldInside = false;
+            var ranWhileFree = SamSetupGate.RunExclusive(gate, coordinator, NotBusy, _ => { }, () => heldInside = SamPortGate.IsHeld);
+
+            Assert.True(ranWhileFree);
+            Assert.True(heldInside);
+            Assert.False(SamPortGate.IsHeld);
+
+            // A command that uses a key of the SAM has it: the setup is refused, and what it had taken is given back.
+            Assert.True(SamPortGate.TryEnter());
+
+            try
+            {
+                var told = new List<bool?>();
+                var ran = false;
+
+                Assert.False(SamSetupGate.RunExclusive(gate, coordinator, NotBusy, told.Add, () => ran = true));
+
+                Assert.False(ran);
+                Assert.Empty(told);
+                Assert.False(gate.IsHeld);
+                Assert.True(coordinator.IsIdle);
+                Assert.True(SamPortGate.IsHeld);
+            }
+            finally
+            {
+                SamPortGate.Exit();
+            }
+        }
+        [Fact]
+        public void A_busy_notification_that_throws_does_not_strand_the_gates()
+        {
+            var gate = new ReaderAccessGate();
+            var coordinator = new ExtensionOperationCoordinator();
+
+            // The window's callback fails when the setup says that the reader is free again.
+            Assert.Throws<InvalidOperationException>(() =>
+                SamSetupGate.RunExclusive(gate, coordinator, NotBusy, busy => { if (busy == false) { throw new InvalidOperationException("the window failed"); } }, () => { }));
+
+            Assert.False(gate.IsHeld);
+            Assert.False(SamPortGate.IsHeld);
+            Assert.True(coordinator.IsIdle);
+
+            // And the setup can be opened again.
+            Assert.True(SamSetupGate.RunExclusive(gate, coordinator, NotBusy, _ => { }, () => { }));
+        }
+        [Fact]
         public void While_the_setup_is_open_no_run_and_no_edit_is_admitted()
         {
             var gate = new ReaderAccessGate();
