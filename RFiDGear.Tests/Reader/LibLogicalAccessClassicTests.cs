@@ -190,6 +190,24 @@ namespace RFiDGear.Tests.Reader
             Assert.Empty(reader.Sector.DataBlock);
         }
 
+        [Fact]
+        public async Task ARead_ThatIsRefusedBeforeItStarts_WaitsForTheGateLikeAnyOther()
+        {
+            // A key that is no key never reaches the chip, but the sector that the call leaves is set under the gate too: the read before it
+            // finishes first, and the refused one leaves its own (empty) sector after it, not before it.
+            var chip = new SimulatedClassicChip { YieldsOnEveryCall = true };
+            var reader = new ClassicPcscTestReader(chip);
+
+            var results = await Task.WhenAll(
+                reader.ReadMifareClassicSingleSector(1, Ff, Ff),
+                reader.ReadMifareClassicSingleSector(2, "error 1", Ff));
+
+            Assert.Equal(ERROR.NoError, results[0]);
+            Assert.Equal(ERROR.AuthFailure, results[1]);
+            Assert.False(reader.Sector.IsAuthenticated);
+            Assert.Empty(reader.Sector.DataBlock);
+        }
+
         [Theory]
         [InlineData("Mifare1K", ClassicCardSize.K1)]
         [InlineData("Mifare2K", ClassicCardSize.K2)]

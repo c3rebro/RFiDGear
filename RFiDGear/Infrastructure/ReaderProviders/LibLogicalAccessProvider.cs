@@ -475,24 +475,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <inheritdoc />
         public override async Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
-            Sector = new MifareClassicSectorModel();
+            await pcscSessionGate.WaitAsync();
 
-            // A key that is no key never reaches the chip: it is a failed authentication, as it always was.
-            if (!ClassicSectorKeys.TryCreate(aKey, bKey, out var keys))
+            try
             {
-                return ERROR.AuthFailure;
-            }
+                // The sector of this read is made under the gate and set only under it: a read that waited, or one that is refused before it
+                // starts, cannot replace the sector of another read in the middle of it.
+                Sector = new MifareClassicSectorModel();
 
-            using (keys)
-            {
-                await pcscSessionGate.WaitAsync();
-
-                try
+                // A key that is no key never reaches the chip: it is a failed authentication, as it always was.
+                if (!ClassicSectorKeys.TryCreate(aKey, bKey, out var keys))
                 {
-                    // The sector of this read, from here on: a read that waited for the gate must not show what the read before it left (and
-                    // a read that fails shows nothing, not the sector of another call).
-                    Sector = new MifareClassicSectorModel();
+                    return ERROR.AuthFailure;
+                }
 
+                using (keys)
+                {
                     var port = await OpenClassicPortAsync();
 
                     if (port == null)
@@ -506,16 +504,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     return read.Error;
                 }
-                catch (Exception e)
-                {
-                    Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
 
-                    return ERROR.TransportError;
-                }
-                finally
-                {
-                    pcscSessionGate.Release();
-                }
+                return ERROR.TransportError;
+            }
+            finally
+            {
+                pcscSessionGate.Release();
             }
         }
 
