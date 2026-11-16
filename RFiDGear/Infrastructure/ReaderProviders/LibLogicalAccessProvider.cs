@@ -15,6 +15,7 @@ using System.Linq;
 using System.Globalization;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.Classic;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Ultralight;
 using Serilog;
@@ -31,7 +32,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     public partial class LibLogicalAccessProvider : ReaderDevice, IDisposable
     {
         // global (cross-class) Instances go here ->
-        private readonly ProjectManager projectManager = new ProjectManager();
         private ReaderProvider readerProvider;
         private ReaderUnit readerUnit;
         private string selectedReaderName;
@@ -441,122 +441,95 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region mifare classic
 
+        /// <summary>
+        /// Connects to the chip on the reader for a Classic operation: a fresh session, every step looked at (see <c>ConnectToAFreshChipAsync</c>).
+        /// Overridden by the tests.
+        /// </summary>
+        /// <returns>The reader's access to the chip, or <c>null</c> when there is no reader, no chip, or a chip that has no Classic commands.</returns>
+        protected virtual async Task<IClassicPort> OpenClassicPortAsync()
+        {
+            if (!await ConnectToAFreshChipAsync())
+            {
+                return null;
+            }
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var chip = readerUnit.getSingleChip();
+
+                    return chip?.getCommands() is MifareCommands commands
+                        ? new LlaClassicPort(commands, LlaClassicPort.SizeOf(chip.getCardType()))
+                        : null;
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<LibLogicalAccessProvider>().Debug("No Classic chip on the PC/SC reader: {Fault}", PcscUltralightErrors.Describe(e));
+
+                    return null;
+                }
+            });
+        }
+
         /// <inheritdoc />
         public override async Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
-            try
+            Sector = new MifareClassicSectorModel();
+
+            // A key that is no key never reaches the chip: it is a failed authentication, as it always was.
+            if (!ClassicSectorKeys.TryCreate(aKey, bKey, out var keys))
             {
-                await projectManager.LoadSettingsAsync();
-                Sector = new MifareClassicSectorModel();
-
-                var keyA = new MifareKey(CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
-                var keyB = new MifareKey(CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
-
-                if (await tryInitReader())
-                {
-
-                    card = readerUnit.getSingleChip();
-
-                    var cmd = card.getCommands() as MifareCommands;
-
-                    try
-                    { //try to Auth with Keytype A
-                        for (int k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
-                        {
-                            cmd.loadKey(0, MifareKeyType.KT_KEY_A, keyA);
-
-                            DataBlock = new MifareClassicDataBlockModel(
-                                (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                k);
-
-                            try
-                            {
-                                cmd.authenticate((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                                      0,
-                                                      MifareKeyType.KT_KEY_A);
-
-                                Sector.IsAuthenticated = true;
-
-                                try
-                                {
-                                    ByteVector data = cmd.readBinary(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                        48);
-
-                                    DataBlock.Data = data.ToArray();
-
-                                    DataBlock.IsAuthenticated = true;
-
-                                    Sector.DataBlock.Add(DataBlock);
-                                }
-                                catch
-                                {
-                                    DataBlock.IsAuthenticated = false;
-                                    Sector.DataBlock.Add(DataBlock);
-                                }
-                            }
-                            catch
-                            { // Try Auth with keytype b
-
-                                try
-                                {
-                                    cmd.loadKey(1, MifareKeyType.KT_KEY_B, keyB);
-
-                                    cmd.authenticate(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                        1,
-                                        MifareKeyType.KT_KEY_B);
-
-                                    Sector.IsAuthenticated = true;
-
-                                    try
-                                    {
-                                        object data = cmd.readBinary(
-                                            (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                            48);
-
-                                        DataBlock.Data = (byte[])data;
-
-                                        DataBlock.IsAuthenticated = true;
-
-                                        Sector.DataBlock.Add(DataBlock);
-                                    }
-                                    catch
-                                    {
-
-                                        DataBlock.IsAuthenticated = false;
-
-                                        Sector.DataBlock.Add(DataBlock);
-
-                                        return ERROR.AuthFailure;
-                                    }
-                                }
-                                catch
-                                {
-                                    Sector.IsAuthenticated = false;
-                                    DataBlock.IsAuthenticated = false;
-
-                                    Sector.DataBlock.Add(DataBlock);
-
-                                    return ERROR.AuthFailure;
-                                }
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        return ERROR.NoError;
-                    }
-                    return ERROR.NoError;
-
-                }
-                return ERROR.TransportError;
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                 return ERROR.AuthFailure;
             }
+
+            using (keys)
+            {
+                await pcscSessionGate.WaitAsync();
+
+                try
+                {
+                    var port = await OpenClassicPortAsync();
+
+                    if (port == null)
+                    {
+                        return ERROR.TransportError;
+                    }
+
+                    var read = await new ClassicOperations(port).ReadSectorAsync(sectorNumber, keys);
+
+                    Sector = ToSectorModel(read);
+
+                    return read.Error;
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
+
+                    return ERROR.TransportError;
+                }
+                finally
+                {
+                    pcscSessionGate.Release();
+                }
+            }
+        }
+
+        // The model that the dialogs show: one entry per block of the sector, the trailer last; a block that no key could read has no data.
+        private static MifareClassicSectorModel ToSectorModel(ClassicSectorRead read)
+        {
+            var sector = new MifareClassicSectorModel { IsAuthenticated = read.IsAuthenticated };
+
+            foreach (var block in read.Blocks)
+            {
+                sector.DataBlock.Add(new MifareClassicDataBlockModel(block.Block, block.BlockInSector)
+                {
+                    Data = block.Data,
+                    IsAuthenticated = block.WasRead
+                });
+            }
+
+            return sector;
         }
 
         /// <inheritdoc />
@@ -789,7 +762,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 Sector = new MifareClassicSectorModel();
-                await projectManager.LoadSettingsAsync();
+
+                // No reader or no chip: nothing is made and nothing is attempted, and that is no success (it was reported as one). The
+                // second call below only finds the session that this one made.
+                if (!await tryInitReader())
+                {
+                    return ERROR.TransportError;
+                }
 
                 var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
                 var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));
@@ -861,7 +840,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                 return ERROR.AuthFailure;
             }
-            return ERROR.NoError;
+            // No reader or no chip: nothing was written, and that is no success (it was reported as one).
+            return ERROR.TransportError;
         }
 
         /// <inheritdoc />
@@ -872,7 +852,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 Sector = new MifareClassicSectorModel();
-                await projectManager.LoadSettingsAsync();
+
+                // No reader or no chip: nothing is made and nothing is attempted, and that is no success (it was reported as one). The
+                // second call below only finds the session that this one made.
+                if (!await tryInitReader())
+                {
+                    return ERROR.TransportError;
+                }
 
                 var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
                 var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));
@@ -918,7 +904,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                 return ERROR.AuthFailure;
             }
-            return ERROR.NoError;
+            // No reader or no chip: nothing was read, and that is no success (it was reported as one).
+            return ERROR.TransportError;
         }
 
         #endregion mifare classic
