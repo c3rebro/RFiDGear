@@ -1,5 +1,6 @@
 #nullable enable
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Models;
@@ -122,27 +123,60 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Theory]
-        [InlineData("0")]
-        [InlineData("1")]
-        [InlineData("3")]
-        [InlineData("13")]
-        public async Task The_authentication_of_an_application_uses_the_key_number_that_the_card_command_uses(string chosenKeyNumber)
+        [InlineData("0", false)]
+        [InlineData("3", false)]
+        [InlineData("1", true)]
+        [InlineData("3", true)]
+        [InlineData("13", true)]
+        public async Task The_authentication_of_an_application_uses_the_key_number_that_the_card_command_uses(string chosenKeyNumber, bool changeKeyWithTheTargetedKey)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
+                // The key number that authenticates is the chosen one only when the application says that a key is changed with itself: otherwise
+                // it is key 0. Both cases are run, so that a key number that is always 0 is seen.
+                var setting = changeKeyWithTheTargetedKey ? AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo : AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK;
+
                 var typed = NewTask(TaskType_MifareDesfireTask.AuthenticateApplication);
                 typed.SelectedDesfireAppKeyNumberCurrent = chosenKeyNumber;
+                typed.SelectedDesfireAppKeySettingsCreateNewApp = setting;
                 var baseline = new KeyRecordingReader();
                 await RunAsync(typed, baseline);
 
                 var task = NewTask(TaskType_MifareDesfireTask.AuthenticateApplication);
                 task.SelectedDesfireAppKeyNumberCurrent = chosenKeyNumber;
+                task.SelectedDesfireAppKeySettingsCreateNewApp = setting;
                 task.KeyBindings = new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3) };
                 var reader = new KeyRecordingReader { SupportsSam = true };
 
                 await RunAsync(task, reader);
 
-                Assert.Equal((byte)baseline.LastAuthKeyNumber, Assert.Single(reader.SamAuthentications).KeyNumber);
+                var expected = (byte)(changeKeyWithTheTargetedKey ? int.Parse(chosenKeyNumber, System.Globalization.CultureInfo.InvariantCulture) : 0);
+                Assert.Equal(expected, (byte)baseline.LastAuthKeyNumber);
+                Assert.Equal(expected, Assert.Single(reader.SamAuthentications).KeyNumber);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        [InlineData(TaskType_MifareDesfireTask.CheckFileSettings)]
+        public async Task The_check_tasks_that_share_the_authentication_refuse_a_key_of_the_sam_and_send_nothing(TaskType_MifareDesfireTask type)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // They authenticate with the same method as the task that can use a key of the SAM, from the button of the dialog.
+                var task = NewTask(type);
+                task.KeyBindings = new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3) };
+                var reader = new KeyRecordingReader { SupportsSam = true };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await task.AuthenticateToCardApplicationCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal(ERROR.KeyUnavailable, task.CurrentTaskErrorLevel);
+                Assert.Empty(reader.SamAuthentications);
+                Assert.Empty(reader.Calls);
             });
         }
 

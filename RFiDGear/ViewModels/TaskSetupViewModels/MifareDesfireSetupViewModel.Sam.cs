@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading.Tasks;
 
@@ -17,6 +18,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     /// the reader, and the SAM and the card do the rest. What the typed version of a new key says is not used: the card gets the version of the
     /// key entry of the SAM.
     /// </summary>
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half is MifareDesfireSetupViewModel.cs; the analysis reads one file at a time and cannot see it.")]
     public partial class MifareDesfireSetupViewModel
     {
         // The SAM is allowed for a reader that can relay between the SAM and a card (the PC/SC reader); any other reader refuses it, and the

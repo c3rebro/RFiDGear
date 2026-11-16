@@ -13,6 +13,7 @@ using RFiDGear.Models;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel.Composition;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -44,6 +45,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half is MifareDesfireSetupViewModel.Sam.cs; the analysis reads one file at a time and cannot see it.")]
     public partial class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails, IKeySlotHost, IKeyMigrationHost
     {
         #region Fields
