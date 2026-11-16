@@ -179,6 +179,68 @@ tasks.
   plain Ultralight, Ultralight C or EV1 card has been tried at all.
   `DEVELOPER_NOTES.md` has the facts that bite.
 
+### MIFARE Classic
+
+The read, write and MAD calls of both readers run on one layer,
+`Infrastructure/Classic`, and on four primitives per reader (`IClassicPort`:
+log in, read a block, write a block, wake the card). `ReaderDevice` holds the
+calls (`ReadMifareClassicSectorAsync`, `ReadMifareClassicSingleSector`,
+`WriteMifareClassicSingleSector`, `WriteMifareClassicSingleBlock`,
+`ReadMifareClassicWithMAD`, `WriteMifareClassicWithMAD`); a provider only
+overrides `OpenClassicPortAsync` and `ClassicGate` (the PC/SC session gate, the
+COM port lock of the TWN4). `ElatecClassicPort` and `LlaClassicPort` hold no
+logic; the logic is in `ClassicOperations` and `ClassicMadOperations`, which
+are tested against `SimulatedClassicChip` (tests), a chip in memory that
+enforces the access bits and halts the card after a refused access.
+
+- Pure types, each pinned by tests: `ClassicLayout` (sectors 0 to 31 have 4
+  blocks, 32 to 39 have 16), `ClassicAccessBits` (the condition of a group is
+  `C1 + 2 * C2 + 4 * C3`; the table of what a key may do; the three bytes with
+  their inverses), `ClassicMad` (CRC8, AIDs little-endian, MAD1 and MAD2, the
+  general purpose byte `ClassicMadGpb`), `ClassicSectorKeys` (an erased buffer;
+  a key that is no key never reaches a card).
+- **Key B is data while a key may read it** (the transport configuration `001`,
+  `FF078069`): it cannot log in, whatever the reader says. PC/SC readers answer
+  a login with yes and the chip judges at the next access, so a login is proved
+  by reading the trailer; a refused access halts the card, so the next command
+  fails once unless the card was woken (a throwaway login on PC/SC, a search for
+  the tag on the TWN4). The wake belongs after a refusal, never between two good
+  sessions and never as a retry of a write.
+- The TWN4 numbers the sector of a login by the first block of the sector
+  divided by four (`ElatecClassicPort.SectorNumberOf`).
+- **One attempt** (the key rule): every write is one attempt, read back, never
+  repeated. The first block that fails ends the call. A write that the chip
+  refuses is looked at once (is the card still there?) and ends as
+  `AuthFailure` or `TransportError`; a block that does not read back as written
+  is `Unknown`.
+- `ClassicWritePolicy` decides before a key is asked for: block 0 and a trailer
+  are written only on an opt-in (`AllowManufacturerBlock`, `AllowTrailer`), the
+  access bits of a trailer must be consistent, and access bits that can never
+  be changed again need a second opt-in (`AllowFinalAccessBits`). The sector
+  write is data blocks only (32 bytes for sector 0, 48 for a sector of 4 blocks,
+  240 for 16). `WriteMifareClassicSingleBlock` may write a trailer (the dialog
+  does) and never block 0.
+- **The MAD write** puts the data first, then the directory, then the trailers,
+  and never a directory entry before the data. A chip without a MAD gets one
+  (MAD2 where sector 16 exists) because the call asks for it; the sectors that
+  the data reaches get the new keys and access bits, and the others of the
+  application stay as they are. Refusals (an AID of the administration, a sector
+  of another application, no room, a missing key, final access bits) happen
+  before the first block. Sector 0 and sector 16 hold no application.
+- The legacy `Sector` property of the reader is shared by every call. A caller
+  that reads it after an `await` may get the sector of another read: use
+  `ReadMifareClassicSectorAsync`, which hands the sector back with the answer.
+  The property is set under the gate, for the old call only.
+- The dialogs take the access bits through `ClassicAccessBits`
+  (`MifareClassicSectorModel`: the text of the trailer, `SAB`, all derived from
+  the conditions). The status text says which answer failed
+  (`ClassicFailureText`: only `AuthFailure` is a refused key) and the task ends
+  with that answer.
+- Hardware cases and the checklist: `RFiDGear.HIL.Tests/CLASSIC.md`. The PC/SC
+  reader was probed with a 4K (reads, the reselect, a write experiment with the
+  old code); the layer, the writes, the MAD and the dialogs have run against
+  the chip in memory only, and the TWN4 has not been tried on a card.
+
 ### MIFARE SAM AV3 setup
 
 Tools > "MIFARE SAM AV3 setup..." (`SamSetupView`, `SamSetupViewModel`) sets up

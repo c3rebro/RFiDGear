@@ -37,6 +37,9 @@
          memory (Reader/HilUltralightScenarioSelfCheckTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\HilUltralightTasks.cs" Link="Reader\HilScenarios\HilUltralightTasks.cs" />
     <Compile Include="..\RFiDGear.HIL.Tests\UltralightScenarios.cs" Link="Reader\HilScenarios\UltralightScenarios.cs" />
+    <!-- The steps of the MIFARE Classic hardware cases, run here against a chip in memory behind the real reader code
+         (Reader/HilClassicScenarioSelfCheckTests). -->
+    <Compile Include="..\RFiDGear.HIL.Tests\ClassicScenarios.cs" Link="Reader\HilScenarios\ClassicScenarios.cs" />
     <!-- The tasks and the vault of the secure-key hardware cases, checked here against a scripted reader and a dictionary
          as the vault (SecureKeys/HilSecureKeyScenarioSelfCheckTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\HilConstants.cs" Link="Reader\HilScenarios\HilConstants.cs" />

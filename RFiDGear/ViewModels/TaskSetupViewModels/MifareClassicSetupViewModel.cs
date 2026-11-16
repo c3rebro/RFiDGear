@@ -1457,6 +1457,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     else
                     {
                         sectorModel.SectorNumber = selectedClassicSectorCurrentAsInt;
+
+                        // A sector of 4 blocks after one of 16 (the selection of the dialog): the nodes of the blocks are made for it now, so that what is
+                        // typed afterwards goes into the node of a block that the sector has, and nothing is discarded when the command runs.
+                        if (childNodeViewModelFromChip != null)
+                        {
+                            childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+                        }
+
+                        if (childNodeViewModelTemp != null)
+                        {
+                            childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
+                        }
                     }
                     OnPropertyChanged(nameof(SelectedClassicSectorCurrent));
                 }
@@ -2003,8 +2015,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     else
                     {
-                        StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-                        CurrentTaskErrorLevel = ERROR.AuthFailure;
+                        StatusText += string.Format("{0}: {1}\n", DateTime.Now, ClassicFailureText(read.Error, string.Format("Unable to Authenticate to Sector: {0} using specified Keys", selectedClassicSectorCurrentAsInt)));
+                        CurrentTaskErrorLevel = read.Error;
                     }
                 }
 
@@ -2104,8 +2116,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-                            CurrentTaskErrorLevel = ERROR.AuthFailure;
+                            StatusText += string.Format("{0}: {1}\n", DateTime.Now, ClassicFailureText(read.Error, string.Format("Unable to Authenticate to Sector: {0} using specified Keys", selectedClassicSectorCurrentAsInt)));
+                            CurrentTaskErrorLevel = read.Error;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
                         }
@@ -2149,9 +2161,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                         else
                         {
-                            StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
+                            StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ClassicFailureText(madRead.Error, "Unable to Authenticate to MAD Sector using specified MAD Key(s)"));
 
-                            CurrentTaskErrorLevel = ERROR.AuthFailure;
+                            CurrentTaskErrorLevel = madRead.Error;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
                         }
@@ -2282,17 +2294,22 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         Need(SecureKeySlots.ClassicMadATarget, SecureKeyUsage.ChangeKeyNew),
                         Need(SecureKeySlots.ClassicMadBTarget, SecureKeyUsage.ChangeKeyNew));
 
-                    if (keys.Failed)
-                    {
-                        ReportKeyUnavailable(keys);
-                    }
-                    else if (await device.WriteMifareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
+                    // The write is made before the answers are looked at; a key that is not there is no write.
+                    var madWriteError = keys.Failed
+                        ? ERROR.Unknown
+                        : await device.WriteMifareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
                                                         keys.Hex(SecureKeySlots.ClassicACurrent), keys.Hex(SecureKeySlots.ClassicBCurrent),
                                                         keys.Hex(SecureKeySlots.ClassicATarget), keys.Hex(SecureKeySlots.ClassicBTarget),
                                                         keys.Hex(SecureKeySlots.ClassicMadACurrent), keys.Hex(SecureKeySlots.ClassicMadBCurrent),
                                                         keys.Hex(SecureKeySlots.ClassicMadATarget), keys.Hex(SecureKeySlots.ClassicMadBTarget),
                                                         ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
-                                                        madGPB, ChildNodeViewModelTemp.SectorModel.SAB, UseMadAuth, UseMAD) == ERROR.NoError)
+                                                        madGPB, ChildNodeViewModelTemp.SectorModel.SAB, UseMadAuth, UseMAD);
+
+                    if (keys.Failed)
+                    {
+                        ReportKeyUnavailable(keys);
+                    }
+                    else if (madWriteError == ERROR.NoError)
                     {
                         StatusText = StatusText + string.Format("{0}: Wrote {1} bytes to MAD ID {2}\n", DateTime.Now,
                             ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data.Length,
@@ -2303,8 +2320,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     else
                     {
-                        StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
-                        CurrentTaskErrorLevel = ERROR.AuthFailure;
+                        StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ClassicFailureText(madWriteError, "Unable to Authenticate to MAD Sector using specified MAD Key(s)"));
+                        CurrentTaskErrorLevel = madWriteError;
                         await UpdateReaderStatusCommand.ExecuteAsync(false);
                         return;
                     }
