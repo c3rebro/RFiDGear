@@ -586,8 +586,9 @@ namespace RFiDGear.Infrastructure.Classic
             public bool TryChooseWriteKey(int block, byte[] newData, out ClassicKeyType key) =>
                 Bits!.TryChooseKey(WriteRights(block, newData), Usable(ClassicKeyType.KeyA), Usable(ClassicKeyType.KeyB), out key);
 
-            // The blocks of the sector, from the given position on and without the trailer, each with the key that may write it;
-            // null when a key that there is cannot write one of them.
+            /// <summary>Plans the write of the data blocks of the sector: each block, from the given position on and without the trailer, with the key that may write it.</summary>
+            /// <param name="firstPosition">The position in the sector of the first block (1 skips block 0 of sector 0).</param>
+            /// <returns>The plan, or <c>null</c> when a key that there is cannot write one of the blocks.</returns>
             public List<(int Block, ClassicKeyType Key)>? PlanDataWrites(int firstPosition)
             {
                 var plan = new List<(int Block, ClassicKeyType Key)>();

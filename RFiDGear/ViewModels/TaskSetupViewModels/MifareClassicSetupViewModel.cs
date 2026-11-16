@@ -2232,10 +2232,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         {
                             await device.ReadChipPublic();
 
-                            if (await device.WriteMifareClassicSingleBlock(block,
+                            var writeError = await device.WriteMifareClassicSingleBlock(block,
                                                                     keys.Hex(SecureKeySlots.ClassicACurrent),
                                                                     keys.Hex(SecureKeySlots.ClassicBCurrent),
-                                                                    blockData) == ERROR.NoError)
+                                                                    blockData);
+
+                            if (writeError == ERROR.NoError)
                             {
                                 StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
                                                                         DateTime.Now,
@@ -2245,8 +2247,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             }
                             else
                             {
-                                StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                                CurrentTaskErrorLevel = ERROR.AuthFailure;
+                                // The task ends with what the reader answered: a block that did not read back as written, or keys that may not write,
+                                // are no refused key, and a project routes on the difference (a card that was written to must not start the
+                                // authentication fallbacks).
+                                StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ClassicFailureText(writeError, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate")));
+                                CurrentTaskErrorLevel = writeError;
                             }
                         }
                     }
@@ -2342,6 +2347,35 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Says in the words of the status text why a call of the reader failed. Only <see cref="ERROR.AuthFailure"/> means that a key was refused;
+        /// a chip that is not there, a request that does not fit the chip, keys that may not do it and a block that did not read back as written
+        /// are none of that, and the text must not claim it.
+        /// </summary>
+        /// <param name="error">The answer of the reader.</param>
+        /// <param name="refusedKeysText">The text for a key that was refused (the answer for <see cref="ERROR.AuthFailure"/> and for what is not known).</param>
+        /// <returns>The text.</returns>
+        internal static string ClassicFailureText(ERROR error, string refusedKeysText)
+        {
+            switch (error)
+            {
+                case ERROR.TransportError:
+                    return "No chip answered: there is no reader or no chip on it, or the chip was taken away.";
+
+                case ERROR.ProtocolConstraint:
+                    return "The chip cannot do that: the sector or the data does not fit the chip, or the MIFARE Application Directory is missing or damaged.";
+
+                case ERROR.PermissionDenied:
+                    return "The keys that were given are not allowed to do that: see the access bits of the sector.";
+
+                case ERROR.Unknown:
+                    return "The chip did not keep the data as it was written (it read back differently).";
+
+                default:
+                    return refusedKeysText;
+            }
         }
 
         #endregion Commands

@@ -1,4 +1,5 @@
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
@@ -243,7 +244,58 @@ namespace RFiDGear.Tests.KeySlots
             Assert.Equal(ERROR.ProtocolConstraint, run.Error);
         }
 
-        private sealed record Run(string Calls, ERROR Error);
+        [Fact]
+        public async Task A_write_of_a_trailer_whose_access_bits_are_not_consistent_is_refused_before_a_key_is_asked_for()
+        {
+            // The block that is written is the trailer (position 3 of the sector), and its bytes are zeros: the access bits are not the inverse of their copy.
+            var run = await RunAsync(
+                TaskType_MifareClassicTask.WriteData,
+                vm =>
+                {
+                    vm.SelectedDataBlockToReadWrite = DataExplorer_DataBlock.Block3;
+                    vm.ChildNodeViewModelTemp.Children[3].MifareClassicDataBlock.Data = new byte[16];
+                });
+
+            Assert.Equal(string.Empty, run.Calls);
+            Assert.Equal(ERROR.ProtocolConstraint, run.Error);
+            Assert.Contains("cannot be written", run.Status, StringComparison.Ordinal);
+        }
+
+        // ── what the status text says about a failure of the write ──
+
+        [Theory]
+        [InlineData(ERROR.TransportError, "No chip answered")]
+        [InlineData(ERROR.ProtocolConstraint, "cannot do that")]
+        [InlineData(ERROR.PermissionDenied, "not allowed")]
+        [InlineData(ERROR.Unknown, "did not keep the data")]
+        public async Task A_failed_write_is_reported_as_what_the_reader_answered(ERROR error, string text)
+        {
+            // A block that did not read back as written, or keys that may not write, are no refused key: a project routes on the difference.
+            var run = await RunAsync(
+                TaskType_MifareClassicTask.WriteData,
+                reader: reader =>
+                {
+                    reader.FailMethod = "WriteMifareClassicSingleBlock";
+                    reader.FailWith = error;
+                });
+
+            Assert.Equal(error, run.Error);
+            Assert.Contains(text, run.Status, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [InlineData(ERROR.TransportError, "No chip answered")]
+        [InlineData(ERROR.ProtocolConstraint, "cannot do that")]
+        [InlineData(ERROR.PermissionDenied, "not allowed")]
+        [InlineData(ERROR.Unknown, "did not keep")]
+        [InlineData(ERROR.AuthFailure, "REFUSED")]
+        [InlineData(ERROR.Empty, "REFUSED")]
+        public void The_words_of_the_status_text_follow_the_answer_of_the_reader(ERROR error, string expectedPart)
+        {
+            Assert.Contains(expectedPart, MifareClassicSetupViewModel.ClassicFailureText(error, "REFUSED"), StringComparison.Ordinal);
+        }
+
+        private sealed record Run(string Calls, ERROR Error, string Status);
 
         private static async Task<Run> RunAsync(
             TaskType_MifareClassicTask type,
@@ -265,7 +317,7 @@ namespace RFiDGear.Tests.KeySlots
                     await vm.CommandDelegator.ExecuteAsync(type);
                 }
 
-                run = new Run(Describe(recording), vm.CurrentTaskErrorLevel);
+                run = new Run(Describe(recording), vm.CurrentTaskErrorLevel, vm.StatusText ?? string.Empty);
             });
 
             return run!;
