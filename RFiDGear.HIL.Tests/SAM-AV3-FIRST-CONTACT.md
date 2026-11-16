@@ -313,8 +313,9 @@ library for the SAM AV2 (public mirrors of it).
    key 0 at version 0, free memory `002000` (8192 bytes: no application).
 2. **Elatec.NET writes AES-128 key entries only.** Its `ChangeKeyEntryAsync`
    throws `NotSupportedException` for any other type, before it sends
-   anything. The frame of SAM_ChangeKeyEntry (INS `C1`, P1 the entry, P2 `FF`,
-   under the secure session) was therefore built by us. Its data field is: key
+   SAM_ChangeKeyEntry. The frame of SAM_ChangeKeyEntry (INS `C1`, P1 the
+   entry, P2 `FF`, under the secure session) was therefore built by us. Its
+   data field is: key
    A, key B, key C (16 bytes each; the library puts a copy of key A into B and
    C), DF_AID (3), DF_KeyNo, KeyNoCEK, KeyVCEK, RefNoKUC, SET (2 bytes, low
    byte first), version A, B, C, ExtSET. **That is not the order of the answer
@@ -385,7 +386,8 @@ library for the SAM AV2 (public mirrors of it).
 **What went wrong, and what it taught (second session):**
 
 - The first try of `writekey2` stopped at the library: `NotSupportedException`
-  (finding 2). Nothing had been sent to the SAM.
+  (finding 2). Its host authentication and the read of entry 2 had run;
+  no SAM_ChangeKeyEntry had been sent.
 - A key that the SAM accepts and the card accepts can still fail at the last
   step, the check of the card's answer, and the status word `901E` does not say
   why. NXP's table 1 did. Check the SET bits against it before looking for a
@@ -419,8 +421,10 @@ library for the SAM AV2 (public mirrors of it).
 - Untried: the other authentication modes (ISO `1A` with 3K3DES, EV2 `71`,
   P1 `80` and `C0`), key diversification, an application key (by DESFire key
   number, with SAM_SelectApplication), SAM_KillAuthentication, using the session
-  with the SAM (reading and writing files), a second authentication on the same
-  SAM connection after SAM_ChangeKeyPICC.
+  with the SAM (reading and writing files), and a second authentication on the
+  same SAM connection after SAM_ChangeKeyPICC with Keep IV set. (The attempt
+  right after the change failed with `901E` while Keep IV was missing, finding
+  8; the corrected run in finding 10 used a fresh connection.)
 - Whether the activation can be undone, and what the last byte of
   SAM_GetVersion means (from the first session).
 - The window itself has not been clicked with a real SAM, and the TWN4 does not
