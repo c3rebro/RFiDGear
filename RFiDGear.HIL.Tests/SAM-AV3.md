@@ -165,9 +165,12 @@ log. What the window looks like, as the tests render it with a scripted SAM
   refuses a blank entry, so the case ends at the first answer of the SAM; if
   the entry is in use, the card refuses the key or takes it. All three are the
   relay working from the SAM to the card and back, and nothing else passes: a
-  reader that fails, a SAM that cannot be opened or an integrity error of the
-  SAM (`901E`, which is the sign of a key entry without Keep IV) fail the case
-  with the result and the status words. **Only authentications are sent: it
+  reader that fails, a SAM that cannot be opened, a SAM that answers with a
+  wrong length or an unknown instruction (`6700`, `6D00`, `6E00`, `6F00`) or
+  an integrity error of the SAM (`901E`, which is the sign of a key entry
+  without Keep IV) fail the case with the result and the status words. The
+  case writes what it saw to its output: the status word of the SAM for a
+  blank entry is the one to write down here. **Only authentications are sent: it
   writes nothing to the SAM or to the card.** It is skipped when no SAM is
   found, when no other reader holds a card, and when the card is no DESFire
   card. It is the check that the frames of `SAM-PICC-FIRST-CONTACT.md`

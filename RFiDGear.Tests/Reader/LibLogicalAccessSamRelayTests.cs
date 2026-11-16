@@ -174,6 +174,39 @@ namespace RFiDGear.Tests.Reader
             Assert.Empty(reader.Sam.Connected);
         }
 
+        // ── a request that cannot be made is found before anything is opened ──
+
+        public static IEnumerable<object[]> RequestsThatCannotBeMade()
+        {
+            var good = Entry1;
+
+            yield return new object[] { "an application of more than 24 bits", new DesfireSamAccess(0x1000000, 0, DESFireKeyType.DF_KEY_AES, good), null! };
+            yield return new object[] { "a key number of the card that does not exist", new DesfireSamAccess(1, 14, DESFireKeyType.DF_KEY_AES, good), null! };
+            yield return new object[] { "the master entry of the SAM", new DesfireSamAccess(0, 0, DESFireKeyType.DF_KEY_AES, default), null! };
+            yield return new object[] { "a new key that is the master entry", null!, Change() with { NewKey = default } };
+            yield return new object[] { "a key that authenticates that does not exist", null!, Change() with { AuthKeyNumber = 14 } };
+            yield return new object[] { "a key to replace that does not exist", null!, Change() with { TargetKeyNumber = 200 } };
+            yield return new object[] { "an application of more than 24 bits in a change", null!, Change() with { AppId = uint.MaxValue } };
+        }
+
+        [Theory]
+        [MemberData(nameof(RequestsThatCannotBeMade))]
+        public async Task A_request_that_cannot_be_made_is_refused_before_the_sam_or_the_card_is_opened(string why, DesfireSamAccess? access, DesfireSamKeyChange? change)
+        {
+            Assert.NotEmpty(why);
+
+            var reader = new RelayReader();
+
+            var result = access.HasValue
+                ? await reader.AuthenticateMifareDesfireWithSamAsync(access.Value)
+                : await reader.ChangeMifareDesfireKeyWithSamAsync(change!.Value);
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Equal(SamPiccFailure.InvalidRequest, result.Failure);
+            Assert.Empty(reader.Events);
+            Assert.Empty(reader.Sam.Connected);
+        }
+
         // ── no card, or the wrong one ──
 
         [Theory]
@@ -189,8 +222,9 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(expected, result.Error);
             Assert.Equal(why, result.Failure);
 
-            // The SAM was opened first, and is let go of; not a single command was sent to it (the session never started).
-            Assert.Equal(new[] { "sam open", "card open" }, reader.Events);
+            // The SAM was opened first, and is let go of; not a single command was sent to it (the session never started). The card is let go
+            // of too: it may be connected, and a DESFire card that cannot be used must not stay connected.
+            Assert.Equal(new[] { "sam open", "card open", "card release" }, reader.Events);
             Assert.Empty(reader.Sam.Handed.Single().Transport.Sent);
             Assert.True(reader.Sam.Handed.Single().Connection.Disposed);
             Assert.False(SamPortGate.IsHeld);
@@ -239,6 +273,7 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(ERROR.TransportError, result.Error);
             Assert.Equal(SamPiccFailure.ReaderFailure, result.Failure);
             Assert.True(reader.Sam.Handed.Single().Connection.Disposed);
+            Assert.Contains("card release", reader.Events);
             Assert.False(SamPortGate.IsHeld);
             Assert.All(logs.All().Select(CapturedLogs.EverythingWrittenFor), text => Assert.DoesNotContain("PRIVATE-READER-TEXT", text, StringComparison.Ordinal));
 
@@ -417,7 +452,7 @@ namespace RFiDGear.Tests.Reader
                 return Task.FromResult(new PcscUltralightSighting(true, "MifareUltralight"));
             }
 
-            protected override Task<byte[]> ReadPcscUltralightPageAsync(int page) => Task.FromResult(new byte[] { 1, 2, 3, 4 });
+            protected override Task<byte[]> ReadPcscUltralightPageAsync(int page) => Task.FromResult(new byte[] { (byte)page, 2, 3, 4 });
 
             // The SAM, by the bytes of the APDU: a kill, part 1 (it has an Le), part 2 (it has none), the cryptogram of a key change.
             private byte[] OnSam(byte[] apdu)

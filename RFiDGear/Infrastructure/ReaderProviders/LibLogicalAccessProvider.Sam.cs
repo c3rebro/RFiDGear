@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 using RFiDGear.Services.Sam;
@@ -8,6 +9,7 @@ using Serilog;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
 {
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half is LibLogicalAccessProvider.cs; the analysis reads one file at a time and cannot see it.")]
     public partial class LibLogicalAccessProvider
     {
         /// <summary>The card of a relay: the way to send it APDUs, or why there is none.</summary>
@@ -59,7 +61,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <returns>The transport, or why there is none.</returns>
         internal virtual async Task<SamCardLink> OpenCardLinkForSamAsync()
         {
-            if (!await ConnectToAFreshChipAsync().ConfigureAwait(false))
+            if (!await ConnectToAFreshChipAsync(rethrowFaults: true).ConfigureAwait(false))
             {
                 return new SamCardLink(SamPiccFailure.NoCard, null);
             }
@@ -123,19 +125,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 using (open.Connection)
                 {
-                    var link = await OpenCardLinkForSamAsync().ConfigureAwait(false);
-
-                    if (link.Transport == null)
-                    {
-                        return SamPiccResult.OfCardFailure(link.Failure);
-                    }
-
                     try
                     {
+                        var link = await OpenCardLinkForSamAsync().ConfigureAwait(false);
+
+                        if (link.Transport == null)
+                        {
+                            return SamPiccResult.OfCardFailure(link.Failure);
+                        }
+
                         return await run(new SamPiccSession(open.Connection.Channel, link.Transport)).ConfigureAwait(false);
                     }
                     finally
                     {
+                        // Once the card was asked for it is let go of, however far it got: a card that was connected and is no DESFire card, or
+                        // whose chip could not be looked at, must not stay connected.
                         await ReleaseCardLinkForSamAsync().ConfigureAwait(false);
                     }
                 }

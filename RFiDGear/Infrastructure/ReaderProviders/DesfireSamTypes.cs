@@ -63,11 +63,20 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         internal static bool IsDesfireCardType(string? cardType) =>
             cardType != null && cardType.StartsWith("DESFire", System.StringComparison.Ordinal);
 
-        /// <summary>Turns a request to authenticate into what the session takes.</summary>
+        /// <summary>
+        /// Turns a request to authenticate into what the session takes. A request that cannot be made (an application number of more than 24 bits, a
+        /// key of the card that does not exist, a reference that is no key entry, a key that is no DES or AES key) is found here, before the SAM or
+        /// the card is opened, so that it is never mistaken for a reader or a key that is not there.
+        /// </summary>
         /// <param name="access">The request.</param>
         /// <param name="kind">The kind of the key.</param>
         /// <returns><see langword="false"/> when the request cannot be made at all.</returns>
-        internal static bool TryAuthenticate(DesfireSamAccess access, out SamPiccKeyType kind) => TryKind(access.KeyType, out kind);
+        internal static bool TryAuthenticate(DesfireSamAccess access, out SamPiccKeyType kind)
+        {
+            kind = default;
+
+            return SamPiccSession.IsValidTarget(access.AppId, access.KeyNumber) && access.Key.IsValid && TryKind(access.KeyType, out kind);
+        }
 
         /// <summary>Turns a request to change a key into what the session takes; the key is always checked afterwards.</summary>
         /// <param name="change">The request.</param>
@@ -77,7 +86,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             result = default;
 
-            if (!TryKind(change.AuthKeyType, out var authKind) || !TryKind(change.NewKeyType, out var newKind))
+            // default(SamKeyReference) is entry 0, the master entry of the SAM: none of the three keys may be one.
+            if (!SamPiccSession.IsValidTarget(change.AppId, change.AuthKeyNumber)
+                || !SamPiccSession.IsValidTarget(change.AppId, change.TargetKeyNumber)
+                || !change.AuthKey.IsValid
+                || !change.CurrentKey.IsValid
+                || !change.NewKey.IsValid
+                || !TryKind(change.AuthKeyType, out var authKind)
+                || !TryKind(change.NewKeyType, out var newKind))
             {
                 return false;
             }

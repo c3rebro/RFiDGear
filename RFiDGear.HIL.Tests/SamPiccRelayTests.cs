@@ -31,6 +31,19 @@ namespace RFiDGear.HIL.Tests
         // The last key entry that a person can write: blank (disabled) unless somebody used it.
         private const string EntryText = "127:0";
 
+        // Status words that are no refusal of a key entry but a mistake of the frame or of the SAM: a wrong length, an instruction or a class that
+        // the SAM does not know. A relay that ends with one of them did not work, however it is named.
+        private static readonly ushort[] ProtocolErrors = { 0x6700, 0x6D00, 0x6E00, 0x6F00 };
+
+        private readonly ITestOutputHelper _output;
+
+        /// <summary>Creates the case.</summary>
+        /// <param name="output">Where the case writes what it saw.</param>
+        public SamPiccRelayTests(ITestOutputHelper output)
+        {
+            _output = output ?? throw new ArgumentNullException(nameof(output));
+        }
+
         /// <summary>The relay with an AES key of the SAM.</summary>
         /// <returns>The task of the test.</returns>
         [HilReaderFact]
@@ -41,7 +54,7 @@ namespace RFiDGear.HIL.Tests
         [HilReaderFact]
         public Task TheRelay_WithADesKeyOfTheSam_ReachesTheSamAndTheCard() => Run(DESFireKeyType.DF_KEY_DES);
 
-        private static Task Run(DESFireKeyType type) =>
+        private Task Run(DESFireKeyType type) =>
             StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 var source = new LlaSamReaderSource();
@@ -84,8 +97,13 @@ namespace RFiDGear.HIL.Tests
                     throw SkipException.ForSkip("The card in the reader of the card is no DESFire card, or could not be connected to (" + result.Failure + "). Put a DESFire card on it.");
                 }
 
-                // Three ways in which the relay worked: the SAM refused the entry (it is blank), the card refused the key, or the key was taken.
-                var worked = (result.Error == ERROR.KeyUnavailable && result.Failure == SamPiccFailure.SamRefused)
+                // What was seen goes to the output, so that the status word of the SAM for a blank entry can be written down and pinned.
+                _output.WriteLine(
+                    "Relay with " + type + ": " + result.Error + " / " + result.Failure + " (SAM " + result.SamStatus.ToString("X4") + ", card " + result.CardStatus.ToString("X4") + ")");
+
+                // Three ways in which the relay worked: the SAM refused the entry (it is blank) with a status word of its own, the card refused the
+                // key, or the key was taken. A SAM that answers a wrong length or an unknown instruction is not a refusal of an entry.
+                var worked = (result.Error == ERROR.KeyUnavailable && result.Failure == SamPiccFailure.SamRefused && result.SamStatus != 0 && !ProtocolErrors.Contains(result.SamStatus))
                     || (result.Error == ERROR.AuthFailure && result.Failure == SamPiccFailure.CardRefused)
                     || result.Succeeded;
 

@@ -7,6 +7,7 @@ using ByteArrayHelper.Extensions;
 using RFiDGear.Models;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     /// Initialize Reader
     /// </summary>
     ///
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half is LibLogicalAccessProvider.Sam.cs; the analysis reads one file at a time and cannot see it.")]
     public partial class LibLogicalAccessProvider : ReaderDevice, IDisposable
     {
         // global (cross-class) Instances go here ->
@@ -995,8 +997,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         // A fresh session for every call, every step checked. tryInitReader reuses a connected session without waiting for a card and
         // without looking at the result of connect(), so the chip of that session can be the card that was taken away or replaced
         // since. This is the full path that it takes after a disconnect (connect to the reader, wait for a card, connect to it), with
-        // each result looked at: a step that fails is no sighting, and nothing is accepted on a session that was not just made.
-        private Task<bool> ConnectToAFreshChipAsync() =>
+        // each result looked at: a step that fails is no sighting, and nothing is accepted on a session that was not just made. A fault of the
+        // native reader ends the step as "no sighting" unless the caller asks for it to be rethrown (the relay does).
+        private Task<bool> ConnectToAFreshChipAsync(bool rethrowFaults = false) =>
             Task.Run(() =>
             {
                 if (readerUnit == null)
@@ -1028,6 +1031,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 catch (Exception e)
                 {
                     Log.ForContext<LibLogicalAccessProvider>().Warning("PC/SC connection for a page operation failed: {Fault}", PcscUltralightErrors.Describe(e));
+
+                    if (rethrowFaults)
+                    {
+                        // A reader that fails is not a reader without a card: the relay says which it was.
+                        throw;
+                    }
 
                     return false;
                 }

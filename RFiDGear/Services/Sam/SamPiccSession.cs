@@ -361,7 +361,7 @@ namespace RFiDGear.Services.Sam
         }
 
         // An application number has 24 bits (the select sends three bytes), and a key of a card has a number from 0 to 13.
-        private static bool IsValidTarget(uint appId, byte keyNo) => appId <= 0xFFFFFF && keyNo <= 0x0D;
+        internal static bool IsValidTarget(uint appId, byte keyNo) => appId <= 0xFFFFFF && keyNo <= 0x0D;
 
         private static SamPiccResult Invalid(string step)
         {
