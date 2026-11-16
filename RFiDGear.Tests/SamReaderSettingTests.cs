@@ -44,6 +44,24 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void A_new_specification_starts_with_the_sam_reader_of_the_runtime_defaults()
+        {
+            // The runtime defaults come from a file of the user: the test puts its own in for the time of the test.
+            var property = typeof(DefaultSpecificationRuntimeDefaults).GetProperty(nameof(DefaultSpecificationRuntimeDefaults.Current))!;
+            var before = DefaultSpecificationRuntimeDefaults.Current;
+
+            try
+            {
+                property.GetSetMethod(true)!.Invoke(null, new object[] { new DefaultSpecificationRuntimeDefaults { SamReaderName = SamReader } });
+
+                Assert.Equal(SamReader, new DefaultSpecification(true).SamReaderName);
+            }
+            finally
+            {
+                property.GetSetMethod(true)!.Invoke(null, new object[] { before });
+            }
+        }
+        [Fact]
         public void The_sam_reader_survives_being_saved_and_read()
         {
             var root = NewTempRoot();
