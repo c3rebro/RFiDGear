@@ -246,6 +246,71 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task ASectorWithFactoryKeysAndOtherAccessBits_IsNoFactorySector_AndMakesTheCasesThatUseItSkip()
+        {
+            // The keys are the factory keys, the access bits are those of the MAD: key B is no data there, and a write needs key B.
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(1, Convert.FromHexString("FFFFFFFFFFFF"), ClassicAccessBits.MadStandard, 0x69, Convert.FromHexString("FFFFFFFFFFFF"));
+
+            var reader = new ScenarioReader(chip);
+
+            await SkipOf(() => ClassicScenarios.AFactorySectorIsReadAsync(reader, ClassicCardSize.K4));
+            await SkipOf(() => ClassicScenarios.AWrongKeyIsRefused_AndTheNextReadWorksAsync(reader));
+            await SkipOf(() => ClassicScenarios.ABlockIsWrittenReadBackAndPutBackAsync(reader, Same));
+            await SkipOf(() => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(reader, ClassicCardSize.K4, Same));
+
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task AKeyBThatIsNotTheFactoryKey_IsNoFactorySector_AndMakesTheCasesThatUseItSkip()
+        {
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(1, Convert.FromHexString("FFFFFFFFFFFF"), ClassicAccessBits.Transport, 0x69, Convert.FromHexString("B0B1B2B3B4B5"));
+
+            var reader = new ScenarioReader(chip);
+
+            await SkipOf(() => ClassicScenarios.AWrongKeyIsRefused_AndTheNextReadWorksAsync(reader));
+            await SkipOf(() => ClassicScenarios.ABlockIsWrittenReadBackAndPutBackAsync(reader, Same));
+
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task AMadCase_WhoseWriteStopsBeforeTheTrailers_FailsWithItsOwnError_AndNotWithAnIncompleteCleanup()
+        {
+            // The first trailer is not written: it is the factory trailer still, and the put-back does not try to write it with the keys of the case.
+            var chip = new SimulatedClassicChip();
+            var before = Everything(chip, ClassicCardSize.K4);
+
+            chip.FailWriteOf(3, 1);
+
+            var failure = await FailureOf(() => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(new ScenarioReader(chip), ClassicCardSize.K4, Same));
+
+            Assert.DoesNotContain("could not be put back", failure.Message, StringComparison.Ordinal);
+            Assert.Equal(before, Everything(chip, ClassicCardSize.K4));
+        }
+
+        [Fact]
+        public async Task AMadCase_WhoseCardIsReplacedDuringThePutBack_WritesNothingMoreToTheOtherCard()
+        {
+            var chip = new SimulatedClassicChip();
+            var asked = 0;
+
+            // Before the read, after it, in the steps, before the put-back: the card of the case. Then every answer is another card.
+            Task<string?> Replaced() => Task.FromResult<string?>(asked++ < 4 ? "04AABBCC" : "04112233");
+
+            var failure = await FailureOf(() => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(new ScenarioReader(chip), ClassicCardSize.K4, Replaced));
+
+            Assert.Contains("replaced during the put-back", failure.Message, StringComparison.Ordinal);
+
+            // Nothing was put back: the data of the case is still in block 4.
+            Assert.Contains(chip.Peek(4), b => b != 0);
+        }
+
+        [Fact]
         public async Task AMadCase_WhoseCleanupFails_FailsAndSaysWhatIsLeft_EvenWhenTheMadOfTheFirstSectorIsGone()
         {
             // The trailer of sector 16 is written twice: by the writer of the MAD (that works) and by the put-back (the chip refuses it). Sector 0 is

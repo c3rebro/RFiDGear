@@ -467,7 +467,15 @@ namespace RFiDGear.ViewModel
         {
             var required = RequiredBlockNodes();
 
-            if (children == null || required == 0 || children.Count(child => child.MifareClassicDataBlock != null) == required)
+            if (children == null || required == 0)
+            {
+                return;
+            }
+
+            // A node without a node of a block does not show the blocks (the dialog of a MAD holds the node of the application there): it is left as it is.
+            var own = children.Count(child => child.MifareClassicDataBlock != null);
+
+            if (own == 0 || own == required)
             {
                 return;
             }

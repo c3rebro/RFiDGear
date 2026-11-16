@@ -216,13 +216,17 @@ namespace RFiDGear.HIL.Tests
                 Assert.True(await whoIsOnTheReader() == uid, "The card on the reader is not the one the case started with: nothing was put back, and the case did not finish.");
 
                 // Every restoring write is tried, and every answer is looked at; then the card is read again, and it must be as it was.
-                var left = await PutTheMadBackAsync(device, madSectors, madKeyA, madKeyB);
+                var left = await PutTheMadBackAsync(device, madSectors, madKeyA, madKeyB, async () => await whoIsOnTheReader() == uid);
 
                 left.AddRange(await FactoryProblemsAsync(device, madSectors));
 
                 Assert.True(left.Count == 0, "The card could not be put back completely. What is left: " + string.Join("; ", left) + ". See CLASSIC.md for how to put the card back.");
             }
         }
+
+        // The bytes of a factory trailer from the access bits on: the transport access bits, the general purpose byte 69, key B (which key A reads).
+        private static readonly byte[] FactoryTail =
+            ClassicAccessBits.Transport.BuildTrailer(Convert.FromHexString(Factory), 0x69, Convert.FromHexString(Factory)).AsSpan(6).ToArray();
 
         // The sectors that the MAD case changes the trailers of: sector 0, and sector 16 on a chip that has the sector after it (as the writer decides).
         private static int[] MadSectorsOf(ClassicCardSize size) =>
@@ -237,7 +241,6 @@ namespace RFiDGear.HIL.Tests
         private static async Task<List<string>> FactoryProblemsAsync(ReaderDevice device, int[] madSectors)
         {
             var problems = new List<string>();
-            var factoryTail = ClassicAccessBits.Transport.BuildTrailer(Convert.FromHexString(Factory), 0x69, Convert.FromHexString(Factory)).AsSpan(6).ToArray();
 
             foreach (var sector in madSectors.Concat(new[] { WriteSector }).Distinct())
             {
@@ -252,7 +255,7 @@ namespace RFiDGear.HIL.Tests
 
                 var trailer = read.Sector.DataBlock[^1].Data;
 
-                if (trailer == null || !trailer.AsSpan(6).SequenceEqual(factoryTail))
+                if (trailer == null || !trailer.AsSpan(6).SequenceEqual(FactoryTail))
                 {
                     problems.Add($"the trailer of sector {sector} is not the factory trailer (its access bits, general purpose byte or key B differ)");
                 }
@@ -274,7 +277,7 @@ namespace RFiDGear.HIL.Tests
         // The MAD sectors get the transport access bits and the factory keys again (their data blocks are then writable with the factory key), the
         // blocks of the directory and the data are zeros again. Every write is tried whatever the ones before it said, and what did not work is
         // returned, one sentence each.
-        private static async Task<List<string>> PutTheMadBackAsync(ReaderDevice device, int[] madSectors, string madKeyA, string madKeyB)
+        private static async Task<List<string>> PutTheMadBackAsync(ReaderDevice device, int[] madSectors, string madKeyA, string madKeyB, Func<Task<bool>> isTheSameCard)
         {
             var failed = new List<string>();
             var factoryTrailer = ClassicAccessBits.Transport.BuildTrailer(Convert.FromHexString(Factory), 0x69, Convert.FromHexString(Factory));
@@ -282,16 +285,46 @@ namespace RFiDGear.HIL.Tests
 
             foreach (var sector in madSectors)
             {
+                // A trailer that is the factory trailer already (the MAD write stopped before it) is left alone: it does not take the keys of the case.
+                if (await HasTheFactoryTrailerAsync(device, sector))
+                {
+                    continue;
+                }
+
+                if (!await isTheSameCard())
+                {
+                    failed.Add("the card on the reader was replaced during the put-back: nothing more was written to it");
+
+                    return failed;
+                }
+
                 // The MAD trailer lets key B write: the call takes it.
                 Note(failed, ClassicLayout.TrailerBlock(sector), await device.WriteMifareClassicSingleBlock(ClassicLayout.TrailerBlock(sector), madKeyA, madKeyB, factoryTrailer));
             }
 
             foreach (var block in BlocksOfTheMadCase(madSectors))
             {
+                if (!await isTheSameCard())
+                {
+                    failed.Add("the card on the reader was replaced during the put-back: nothing more was written to it");
+
+                    return failed;
+                }
+
                 Note(failed, block, await device.WriteMifareClassicSingleBlock(block, Factory, Factory, zeros));
             }
 
             return failed;
+        }
+
+        // Whether the sector reads with the factory key and its trailer is the factory trailer (the access bits, the general purpose byte, key B).
+        private static async Task<bool> HasTheFactoryTrailerAsync(ReaderDevice device, int sector)
+        {
+            var read = await device.ReadMifareClassicSectorAsync(sector, Factory, Factory);
+
+            return read.Error == ERROR.NoError
+                && read.Sector.DataBlock[^1].Data is { Length: ClassicLayout.BytesPerBlock } trailer
+                && trailer.AsSpan(6).SequenceEqual(FactoryTail);
         }
 
         private static void Note(List<string> failed, int block, ERROR answer)
@@ -331,6 +364,15 @@ namespace RFiDGear.HIL.Tests
             if (read.Error != ERROR.NoError)
             {
                 throw SkipException.ForSkip($"Sector {sector} cannot be read with the factory key (answer {read.Error}): the card is not as it left the factory, or the reader does not see it.");
+            }
+
+            // Factory keys with other access bits (the MAD ones, for one) are no factory sector: key B would not be data there, and the cases that
+            // expect it (a key B alone is refused) and the writes (which key writes what) would fail for the card and not for the program.
+            var trailer = read.Sector.DataBlock[^1].Data;
+
+            if (trailer == null || !trailer.AsSpan(6, 3).SequenceEqual(FactoryTail.AsSpan(0, 3)) || !trailer.AsSpan(10, 6).SequenceEqual(FactoryTail.AsSpan(4, 6)))
+            {
+                throw SkipException.ForSkip($"The trailer of sector {sector} is not the factory trailer (its access bits or key B differ): the card is not as it left the factory.");
             }
 
             return read.Sector;

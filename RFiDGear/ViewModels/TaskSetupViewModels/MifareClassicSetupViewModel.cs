@@ -1457,6 +1457,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     else
                     {
                         sectorModel.SectorNumber = selectedClassicSectorCurrentAsInt;
+
+                        // A sector of 4 blocks after one of 16 (the selection of the dialog): the nodes of the blocks are made for it now, so that what is
+                        // typed afterwards goes into the node of a block that the sector has, and nothing is discarded when the command runs.
+                        if (childNodeViewModelFromChip != null)
+                        {
+                            childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+                        }
+
+                        if (childNodeViewModelTemp != null)
+                        {
+                            childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
+                        }
                     }
                     OnPropertyChanged(nameof(SelectedClassicSectorCurrent));
                 }

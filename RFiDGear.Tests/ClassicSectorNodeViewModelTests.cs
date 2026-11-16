@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using RFiDGear.Infrastructure;
 using RFiDGear.Models;
 using RFiDGear.ViewModel;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -91,6 +92,24 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ANodeThatShowsNoBlocks_IsLeftAsItIs_WhenTheSectorChanges()
+        {
+            // The dialog of a MAD holds the node of the application and no node of a block: a new sector must not put blocks in front of it.
+            await OnTheDialogThread(CARD_TYPE.Mifare4K, node =>
+            {
+                var application = new RFiDChipGrandChildLayerViewModel("Application");
+
+                node.Children.Clear();
+                node.Children.Add(application);
+
+                node.SectorNumber = 33;
+
+                Assert.Single(node.Children);
+                Assert.Same(application, node.Children[0]);
+            });
+        }
+
+        [Fact]
         public async Task TwoNodesThatShareTheModel_BothGetTheNodesOfTheirSector_AndBothGetThemBack()
         {
             // The dialog has one node for the chip and one for the task, and they stand for the same sector model: the sector is changed on the model
@@ -114,6 +133,28 @@ namespace RFiDGear.Tests
 
                 Assert.Equal(4, fromChip.Children.Count);
                 Assert.Equal(4, temp.Children.Count);
+
+                return Task.CompletedTask;
+            });
+        }
+
+        [Fact]
+        public async Task SelectingASectorOfFourBlocksAfterOneOfSixteen_MakesTheNodesOfTheDialogRightAtOnce()
+        {
+            // What is typed after the selection goes into a node of a block that the sector has: the nodes are not made new when the command runs.
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = new MifareClassicSetupViewModel();
+
+                task.SelectedClassicSectorCurrent = "33";
+
+                Assert.Equal(16, task.ChildNodeViewModelFromChip.Children.Count);
+                Assert.Equal(16, task.ChildNodeViewModelTemp.Children.Count);
+
+                task.SelectedClassicSectorCurrent = "4";
+
+                Assert.Equal(4, task.ChildNodeViewModelFromChip.Children.Count);
+                Assert.Equal(4, task.ChildNodeViewModelTemp.Children.Count);
 
                 return Task.CompletedTask;
             });
