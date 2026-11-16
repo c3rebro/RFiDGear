@@ -98,12 +98,19 @@ namespace RFiDGear.HIL.Tests
                     throw SkipException.ForSkip("The card in the reader of the card is no DESFire card, or could not be connected to (" + result.Failure + "). Put a DESFire card on it.");
                 }
 
+                // The card refused the select or its first authentication command: the relay never reached the SAM. A card that holds no key of
+                // this kind at key 0 does that (AES on a card with a DES key), and it is no reason to count the case as a pass.
+                if (result.Failure == SamPiccFailure.CardRefusedBeforeSam)
+                {
+                    throw SkipException.ForSkip("The card refused its first authentication command (" + result.CardStatus.ToString("X4") + ") before the SAM was asked: it holds no " + type + " key at key 0 of the card. Run the other case, or use a card in the other state.");
+                }
+
                 // What was seen goes to the output, so that the status word of the SAM for a blank entry can be written down and pinned.
                 _output.WriteLine(
                     "Relay with " + type + ": " + result.Error + " / " + result.Failure + " (SAM " + result.SamStatus.ToString("X4") + ", card " + result.CardStatus.ToString("X4") + ")");
 
-                // Three ways in which the relay worked: the SAM refused the entry (it is blank) with a status word of its own, the card refused the
-                // key, or the key was taken. A SAM that answers a wrong length, an unknown instruction, success or "more data" is not a refusal of an entry.
+                // Three ways in which the relay worked, all after the SAM was asked: the SAM refused the entry (it is blank) with a status word of
+                // its own, the card refused the key at the second part, or the key was taken. A SAM that answers a wrong length, an unknown instruction, success or "more data" is not a refusal of an entry.
                 var worked = (result.Error == ERROR.KeyUnavailable && result.Failure == SamPiccFailure.SamRefused && result.SamStatus != 0 && !NoRefusal.Contains(result.SamStatus))
                     || (result.Error == ERROR.AuthFailure && result.Failure == SamPiccFailure.CardRefused)
                     || result.Succeeded;

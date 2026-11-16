@@ -213,6 +213,7 @@ namespace RFiDGear.Tests.Reader
             yield return new object[] { "a key that authenticates that does not exist", null!, Change() with { AuthKeyNumber = 14 } };
             yield return new object[] { "a key to replace that does not exist", null!, Change() with { TargetKeyNumber = 200 } };
             yield return new object[] { "an application of more than 24 bits in a change", null!, Change() with { AppId = uint.MaxValue } };
+            yield return new object[] { "an application key of another type than the key that authenticates", null!, Change() with { AppId = 1 } };
         }
 
         [Theory]
@@ -231,6 +232,21 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(SamPiccFailure.InvalidRequest, result.Failure);
             Assert.Empty(reader.Events);
             Assert.Empty(reader.Sam.Connected);
+        }
+
+        [Fact]
+        public async Task The_card_master_key_may_change_its_type_and_an_application_key_keeps_the_type_of_the_application()
+        {
+            var master = new RelayReader();
+            var sameType = new RelayReader();
+
+            // The card master key: DES to AES is the change of the type of the card.
+            var changed = await master.ChangeMifareDesfireKeyWithSamAsync(Change());
+            // An application key of the same type as the key that authenticates.
+            var kept = await sameType.ChangeMifareDesfireKeyWithSamAsync(Change() with { AppId = 1, AuthKeyType = DESFireKeyType.DF_KEY_AES, NewKeyType = DESFireKeyType.DF_KEY_AES });
+
+            Assert.True(changed.Succeeded);
+            Assert.True(kept.Succeeded);
         }
 
         // ── no card, or the wrong one ──

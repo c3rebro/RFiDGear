@@ -93,8 +93,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 || !change.CurrentKey.IsValid
                 || !change.NewKey.IsValid
                 || !TryKind(change.AuthKeyType, out var authKind)
-                || !TryKind(change.NewKeyType, out var newKind))
+                || !TryKind(change.NewKeyType, out var newKind)
+                || (change.AppId != 0 && authKind != newKind))
             {
+                // Only the card master key changes the type of its keys: the keys of an application keep the type of the application, and a
+                // request for another one would be checked with the old type and never applied.
                 return false;
             }
 

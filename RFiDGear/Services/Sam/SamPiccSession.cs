@@ -33,8 +33,15 @@ namespace RFiDGear.Services.Sam
         /// <summary>The SAM refused a command (the status word says which): no key entry like that, an entry that is no PICC key, a SAM that does not allow the key change.</summary>
         SamRefused,
 
-        /// <summary>The card refused a command (the status word says which).</summary>
+        /// <summary>The card refused a command after the SAM had been asked (the status word says which): the key, or the change.</summary>
         CardRefused,
+
+        /// <summary>
+        /// The card refused the select or its first authentication command, before the SAM was asked anything: no such application, or a card that
+        /// holds no key of this kind at this key number (an AES authentication on a card with a DES key answers <c>91AE</c> at once). It says
+        /// nothing about the key of the SAM.
+        /// </summary>
+        CardRefusedBeforeSam,
 
         /// <summary>The card accepted the SAM's first message, and the SAM did not accept the card's answer (<c>901E</c> was seen when the key entry lacked Keep IV).</summary>
         SamIntegrity,
@@ -256,9 +263,9 @@ namespace RFiDGear.Services.Sam
 
                 if (selected != SamPiccFrames.CardSuccess)
                 {
-                    Record(step + ": select", "CardRefused", 0, selected);
+                    Record(step + ": select", "CardRefusedBeforeSam", 0, selected);
 
-                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(selected), SamPiccFailure.CardRefused, CardStatus: selected);
+                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(selected), SamPiccFailure.CardRefusedBeforeSam, CardStatus: selected);
                 }
 
                 var length = SamPiccFrames.RandomLength(type);
@@ -266,9 +273,9 @@ namespace RFiDGear.Services.Sam
 
                 if (cardPart1 != SamPiccFrames.CardMoreFrames || challenge.Length != length)
                 {
-                    Record(step + ": card part 1", "CardRefused", 0, cardPart1);
+                    Record(step + ": card part 1", "CardRefusedBeforeSam", 0, cardPart1);
 
-                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(cardPart1), SamPiccFailure.CardRefused, CardStatus: cardPart1);
+                    return new SamPiccResult(SamPiccFrames.ErrorOfCard(cardPart1), SamPiccFailure.CardRefusedBeforeSam, CardStatus: cardPart1);
                 }
 
                 part1Sent = true;
