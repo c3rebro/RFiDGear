@@ -5,6 +5,7 @@ using RFiDGear.View;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -698,6 +699,96 @@ namespace RFiDGear.Tests
                 var check = Of<CheckBox>(window, "ShowCheck", 0);
                 Assert.True(check.TransformToAncestor(window).Transform(new Point(check.ActualWidth, 0)).X <= window.ActualWidth + 0.5, "the check box is outside the window");
             });
+        }
+
+        [Fact]
+        public async Task The_window_snaps_its_layout_to_whole_pixels_so_that_the_border_of_a_button_at_an_edge_is_not_cut_in_half()
+        {
+            await OnWindow(new Setup(), new[] { SecureKeySlots.DesfirePiccCurrent }, (window, _) =>
+            {
+                // At a display scale such as 125% an edge of a button falls on half a pixel (top 12.5, right 669.5), and the border of a button
+                // that touches the clip of the list is drawn half as strong there. Layout rounding puts every edge on a whole pixel.
+                Assert.True(window.UseLayoutRounding);
+
+                var scale = VisualTreeHelper.GetDpi(window).DpiScaleX;
+
+                foreach (var button in new[] { Of<Button>(window, "ModeButton"), Of<Button>(window, "CloseButton") })
+                {
+                    var origin = button.TransformToAncestor(window).Transform(new Point(0, 0));
+                    var edges = new[] { origin.X, origin.Y, origin.X + button.ActualWidth, origin.Y + button.ActualHeight }.Select(edge => edge * scale);
+
+                    Assert.All(edges, edge => Assert.True(Math.Abs(edge - Math.Round(edge)) < 0.01, button.Name + " has an edge on " + edge + " pixels"));
+                }
+
+                return Task.CompletedTask;
+            });
+        }
+
+        [Theory]
+        [InlineData("en", WindowsCredentialKeyProvider.ProviderId, "cards/main")]
+        [InlineData("de", WindowsCredentialKeyProvider.ProviderId, "cards/main")]
+        [InlineData("en", "sam", "3:1")]
+        [InlineData("de", "sam", "3:1")]
+        [InlineData("en", BridgeKeyProvider.ProviderId, "orders/4711")]
+        [InlineData("de", BridgeKeyProvider.ProviderId, "orders/4711")]
+        public async Task The_labels_of_a_row_fit_into_their_column_in_both_languages_for_every_key_store(string culture, string providerId, string reference)
+        {
+            var setup = new Setup { Culture = culture };
+            setup.Host.BindKeySlot(SecureKeySlots.DesfirePiccCurrent, providerId, reference);
+
+            await OnWindow(setup, new[] { SecureKeySlots.DesfirePiccCurrent }, (window, viewModel) =>
+            {
+                var row = Assert.Single(viewModel.Rows);
+                var labels = new HashSet<string> { row.KeyStoreLabel, row.KeyNameLabel, row.StoredKeyLabel };
+                var seen = 0;
+
+                foreach (var label in AllTextBlocks(window).Where(block => labels.Contains(block.Text) && block.ActualWidth > 0))
+                {
+                    seen++;
+
+                    // A label that is wider than its column is cut off, and the box next to it does not move.
+                    var formatted = new FormattedText(
+                        label.Text,
+                        CultureInfo.GetCultureInfo(culture == "de" ? "de-DE" : "en-US"),
+                        FlowDirection.LeftToRight,
+                        new Typeface(label.FontFamily, label.FontStyle, label.FontWeight, label.FontStretch),
+                        label.FontSize,
+                        System.Windows.Media.Brushes.Black,
+                        VisualTreeHelper.GetDpi(label).PixelsPerDip);
+
+                    // The width that the column gives it: a text that is wider is not given more room (its own ActualWidth grows with it and the
+                    // slot clips it), so the column and its margins are what is compared.
+                    var grid = Assert.IsType<Grid>(label.Parent);
+                    var room = grid.ColumnDefinitions[Grid.GetColumn(label)].ActualWidth - label.Margin.Left - label.Margin.Right;
+
+                    Assert.True(formatted.Width <= room + 0.5, "\"" + label.Text + "\" is " + formatted.Width + " wide and its column gives it " + room);
+                }
+
+                // The key store, and the name of the key or the stored key: at least two labels were looked at.
+                Assert.True(seen >= 2, "only " + seen + " labels were found");
+
+                return Task.CompletedTask;
+            });
+        }
+
+        private static IEnumerable<TextBlock> AllTextBlocks(DependencyObject root)
+        {
+            var count = VisualTreeHelper.GetChildrenCount(root);
+
+            for (var index = 0; index < count; index++)
+            {
+                var child = VisualTreeHelper.GetChild(root, index);
+
+                if (child is TextBlock block)
+                {
+                    yield return block;
+                }
+
+                foreach (var nested in AllTextBlocks(child))
+                {
+                    yield return nested;
+                }
+            }
         }
 
         // ── Pictures, when asked ──
