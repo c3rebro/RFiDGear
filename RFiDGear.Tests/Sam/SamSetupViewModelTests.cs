@@ -502,6 +502,7 @@ namespace RFiDGear.Tests.Sam
         [Theory]
         [InlineData("000000000000000000FF200200", "is disabled (SET bit 9)")]
         [InlineData("000000000000000000FF200000", "is not an AES-128 key of the PICC key class")]
+        [InlineData("000000000000000000FF200001", "Keep IV")]
         [InlineData("0000", "reading the key entry back failed")]
         public async Task A_read_back_that_is_not_what_was_written_is_said_in_red_after_the_line_that_the_key_was_written(string answerHex, string expected)
         {

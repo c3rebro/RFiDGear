@@ -317,7 +317,7 @@ namespace RFiDGear.Services.Sam
 
             try
             {
-                await _session.ChangeKeyEntryAsync((byte)entryNumber, SamAv3KeyEntry.CreateAes128PiccKey(read.Key.Bytes, 0)).ConfigureAwait(false);
+                await _session.ChangeKeyEntryAsync((byte)entryNumber, SamKeyEntries.Aes128PiccKey(read.Key.Bytes, 0)).ConfigureAwait(false);
 
                 // The key cannot be read back, but the settings of its entry can: a blank entry is disabled (SET bit 9), and a key
                 // that was written to an entry that stays disabled is no key anybody can use.

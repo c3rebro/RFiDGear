@@ -127,7 +127,7 @@ namespace RFiDGear.HIL.Tests
 
                 try
                 {
-                    await session.ChangeKeyEntryAsync(Entry, SamAv3KeyEntry.CreateAes128PiccKey(key, 0));
+                    await session.ChangeKeyEntryAsync(Entry, SamKeyEntries.Aes128PiccKey(key, 0));
                 }
                 finally
                 {
@@ -140,6 +140,7 @@ namespace RFiDGear.HIL.Tests
                 Assert.Equal(0, after!.Set & 0x0200);
                 Assert.True(after.IsEnabled);
                 Assert.True(after.IsAes128);
+                Assert.True(after.HasKeepIv);
                 Assert.Equal(1, after.KeyClass);
                 Assert.Equal(SamKeyEntryCheck.Matches, after.Verdict);
                 Assert.Equal(0xFF, after.RefNoKuc);

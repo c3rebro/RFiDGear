@@ -273,6 +273,7 @@ namespace RFiDGear.Tests
             "messageSamSetupEntryVerified",
             "messageSamSetupEntryDisabled",
             "messageSamSetupEntryDiffers",
+            "messageSamSetupEntryNoKeepIv",
             "messageSamSetupEntryUnreadable",
         };
 

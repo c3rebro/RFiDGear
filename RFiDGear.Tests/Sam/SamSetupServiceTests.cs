@@ -495,7 +495,7 @@ namespace RFiDGear.Tests.Sam
             Assert.Equal(0, entry.VersionA);
             Assert.Null(entry.KeyB);
             Assert.Null(entry.KeyC);
-            Assert.Equal(SamAv3KeyEntry.SetKeyTypeAes128, entry.Set);
+            Assert.Equal((ushort)(SamAv3KeyEntry.SetKeyTypeAes128 | SamKeyEntries.KeepIvBit), entry.Set);
             Assert.Equal(SamAv3KeyEntry.ExtSetKeyClassPicc, entry.ExtSet);
             Assert.False(entry.IsHostKey);
             Assert.Equal(0, entry.KeyNoCek);
@@ -572,6 +572,9 @@ namespace RFiDGear.Tests.Sam
         private const string BlankEntryAnswer = "000000000000000000FF200200";
         private const string MasterEntryAnswer = "000000000000000000FF200000";
 
+        // An entry as the setup wrote it before Keep IV was known: enabled, AES-128, PICC class, SET 0x0020.
+        private const string EntryWithoutKeepIvAnswer = "000000000000000000FF200001";
+
         [Fact]
         public async Task A_written_entry_that_is_still_disabled_is_said_to_be_so_and_the_write_is_still_done()
         {
@@ -582,6 +585,32 @@ namespace RFiDGear.Tests.Sam
             var outcome = await rig.Service.WriteKeyEntryAsync(2, SamKeySource.FromStored(StoredReference));
 
             Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.Disabled), outcome);
+        }
+
+        [Fact]
+        public async Task The_key_entry_that_is_written_has_keep_iv_set_so_that_a_desfire_card_can_be_authenticated_with_it()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            using var typed = Secure(TypedKeyHex);
+
+            await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromTyped(typed));
+
+            // SET 0x0024 = AES-128 (0x0020) + Keep IV (0x0004), NXP AN12696 table 1. With 0x0020 SAM_AuthenticatePICC part 2 answers 901E.
+            Assert.Equal(0x0024, rig.Session.LastEntry!.Set);
+            Assert.Equal(0x01, rig.Session.LastEntry.ExtSet);
+        }
+
+        [Fact]
+        public async Task A_written_entry_that_lacks_keep_iv_is_said_to_be_so_and_the_write_is_still_done()
+        {
+            using var rig = new Rig();
+            await rig.Service.AuthenticateAsync(SamKeySource.Factory());
+            rig.Session.ReadAnswer = Convert.FromHexString(EntryWithoutKeepIvAnswer);
+
+            var outcome = await rig.Service.WriteKeyEntryAsync(1, SamKeySource.FromStored(StoredReference));
+
+            Assert.Equal(new SamStepOutcome(SamStepResult.Done, 0, SamKeyEntryCheck.MissingKeepIv), outcome);
         }
 
         [Fact]
