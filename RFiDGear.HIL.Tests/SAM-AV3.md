@@ -4,8 +4,9 @@ title: MIFARE SAM AV3 setup, hardware cases
 
 These cases check the setup of a MIFARE SAM AV3 in a PC/SC reader (issue 347):
 Tools > "MIFARE SAM AV3 setup...". One of them runs by itself and only reads
-(`SamDetectionTests`), one writes a key entry (`SamKeyEntryTests`), and the
-rest is a checklist for the window, for **you** to run: it activates a SAM,
+(`SamDetectionTests`), one writes a key entry (`SamKeyEntryTests`), one relays
+an authentication between the SAM and a DESFire card (`SamPiccRelayTests`), and
+the rest is a checklist for the window, for **you** to run: it activates a SAM,
 which is treated as permanent, and it writes a key into the SAM.
 
 The steps themselves (the `6985` of a new SAM, the activation, the host
@@ -151,6 +152,28 @@ log. What the window looks like, as the tests render it with a scripted SAM
   asserted: enabled, type `000b`, PICC class, Keep IV clear. The frame is built
   by the application (Elatec.NET writes AES-128 only), so this case is what
   proves it on a SAM. It writes only into a blank entry 121, once.
+
+**The case that relays (`SamPiccRelayTests`, needs `readerScan`):**
+
+- **TheRelay_WithAnAesKeyOfTheSam_ReachesTheSamAndTheCard** and
+  **TheRelay_WithADesKeyOfTheSam_ReachesTheSamAndTheCard**: with the SAM in the
+  contact slot and a DESFire card on the contactless slot of the same reader
+  (another PC/SC reader that holds a card, not the one that Windows Hello
+  makes up), the PC/SC reader of the application opens the SAM, connects the
+  card and asks the SAM to authenticate the card with key entry 127, version 0:
+  the last entry, which is blank (disabled) unless somebody used it. The SAM
+  refuses a blank entry, so the case ends at the first answer of the SAM; if
+  the entry is in use, the card refuses the key or takes it. All three are the
+  relay working from the SAM to the card and back, and nothing else passes: a
+  reader that fails, a SAM that cannot be opened or an integrity error of the
+  SAM (`901E`, which is the sign of a key entry without Keep IV) fail the case
+  with the result and the status words. **Only authentications are sent: it
+  writes nothing to the SAM or to the card.** It is skipped when no SAM is
+  found, when no other reader holds a card, and when the card is no DESFire
+  card. It is the check that the frames of `SAM-PICC-FIRST-CONTACT.md`
+  work through the application and not only through the console; the task
+  commands that use a key of the SAM on a card that was prepared for it come
+  with their own checklist.
 
 **What this does not check:**
 

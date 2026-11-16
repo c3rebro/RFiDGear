@@ -18,6 +18,9 @@ is skipped when no SAM is found. `SamKeyEntryTests` also needs `cardWrites`: it
 writes a test key into a blank key entry 120 (AES-128) and one into a blank
 entry 121 (DES native) of an activated SAM with the factory master key and
 reads each entry back (once: an enabled entry is never overwritten).
+`SamPiccRelayTests` needs `readerScan` and a reader pair with a SAM in the
+contact slot and a DESFire card on the contactless slot: it authenticates the
+card through the SAM with a blank key entry, and writes nothing.
 `SAM-AV3.md` has the cases and the
 checklist for the setup window.
 
