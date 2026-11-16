@@ -92,5 +92,55 @@ namespace RFiDGear.Tests
                 Assert.Equal("ABCDEFGHIJKLMNOP", viewModel.DataAsCharString);
             });
         }
+
+        [Fact]
+        public async Task WhatIsTypedForABlockWithoutData_IsKeptAsTyped_UntilItIsAWholeBlock()
+        {
+            // The boxes refresh on every key: a text that is only a draft must still be there after the refresh, and it is no data.
+            await OnTheDialogThread(viewModel =>
+            {
+                viewModel.ClearData();
+
+                viewModel.DataAsHexString = "00";
+                Assert.Equal("00", viewModel.DataAsHexString);
+                viewModel.DataAsHexString = "0011";
+                Assert.Equal("0011", viewModel.DataAsHexString);
+                Assert.Null(viewModel.MifareClassicDataBlock.Data);
+
+                viewModel.DataAsCharString = "A";
+                Assert.Equal("A", viewModel.DataAsCharString);
+                viewModel.DataAsCharString = "AB";
+                Assert.Equal("AB", viewModel.DataAsCharString);
+                Assert.Null(viewModel.MifareClassicDataBlock.Data);
+
+                viewModel.DataAsHexString = "00112233445566778899AABBCCDDEEFF";
+                Assert.NotNull(viewModel.MifareClassicDataBlock.Data);
+                Assert.Equal("00112233445566778899AABBCCDDEEFF", viewModel.DataAsHexString);
+            });
+        }
+
+        [Fact]
+        public async Task ClearingABlock_EmptiesItAndWhatWasTypedForIt_AndItShowsItsDataAgainWhenItIsRead()
+        {
+            await OnTheDialogThread(viewModel =>
+            {
+                viewModel.ClearData();
+                viewModel.DataAsHexString = "0011";
+                viewModel.DataAsCharString = "AB";
+
+                // Cleared again (a second read that finds it unreadable): the draft goes too.
+                viewModel.ClearData();
+
+                Assert.Null(viewModel.MifareClassicDataBlock.Data);
+                Assert.Equal(string.Empty, viewModel.DataAsHexString);
+                Assert.Equal(string.Empty, viewModel.DataAsCharString);
+
+                // Read at last.
+                viewModel.MifareClassicDataBlock.Data = Enumerable.Range(0x41, 16).Select(i => (byte)i).ToArray();
+
+                Assert.Equal("4142434445464748494A4B4C4D4E4F50", viewModel.DataAsHexString);
+                Assert.Equal("ABCDEFGHIJKLMNOP", viewModel.DataAsCharString);
+            });
+        }
     }
 }

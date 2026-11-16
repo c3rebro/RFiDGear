@@ -2083,11 +2083,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                                     // What the dialog held before (an earlier read, an edit) is not what is on the chip: it must not stay on show,
                                     // and it must not be written back as if it were.
-                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = null;
-                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
-
-                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = null;
-                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).ClearData();
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).ClearData();
                                 }
                             }
 
