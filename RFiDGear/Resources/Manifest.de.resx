@@ -2487,7 +2487,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Nur für eine neue SAM, die 'nicht aktiviert' geantwortet hat. Fragt vorher nach. Ein Zurück ist nicht bekannt.</value>
   </data>
   <data name="labelSamSetupNewKey" xml:space="preserve">
-    <value>Zu schreibender Schlüssel (AES-128-Schlüssel für Karten, ein PICC-Schlüssel)</value>
+    <value>Zu schreibender Schlüssel (ein PICC-Schlüssel einer DESFire-Karte)</value>
   </data>
   <data name="labelSamSetupEntry" xml:space="preserve">
     <value>Schlüsseleintrag (1 bis 127)</value>
@@ -2602,7 +2602,8 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageSamSetupEntryDiffersNative" xml:space="preserve">
     <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist kein DES-/2K3DES-Schlüssel der Schlüsselklasse PICC, wie er geschrieben wurde. Verwenden Sie ihn nicht.</value>
-  </data>  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
+  </data>
+  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
     <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist aktiviert und enthält einen AES-128-Schlüssel der Schlüsselklasse PICC, aber „Keep IV“ (SET-Bit 2) ist nicht gesetzt. Eine DESFire-Karte lässt sich damit nicht authentisieren (die SAM weist die Antwort der Karte ab). Schreiben Sie den Schlüssel erneut.</value>
   </data>
   <data name="messageSamSetupEntryUnreadable" xml:space="preserve">
