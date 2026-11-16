@@ -90,6 +90,42 @@ namespace RFiDGear.Tests.Sam
             Assert.Equal(Convert.ToHexString(LlaSamApduChannel.Encode(capture.Last!)), Convert.ToHexString(LlaSamApduChannel.Encode(mine)));
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(128)]
+        [InlineData(255)]
+        public async Task The_real_session_refuses_the_master_entry_and_numbers_outside_the_sam_before_it_sends_anything(int entry)
+        {
+            // ExecuteSecureAsync has none of the guards of ChangeKeyEntryAsync: they are in the session.
+            var channel = new ScriptedSamChannel(_ => new SamApduResponse(Array.Empty<byte>(), 0x9000));
+            using var session = new Av3HostSession(channel);
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => session.WriteNativeKeyEntryAsync((byte)entry, new byte[16], 0));
+
+            Assert.Empty(channel.Sent);
+        }
+
+        [Fact]
+        public async Task The_real_session_sends_no_native_key_without_a_host_authentication()
+        {
+            var channel = new ScriptedSamChannel(_ => new SamApduResponse(Array.Empty<byte>(), 0x9000));
+            using var session = new Av3HostSession(channel);
+
+            await Assert.ThrowsAnyAsync<Exception>(() => session.WriteNativeKeyEntryAsync(1, new byte[16], 0));
+
+            Assert.Empty(channel.Sent);
+        }
+
+        [Fact]
+        public async Task The_real_session_refuses_a_key_of_the_wrong_length_before_it_sends_anything()
+        {
+            var channel = new ScriptedSamChannel(_ => new SamApduResponse(Array.Empty<byte>(), 0x9000));
+            using var session = new Av3HostSession(channel);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => session.WriteNativeKeyEntryAsync(1, new byte[15], 0));
+
+            Assert.Empty(channel.Sent);
+        }
         private static object NewSecureMessaging(byte[] ke, byte[] km)
         {
             var type = typeof(SamAv3HostSession).Assembly.GetType("Elatec.NET.SamAv3SecureMessaging")!;
