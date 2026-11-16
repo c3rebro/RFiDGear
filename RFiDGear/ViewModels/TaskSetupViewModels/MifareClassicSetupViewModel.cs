@@ -1978,7 +1978,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         // The sector is empty when every data block (the trailer is not looked at) was read and is all zeros. A block that no key
                         // could read has no data and cannot be shown to be empty. (The loop used to set IsNotTrue and the line after it to NoError,
                         // so the check never found anything.)
-                        var isEmpty = device.Sector.IsAuthenticated;
+                        // A reader that returns fewer blocks than the sector has (one that leaves out what it could not read) has not shown the
+                        // sector to be empty either.
+                        var isEmpty = device.Sector.IsAuthenticated
+                            && selectedClassicSectorCurrentAsInt >= 0
+                            && selectedClassicSectorCurrentAsInt <= ClassicLayout.MaxSector
+                            && device.Sector.DataBlock.Count == ClassicLayout.BlocksInSector(selectedClassicSectorCurrentAsInt);
 
                         for (var i = 0; i < device.Sector.DataBlock.Count - 1 && isEmpty; i++)
                         {

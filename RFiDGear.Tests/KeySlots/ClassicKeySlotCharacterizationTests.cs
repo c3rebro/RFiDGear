@@ -166,6 +166,19 @@ namespace RFiDGear.Tests.KeySlots
 
         [Theory]
         [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public async Task An_empty_check_does_not_call_a_sector_empty_that_a_reader_returned_in_part(int blocks)
+        {
+            // A reader that leaves out the blocks that it could not read gives fewer blocks than the sector has: all that it did show is zero,
+            // and that is not the sector.
+            var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck, reader: reader => reader.BlockCount = blocks);
+
+            Assert.Equal(ERROR.IsNotTrue, run.Error);
+        }
+
+        [Theory]
+        [InlineData(0)]
         [InlineData(2)]
         public async Task A_read_does_not_fail_on_a_block_that_no_key_could_read(int block)
         {

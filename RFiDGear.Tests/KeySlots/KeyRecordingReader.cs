@@ -55,6 +55,9 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets what the blocks of the sector that is read hold (every byte); 0 by default.</summary>
         public byte BlockFill { get; set; }
 
+        /// <summary>Gets or sets how many blocks the sector that is read has (the trailer included); 4 by default. A reader that leaves out what it could not read returns fewer than the sector has.</summary>
+        public int BlockCount { get; set; } = 4;
+
         /// <summary>Gets or sets the card the reader finds when the chip is read; <c>null</c> for none.</summary>
         public GenericChipModel? Card { get; set; }
 
@@ -353,7 +356,7 @@ namespace RFiDGear.Tests.KeySlots
         {
             var sector = new MifareClassicSectorModel { SectorNumber = sectorNumber, IsAuthenticated = true };
 
-            for (var block = 0; block < 4; block++)
+            for (var block = 0; block < BlockCount; block++)
             {
                 var unreadable = UnreadableBlock == block;
                 var data = unreadable ? null : Enumerable.Repeat(BlockFill, 16).ToArray();

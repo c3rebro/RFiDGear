@@ -210,6 +210,12 @@ namespace RFiDGear.ViewModel
         {
             get
             {
+                // A block that was not read has no data, and nothing to show.
+                if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data == null)
+                {
+                    return string.Empty;
+                }
+
                 if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data.Length == 16 && dataBlockAsCharString.Length == 16)
                 {
                     var tempString = new char[mifareClassicDataBlock.Data.Length];
@@ -279,6 +285,9 @@ namespace RFiDGear.ViewModel
                     {
                         if (mifareClassicDataBlock != null)
                         {
+                            // Input for a block that was not read starts a block of its own (the bytes that no key could read stay unknown).
+                            mifareClassicDataBlock.Data ??= new byte[16];
+
                             for (var i = 0; i < mifareClassicDataBlock.Data.Length; i++)
                             {
                                 if (mifareClassicDataBlock.Data != null &&
@@ -370,6 +379,12 @@ namespace RFiDGear.ViewModel
         {
             get
             {
+                // A block that was not read has no data, and nothing to show.
+                if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data == null)
+                {
+                    return string.Empty;
+                }
+
                 if (mifareClassicDataBlock != null &&
                     mifareClassicDataBlock.Data.Length == 16 &&
                     dataBlockAsHexString.Length == 32)
