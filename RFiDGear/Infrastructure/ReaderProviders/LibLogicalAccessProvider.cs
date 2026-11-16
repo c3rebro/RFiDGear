@@ -517,23 +517,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        // The model that the dialogs show: one entry per block of the sector, the trailer last; a block that no key could read has no data.
-        private static MifareClassicSectorModel ToSectorModel(ClassicSectorRead read)
-        {
-            var sector = new MifareClassicSectorModel { IsAuthenticated = read.IsAuthenticated };
-
-            foreach (var block in read.Blocks)
-            {
-                sector.DataBlock.Add(new MifareClassicDataBlockModel(block.Block, block.BlockInSector)
-                {
-                    Data = block.Data,
-                    IsAuthenticated = block.WasRead
-                });
-            }
-
-            return sector;
-        }
-
         /// <inheritdoc />
         public override async Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
