@@ -187,6 +187,30 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Theory]
+        [InlineData("14")]
+        [InlineData("256")]
+        [InlineData("257")]
+        public async Task The_key_that_is_replaced_is_checked_too_when_another_key_authenticates(string chosenKeyNumber)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // With the master key policy key 0 authenticates (a number that exists) and the chosen key is the one that is replaced.
+                var task = NewTask(TaskType_MifareDesfireTask.ApplicationKeyChangeover);
+                task.SelectedDesfireAppKeyNumberCurrent = chosenKeyNumber;
+                task.SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK;
+                task.DesfireAppKeyCurrentOld = "E1E1E1E1E1E1E1E1E1E1E1E1E1E1E1E1";
+                task.KeyBindings = new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3), Sam(SecureKeySlots.DesfireAppOld, Entry2), Sam(SecureKeySlots.DesfireAppNew, Entry4) };
+                var reader = new KeyRecordingReader { SupportsSam = true };
+
+                var run = await RunAsync(task, reader);
+
+                Assert.Equal(ERROR.ProtocolConstraint, run.Error);
+                Assert.Empty(reader.SamChanges);
+                Assert.Empty(reader.Calls);
+            });
+        }
+
+        [Theory]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
         [InlineData(TaskType_MifareDesfireTask.CheckFileSettings)]
