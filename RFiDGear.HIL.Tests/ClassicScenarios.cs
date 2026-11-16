@@ -6,6 +6,7 @@ using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Models;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -175,7 +176,9 @@ namespace RFiDGear.HIL.Tests
 
         /// <summary>
         /// Writes an application through the MAD of a chip that has none (which makes the MAD with the keys A0A1A2A3A4A5 and B0B1B2B3B4B5), reads it back
-        /// through the MAD, and puts the chip back as it was: the trailers of the MAD sectors, the blocks of the directory and the data.
+        /// through the MAD, and puts the chip back as it was: the trailers of the MAD sectors, the blocks of the directory and the data. It runs only on a
+        /// chip that holds exactly what the put-back writes (every block it can change is zeros, every trailer is the factory one), and it fails, and says
+        /// what is left, when the chip is not like that again when it is done.
         /// </summary>
         /// <param name="device">The reader.</param>
         /// <param name="size">The size of the chip.</param>
@@ -186,19 +189,20 @@ namespace RFiDGear.HIL.Tests
             const string madKeyA = "A0A1A2A3A4A5";
             const string madKeyB = "B0B1B2B3B4B5";
 
-            var sectorZero = await ReadFactorySectorOrSkipAsync(device, 0);
+            await ReadFactorySectorOrSkipAsync(device, 0);
 
-            // A chip that has a MAD already (the general purpose byte of sector 0 says so) is not as it left the factory: it is not touched.
-            var gpb = sectorZero.DataBlock[^1].Data is { Length: ClassicLayout.BytesPerBlock } trailer ? trailer[9] : (byte)0;
+            // The chip gets a MAD2 where it has the sector for it: the same test as the writer.
+            var madSectors = MadSectorsOf(size);
+            var before = await FactoryProblemsAsync(device, madSectors);
 
-            if (ClassicMadGpb.TryParse(gpb, out var info) && info.MadAvailable)
+            // Whatever is not as the put-back writes it (a MAD, data, another general purpose byte) would be overwritten: the card is left alone.
+            if (before.Count > 0)
             {
-                throw SkipException.ForSkip("The card has a MAD already: the case writes to a card that has none.");
+                throw SkipException.ForSkip("The card is not as it left the factory, and the case would overwrite it: " + before[0]);
             }
 
             var uid = await whoIsOnTheReader();
             var data = Enumerable.Range(1, 20).Select(i => (byte)i).ToArray();
-            var madSectors = size == ClassicCardSize.K4 ? new[] { 0, 16 } : new[] { 0 };
 
             try
             {
@@ -214,34 +218,93 @@ namespace RFiDGear.HIL.Tests
             {
                 Assert.True(await whoIsOnTheReader() == uid, "The card on the reader is not the one the case started with: nothing was put back, and the case did not finish.");
 
-                await PutTheMadBackAsync(device, madSectors, madKeyA, madKeyB);
+                // Every restoring write is tried, and every answer is looked at; then the card is read again, and it must be as it was.
+                var left = await PutTheMadBackAsync(device, madSectors, madKeyA, madKeyB);
+
+                left.AddRange(await FactoryProblemsAsync(device, madSectors));
+
+                Assert.True(left.Count == 0, "The card could not be put back completely. What is left: " + string.Join("; ", left) + ". See CLASSIC.md for how to put the card back.");
+            }
+        }
+
+        // The sectors that the MAD case changes the trailers of: sector 0, and sector 16 on a chip that has the sector after it (as the writer decides).
+        private static int[] MadSectorsOf(ClassicCardSize size) =>
+            ClassicLayout.HasSector(size, ClassicMad.Mad2Sector + 1) ? new[] { 0, ClassicMad.Mad2Sector } : new[] { 0 };
+
+        // The blocks that the MAD case changes besides the trailers: the blocks of the directory in the MAD sectors, and the two blocks of the data.
+        private static IEnumerable<int> BlocksOfTheMadCase(int[] madSectors) =>
+            new[] { 1, 2, 64, 65, 66 }.Where(block => madSectors.Contains(ClassicLayout.SectorOf(block))).Concat(new[] { 4, 5 });
+
+        // What is not as the put-back writes it: a trailer that is not the factory trailer (the access bits, the general purpose byte, key B, which
+        // the factory access bits let key A read) and a block of the case that holds anything but zeros. Each is a sentence that says which and why.
+        private static async Task<List<string>> FactoryProblemsAsync(ReaderDevice device, int[] madSectors)
+        {
+            var problems = new List<string>();
+            var factoryTail = ClassicAccessBits.Transport.BuildTrailer(Convert.FromHexString(Factory), 0x69, Convert.FromHexString(Factory)).AsSpan(6).ToArray();
+
+            foreach (var sector in madSectors.Concat(new[] { WriteSector }).Distinct())
+            {
+                var read = await device.ReadMifareClassicSectorAsync(sector, Factory, Factory);
+
+                if (read.Error != ERROR.NoError)
+                {
+                    problems.Add($"sector {sector} cannot be read with the factory key (answer {read.Error})");
+
+                    continue;
+                }
+
+                var trailer = read.Sector.DataBlock[^1].Data;
+
+                if (trailer == null || !trailer.AsSpan(6).SequenceEqual(factoryTail))
+                {
+                    problems.Add($"the trailer of sector {sector} is not the factory trailer (its access bits, general purpose byte or key B differ)");
+                }
+
+                foreach (var block in BlocksOfTheMadCase(madSectors).Where(block => ClassicLayout.SectorOf(block) == sector))
+                {
+                    var data = read.Sector.DataBlock.FirstOrDefault(b => b.DataBlockNumberChipBased == block)?.Data;
+
+                    if (data == null || data.Any(b => b != 0))
+                    {
+                        problems.Add($"block {block} does not hold zeros");
+                    }
+                }
             }
 
-            Assert.Equal(ERROR.ProtocolConstraint, await device.ReadMifareClassicWithMAD(Aid, Factory, Factory, Factory, Factory, 16, 0xC1, true, false));
+            return problems;
         }
 
         // The MAD sectors get the transport access bits and the factory keys again (their data blocks are then writable with the factory key), the
-        // blocks of the directory and the data are zeros again. The chip is the one that was checked to be a factory chip before.
-        private static async Task PutTheMadBackAsync(ReaderDevice device, int[] madSectors, string madKeyA, string madKeyB)
+        // blocks of the directory and the data are zeros again. Every write is tried whatever the ones before it said, and what did not work is
+        // returned, one sentence each.
+        private static async Task<List<string>> PutTheMadBackAsync(ReaderDevice device, int[] madSectors, string madKeyA, string madKeyB)
         {
+            var failed = new List<string>();
             var factoryTrailer = ClassicAccessBits.Transport.BuildTrailer(Convert.FromHexString(Factory), 0x69, Convert.FromHexString(Factory));
             var zeros = new byte[ClassicLayout.BytesPerBlock];
 
             foreach (var sector in madSectors)
             {
                 // The MAD trailer lets key B write: the call takes it.
-                await device.WriteMifareClassicSingleBlock(ClassicLayout.TrailerBlock(sector), madKeyA, madKeyB, factoryTrailer);
+                Note(failed, ClassicLayout.TrailerBlock(sector), await device.WriteMifareClassicSingleBlock(ClassicLayout.TrailerBlock(sector), madKeyA, madKeyB, factoryTrailer));
             }
 
-            foreach (var block in new[] { 1, 2, 64, 65, 66 }.Where(block => madSectors.Contains(ClassicLayout.SectorOf(block))))
+            foreach (var block in BlocksOfTheMadCase(madSectors))
             {
-                await device.WriteMifareClassicSingleBlock(block, Factory, Factory, zeros);
+                Note(failed, block, await device.WriteMifareClassicSingleBlock(block, Factory, Factory, zeros));
             }
 
-            // The data of the application went to sector 1 (blocks 4 and 5): zeros again.
-            await device.WriteMifareClassicSingleBlock(4, Factory, Factory, zeros);
-            await device.WriteMifareClassicSingleBlock(5, Factory, Factory, zeros);
+            return failed;
         }
+
+        private static void Note(List<string> failed, int block, ERROR answer)
+        {
+            if (answer != ERROR.NoError)
+            {
+                failed.Add($"block {block} could not be put back (answer {answer})");
+            }
+        }
+
 
         private static async Task<MifareClassicSectorModel> ReadFactorySectorOrSkipAsync(ReaderDevice device, int sector)
         {

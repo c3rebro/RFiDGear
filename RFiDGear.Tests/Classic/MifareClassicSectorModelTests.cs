@@ -132,10 +132,10 @@ namespace RFiDGear.Tests.Classic
             Assert.Equal(1, first.d_sector_trailer_access_bits.c3);
 
             // 0 / 1 / 2 / 4 as C1 + 2 * C2 + 4 * C3: nothing of the 7 / 7 / 7 / 7 before it is left (the old state was ORed into and never cleared).
-            Assert.Equal(new[] { 0, 0, 0 }, Bits(second.d_data_block0_access_bits));
-            Assert.Equal(new[] { 1, 0, 0 }, Bits(second.d_data_block1_access_bits));
-            Assert.Equal(new[] { 0, 1, 0 }, Bits(second.d_data_block2_access_bits));
-            Assert.Equal(new[] { 0, 0, 1 }, Bits(second.d_sector_trailer_access_bits));
+            Assert.Equal(new[] { 0, 0, 0 }, BitsOf(second.d_data_block0_access_bits));
+            Assert.Equal(new[] { 1, 0, 0 }, BitsOf(second.d_data_block1_access_bits));
+            Assert.Equal(new[] { 0, 1, 0 }, BitsOf(second.d_data_block2_access_bits));
+            Assert.Equal(new[] { 0, 0, 1 }, BitsOf(second.d_sector_trailer_access_bits));
         }
 
         [Fact]
@@ -151,7 +151,7 @@ namespace RFiDGear.Tests.Classic
             _ = sector.AccessBitsAsString;
 
             Assert.Equal(before, sector.SAB);
-            Assert.Equal(new[] { 1, 0, 1 }, Bits(sector.SAB.d_data_block0_access_bits));
+            Assert.Equal(new[] { 1, 0, 1 }, BitsOf(sector.SAB.d_data_block0_access_bits));
         }
 
         [Fact]
@@ -176,6 +176,6 @@ namespace RFiDGear.Tests.Classic
             Assert.Equal(AccessCondition_MifareClassicSectorTrailer.NotAllowed, sector.SectorAccessCondition.Write_KeyB);
         }
 
-        private static int[] Bits(AccessBits bits) => new[] { (int)bits.c1, bits.c2, bits.c3 };
+        private static int[] BitsOf(AccessBits group) => new[] { (int)group.c1, group.c2, group.c3 };
     }
 }

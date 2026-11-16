@@ -241,7 +241,7 @@ namespace RFiDGear.Models
 
         /// <summary>
         /// Gets the access bits as one condition per group in the shape that the readers take: each is made from the conditions that the dialog holds now
-        /// (and from nothing that an earlier call left behind), and all zero when they are not usable (that means: no access bits given). The setter does nothing:
+        /// (and from nothing that an earlier call left behind), and all zero when they are not usable (that means: no access bits given). There is no setter:
         /// the conditions are set through the groups, the text or the properties of the groups.
         /// </summary>
         public SectorAccessBits SAB
@@ -259,11 +259,6 @@ namespace RFiDGear.Models
                         d_data_block2_access_bits = ToAccessBitsOfGroup(bits.GetCondition(2)),
                         d_sector_trailer_access_bits = ToAccessBitsOfGroup(bits.GetCondition(3))
                     };
-            }
-
-            set
-            {
-                // Derived from the conditions: there is nothing to keep.
             }
         }
 

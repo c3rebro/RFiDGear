@@ -433,23 +433,45 @@ namespace RFiDGear.ViewModel
             {
                 if (value >= 0)
                 {
-                    var blocksBefore = BlockCount;
-
                     sectorModel.SectorNumber = value;
 
-                    // The nodes of the blocks are made for a sector of 4 blocks (or for the one that the node was made with): a sector of a 4K
-                    // from 32 on has 16, and a node that was made for the other kind of sector has too few or too many.
-                    if (children != null && BlockCount != blocksBefore)
-                    {
-                        RebuildBlockChildren();
-                    }
+                    EnsureBlockNodes();
                 }
             }
         }
 
-        // The nodes of the blocks are made new for the sector that the node has now; what is not a block (a key that was found) stays.
-        private void RebuildBlockChildren()
+        // How many nodes of blocks the sector of this node needs: 4, or 16 for a sector of a 4K from 32 on; none for a node that is no sector.
+        private int RequiredBlockNodes()
         {
+            switch (_cardType)
+            {
+                case CARD_TYPE.Mifare1K:
+                case CARD_TYPE.Mifare2K:
+                case CARD_TYPE.MifarePlus_SL1_1K:
+                case CARD_TYPE.MifarePlus_SL1_2K:
+                    return 4;
+
+                case CARD_TYPE.Mifare4K:
+                case CARD_TYPE.MifarePlus_SL1_4K:
+                    return SectorNumber < 32 ? 4 : 16;
+
+                default:
+                    return 0;
+            }
+        }
+
+        // The nodes of the blocks are as many as the sector needs. This node counts its own nodes and not the number that the model had before: the
+        // model can be shared by two nodes (the dialog has one for the chip and one for the task), and it can change before either node is told.
+        // What is not a block (a key that was found) stays.
+        private void EnsureBlockNodes()
+        {
+            var required = RequiredBlockNodes();
+
+            if (children == null || required == 0 || children.Count(child => child.MifareClassicDataBlock != null) == required)
+            {
+                return;
+            }
+
             foreach (var block in children.Where(child => child.MifareClassicDataBlock != null).ToList())
             {
                 children.Remove(block);

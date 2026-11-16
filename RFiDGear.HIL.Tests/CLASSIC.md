@@ -76,13 +76,18 @@ dotnet test RFiDGear.HIL.Tests `
   checks that the trailer (the keys and the access bits) did not change. Needs
   `readerScan` and `cardWrites`.
 - **AnApplication_IsWrittenThroughTheMad_ReadBack_AndPutBack**: makes a MAD on a
-  card that has none (MAD2 on a 4K), writes 20 bytes of the application `1234`
-  into sector 1 through it, reads them back through it, and puts the card back:
-  the trailers of the MAD sectors (back to the factory keys and the transport
-  access bits), the blocks of the directory and the data. The MAD sectors have
-  the keys `A0A1A2A3A4A5` and `B0B1B2B3B4B5` for the time the case runs. A card
-  that has a MAD already makes the case skip. Needs `readerScan` and
-  `cardWrites`.
+  card that has none (MAD2 on a 2K and a 4K), writes 20 bytes of the
+  application `1234` into sector 1 through it, reads them back through it, and
+  puts the card back: the trailers of the MAD sectors (back to the factory keys
+  and the transport access bits), the blocks of the directory and the data. The
+  MAD sectors have the keys `A0A1A2A3A4A5` and `B0B1B2B3B4B5` for the time the
+  case runs. It runs only on a card that holds exactly what the put-back
+  writes: every block that it can change (1, 2, 4, 5, and 64 to 66 on a card
+  with MAD2) is zeros, and the trailers of the sectors 0, 1 and 16 are the
+  factory trailer with the general purpose byte `69`. A card that is not like
+  that makes the case skip and says which block. When the put-back is done, the
+  case reads the card again and fails, with the blocks that are left, if it is
+  not as it was. Needs `readerScan` and `cardWrites`.
 
 Every case that writes asks the reader who is on it before it writes and
 before it puts back; it compares the answers and never shows them. If the card
@@ -94,7 +99,7 @@ changed again.
 
 **If the MAD case stopped half way:**
 
-The MAD sectors (sector 0, and sector 16 on a 4K) then have the keys
+The MAD sectors (sector 0, and sector 16 on a 2K and a 4K) then have the keys
 `A0A1A2A3A4A5` and `B0B1B2B3B4B5` and the access bits `787788`. Put the factory
 trailer `FFFFFFFFFFFF FF078069 FFFFFFFFFFFF` back to block 3 (and block 67) with
 key B `B0B1B2B3B4B5`, for example with the block write of a Classic task: key B

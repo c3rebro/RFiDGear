@@ -22,6 +22,8 @@ namespace RFiDGear.Tests.Classic
         private readonly Dictionary<int, int> readFaults = new Dictionary<int, int>();
         private readonly Dictionary<int, int> readCounts = new Dictionary<int, int>();
         private readonly HashSet<int> writeFaults = new HashSet<int>();
+        private readonly Dictionary<int, int> writeFaultsAt = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> writeCounts = new Dictionary<int, int>();
 
         private int? loggedSector;
         private ClassicKeyType loggedType;
@@ -97,6 +99,9 @@ namespace RFiDGear.Tests.Classic
 
         /// <summary>Makes the next write of a block fail once, as if the chip had refused it although the access bits allow it.</summary>
         public void FailNextWriteOf(int block) => writeFaults.Add(block);
+
+        /// <summary>Makes one write of a block fail, as if the chip had refused it: the n-th write of that block (1 is the first).</summary>
+        public void FailWriteOf(int block, int occurrence) => writeFaultsAt[block] = occurrence;
 
         public async Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key)
         {
@@ -253,6 +258,7 @@ namespace RFiDGear.Tests.Classic
             }
 
             Writes++;
+            writeCounts[block] = writeCounts.TryGetValue(block, out var seen) ? seen + 1 : 1;
 
             if (halted)
             {
@@ -263,8 +269,9 @@ namespace RFiDGear.Tests.Classic
 
             var sector = ClassicLayout.SectorOf(block);
             var bits = Bits(sector);
+            var failsNow = writeFaultsAt.TryGetValue(block, out var occurrence) && occurrence == writeCounts[block];
 
-            if (loggedSector != sector || !loginIsGood || bits == null || writeFaults.Remove(block) || !MayWrite(block, data, bits))
+            if (loggedSector != sector || !loginIsGood || bits == null || failsNow || writeFaults.Remove(block) || !MayWrite(block, data, bits))
             {
                 halted = true;
                 loggedSector = null;

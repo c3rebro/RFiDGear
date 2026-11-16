@@ -70,7 +70,9 @@ namespace RFiDGear.Tests.Reader
 
         [Theory]
         [InlineData(ClassicCardSize.K4)]
+        [InlineData(ClassicCardSize.K2)]
         [InlineData(ClassicCardSize.K1)]
+        [InlineData(ClassicCardSize.Mini)]
         public async Task EveryCase_PassesOnAChipAsItLeavesTheFactory_AndLeavesItAsItWas(ClassicCardSize size)
         {
             var chip = new SimulatedClassicChip(size);
@@ -174,6 +176,54 @@ namespace RFiDGear.Tests.Reader
 
             Assert.NotNull(failure);
             Assert.Equal(0, chip.Writes);
+        }
+
+        [Theory]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(64)]
+        public async Task ACardThatHoldsDataWhereTheMadCaseWritesZeros_MakesTheCaseSkip_AndWritesNothing(int block)
+        {
+            // The put-back writes zeros there: a card with something in these blocks would lose it. The case leaves such a card alone.
+            var chip = new SimulatedClassicChip();
+
+            chip.Poke(block, Enumerable.Repeat((byte)0x5A, 16).ToArray());
+
+            await SkipOf(() => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(new ScenarioReader(chip), ClassicCardSize.K4, Same));
+
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Theory]
+        [InlineData(0x00)]
+        [InlineData(0x40)]
+        [InlineData(0xBC)]
+        public async Task ACardWhoseTrailerHasAnotherGeneralPurposeByte_MakesTheMadCaseSkip_AndWritesNothing(byte gpb)
+        {
+            // The put-back writes 69 into the trailer: a card with another byte would lose it.
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(0, Convert.FromHexString("FFFFFFFFFFFF"), ClassicAccessBits.Transport, gpb, Convert.FromHexString("FFFFFFFFFFFF"));
+
+            await SkipOf(() => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(new ScenarioReader(chip), ClassicCardSize.K4, Same));
+
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task AMadCase_WhoseCleanupFails_FailsAndSaysWhatIsLeft_EvenWhenTheMadOfTheFirstSectorIsGone()
+        {
+            // The trailer of sector 16 is written twice: by the writer of the MAD (that works) and by the put-back (the chip refuses it). Sector 0 is
+            // put back, so the card has no MAD1 any more; what is left is the changed sector 16 with the temporary keys, and the case has to say so.
+            var chip = new SimulatedClassicChip();
+
+            chip.FailWriteOf(67, 2);
+
+            var failure = await FailureOf(() => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(new ScenarioReader(chip), ClassicCardSize.K4, Same));
+
+            Assert.Contains("could not be put back", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("block 67", failure.Message, StringComparison.Ordinal);
+            Assert.NotEqual(Convert.FromHexString("FFFFFFFFFFFF"), chip.Peek(67).Take(6).ToArray());
         }
 
         [Fact]
