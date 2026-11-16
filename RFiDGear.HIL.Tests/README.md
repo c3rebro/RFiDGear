@@ -20,7 +20,9 @@ entry 121 (DES native) of an activated SAM with the factory master key and
 reads each entry back (once: an enabled entry is never overwritten).
 `SamPiccRelayTests` needs `readerScan` and a reader pair with a SAM in the
 contact slot and a DESFire card on the contactless slot: it authenticates the
-card through the SAM with a blank key entry, and writes nothing.
+card through the SAM with a blank key entry, and writes nothing. `SAM-PICC.md`
+is the checklist for the task commands that use a key of the SAM: they change
+the keys of a card, so it is for you to run.
 `SAM-AV3.md` has the cases and the
 checklist for the setup window.
 

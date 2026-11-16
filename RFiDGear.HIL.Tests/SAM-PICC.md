@@ -15,15 +15,15 @@ one DESFire EV3 with a throwaway console (`SAM-PICC-FIRST-CONTACT.md` and
 - A key slot of a DESFire task can name a key entry of the SAM instead of a
   typed key or a stored key: in the key manager ("Key manager..." at the
   bottom of the keys) choose the key store "MIFARE SAM AV3" and write
-  `entry:version`, for example `1:0`. The project saves that reference and never a key; the key never reaches
-  RFiDGear.
+  `entry:version`, for example `1:0`. The project saves that reference and
+  never a key; the key never reaches RFiDGear.
 - Four commands take such a slot: the task "Check: App Key", the task
   "Change PICC Master Key", the task "Change Application Key" and the button
-  "Authenticate with PICC MasterKey". All the keys of such a
-  command have to be keys of the SAM (the SAM needs the old key and the new
-  key to build the cryptogram of a key change), and the reader has to be a
-  PC/SC reader with a reader set for the SAM. Every other command, and every
-  check task, ends with "key not available" before it touches the card.
+  "Authenticate with PICC MasterKey". All the keys of such a command have to
+  be keys of the SAM (the SAM needs the old key and the new key to build the
+  cryptogram of a key change), and the reader has to be a PC/SC reader with a
+  reader set for the SAM. Every other command, and every check task, ends with
+  "key not available" before it touches the card.
 - The version of a new key is the version of its key entry. The version box of
   the dialog is not used for a key of the SAM.
 
