@@ -21,6 +21,7 @@ namespace RFiDGear.Tests.Classic
         private readonly ClassicCardSize size;
         private readonly Dictionary<int, int> readFaults = new Dictionary<int, int>();
         private readonly Dictionary<int, int> readCounts = new Dictionary<int, int>();
+        private readonly HashSet<int> writeFaults = new HashSet<int>();
 
         private int? loggedSector;
         private ClassicKeyType loggedType;
@@ -47,6 +48,18 @@ namespace RFiDGear.Tests.Classic
         }
 
         public bool CardPresent { get; set; } = true;
+
+        /// <summary>Gets or sets a value that lets block 0 be written (some copies of chips do; a genuine chip does not).</summary>
+        public bool Block0IsWritable { get; set; }
+
+        /// <summary>Gets or sets a value that makes the chip store a byte of what it is told to write wrong, so that a block does not read back as it was written.</summary>
+        public bool CorruptsWrites { get; set; }
+
+        /// <summary>Gets or sets which byte of a block <see cref="CorruptsWrites"/> gets wrong (0 is the first; 9 is the general purpose byte of a trailer).</summary>
+        public int CorruptedByte { get; set; }
+
+        /// <summary>Gets or sets a value that takes the chip away as soon as a block was written (the write itself worked).</summary>
+        public bool GoesAwayAfterAWrite { get; set; }
 
         /// <summary>Gets or sets a value that makes the chip answer a login at once with what it thinks of the key (the TWN4 does; a PC/SC reader says yes and the chip judges at the next access).</summary>
         public bool JudgesLoginAtOnce { get; set; }
@@ -82,6 +95,9 @@ namespace RFiDGear.Tests.Classic
         /// <summary>Makes one read of a block fail, as if the chip had refused it: the n-th read of that block (1 is the first).</summary>
         public void FailReadOf(int block, int occurrence) => readFaults[block] = occurrence;
 
+        /// <summary>Makes the next write of a block fail once, as if the chip had refused it although the access bits allow it.</summary>
+        public void FailNextWriteOf(int block) => writeFaults.Add(block);
+
         public async Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key)
         {
             await PauseAsync();
@@ -99,10 +115,9 @@ namespace RFiDGear.Tests.Classic
         public async Task<ClassicPortResult> WriteBlockAsync(int block, byte[] data)
         {
             await PauseAsync();
-            Writes++;
             Log.Add("write " + block + " (" + data.Length + " bytes)");
 
-            return new ClassicPortResult(ERROR.ProtocolConstraint);
+            return Write(block, data);
         }
 
         public async Task<ClassicPortResult> ReselectAsync()
@@ -228,6 +243,69 @@ namespace RFiDGear.Tests.Classic
             return bits.GetDataBlockRights(ClassicLayout.AccessGroup(block)).Read.Allows(loggedType)
                 ? new ClassicBlockResult(ERROR.NoError, data)
                 : Refuse();
+        }
+
+        private ClassicPortResult Write(int block, byte[] data)
+        {
+            if (!CardPresent)
+            {
+                return new ClassicPortResult(ERROR.TransportError);
+            }
+
+            Writes++;
+
+            if (halted)
+            {
+                halted = false;
+
+                return new ClassicPortResult(ERROR.AuthFailure);
+            }
+
+            var sector = ClassicLayout.SectorOf(block);
+            var bits = Bits(sector);
+
+            if (loggedSector != sector || !loginIsGood || bits == null || writeFaults.Remove(block) || !MayWrite(block, data, bits))
+            {
+                halted = true;
+                loggedSector = null;
+
+                return new ClassicPortResult(ERROR.AuthFailure);
+            }
+
+            memory[block] = (byte[])data.Clone();
+
+            if (CorruptsWrites)
+            {
+                memory[block][CorruptedByte] ^= 0x01;
+            }
+
+            if (GoesAwayAfterAWrite)
+            {
+                CardPresent = false;
+            }
+
+            return ClassicPortResult.Ok;
+        }
+
+        // What the data sheet lets the key that is logged in write. A trailer is written as a whole: every part that changes needs the right.
+        private bool MayWrite(int block, byte[] data, ClassicAccessBits bits)
+        {
+            if (block == 0)
+            {
+                return Block0IsWritable;
+            }
+
+            if (!ClassicLayout.IsTrailer(block))
+            {
+                return bits.GetDataBlockRights(ClassicLayout.AccessGroup(block)).Write.Allows(loggedType);
+            }
+
+            var rights = bits.TrailerRights;
+            var current = memory[block];
+
+            return (current.AsSpan(0, 6).SequenceEqual(data.AsSpan(0, 6)) || rights.KeyAWrite.Allows(loggedType))
+                && (current.AsSpan(6, 4).SequenceEqual(data.AsSpan(6, 4)) || rights.AccessBitsWrite.Allows(loggedType))
+                && (current.AsSpan(10, 6).SequenceEqual(data.AsSpan(10, 6)) || rights.KeyBWrite.Allows(loggedType));
         }
 
         private ClassicAccessBits? Bits(int sector) =>

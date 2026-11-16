@@ -72,13 +72,55 @@ namespace RFiDGear.Infrastructure.Classic
             new ClassicSectorRead(sector, error, Array.Empty<ClassicBlockRead>(), null, null);
     }
 
+    /// <summary>The result of <see cref="ClassicOperations.WriteBlockAsync(int, byte[], ClassicSectorKeys, ClassicWriteOptions)"/> and <see cref="ClassicOperations.WriteSectorAsync(int, byte[], ClassicSectorKeys, ClassicWriteOptions)"/>.</summary>
+    public sealed class ClassicWriteResult
+    {
+        internal ClassicWriteResult(ERROR error, ClassicWriteViolation violation, int blocksWritten, int? failedBlock)
+        {
+            Error = error;
+            Violation = violation;
+            BlocksWritten = blocksWritten;
+            FailedBlock = failedBlock;
+        }
+
+        /// <summary>
+        /// Gets how it went: <see cref="ERROR.NoError"/> when every block was written and read back as written, <see cref="ERROR.ProtocolConstraint"/>
+        /// for a request that was refused before the chip (see <see cref="Violation"/>), <see cref="ERROR.PermissionDenied"/> when no key that there is
+        /// may write a block (nothing was written), <see cref="ERROR.AuthFailure"/> when no key logged in or the chip refused the write,
+        /// <see cref="ERROR.TransportError"/> when the chip went away, and <see cref="ERROR.Unknown"/> when a block did not read back as it was written.
+        /// </summary>
+        public ERROR Error { get; }
+
+        /// <summary>Gets why the request was refused before the chip, or <see cref="ClassicWriteViolation.None"/>.</summary>
+        public ClassicWriteViolation Violation { get; }
+
+        /// <summary>Gets how many blocks were written and read back as written (a sector write that stopped has written the blocks before the one that failed).</summary>
+        public int BlocksWritten { get; }
+
+        /// <summary>Gets the block that ended the call, or <c>null</c> when nothing failed or the request was refused before the chip.</summary>
+        public int? FailedBlock { get; }
+
+        /// <summary>Gets a value that says whether everything that was asked for was written.</summary>
+        public bool Succeeded => Error == ERROR.NoError;
+
+        internal static ClassicWriteResult Success(int blocksWritten) =>
+            new ClassicWriteResult(ERROR.NoError, ClassicWriteViolation.None, blocksWritten, null);
+
+        internal static ClassicWriteResult Refused(ClassicWriteViolation violation) =>
+            new ClassicWriteResult(ERROR.ProtocolConstraint, violation, 0, null);
+
+        internal static ClassicWriteResult Failed(ERROR error, int block, int blocksWritten) =>
+            new ClassicWriteResult(error, ClassicWriteViolation.None, blocksWritten, block);
+    }
+
     /// <summary>
     /// The operations on a MIFARE Classic chip, once, for every reader: they use only the four primitives of <see cref="IClassicPort"/>
     /// and decide everything else here. A login is only believed after the first access (a PC/SC reader says yes to a key that the chip
     /// refuses), a chip that failed is woken before the next try, and the access bits of the sector decide which key is used for which
-    /// block, so that a block that a key may not read is not asked for (every refusal halts the chip).
+    /// block, so that a block that a key may not read or write is not asked for (every refusal halts the chip).
     /// <para>
-    /// This class never writes: the writing operations come with the guards that they need.
+    /// A write makes one attempt per block and never repeats it: a chip that is taken away in the middle of a write must not be written twice.
+    /// What may be written at all is decided first by <see cref="ClassicWritePolicy"/>, without the chip, and every block is read back.
     /// </para>
     /// </summary>
     public sealed class ClassicOperations
@@ -136,6 +178,220 @@ namespace RFiDGear.Infrastructure.Classic
             }
 
             return state.ToResult(ERROR.NoError);
+        }
+
+        /// <summary>
+        /// Writes one block (one attempt, never repeated) and reads it back. The key is the one that the access bits of the sector let write
+        /// it (key A when both may); a trailer needs a key that may write every part of it that changes: key A is never readable, so it counts as
+        /// changed, the access bits and key B are compared with what the chip shows (key B is not shown to a key that may not read it, and counts as
+        /// changed then). Nothing is written when the options do not allow the block, when no key that there is may write it, or when the sector is unreadable.
+        /// </summary>
+        /// <param name="block">The block, as the chip numbers it.</param>
+        /// <param name="data">The 16 bytes.</param>
+        /// <param name="keys">The keys that there are.</param>
+        /// <param name="options">What may be written (data blocks only unless the options say more).</param>
+        /// <returns>The result; see <see cref="ClassicWriteResult.Error"/> for how it went.</returns>
+        public async Task<ClassicWriteResult> WriteBlockAsync(int block, byte[] data, ClassicSectorKeys keys, ClassicWriteOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(keys);
+            ArgumentNullException.ThrowIfNull(options);
+
+            var decision = ClassicWritePolicy.CheckBlock(Size, block, data, options);
+
+            if (!decision.IsAllowed)
+            {
+                return ClassicWriteResult.Refused(decision.Violation);
+            }
+
+            var state = new SectorState(ClassicLayout.SectorOf(block), keys);
+            var opened = await OpenFirstSessionAsync(state);
+
+            if (opened != ERROR.NoError)
+            {
+                return ClassicWriteResult.Failed(opened, block, 0);
+            }
+
+            if (state.Bits == null)
+            {
+                return ClassicWriteResult.Refused(ClassicWriteViolation.AccessBitsUnknown);
+            }
+
+            if (!state.TryChooseWriteKey(block, data, out var key))
+            {
+                return ClassicWriteResult.Failed(ERROR.PermissionDenied, block, 0);
+            }
+
+            return await WriteOneAsync(state, block, data, key, 0);
+        }
+
+        /// <summary>
+        /// Writes the data blocks of one sector, in order (never the trailer, and block 0 only when the options allow it), one attempt each,
+        /// every block read back. Before the first block is written it is checked that a key that there is may write every block: if one
+        /// cannot be written, none is. The first block that fails ends the call, and the blocks after it are not touched.
+        /// </summary>
+        /// <param name="sector">The sector number.</param>
+        /// <param name="data">The bytes of the blocks to write (see <see cref="ClassicWritePolicy.SectorDataLength(int, ClassicWriteOptions)"/>).</param>
+        /// <param name="keys">The keys that there are.</param>
+        /// <param name="options">What may be written.</param>
+        /// <returns>The result; <see cref="ClassicWriteResult.BlocksWritten"/> says how far it came.</returns>
+        public async Task<ClassicWriteResult> WriteSectorAsync(int sector, byte[] data, ClassicSectorKeys keys, ClassicWriteOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(keys);
+            ArgumentNullException.ThrowIfNull(options);
+
+            var decision = ClassicWritePolicy.CheckSector(Size, sector, data, options);
+
+            if (!decision.IsAllowed)
+            {
+                return ClassicWriteResult.Refused(decision.Violation);
+            }
+
+            var state = new SectorState(sector, keys);
+            var opened = await OpenFirstSessionAsync(state);
+
+            if (opened != ERROR.NoError)
+            {
+                return ClassicWriteResult.Failed(opened, ClassicLayout.FirstBlock(sector), 0);
+            }
+
+            if (state.Bits == null)
+            {
+                return ClassicWriteResult.Refused(ClassicWriteViolation.AccessBitsUnknown);
+            }
+
+            var plan = state.PlanDataWrites(sector == 0 && !options.AllowManufacturerBlock ? 1 : 0);
+
+            if (plan == null)
+            {
+                return ClassicWriteResult.Failed(ERROR.PermissionDenied, ClassicLayout.FirstBlock(sector), 0);
+            }
+
+            return await WritePlanAsync(state, plan, data);
+        }
+
+        private async Task<ClassicWriteResult> WritePlanAsync(SectorState state, IReadOnlyList<(int Block, ClassicKeyType Key)> plan, byte[] data)
+        {
+            var written = 0;
+
+            foreach (var (block, key) in plan)
+            {
+                var chunk = data.AsSpan(written * ClassicLayout.BytesPerBlock, ClassicLayout.BytesPerBlock).ToArray();
+                var result = await WriteOneAsync(state, block, chunk, key, written);
+
+                if (!result.Succeeded)
+                {
+                    return result;
+                }
+
+                written = result.BlocksWritten;
+            }
+
+            return ClassicWriteResult.Success(written);
+        }
+
+        // One block: log in with the key that may write it (when it is not the key that is logged in), one write, a read back. A refused write
+        // is looked at once (is the chip still there?) and never repeated.
+        private async Task<ClassicWriteResult> WriteOneAsync(SectorState state, int block, byte[] data, ClassicKeyType key, int writtenBefore)
+        {
+            var switched = await SwitchKeyAsync(state, key);
+
+            if (switched != ERROR.NoError)
+            {
+                return ClassicWriteResult.Failed(switched, block, writtenBefore);
+            }
+
+            var wrote = await port.WriteBlockAsync(block, data);
+
+            if (!wrote.Succeeded)
+            {
+                return ClassicWriteResult.Failed(await ClassifyRefusedWriteAsync(wrote.Error), block, writtenBefore);
+            }
+
+            var verified = await VerifyWrittenAsync(state, block, data);
+
+            return verified == ERROR.NoError
+                ? ClassicWriteResult.Success(writtenBefore + 1)
+                : ClassicWriteResult.Failed(verified, block, writtenBefore);
+        }
+
+        // The chip awake and logged in with the key that is needed: nothing to do when it is, a login (proved by the trailer) when it is not.
+        private async Task<ERROR> SwitchKeyAsync(SectorState state, ClassicKeyType key)
+        {
+            if (key == state.LoggedIn)
+            {
+                return ERROR.NoError;
+            }
+
+            var opened = await OpenSessionAsync(state, key, wakeFirst: false);
+
+            if (opened.Error == ERROR.TransportError)
+            {
+                return ERROR.TransportError;
+            }
+
+            if (!opened.Succeeded)
+            {
+                return ERROR.AuthFailure;
+            }
+
+            state.LoggedIn = key;
+
+            return ERROR.NoError;
+        }
+
+        // A write that the chip refused: a look at the chip, which is the one thing that is done about it (it is no second attempt). A chip that
+        // is gone is a transport error and not a refusal.
+        private async Task<ERROR> ClassifyRefusedWriteAsync(ERROR refused)
+        {
+            if (refused == ERROR.TransportError)
+            {
+                return ERROR.TransportError;
+            }
+
+            var look = await port.ReselectAsync();
+
+            return look.Error == ERROR.TransportError ? ERROR.TransportError : ERROR.AuthFailure;
+        }
+
+        // A data block reads back as it was written. A trailer is read back with the key A that was written (the old keys are gone): its access
+        // bits and general purpose byte must read back as written.
+        private async Task<ERROR> VerifyWrittenAsync(SectorState state, int block, byte[] data)
+        {
+            if (ClassicLayout.IsTrailer(block))
+            {
+                var login = await port.LoginAsync(state.First, ClassicKeyType.KeyA, data.AsSpan(0, ClassicKey.Length).ToArray());
+
+                if (login.Error == ERROR.TransportError)
+                {
+                    return ERROR.TransportError;
+                }
+
+                if (!login.Succeeded)
+                {
+                    return ERROR.Unknown;
+                }
+
+                state.LoggedIn = ClassicKeyType.KeyA;
+            }
+
+            var read = await port.ReadBlockAsync(block);
+
+            if (read.Error == ERROR.TransportError)
+            {
+                return ERROR.TransportError;
+            }
+
+            if (!read.Succeeded)
+            {
+                return ERROR.Unknown;
+            }
+
+            var comparedFrom = ClassicLayout.IsTrailer(block) ? ClassicKey.Length : 0;
+            var comparedLength = ClassicLayout.IsTrailer(block) ? 4 : ClassicLayout.BytesPerBlock;
+
+            return read.Data.AsSpan(comparedFrom, comparedLength).SequenceEqual(data.AsSpan(comparedFrom, comparedLength))
+                ? ERROR.NoError
+                : ERROR.Unknown;
         }
 
         // Key A first, then key B, one attempt each: the first that logs in (and proves it by reading the trailer) is the session.
@@ -286,14 +542,40 @@ namespace RFiDGear.Infrastructure.Classic
 
             public ClassicAccessBits? Bits { get; private set; }
 
-            // The key that logged in first.
+            // The key that logged in first, and the key that is logged in now (a write may switch keys from block to block).
             public ClassicKeyType Session { get; private set; }
+
+            public ClassicKeyType LoggedIn { get; set; }
 
             public void StartSession(ClassicKeyType type, byte[] trailer)
             {
                 Session = type;
+                LoggedIn = type;
                 data[^1] = trailer;
                 Bits = ClassicAccessBits.TryFromTrailer(trailer, out var parsed) ? parsed : null;
+            }
+
+            // The key that may write a block, if one of the keys that there are may. For a trailer the rights of every part that changes are needed.
+            public bool TryChooseWriteKey(int block, byte[] newData, out ClassicKeyType key) =>
+                Bits!.TryChooseKey(WriteRights(block, newData), Keys.Has(ClassicKeyType.KeyA), Keys.Has(ClassicKeyType.KeyB), out key);
+
+            // The blocks of the sector from the one at the given position on (the trailer not among them), each with the key that may write it;
+            // null when a key that there is cannot write one of them.
+            public List<(int Block, ClassicKeyType Key)>? PlanDataWrites(int firstPosition)
+            {
+                var plan = new List<(int Block, ClassicKeyType Key)>();
+
+                for (var block = First + firstPosition; block < TrailerBlock; block++)
+                {
+                    if (!TryChooseWriteKey(block, Array.Empty<byte>(), out var key))
+                    {
+                        return null;
+                    }
+
+                    plan.Add((block, key));
+                }
+
+                return plan;
             }
 
             // The key that logged in reads first; the other one only when there is one.
@@ -326,6 +608,33 @@ namespace RFiDGear.Infrastructure.Classic
                     Enumerable.Range(0, data.Length).Select(i => new ClassicBlockRead(First + i, i, data[i])).ToList(),
                     Bits,
                     Session);
+
+            private ClassicKeyAccess WriteRights(int block, byte[] newData)
+            {
+                if (!ClassicLayout.IsTrailer(block))
+                {
+                    return Bits!.GetDataBlockRights(ClassicLayout.AccessGroup(block)).Write;
+                }
+
+                var rights = Bits!.TrailerRights;
+                var current = data[^1]!;
+
+                // Key A is never readable, so it counts as changed. The access bits and key B count as changed when they differ from what the
+                // chip showed; key B is only shown to a key that may read it, and counts as changed when it was not shown.
+                var needed = rights.KeyAWrite;
+
+                if (!current.AsSpan(6, 4).SequenceEqual(newData.AsSpan(6, 4)))
+                {
+                    needed &= rights.AccessBitsWrite;
+                }
+
+                if (!rights.KeyBRead.Allows(Session) || !current.AsSpan(10, 6).SequenceEqual(newData.AsSpan(10, 6)))
+                {
+                    needed &= rights.KeyBWrite;
+                }
+
+                return needed;
+            }
 
             private bool MayRead(int block, ClassicKeyType type)
             {

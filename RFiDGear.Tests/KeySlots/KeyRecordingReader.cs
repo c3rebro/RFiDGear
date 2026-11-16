@@ -339,17 +339,12 @@ namespace RFiDGear.Tests.KeySlots
         // ── Classic ──
 
         /// <inheritdoc />
-        public override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        public override Task<(ERROR Error, MifareClassicSectorModel Sector)> ReadMifareClassicSectorAsync(int sectorNumber, string aKey, string bKey)
         {
-            var scripted = Record(nameof(ReadMifareClassicSingleSector), aKey, bKey);
+            var scripted = Record(nameof(ReadMifareClassicSectorAsync), aKey, bKey);
 
-            // The view model reads the sector that a successful call leaves behind.
-            if (scripted == ERROR.NoError)
-            {
-                Sector = NewSector(sectorNumber);
-            }
-
-            return Task.FromResult(scripted);
+            // The view model reads the sector that a successful call hands back.
+            return Task.FromResult((scripted, scripted == ERROR.NoError ? NewSector(sectorNumber) : new MifareClassicSectorModel()));
         }
 
         private MifareClassicSectorModel NewSector(int sectorNumber)

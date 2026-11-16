@@ -30,6 +30,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private bool _disposed;
         private readonly SemaphoreSlim _comPortLock = new SemaphoreSlim(1, 1);
 
+        /// <inheritdoc />
+        protected override SemaphoreSlim ClassicGate => _comPortLock;
+
         // The monitor retries a connect every few seconds; the log gets one line per distinct failure, not one per retry.
         private string lastLoggedConnectFailure;
 
@@ -315,47 +318,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region MifareClassic
 
-        /// <inheritdoc />
-        public async override Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
-        {
-            await _comPortLock.WaitAsync();
-            try
-            {
-                try
-                {
-                    await readerDevice.MifareClassic_LoginAsync(aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
-                }
-                catch
-                {
-                    try
-                    {
-                        await readerDevice.MifareClassic_LoginAsync(bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
-                    }
-                    catch
-                    {
-                        try
-                        {
-                            await readerDevice.MifareClassic_WriteBlockAsync(buffer, (byte)_blockNumber);
-                        }
-                        catch
-                        {
-                            return ERROR.AuthFailure;
-                        }
-                    }
-                } // Login
-                return ERROR.NoError;
-            }
-            finally
-            {
-                _comPortLock.Release();
-            }
-        }
-
         /// <summary>
         /// Searches for the chip and gives the reader's access to it for a Classic operation. Overridden by the tests.
         /// </summary>
         /// <returns>The access, or <c>null</c> when the reader is not connected or finds no chip.</returns>
-        protected virtual async Task<IClassicPort> OpenClassicPortAsync()
+        protected override async Task<IClassicPort> OpenClassicPortAsync()
         {
             if (readerDevice == null || !readerDevice.IsConnected)
             {
@@ -387,67 +354,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
 
             return new ElatecClassicPort(readerDevice, size);
-        }
-
-        /// <inheritdoc />
-        public async override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
-        {
-            var keysAreKeys = ClassicSectorKeys.TryCreate(aKey, bKey, out var keys);
-
-            using (keys)
-            {
-                await _comPortLock.WaitAsync();
-
-                try
-                {
-                    // The sector of this read is made under the lock and set only under it: a read that waited, or one that is refused before
-                    // it starts, cannot replace the sector of another read in the middle of it.
-                    Sector = new MifareClassicSectorModel();
-
-                    // A key that is no key never reaches the chip: it is a failed authentication, as it always was.
-                    if (!keysAreKeys)
-                    {
-                        return ERROR.AuthFailure;
-                    }
-
-                    var port = await OpenClassicPortAsync();
-
-                    if (port == null)
-                    {
-                        return ERROR.TransportError;
-                    }
-
-                    var read = await new ClassicOperations(port).ReadSectorAsync(sectorNumber, keys);
-
-                    Sector = ToSectorModel(read);
-
-                    return read.Error;
-                }
-                catch (Exception e)
-                {
-                    Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-
-                    return ERROR.TransportError;
-                }
-                finally
-                {
-                    _comPortLock.Release();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Writing a whole sector is not available yet: it answers <see cref="ERROR.ProtocolConstraint"/> and touches no chip. The method
-        /// that was here wrote the buffer to the block 0 to 3 of the chip, whatever sector was meant.
-        /// </summary>
-        /// <param name="sectorNumber">The sector.</param>
-        /// <param name="aKey">Key A.</param>
-        /// <param name="bKey">Key B.</param>
-        /// <param name="buffer">The data.</param>
-        /// <returns><see cref="ERROR.ProtocolConstraint"/>.</returns>
-        public override Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
-        {
-            return Task.FromResult(ERROR.ProtocolConstraint);
         }
 
 

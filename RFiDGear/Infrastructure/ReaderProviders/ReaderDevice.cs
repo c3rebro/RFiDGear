@@ -7,6 +7,7 @@ using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
 using RFiDGear.Services.Sam;
+using Serilog;
 
 using System;
 using System.Collections.Generic;
@@ -158,40 +159,174 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region MifareClassic
         // Mifare Classic Method Definitions
-        /// <summary>
-        /// Reads a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
-        /// </summary>
-        /// <param name="sectorNumber">
-        /// The sector number to read. Note: Every sector above sec32 (MIFARE 4K) is 4 times bigger than the lower sectors. They expect the
-        /// sector number to be multiplied by 4. So sector 33 is (33 - 32) * 4 + 32 = 36 dec, sector 38 is (38 - 32) * 4 + 32 = 56 dec, and so on.
-        /// </param>
-        /// <param name="aKey">The primary key for authentication.</param>
-        /// <param name="bKey">The fallback key for authentication.</param>
-        /// <returns>The normalized error code that describes the outcome.</returns>
-        public abstract Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey);
+        /// <summary>Gets the gate that holds the Classic operations of this reader apart: a chip has one session, so one operation runs at a time.</summary>
+        protected virtual SemaphoreSlim ClassicGate { get; } = new SemaphoreSlim(1, 1);
 
         /// <summary>
-        /// Writes a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
+        /// Gives the access to the chip on the reader for a Classic operation. The readers (and the tests) override it. The default is a
+        /// reader that has none.
         /// </summary>
-        /// <param name="sectorNumber">
-        /// The sector number to write. Note: Every sector above sec32 (MIFARE 4K) is 4 times bigger than the lower sectors. They expect the
-        /// sector number to be multiplied by 4. So sector 33 is (33 - 32) * 4 + 32 = 36 dec, sector 38 is (38 - 32) * 4 + 32 = 56 dec, and so on.
-        /// </param>
-        /// <param name="aKey">The primary key for authentication.</param>
-        /// <param name="bKey">The fallback key for authentication.</param>
-        /// <param name="buffer">The payload to write.</param>
-        /// <returns>The normalized error code that describes the outcome.</returns>
-        public abstract Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer);
+        /// <returns>The access, or <c>null</c> when there is no reader or no chip.</returns>
+        protected virtual Task<IClassicPort> OpenClassicPortAsync() => Task.FromResult<IClassicPort>(null);
 
         /// <summary>
-        /// Writes a single MIFARE Classic block after authenticating with the supplied keys. It checks both A and B keys for authentication.
+        /// Reads all blocks of a MIFARE Classic sector, the trailer included. It logs in with key A and then with key B (one attempt each) and
+        /// reads every block with a key that the access bits of the sector allow. The result is in <see cref="Sector"/>: one entry per block, the
+        /// trailer last; a block that no key could read has no data. The same code runs for every reader (see <see cref="ClassicOperations"/>).
         /// </summary>
-        /// <param name="_blockNumber">The chip-based block number to write.</param>
-        /// <param name="aKey">The primary key for authentication.</param>
-        /// <param name="bKey">The fallback key for authentication.</param>
-        /// <param name="buffer">The 16-byte payload to write.</param>
-        /// <returns>The normalized error code that describes the outcome.</returns>
-        public abstract Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer);
+        /// <param name="sectorNumber">The sector, 0 to 39, as the chip numbers it (the sectors 32 to 39 of a 4K have 16 blocks).</param>
+        /// <param name="aKey">Key A as 12 hexadecimal digits, or empty for none.</param>
+        /// <param name="bKey">Key B as 12 hexadecimal digits, or empty for none.</param>
+        /// <returns>
+        /// <see cref="ERROR.NoError"/> when a key logged in, <see cref="ERROR.AuthFailure"/> when none did (or a key is no key: nothing is sent
+        /// to the chip then), <see cref="ERROR.TransportError"/> when there is no reader or chip, <see cref="ERROR.ProtocolConstraint"/> when the chip has no such sector.
+        /// </returns>
+        public virtual async Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        {
+            return (await ReadClassicSectorAsync(sectorNumber, aKey, bKey, publish: true)).Error;
+        }
+
+        /// <summary>
+        /// Reads all blocks of a MIFARE Classic sector like <see cref="ReadMifareClassicSingleSector(int, string, string)"/>, and hands the sector
+        /// back with the answer. The sector is the one of this call and of no other: <see cref="Sector"/> is shared by every call on the reader, so
+        /// a caller that reads it after an <c>await</c> may get the sector of another read.
+        /// </summary>
+        /// <param name="sectorNumber">The sector, 0 to 39, as the chip numbers it (the sectors 32 to 39 of a 4K have 16 blocks).</param>
+        /// <param name="aKey">Key A as 12 hexadecimal digits, or empty for none.</param>
+        /// <param name="bKey">Key B as 12 hexadecimal digits, or empty for none.</param>
+        /// <returns>
+        /// The answer (as of <see cref="ReadMifareClassicSingleSector(int, string, string)"/>) and the sector: one entry per block, the trailer
+        /// last, and an empty sector when nothing could be read.
+        /// </returns>
+        public virtual async Task<(ERROR Error, MifareClassicSectorModel Sector)> ReadMifareClassicSectorAsync(int sectorNumber, string aKey, string bKey)
+        {
+            return await ReadClassicSectorAsync(sectorNumber, aKey, bKey, publish: false);
+        }
+
+        // The read behind both: the sector of the call is its own, and when it is to be published (the legacy property) it is set under the gate
+        // only, so a read that waited or one that is refused before it starts cannot replace the sector of another read in the middle of it.
+        private async Task<(ERROR Error, MifareClassicSectorModel Sector)> ReadClassicSectorAsync(int sectorNumber, string aKey, string bKey, bool publish)
+        {
+            var sector = new MifareClassicSectorModel();
+
+            // A key that is no key never reaches the chip: it is a failed authentication, as it always was.
+            var keysAreKeys = ClassicSectorKeys.TryCreate(aKey, bKey, out var keys);
+
+            using (keys)
+            {
+                var error = await RunClassicAsync(
+                    async operations =>
+                    {
+                        var read = await operations.ReadSectorAsync(sectorNumber, keys);
+
+                        sector = ToSectorModel(read);
+
+                        if (publish)
+                        {
+                            Sector = sector;
+                        }
+
+                        return read.Error;
+                    },
+                    () =>
+                    {
+                        if (publish)
+                        {
+                            Sector = sector;
+                        }
+                    },
+                    keysAreKeys ? null : ERROR.AuthFailure);
+
+                return (error, sector);
+            }
+        }
+
+        /// <summary>
+        /// Writes the data blocks of a MIFARE Classic sector in order (never the trailer, and not block 0), one attempt each and every block read
+        /// back, with the key that the access bits of the sector let write each block. If one block cannot be written by a key that there is,
+        /// none is written. The first block that fails ends the call.
+        /// </summary>
+        /// <param name="sectorNumber">The sector, 0 to 39, as the chip numbers it.</param>
+        /// <param name="aKey">Key A as 12 hexadecimal digits, or empty for none.</param>
+        /// <param name="bKey">Key B as 12 hexadecimal digits, or empty for none.</param>
+        /// <param name="buffer">The data of the blocks: 48 bytes for a sector of 4 blocks (32 for sector 0), 240 for a sector of 16 blocks.</param>
+        /// <returns>
+        /// <see cref="ERROR.NoError"/> when all blocks were written and read back, <see cref="ERROR.ProtocolConstraint"/> for data of the wrong length
+        /// or a sector that the chip does not have (nothing is sent), <see cref="ERROR.PermissionDenied"/> when no key that there is may write a block
+        /// (nothing is written), <see cref="ERROR.AuthFailure"/> when no key logged in or the chip refused a write, <see cref="ERROR.TransportError"/>
+        /// when the chip went away, and <see cref="ERROR.Unknown"/> when a block did not read back as it was written.
+        /// </returns>
+        public virtual async Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
+        {
+            if (!ClassicSectorKeys.TryCreate(aKey, bKey, out var keys))
+            {
+                return ERROR.AuthFailure;
+            }
+
+            using (keys)
+            {
+                return await RunClassicAsync(async operations =>
+                    (await operations.WriteSectorAsync(sectorNumber, buffer, keys, ClassicWriteOptions.DataOnly)).Error);
+            }
+        }
+
+        /// <summary>
+        /// Writes one block of a MIFARE Classic chip (one attempt, never repeated) and reads it back, with the key that the access bits of the
+        /// sector let write it. A sector trailer may be written (its access bits must be consistent, and access bits that can never be changed
+        /// again are refused); the manufacturer block (block 0) is not.
+        /// </summary>
+        /// <param name="_blockNumber">The block, as the chip numbers it (the block number of the chip, not the position in the sector).</param>
+        /// <param name="aKey">Key A as 12 hexadecimal digits, or empty for none.</param>
+        /// <param name="bKey">Key B as 12 hexadecimal digits, or empty for none.</param>
+        /// <param name="buffer">The 16 bytes to write.</param>
+        /// <returns>The same answers as <see cref="WriteMifareClassicSingleSector(int, string, string, byte[])"/>.</returns>
+        public virtual async Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
+        {
+            if (!ClassicSectorKeys.TryCreate(aKey, bKey, out var keys))
+            {
+                return ERROR.AuthFailure;
+            }
+
+            using (keys)
+            {
+                var options = new ClassicWriteOptions { AllowTrailer = true };
+
+                return await RunClassicAsync(async operations =>
+                    (await operations.WriteBlockAsync(_blockNumber, buffer, keys, options)).Error);
+            }
+        }
+
+        // One Classic operation: held apart from the others, on the chip that the reader finds, and never longer than the operation. A fault of the
+        // reader stack that nobody expected is a transport error and not a refusal of the chip. What the call leaves in the reader (underTheGate)
+        // is made under the gate and nowhere else; a call that is refused (refused) answers without the chip, but also under the gate.
+        private async Task<ERROR> RunClassicAsync(Func<ClassicOperations, Task<ERROR>> work, Action underTheGate = null, ERROR? refused = null)
+        {
+            await ClassicGate.WaitAsync();
+
+            try
+            {
+                underTheGate?.Invoke();
+
+                if (refused != null)
+                {
+                    return refused.Value;
+                }
+
+                var port = await OpenClassicPortAsync();
+
+                return port == null ? ERROR.TransportError : await work(new ClassicOperations(port));
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<ReaderDevice>().Error(e, "A Classic operation failed.");
+
+                return ERROR.TransportError;
+            }
+            finally
+            {
+                ClassicGate.Release();
+            }
+        }
 
         // Todo: add XML comments
         public abstract Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,

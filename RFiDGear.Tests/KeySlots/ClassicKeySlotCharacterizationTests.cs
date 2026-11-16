@@ -36,7 +36,7 @@ namespace RFiDGear.Tests.KeySlots
         {
             var run = await RunAsync(TaskType_MifareClassicTask.EmptyCheck);
 
-            Assert.Equal("ReadMifareClassicSingleSector[ACurrent,BCurrent]", run.Calls);
+            Assert.Equal("ReadMifareClassicSectorAsync[ACurrent,BCurrent]", run.Calls);
         }
 
         [Fact]
@@ -44,7 +44,7 @@ namespace RFiDGear.Tests.KeySlots
         {
             var run = await RunAsync(TaskType_MifareClassicTask.ReadData);
 
-            Assert.Equal("ReadMifareClassicSingleSector[ACurrent,BCurrent]", run.Calls);
+            Assert.Equal("ReadMifareClassicSectorAsync[ACurrent,BCurrent]", run.Calls);
             Assert.Equal(ERROR.NoError, run.Error);
         }
 
@@ -120,11 +120,11 @@ namespace RFiDGear.Tests.KeySlots
                 TaskType_MifareClassicTask.ReadData,
                 reader: reader =>
                 {
-                    reader.FailMethod = "ReadMifareClassicSingleSector";
+                    reader.FailMethod = "ReadMifareClassicSectorAsync";
                     reader.FailWith = ERROR.AuthFailure;
                 });
 
-            Assert.Equal("ReadMifareClassicSingleSector[ACurrent,BCurrent]", run.Calls);
+            Assert.Equal("ReadMifareClassicSectorAsync[ACurrent,BCurrent]", run.Calls);
             Assert.Equal(ERROR.AuthFailure, run.Error);
         }
 
@@ -135,7 +135,7 @@ namespace RFiDGear.Tests.KeySlots
             // decides. A bound slot is held to a stricter rule; an embedded one keeps this.
             var run = await RunAsync(TaskType_MifareClassicTask.ReadData, vm => vm.ClassicKeyBKeyCurrent = "ZZ");
 
-            Assert.Equal("ReadMifareClassicSingleSector[ACurrent,<unknown ZZ>]", run.Calls);
+            Assert.Equal("ReadMifareClassicSectorAsync[ACurrent,<unknown ZZ>]", run.Calls);
         }
 
         [Fact]

@@ -1962,16 +1962,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
+                    (ERROR Error, MifareClassicSectorModel Sector) read = default;
+
                     var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
 
                     if (keys.Failed)
                     {
                         ReportKeyUnavailable(keys);
                     }
-                    else if (await device.ReadMifareClassicSingleSector(
+                    else if ((read = await device.ReadMifareClassicSectorAsync(
                         selectedClassicSectorCurrentAsInt,
                         keys.Hex(SecureKeySlots.ClassicACurrent),
-                        keys.Hex(SecureKeySlots.ClassicBCurrent)) == ERROR.NoError)
+                        keys.Hex(SecureKeySlots.ClassicBCurrent))).Error == ERROR.NoError)
                     {
                         StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
@@ -1980,14 +1982,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         // so the check never found anything.)
                         // A reader that returns fewer blocks than the sector has (one that leaves out what it could not read) has not shown the
                         // sector to be empty either.
-                        var isEmpty = device.Sector.IsAuthenticated
+                        var isEmpty = read.Sector.IsAuthenticated
                             && selectedClassicSectorCurrentAsInt >= 0
                             && selectedClassicSectorCurrentAsInt <= ClassicLayout.MaxSector
-                            && device.Sector.DataBlock.Count == ClassicLayout.BlocksInSector(selectedClassicSectorCurrentAsInt);
+                            && read.Sector.DataBlock.Count == ClassicLayout.BlocksInSector(selectedClassicSectorCurrentAsInt);
 
-                        for (var i = 0; i < device.Sector.DataBlock.Count - 1 && isEmpty; i++)
+                        for (var i = 0; i < read.Sector.DataBlock.Count - 1 && isEmpty; i++)
                         {
-                            var data = device.Sector.DataBlock[i].Data;
+                            var data = read.Sector.DataBlock[i].Data;
 
                             isEmpty = data != null && Array.TrueForAll(data, value => value == 0);
                         }
@@ -2042,16 +2044,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (!useMAD)
                     {
+                        (ERROR Error, MifareClassicSectorModel Sector) read = default;
+
                         var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
 
                         if (keys.Failed)
                         {
                             ReportKeyUnavailable(keys);
                         }
-                        else if (await device.ReadMifareClassicSingleSector(
+                        else if ((read = await device.ReadMifareClassicSectorAsync(
                             selectedClassicSectorCurrentAsInt,
                             keys.Hex(SecureKeySlots.ClassicACurrent),
-                            keys.Hex(SecureKeySlots.ClassicBCurrent)) == ERROR.NoError)
+                            keys.Hex(SecureKeySlots.ClassicBCurrent))).Error == ERROR.NoError)
                         {
 
                             childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
@@ -2059,27 +2063,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
-                            for (var i = 0; i < device.Sector.DataBlock.Count; i++)
+                            for (var i = 0; i < read.Sector.DataBlock.Count; i++)
                             {
                                 childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
                                 childNodeViewModelTemp.Children[i].DataBlockNumber = i;
 
-                                childNodeViewModelFromChip.Children[i].MifareClassicDataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
+                                childNodeViewModelFromChip.Children[i].MifareClassicDataBlock.DataBlockNumberChipBased = read.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
 
-                                if (device.Sector.DataBlock[i].IsAuthenticated)
+                                if (read.Sector.DataBlock[i].IsAuthenticated)
                                 {
-                                    StatusText += string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
-                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+                                    StatusText += string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, read.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(read.Sector.DataBlock[i].Data));
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = read.Sector.DataBlock[i].Data;
                                     childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
 
-                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = read.Sector.DataBlock[i].Data;
                                     childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
 
                                     CurrentTaskErrorLevel = ERROR.NoError;
                                 }
                                 else
                                 {
-                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i].DataBlockNumberChipBased);
+                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, read.Sector.DataBlock[i].DataBlockNumberChipBased);
 
                                     // What the dialog held before (an earlier read, an edit) is not what is on the chip: it must not stay on show,
                                     // and it must not be written back as if it were.

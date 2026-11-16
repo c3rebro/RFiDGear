@@ -398,6 +398,9 @@ namespace RFiDGear.ViewModel
                         }
                     }
 
+                    // The sector of the last read of this node, as that read handed it back (not the one that the reader shows for any call).
+                    var sector = new MifareClassicSectorModel();
+
                     foreach (var key in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys)
                     {
                         if (cnVM.Children.Where(x => x.GrandChildNodeHeader == string.Format("Key: {0}", key)).Any())
@@ -405,7 +408,11 @@ namespace RFiDGear.ViewModel
                             cnVM.Children.Remove(cnVM.Children.Where(x => x.GrandChildNodeHeader == string.Format("Key: {0}", key)).Single());
                         }
 
-                        if (await device.ReadMifareClassicSingleSector(cnVM.SectorNumber, key, key) == ERROR.NoError)
+                        var read = await device.ReadMifareClassicSectorAsync(cnVM.SectorNumber, key, key);
+
+                        sector = read.Sector;
+
+                        if (read.Error == ERROR.NoError)
                         {
                             cnVM.Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Key: {0}", key)));
                             cnVM.IsAuthenticated = true;
@@ -420,11 +427,11 @@ namespace RFiDGear.ViewModel
 
                     foreach (var gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
                     {
-                        if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
+                        if (sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
                         {
-                            if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
+                            if (sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
                             {
-                                gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data;
+                                gcVM.MifareClassicDataBlock.Data = sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data;
                                 gcVM.IsAuthenticated = true;
                             }
                             else

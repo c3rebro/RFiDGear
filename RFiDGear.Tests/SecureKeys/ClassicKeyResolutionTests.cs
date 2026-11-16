@@ -52,12 +52,12 @@ namespace RFiDGear.Tests.SecureKeys
             ["EmptyCheck"] = new Scenario(
                 TaskType_MifareClassicTask.EmptyCheck,
                 false,
-                "ReadMifareClassicSingleSector[ACurrent,BCurrent]",
+                "ReadMifareClassicSectorAsync[ACurrent,BCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent }),
             ["Read"] = new Scenario(
                 TaskType_MifareClassicTask.ReadData,
                 false,
-                "ReadMifareClassicSingleSector[ACurrent,BCurrent]",
+                "ReadMifareClassicSectorAsync[ACurrent,BCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent }),
             ["ReadMad"] = new Scenario(
                 TaskType_MifareClassicTask.ReadData,
@@ -363,7 +363,7 @@ namespace RFiDGear.Tests.SecureKeys
 
                 var run = await RunAsync(task);
 
-                Assert.Equal("ReadMifareClassicSingleSector[embedded:ACurrent,BCurrent]", run.Calls);
+                Assert.Equal("ReadMifareClassicSectorAsync[embedded:ACurrent,BCurrent]", run.Calls);
                 Assert.Equal(SecureKeySlots.ClassicBCurrent, Assert.Single(vault.Requests).SlotId);
             });
         }
