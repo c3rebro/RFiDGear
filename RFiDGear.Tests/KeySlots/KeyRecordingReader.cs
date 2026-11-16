@@ -380,19 +380,13 @@ namespace RFiDGear.Tests.KeySlots
                 _aKeyToUse, _bKeyToUse, _aKeyToWrite, _bKeyToWrite, _madAKeyToUse, _madBKeyToUse, _madAKeyToWrite, _madBKeyToWrite));
 
         /// <inheritdoc />
-        public override Task<ERROR> ReadMifareClassicWithMAD(
-            int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse,
-            int _length, byte _madGPB, bool _useMADToAuth, bool _aiToUseIsMAD)
+        public override Task<(ERROR Error, byte[] Data)> ReadMifareClassicApplicationAsync(
+            int madApplicationID, string aKey, string bKey, string madAKey, string madBKey, int length)
         {
-            var scripted = Record(nameof(ReadMifareClassicWithMAD), _aKeyToUse, _bKeyToUse, _madAKeyToUse, _madBKeyToUse);
+            var scripted = Record(nameof(ReadMifareClassicApplicationAsync), aKey, bKey, madAKey, madBKey);
 
-            // The view model reads the data that a successful call leaves behind.
-            if (scripted == ERROR.NoError)
-            {
-                MifareClassicData = new byte[Math.Max(_length, 0)];
-            }
-
-            return Task.FromResult(scripted);
+            // The view model reads the data that a successful call hands back.
+            return Task.FromResult((scripted, scripted == ERROR.NoError ? new byte[Math.Max(length, 0)] : null));
         }
     }
 }

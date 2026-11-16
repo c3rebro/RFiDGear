@@ -62,7 +62,7 @@ namespace RFiDGear.Tests.SecureKeys
             ["ReadMad"] = new Scenario(
                 TaskType_MifareClassicTask.ReadData,
                 true,
-                "ReadMifareClassicWithMAD[ACurrent,BCurrent,MadACurrent,MadBCurrent]",
+                "ReadMifareClassicApplicationAsync[ACurrent,BCurrent,MadACurrent,MadBCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent, SecureKeySlots.ClassicMadACurrent, SecureKeySlots.ClassicMadBCurrent }),
             ["Write"] = new Scenario(
                 TaskType_MifareClassicTask.WriteData,

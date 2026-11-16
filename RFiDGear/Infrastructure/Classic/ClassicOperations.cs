@@ -144,6 +144,9 @@ namespace RFiDGear.Infrastructure.Classic
 
         private ClassicCardSize Size => port.Size ?? ClassicCardSize.K4;
 
+        /// <summary>Gets the size of the chip as far as the operations know it (a chip of an unknown size is taken for a 4K).</summary>
+        internal ClassicCardSize ChipSize => Size;
+
         /// <summary>
         /// Reads all blocks of a sector, the trailer included. It tries key A first and then key B, one attempt each, and reads every
         /// block with a key that the access bits allow to read it (so a sector in which key A reads one block and key B another costs a second login).

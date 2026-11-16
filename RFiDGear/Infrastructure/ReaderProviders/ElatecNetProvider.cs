@@ -356,23 +356,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return new ElatecClassicPort(readerDevice, size);
         }
 
-
-        public override Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
-            string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-            string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite,
-            string _madBKeyToWrite, byte[] buffer, byte _madGPB, AccessControl.SectorAccessBits _sab,
-            bool _useMADToAuth, bool _keyToWriteUseMAD)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse,
-            string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB,
-            bool _useMADToAuth, bool _aiToUseIsMAD)
-        {
-            throw new NotImplementedException();
-        }
-
         #endregion
 
         #region MifareUltralight
