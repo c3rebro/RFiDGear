@@ -191,6 +191,20 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData(Contact, Contactless, true)]
+        [InlineData(Contact, "  hid global omnikey 5422 smartcard reader 0 ", false)]
+        [InlineData(Contact, Contact, false)]
+        [InlineData(Contact, "", false)]
+        [InlineData(Contact, "   ", false)]
+        [InlineData(Contact, null, false)]
+        [InlineData("", Contactless, true)]
+        [InlineData(null, Contactless, true)]
+        public void A_unit_that_is_held_is_chosen_again_only_for_another_reader_that_was_confirmed(string? unitName, string? cardReader, bool again)
+        {
+            Assert.Equal(again, PcscReaderChoice.IsOtherReader(unitName, cardReader));
+        }
+
+        [Theory]
         [InlineData(null, null, false)]
         [InlineData("", "", false)]
         [InlineData(Contact, "", false)]

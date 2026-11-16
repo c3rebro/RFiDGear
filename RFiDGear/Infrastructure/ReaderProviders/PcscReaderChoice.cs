@@ -54,9 +54,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="name">The name of a reader.</param>
         /// <param name="samReader">The name of the reader of the SAM, if one is configured.</param>
         /// <returns><see langword="true"/> when they are the same reader.</returns>
-        internal static bool IsSamReader(string? name, string? samReader) =>
-            !string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(samReader)
-            && string.Equals(name!.Trim(), samReader!.Trim(), StringComparison.OrdinalIgnoreCase);
+        internal static bool IsSamReader(string? name, string? samReader) => SameReader(name, samReader);
+
+        /// <summary>
+        /// Tells whether a unit that was chosen earlier is not the reader that was confirmed for the card: a reader was named for the card, and it
+        /// is another one. A blank name confirms nothing, so the unit that is held stays.
+        /// </summary>
+        /// <param name="unitName">The name of the reader the held unit is bound to.</param>
+        /// <param name="cardReader">The reader that was confirmed for the card.</param>
+        /// <returns><see langword="true"/> when the unit has to be chosen again.</returns>
+        internal static bool IsOtherReader(string? unitName, string? cardReader) =>
+            !string.IsNullOrWhiteSpace(cardReader) && !SameReader(unitName, cardReader);
+
+        private static bool SameReader(string? a, string? b) =>
+            !string.IsNullOrWhiteSpace(a) && !string.IsNullOrWhiteSpace(b)
+            && string.Equals(a!.Trim(), b!.Trim(), StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// The SAM reader to save when the dialog is confirmed: the one that was chosen when the PC/SC provider is the provider, and otherwise the one

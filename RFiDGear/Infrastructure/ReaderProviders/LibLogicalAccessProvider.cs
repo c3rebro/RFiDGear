@@ -169,11 +169,43 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 selectedReaderName = cardReaderName;
                 this.samReaderName = samReaderName ?? string.Empty;
+
+                // A choice that was confirmed picks its unit again: the unit that is held stays only when it is the reader that was
+                // confirmed for the card (UpdateSelectedReader, the preview of the dialog, keeps the unit that it has).
+                if (readerUnit != null && PcscReaderChoice.IsOtherReader(readerUnit.getName(), selectedReaderName))
+                {
+                    ReleaseUnit(readerUnit);
+                    readerUnit = null;
+                    ReaderUnitName = null;
+                }
+
                 InitializeReaderProvider(ReaderTypes.PCSC);
             }
             catch (Exception e)
             {
                 Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
+            }
+        }
+
+        // Lets go of a unit that nobody holds any more. Best effort: a unit that is not connected has nothing to let go of.
+        private static void ReleaseUnit(ReaderUnit unit)
+        {
+            try
+            {
+                unit.disconnect();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC disconnect of a unit that was replaced failed: {Fault}", PcscUltralightErrors.Describe(e));
+            }
+
+            try
+            {
+                unit.disconnectFromReader();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC release of a unit that was replaced failed: {Fault}", PcscUltralightErrors.Describe(e));
             }
         }
 
