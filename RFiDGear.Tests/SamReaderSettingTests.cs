@@ -35,31 +35,42 @@ namespace RFiDGear.Tests
             return root;
         }
 
-        [Fact]
-        public void There_is_no_sam_reader_by_default_also_in_the_runtime_defaults()
+        // The runtime defaults come from a file of the user (a developer may have a SAM reader in it): a test that depends on them puts
+        // its own in for the time of the test.
+        private static void WithRuntimeDefaults(DefaultSpecificationRuntimeDefaults defaults, Action test)
         {
-            Assert.Equal(string.Empty, new DefaultSpecificationRuntimeDefaults().SamReaderName);
-            Assert.Equal(string.Empty, new DefaultSpecification().SamReaderName);
-            Assert.Equal(string.Empty, new DefaultSpecification(true).SamReaderName);
-        }
-
-        [Fact]
-        public void A_new_specification_starts_with_the_sam_reader_of_the_runtime_defaults()
-        {
-            // The runtime defaults come from a file of the user: the test puts its own in for the time of the test.
             var property = typeof(DefaultSpecificationRuntimeDefaults).GetProperty(nameof(DefaultSpecificationRuntimeDefaults.Current))!;
             var before = DefaultSpecificationRuntimeDefaults.Current;
 
             try
             {
-                property.GetSetMethod(true)!.Invoke(null, new object[] { new DefaultSpecificationRuntimeDefaults { SamReaderName = SamReader } });
-
-                Assert.Equal(SamReader, new DefaultSpecification(true).SamReaderName);
+                property.GetSetMethod(true)!.Invoke(null, new object[] { defaults });
+                test();
             }
             finally
             {
                 property.GetSetMethod(true)!.Invoke(null, new object[] { before });
             }
+        }
+
+        [Fact]
+        public void There_is_no_sam_reader_by_default_also_in_the_runtime_defaults()
+        {
+            Assert.Equal(string.Empty, new DefaultSpecificationRuntimeDefaults().SamReaderName);
+
+            WithRuntimeDefaults(new DefaultSpecificationRuntimeDefaults(), () =>
+            {
+                Assert.Equal(string.Empty, new DefaultSpecification().SamReaderName);
+                Assert.Equal(string.Empty, new DefaultSpecification(true).SamReaderName);
+            });
+        }
+
+        [Fact]
+        public void A_new_specification_starts_with_the_sam_reader_of_the_runtime_defaults()
+        {
+            WithRuntimeDefaults(
+                new DefaultSpecificationRuntimeDefaults { SamReaderName = SamReader },
+                () => Assert.Equal(SamReader, new DefaultSpecification(true).SamReaderName));
         }
         [Fact]
         public void The_sam_reader_survives_being_saved_and_read()
@@ -280,11 +291,13 @@ namespace RFiDGear.Tests
         /// <summary>A PC/SC provider that touches no reader and says which settings the dialog pushed into it.</summary>
         private sealed class RecordingPcscProvider : LibLogicalAccessProvider
         {
-            public List<string> SamReaders { get; } = new List<string>();
+            /// <summary>Gets what the dialog gave the provider as the reader of the card and the reader of the SAM, together.</summary>
+            public List<(string Card, string Sam)> Readers { get; } = new List<(string, string)>();
 
+            /// <summary>Gets what the dialog gave the provider as the reader of the card alone.</summary>
             public List<string> CardReaders { get; } = new List<string>();
 
-            public override void UpdateSamReader(string readerName) => SamReaders.Add(readerName);
+            public override void UpdateReaders(string cardReaderName, string samReaderName) => Readers.Add((cardReaderName, samReaderName));
 
             public override void UpdateSelectedReader(string readerName) => CardReaders.Add(readerName);
 
@@ -315,8 +328,43 @@ namespace RFiDGear.Tests
 
                     await viewModel.ConnectToReaderCommand.ExecuteAsync(null);
 
-                    Assert.Empty(shared.SamReaders);
+                    Assert.Empty(shared.Readers);
                     Assert.Equal(new[] { SamReader }, shared.CardReaders);
+                }
+                finally
+                {
+                    Directory.Delete(directory, true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task A_provider_that_the_dialog_owns_learns_the_reader_of_the_card_and_of_the_sam_in_one_call()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var directory = Directory.CreateTempSubdirectory("SamReaderSetup").FullName;
+
+                try
+                {
+                    using var settings = new SettingsReaderWriter(directory, loadSettings: false);
+                    settings.DefaultSpecification.DefaultReaderProvider = ReaderTypes.PCSC;
+                    settings.DefaultSpecification.SamReaderName = string.Empty;
+
+                    // No provider is given, so the dialog makes one. Told the SAM reader first, it would choose the library's default
+                    // unit for a card reader that is still unknown, and keep it when the reader of the card is told afterwards.
+                    var owned = new RecordingPcscProvider();
+                    var viewModel = new SetupViewModel(null!, settings, new ObservableCollection<IDialogViewModel>(), () => owned);
+
+                    Assert.Equal(ReaderTypes.PCSC, viewModel.SelectedReader);
+
+                    viewModel.SelectedReaderName = "Second reader";
+                    viewModel.SelectedSamReaderName = SamReader;
+
+                    await viewModel.ConnectToReaderCommand.ExecuteAsync(null);
+
+                    Assert.Equal(new[] { ("Second reader", SamReader) }, owned.Readers);
+                    Assert.Empty(owned.CardReaders);
                 }
                 finally
                 {

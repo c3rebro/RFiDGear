@@ -156,13 +156,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             ReaderUnitName = readerUnit?.getName();
         }
 
-        /// <summary>Tells the provider which reader holds the SAM: the card is never read in it.</summary>
-        /// <param name="readerName">The reader of the SAM; empty for none.</param>
-        public virtual void UpdateSamReader(string readerName)
+        /// <summary>
+        /// Tells the provider the reader of the card and the reader that holds the SAM, together: the card is never read in the SAM's
+        /// reader, and the unit is chosen once, with both names known (one name after the other would choose a unit with the other one
+        /// not known yet).
+        /// </summary>
+        /// <param name="cardReaderName">The reader of the card.</param>
+        /// <param name="samReaderName">The reader of the SAM; empty for none.</param>
+        public virtual void UpdateReaders(string cardReaderName, string samReaderName)
         {
             try
             {
-                samReaderName = readerName ?? string.Empty;
+                selectedReaderName = cardReaderName;
+                this.samReaderName = samReaderName ?? string.Empty;
                 InitializeReaderProvider(ReaderTypes.PCSC);
             }
             catch (Exception e)

@@ -1924,10 +1924,12 @@ namespace RFiDGear.ViewModel
                         // the connection and card state of whichever provider is current when that happens.
                         ReaderDevice.Reader = sender.SelectedReader;
 
-                        // The card is never read in the reader of the SAM: a provider that exists learns it now.
+                        // The card is never read in the reader of the SAM: a provider that exists learns it now, together with the reader of
+                        // the card that was chosen (it may not have been connected: the provider still holds the old name, which can be the
+                        // reader that is the SAM's now).
                         if (samReaderChanged && sender.SelectedReader == ReaderTypes.PCSC && ReaderDevice.Instance is LibLogicalAccessProvider pcscProvider)
                         {
-                            pcscProvider.UpdateSamReader(samReaderToSave);
+                            pcscProvider.UpdateReaders(sender.SelectedReaderName, samReaderToSave);
                         }
 
                         // Another reader: automatic mode does not carry on with it unasked, and forgets the card of the old

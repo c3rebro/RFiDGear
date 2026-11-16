@@ -54,6 +54,7 @@ namespace RFiDGear.ViewModel
         private bool _ownsDevice;
         private readonly SettingsReaderWriter settingsReaderWriter;
         private ObservableCollection<IDialogViewModel> _dialogs;
+        private readonly Func<LibLogicalAccessProvider> pcscProviderFactory;
 
         public SetupViewModel()
             : this(null, new SettingsReaderWriter())
@@ -61,8 +62,19 @@ namespace RFiDGear.ViewModel
         }
 
         public SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings, ObservableCollection<IDialogViewModel> dialogs = null)
+            : this(_device, settings, dialogs, null)
+        {
+        }
+
+        /// <summary>Creates the dialog; the tests say how the PC/SC provider of the dialog is made.</summary>
+        /// <param name="_device">The provider of the application, or <see langword="null"/>.</param>
+        /// <param name="settings">The settings.</param>
+        /// <param name="dialogs">The dialogs.</param>
+        /// <param name="pcscProviderFactory">Makes the provider that the dialog owns when it was given none; <see langword="null"/> for the real one.</param>
+        internal SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings, ObservableCollection<IDialogViewModel> dialogs, Func<LibLogicalAccessProvider> pcscProviderFactory)
         {
             settingsReaderWriter = settings ?? throw new ArgumentNullException(nameof(settings));
+            this.pcscProviderFactory = pcscProviderFactory ?? (() => new LibLogicalAccessProvider());
 
             IsRdpSession = RdpSessionDetector.IsRemoteDesktopSession && !RdpSessionDetector.CanEstablishPcscContext();
 
@@ -160,14 +172,19 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
+                                var provider = (LibLogicalAccessProvider)device;
+
                                 // The provider of the application keeps the SAM reader that was saved until OK is pressed: a choice
-                                // that is cancelled must not leave it changed (and the card unprotected from the SAM reader).
+                                // that is cancelled must not leave it changed (and the card unprotected from the SAM reader). A
+                                // provider of the dialog learns both readers at once, so that it chooses its unit knowing both.
                                 if (_ownsDevice)
                                 {
-                                    (device as LibLogicalAccessProvider)?.UpdateSamReader(SelectedSamReaderName);
+                                    provider.UpdateReaders(SelectedReaderName, SelectedSamReaderName);
                                 }
-
-                                (device as LibLogicalAccessProvider)?.UpdateSelectedReader(SelectedReaderName);
+                                else
+                                {
+                                    provider.UpdateSelectedReader(SelectedReaderName);
+                                }
                             }
                         }
                         else
@@ -344,7 +361,7 @@ namespace RFiDGear.ViewModel
                             _ownsDevice = true;
                             break;
                         case ReaderTypes.PCSC:
-                            device = new LibLogicalAccessProvider();
+                            device = pcscProviderFactory();
                             _ownsDevice = true;
                             break;
 
