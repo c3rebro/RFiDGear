@@ -433,9 +433,29 @@ namespace RFiDGear.ViewModel
             {
                 if (value >= 0)
                 {
+                    var blocksBefore = BlockCount;
+
                     sectorModel.SectorNumber = value;
+
+                    // The nodes of the blocks are made for a sector of 4 blocks (or for the one that the node was made with): a sector of a 4K
+                    // from 32 on has 16, and a node that was made for the other kind of sector has too few or too many.
+                    if (children != null && BlockCount != blocksBefore)
+                    {
+                        RebuildBlockChildren();
+                    }
                 }
             }
+        }
+
+        // The nodes of the blocks are made new for the sector that the node has now; what is not a block (a key that was found) stays.
+        private void RebuildBlockChildren()
+        {
+            foreach (var block in children.Where(child => child.MifareClassicDataBlock != null).ToList())
+            {
+                children.Remove(block);
+            }
+
+            LoadChildren();
         }
 
         /// <summary>

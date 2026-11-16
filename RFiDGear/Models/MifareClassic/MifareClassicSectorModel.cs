@@ -1,5 +1,8 @@
 ﻿using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.Classic;
+using System;
+using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml.Serialization;
@@ -190,6 +193,7 @@ namespace RFiDGear.Models
         string _accessBitsAsString, 
         string _keyB)
         {
+            SectorAccessCondition = new MifareClassicSectorAccessConditionModel();
             DataBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 
             DataBlock0 = new MifareClassicDataBlockModel();
@@ -206,11 +210,16 @@ namespace RFiDGear.Models
 
         public string AccessBitsAsString
         {
-            get => encodeSectorTrailer(this);
-            set => IsValidSectorTrailer = decodeSectorTrailer(value, this);
+            get => EncodeSectorTrailer();
+            set => IsValidSectorTrailer = TryDecodeSectorTrailer(value);
         }
 
+        /// <summary>Gets a value that says whether the last text that was set as the access bits was taken (see <see cref="AccessBitsAsString"/>).</summary>
         public bool IsValidSectorTrailer { get; private set; }
+
+        /// <summary>Gets or sets the general purpose byte of the sector trailer; it is what the text of the sector trailer says (not part of a project).</summary>
+        [XmlIgnore]
+        public byte GeneralPurposeByte { get; set; } = 0xC3;
         public int SectorNumber { get; set; }
         public string KeyA { get; set; }
         public string KeyB { get; set; }
@@ -228,10 +237,38 @@ namespace RFiDGear.Models
         public AccessCondition_MifareClassicSectorTrailer Read_AccessCondition_MifareClassicSectorTrailer { get => SectorAccessCondition.Read_AccessCondition_MifareClassicSectorTrailer; set => SectorAccessCondition.Read_AccessCondition_MifareClassicSectorTrailer = value; }
         public AccessCondition_MifareClassicSectorTrailer Write_AccessCondition_MifareClassicSectorTrailer { get => SectorAccessCondition.Write_AccessCondition_MifareClassicSectorTrailer; set => SectorAccessCondition.Write_AccessCondition_MifareClassicSectorTrailer = value; }
         public AccessCondition_MifareClassicSectorTrailer Read_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
-        public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
+        public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get => SectorAccessCondition.Write_KeyB; set => SectorAccessCondition.Write_KeyB = value; }
 
-        public SectorAccessBits SAB { get => sab; set => sab = value; }
-        private SectorAccessBits sab;
+        /// <summary>
+        /// Gets the access bits as one condition per group in the shape that the readers take: each is made from the conditions that the dialog holds now
+        /// (and from nothing that an earlier call left behind), and all zero when they are not usable (that means: no access bits given). The setter does nothing:
+        /// the conditions are set through the groups, the text or the properties of the groups.
+        /// </summary>
+        public SectorAccessBits SAB
+        {
+            get
+            {
+                var bits = ToAccessBits();
+
+                return bits == null
+                    ? default
+                    : new SectorAccessBits
+                    {
+                        d_data_block0_access_bits = ToAccessBitsOfGroup(bits.GetCondition(0)),
+                        d_data_block1_access_bits = ToAccessBitsOfGroup(bits.GetCondition(1)),
+                        d_data_block2_access_bits = ToAccessBitsOfGroup(bits.GetCondition(2)),
+                        d_sector_trailer_access_bits = ToAccessBitsOfGroup(bits.GetCondition(3))
+                    };
+            }
+
+            set
+            {
+                // Derived from the conditions: there is nothing to keep.
+            }
+        }
+
+        private static AccessBits ToAccessBitsOfGroup(int condition) =>
+            new AccessBits { c1 = (short)(condition & 1), c2 = (short)((condition >> 1) & 1), c3 = (short)((condition >> 2) & 1) };
 
         public bool IsAuthenticated { get; set; }
         public short Cx { get => SectorAccessCondition.Cx; set => SectorAccessCondition.Cx = value; }
@@ -239,270 +276,88 @@ namespace RFiDGear.Models
         #region Extensions
 
         /// <summary>
-        /// turns a given byte or string sector trailer to a access bits selection
+        /// Takes the access bits from the text of a sector trailer: <c>KeyA,AccessBits,KeyB</c> (the keys 12 hexadecimal digits each, the access
+        /// bits the three bytes of the trailer and the general purpose byte, 8 digits) or the 8 digits alone. The conditions of the dialog are set
+        /// from them. A text that is none of this, or whose access bits are not the inverse of their copies, changes nothing.
         /// </summary>
-        /// <param name="st"></param>
-        /// <param name="_sector"></param>
-        /// <returns></returns>
-        private bool decodeSectorTrailer(byte[] st, ref MifareClassicSectorModel _sector)
+        /// <param name="text">The text.</param>
+        /// <returns><c>true</c> when the text was taken.</returns>
+        private bool TryDecodeSectorTrailer(string text)
         {
-            uint C1x, C2x;
-
-            uint tmpAccessBitCx;
-
-            if (CustomConverter.SectorTrailerHasWrongFormat(st))
+            if (text == null)
             {
-                _sector = null;
-                return true;
+                return false;
             }
 
-            #region getAccessBitsForSectorTrailer
+            var parts = text.Split(new[] { ',', ';' });
+            string accessBytesText;
 
-            C1x = st[1];
-            C2x = st[2];
+            if (parts.Length == 3 && IsHexOfLength(parts[0], 12) && IsHexOfLength(parts[2], 12))
+            {
+                accessBytesText = parts[1];
+            }
+            else if (parts.Length == 1)
+            {
+                accessBytesText = parts[0];
+            }
+            else
+            {
+                return false;
+            }
 
-            C1x &= 0xF0;
-            C1x >>= 7;
-            C1x &= 0x01;
+            if (!IsHexOfLength(accessBytesText, 8))
+            {
+                return false;
+            }
 
-            sab.d_sector_trailer_access_bits.c1 = (short)C1x;
+            var bytes = Convert.FromHexString(accessBytesText);
 
-            C2x >>= 2;
+            if (!ClassicAccessBits.TryFromBytes(bytes.AsSpan(0, 3), out var bits))
+            {
+                return false;
+            }
 
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx >>= 1;
-            tmpAccessBitCx &= 0x01;
+            DataBlock0.DataBlockAccessCondition = dataBlock_AccessBits[bits.GetCondition(0)];
+            DataBlock1.DataBlockAccessCondition = dataBlock_AccessBits[bits.GetCondition(1)];
+            DataBlock2.DataBlockAccessCondition = dataBlock_AccessBits[bits.GetCondition(2)];
+            SectorAccessCondition = sectorTrailer_AccessBits[bits.GetCondition(3)];
 
-            sab.d_sector_trailer_access_bits.c2 = (short)tmpAccessBitCx;
-
-            C1x |= C2x;
-            C2x >>= 3;
-
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx >>= 2;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_sector_trailer_access_bits.c3 = (short)tmpAccessBitCx;
-
-            C1x &= 0x03;
-            C1x |= C2x;
-            C1x &= 0x07; //now we have C1³ + C2³ + C3³ as integer in C1x see mifare manual
-
-            _sector.SectorAccessCondition = sectorTrailer_AccessBits[(int)C1x];
-
-            #endregion getAccessBitsForSectorTrailer
-
-            #region getAccessBitsForDataBlock2
-
-            C1x = st[1];
-            C2x = st[2];
-
-            C1x &= 0xF0;
-            C1x >>= 6;
-            C1x &= 0x01;
-
-            sab.d_data_block2_access_bits.c1 = (short)C1x;
-
-            C2x >>= 1;
-
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx >>= 1;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_data_block2_access_bits.c2 = (short)tmpAccessBitCx;
-
-            C1x |= C2x;
-            C2x >>= 3;
-
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx >>= 2;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_data_block2_access_bits.c3 = (short)tmpAccessBitCx;
-
-            C1x &= 0x03;
-            C1x |= C2x;
-            C1x &= 0x07;
-
-            DataBlock2.DataBlockAccessCondition = dataBlock_AccessBits[(int)C1x];
-
-            #endregion getAccessBitsForDataBlock2
-
-            #region getAccessBitsForDataBlock1
-
-            C1x = st[1];
-            C2x = st[2];
-
-            C1x &= 0xF0;
-            C1x >>= 5;
-            C1x &= 0x01;
-
-            sab.d_data_block1_access_bits.c1 = (short)C1x;
-
-            C1x |= C2x;
-
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx >>= 1;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_data_block1_access_bits.c2 = (short)tmpAccessBitCx;
-
-            C2x >>= 3;
-
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx >>= 2;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_data_block1_access_bits.c3 = (short)tmpAccessBitCx;
-
-            C1x &= 0x03;
-            C1x |= C2x;
-            C1x &= 0x07;
-
-            DataBlock1.DataBlockAccessCondition = dataBlock_AccessBits[(int)C1x];
-
-            #endregion getAccessBitsForDataBlock1
-
-            #region getAccessBitsForDataBlock0
-
-            C1x = st[1];
-            C2x = st[2];
-
-            C1x &= 0xF0;
-            C1x >>= 4;
-            C1x &= 0x01;
-
-            tmpAccessBitCx = C1x;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_data_block0_access_bits.c1 = (short)C1x;
-
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_data_block0_access_bits.c2 = (short)C1x;
-
-            C2x <<= 1;
-            C1x |= C2x;
-            C2x >>= 3;
-
-            tmpAccessBitCx = C2x;
-            tmpAccessBitCx >>= 2;
-            tmpAccessBitCx &= 0x01;
-
-            sab.d_data_block0_access_bits.c3 = (short)C1x;
-
-            C2x &= 0xFC;
-            C1x &= 0x03;
-            C1x |= C2x;
-            C1x &= 0x07;
-
-            DataBlock0.DataBlockAccessCondition = dataBlock_AccessBits[(int)C1x];
-
-            if (DataBlock0.DataBlockAccessCondition == DataBlock1.DataBlockAccessCondition
-                && DataBlock1.DataBlockAccessCondition == DataBlock2.DataBlockAccessCondition)
+            if (bits.GetCondition(0) == bits.GetCondition(1) && bits.GetCondition(1) == bits.GetCondition(2))
             {
                 DataBlockCombined.DataBlockAccessCondition = DataBlock0.DataBlockAccessCondition;
             }
 
-            #endregion getAccessBitsForDataBlock0
+            GeneralPurposeByte = bytes[3];
 
-            return false;
+            return true;
+        }
+
+        private static bool IsHexOfLength(string text, int length) =>
+            text != null && text.Length == length && text.All(Uri.IsHexDigit);
+
+        /// <summary>
+        /// The access bits that the dialog holds: the conditions of the three groups of data blocks and of the trailer.
+        /// </summary>
+        /// <returns>The access bits, or <c>null</c> when a condition is not 0 to 7.</returns>
+        private ClassicAccessBits ToAccessBits()
+        {
+            var conditions = new[] { (int)DataBlock0.Cx, (int)DataBlock1.Cx, (int)DataBlock2.Cx, (int)Cx };
+
+            return conditions.All(condition => condition >= 0 && condition <= 7)
+                ? new ClassicAccessBits(conditions[0], conditions[1], conditions[2], conditions[3])
+                : null;
         }
 
         /// <summary>
-        ///
+        /// Makes the text of the sector trailer from the conditions that the dialog holds: <c>KeyA,AccessBits,KeyB</c> with the access bits as
+        /// the chip wants them (every bit followed by its inverse) and the general purpose byte. The keys of the text are not the keys of the task.
         /// </summary>
-        /// <param name="st"></param>
-        /// <param name="_sector"></param>
-        /// <returns></returns>
-        private bool decodeSectorTrailer(string st, MifareClassicSectorModel _sector)
+        /// <returns>The text.</returns>
+        private string EncodeSectorTrailer()
         {
-            _ = new byte[255];
+            var bits = ToAccessBits() ?? ClassicAccessBits.Transport;
 
-            var sectorTrailer = st.Split(new[] { ',', ';' });
-            if (sectorTrailer.Length != 3 ||
-                !(CustomConverter.IsInHexFormat(sectorTrailer[1]) && sectorTrailer[1].Length == 8) ||
-                !(CustomConverter.IsInHexFormat(sectorTrailer[0]) && sectorTrailer[0].Length == 12) ||
-                !(CustomConverter.IsInHexFormat(sectorTrailer[2]) && sectorTrailer[2].Length == 12))
-            {
-                return true;
-            }
-
-            var _bytes = CustomConverter.GetBytes(sectorTrailer[1], out var _);
-
-            if (!decodeSectorTrailer(_bytes, ref _sector))
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Converts a given selection for either sector
-        /// access bits or datablock access bits to the equivalent 3 bytes sector trailer
-        /// </summary>
-        /// <param name="_sector"></param>
-        /// <returns></returns>
-        private string encodeSectorTrailer(MifareClassicSectorModel _sector)
-        {
-            var st = new byte[4] { 0x00, 0x00, 0x00, 0xC3 };
-
-            var sectorAccessBitsIndex = (uint)_sector.Cx;
-            var dataBlock0AccessBitsIndex = (uint)_sector.DataBlock0.Cx;
-            var dataBlock1AccessBitsIndex = (uint)_sector.DataBlock1.Cx; 
-            var dataBlock2AccessBitsIndex = (uint)_sector.DataBlock2.Cx; 
-
-            // DataBlock 0 = C1/0; C2/0; C3/0
-
-            st[1] |= (byte)((dataBlock0AccessBitsIndex & 0x0001) << 4);   // C1/0
-            st[2] |= (byte)((dataBlock0AccessBitsIndex & 0x0002) >> 1);   // C2/0
-            st[2] |= (byte)((dataBlock0AccessBitsIndex & 0x0004) << 2);   // C3/0
-
-            sab.d_data_block0_access_bits.c1 |= (short)(dataBlock0AccessBitsIndex & 0x0001);
-            sab.d_data_block0_access_bits.c2 |= (short)((dataBlock0AccessBitsIndex & 0x0002) >> 1);
-            sab.d_data_block0_access_bits.c3 |= (short)((dataBlock0AccessBitsIndex & 0x0004) >> 2);
-
-            // DataBlock 1 = C1/1; C2/1; C3/1
-
-            st[1] |= (byte)((dataBlock1AccessBitsIndex & 0x01) << 5);   // C1/1
-            st[2] |= (byte)(dataBlock1AccessBitsIndex & 0x02);          // C2/1
-            st[2] |= (byte)((dataBlock1AccessBitsIndex & 0x04) << 3);   // C3/1
-
-            sab.d_data_block1_access_bits.c1 |= (short)(dataBlock1AccessBitsIndex & 0x01);
-            sab.d_data_block1_access_bits.c2 |= (short)((dataBlock1AccessBitsIndex & 0x02) >> 1);
-            sab.d_data_block1_access_bits.c3 |= (short)((dataBlock1AccessBitsIndex & 0x04) >> 2);
-
-            // DataBlock 2 = C1/2; C2/2; C3/2
-
-            st[1] |= (byte)((dataBlock2AccessBitsIndex & 0x01) << 6);   // C1/2
-            st[2] |= (byte)((dataBlock2AccessBitsIndex & 0x02) << 1);   // C2/2
-            st[2] |= (byte)((dataBlock2AccessBitsIndex & 0x04) << 4);   // C3/2
-
-            sab.d_data_block2_access_bits.c1 |= (short)(dataBlock2AccessBitsIndex & 0x01);
-            sab.d_data_block2_access_bits.c2 |= (short)((dataBlock2AccessBitsIndex & 0x02) >> 1);
-            sab.d_data_block2_access_bits.c3 |= (short)((dataBlock2AccessBitsIndex & 0x04) >> 2);
-
-            // SectorAccessBits = C1/3; C2/3; C3/3
-
-            st[1] |= (byte)((sectorAccessBitsIndex & 0x01) << 7);   // C1/3
-            st[2] |= (byte)((sectorAccessBitsIndex & 0x02) << 2);   // C2/3
-            st[2] |= (byte)((sectorAccessBitsIndex & 0x04) << 5);   // C3/3
-
-            sab.d_sector_trailer_access_bits.c1 |= (short)(sectorAccessBitsIndex & 0x01);
-            sab.d_sector_trailer_access_bits.c2 |= (short)((sectorAccessBitsIndex & 0x02) >> 1);
-            sab.d_sector_trailer_access_bits.c3 |= (short)((sectorAccessBitsIndex & 0x04) >> 2);
-
-            st = CustomConverter.buildSectorTrailerInvNibble(st);
-            string[] stAsString;
-
-            stAsString = new string[] { "FFFFFFFFFFFF", "FF0780C3", "FFFFFFFFFFFF" };
-
-            stAsString[1] = CustomConverter.HexToString(st);
-            return string.Join(",", stAsString);
+            return string.Join(",", "FFFFFFFFFFFF", Convert.ToHexString(bits.ToBytes()) + GeneralPurposeByte.ToString("X2", CultureInfo.InvariantCulture), "FFFFFFFFFFFF");
         }
 
 
