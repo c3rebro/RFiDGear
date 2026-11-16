@@ -18,6 +18,12 @@ namespace RFiDGear.Services.Sam
         /// <summary>The entry is enabled, but it is not an AES-128 key of the PICC key class.</summary>
         WrongKind,
 
+        /// <summary>
+        /// The entry is an enabled AES-128 key of the PICC key class, but SET bit 2 (Keep IV) is clear: a DESFire card cannot be authenticated
+        /// with it (SAM_AuthenticatePICC part 2 answers <c>901E</c>). Write the key again.
+        /// </summary>
+        MissingKeepIv,
+
         /// <summary>The key entry was written, but reading it back failed, so it is not verified.</summary>
         Unreadable,
     }
@@ -87,16 +93,19 @@ namespace RFiDGear.Services.Sam
         /// <summary>Gets whether the entry is an AES-128 key: SET bits 3 to 5 are <c>100b</c>.</summary>
         internal bool IsAes128 => (Set & KeyTypeMask) == KeyTypeAes128;
 
+        /// <summary>Gets whether SET bit 2 (Keep IV) is set, which a DESFire AES key needs (NXP AN12696, table 1).</summary>
+        internal bool HasKeepIv => (Set & SamKeyEntries.KeepIvBit) != 0;
+
         /// <summary>Gets the key class: the low three bits of ExtSET.</summary>
         internal int KeyClass => ExtSet & KeyClassMask;
 
         /// <summary>Gets whether the entry is of the PICC key class.</summary>
         internal bool IsPiccKey => KeyClass == KeyClassPicc;
 
-        /// <summary>Gets what to say about the entry that was written: it is usable for authenticating a PICC, or why not.</summary>
+        /// <summary>Gets what to say about the entry that was written: it is usable for authenticating a DESFire PICC, or why not.</summary>
         internal SamKeyEntryCheck Verdict =>
             !IsEnabled ? SamKeyEntryCheck.Disabled
-            : IsAes128 && IsPiccKey ? SamKeyEntryCheck.Matches
+            : IsAes128 && IsPiccKey ? (HasKeepIv ? SamKeyEntryCheck.Matches : SamKeyEntryCheck.MissingKeepIv)
             : SamKeyEntryCheck.WrongKind;
 
         /// <summary>Reads the answer of SAM_GetKeyEntry.</summary>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -2562,6 +2562,9 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageSamSetupEntryDiffers" xml:space="preserve">
     <value>Read back from the SAM: key entry {0} is not an AES-128 key of the PICC key class, as it was written. Do not use it.</value>
+  </data>
+  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is enabled and holds an AES-128 key of the PICC key class, but "Keep IV" (SET bit 2) is not set. A DESFire card cannot be authenticated with it (the SAM refuses the answer of the card). Write the key again.</value>
   </data>
   <data name="messageSamSetupEntryUnreadable" xml:space="preserve">
     <value>The key was written, but reading the key entry back failed, so it is not verified.</value>

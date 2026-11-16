@@ -608,6 +608,9 @@ namespace RFiDGear.Services.Sam
                 case SamKeyEntryCheck.WrongKind:
                     AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryDiffers"), entry), true);
                     break;
+                case SamKeyEntryCheck.MissingKeepIv:
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryNoKeepIv"), entry), true);
+                    break;
                 case SamKeyEntryCheck.Unreadable:
                     AppendStatus(_text("messageSamSetupEntryUnreadable"), true);
                     break;

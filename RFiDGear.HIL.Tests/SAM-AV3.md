@@ -112,7 +112,8 @@ log. What the window looks like, as the tests render it with a scripted SAM
    until you tick "Show key"). "Write key". The message says that the key was
    written to key entry 1, and the box is empty afterwards. A second line says
    what the SAM reports when the entry is read back: enabled, AES-128, PICC key
-   class (green), or that the entry is still disabled or of another kind (red).
+   class, Keep IV set (green), or that the entry is still disabled, of another
+   kind, or lacks Keep IV (red).
    If the SAM refuses the write, the message gives the status word: that is the
    interesting result, write it down. Nothing is repeated.
 7. Entries that must be refused: key entry 0 and key entry 128 turn the box pink
@@ -147,9 +148,10 @@ log. What the window looks like, as the tests render it with a scripted SAM
   in a key entry (`SET 0x0020`, `ExtSET 0x01`) with the master key as the key
   that may change it. A host authentication cannot prove it: it is not a host
   key. What the read-back proves is the entry: enabled, AES-128, PICC class.
-  **Known gap:** a DESFire AES key needs SET `0x0024` (b2 "Keep IV", NXP
-  AN12696, table 1). With `0x0020` the SAM accepts the key and then answers
-  `901E` at part 2 of SAM_AuthenticatePICC. The setup does not set the bit yet.
+  A DESFire AES key needs SET `0x0024` (b2 "Keep IV", NXP AN12696, table 1);
+  the setup writes it, and the read-back says so in red if the bit is missing.
+  With `0x0020` (what older builds wrote) the SAM accepts the key and then
+  answers `901E` at part 2 of SAM_AuthenticatePICC: write such an entry again.
   That the key in an entry is the key that was typed was proved once, on the
   bench SAM, by authenticating a DESFire EV3 with the typed key (see the
   record, second session).
