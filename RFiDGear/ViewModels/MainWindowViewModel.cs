@@ -1928,7 +1928,8 @@ namespace RFiDGear.ViewModel
                         // the card that was chosen (it may not have been connected: the provider still holds the old name, which can be the
                         // reader that is the SAM's now). Also when only the reader or the provider changed: the file may not be written yet
                         // when a provider that is made now reads its names from it.
-                        if ((samReaderChanged || readerChanged) && sender.SelectedReader == ReaderTypes.PCSC && ReaderDevice.Instance is LibLogicalAccessProvider pcscProvider)
+                        if (PcscReaderChoice.ProviderLearnsReaders(sender.SelectedReader == ReaderTypes.PCSC, samReaderChanged, readerChanged, sender.IsValidClassicKeysText != false)
+                            && ReaderDevice.Instance is LibLogicalAccessProvider pcscProvider)
                         {
                             pcscProvider.UpdateReaders(sender.SelectedReaderName, samReaderToSave);
                         }

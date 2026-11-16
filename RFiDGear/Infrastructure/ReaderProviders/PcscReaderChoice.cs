@@ -71,6 +71,20 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             && string.Equals(a!.Trim(), b!.Trim(), StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
+        /// Tells whether the provider that exists is told the readers when the dialog is confirmed: only for the PC/SC provider, only when the reader
+        /// of the card or of the SAM (or the provider) changed, and only when the settings were accepted. A save that was refused (a Classic key
+        /// that is no key) writes nothing, and the provider of the application must not change for it: it would run with a SAM reader that is not
+        /// the one that is saved.
+        /// </summary>
+        /// <param name="providerIsPcsc">Whether the PC/SC provider is chosen.</param>
+        /// <param name="samReaderChanged">Whether the reader of the SAM that is saved changed.</param>
+        /// <param name="readerChanged">Whether the provider or the reader of the card changed.</param>
+        /// <param name="settingsAccepted">Whether the settings passed the check of the dialog and are saved.</param>
+        /// <returns><see langword="true"/> when the provider is told.</returns>
+        internal static bool ProviderLearnsReaders(bool providerIsPcsc, bool samReaderChanged, bool readerChanged, bool settingsAccepted) =>
+            settingsAccepted && providerIsPcsc && (samReaderChanged || readerChanged);
+
+        /// <summary>
         /// The SAM reader to save when the dialog is confirmed: the one that was chosen when the PC/SC provider is the provider, and otherwise the one
         /// that is saved already (the choice is not shown, and it is not lost by trying another provider).
         /// </summary>

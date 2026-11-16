@@ -191,6 +191,19 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData(true, true, false, true, true)]
+        [InlineData(true, false, true, true, true)]
+        [InlineData(true, true, true, true, true)]
+        [InlineData(true, false, false, true, false)]
+        [InlineData(false, true, true, true, false)]
+        [InlineData(true, true, true, false, false)]
+        [InlineData(true, false, true, false, false)]
+        public void The_provider_is_told_the_readers_only_for_pcsc_a_change_and_settings_that_are_saved(bool pcsc, bool samChanged, bool readerChanged, bool accepted, bool told)
+        {
+            Assert.Equal(told, PcscReaderChoice.ProviderLearnsReaders(pcsc, samChanged, readerChanged, accepted));
+        }
+
+        [Theory]
         [InlineData(Contact, Contactless, true)]
         [InlineData(Contact, "  hid global omnikey 5422 smartcard reader 0 ", false)]
         [InlineData(Contact, Contact, false)]

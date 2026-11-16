@@ -177,6 +177,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     ReleaseUnit(readerUnit);
                     readerUnit = null;
                     ReaderUnitName = null;
+
+                    // The chips of the old reader belong to a unit that is let go of: the file operations of a DESFire card use the chip that an
+                    // earlier operation left, and must not find the one of the old reader.
+                    card = null;
+                    ultralightChip = null;
                 }
 
                 InitializeReaderProvider(ReaderTypes.PCSC);
