@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Created by SharpDevelop.
  * Date: 12.10.2017
  * Time: 15:26
@@ -33,6 +33,7 @@ namespace RFiDGear.Models
             var runtimeDefaults = DefaultSpecificationRuntimeDefaults.Current;
 
             _defaultReaderName = runtimeDefaults.DefaultReaderName;
+            _samReaderName = runtimeDefaults.SamReaderName;
             _defaultReaderProvider = runtimeDefaults.DefaultReaderProvider;
             _defaultLanguage = runtimeDefaults.DefaultLanguage;
             defaultAutoPerformTasksEnabled = runtimeDefaults.DefaultAutoPerformTasksEnabled;
@@ -74,6 +75,19 @@ namespace RFiDGear.Models
         }
 
         private string _defaultReaderName;
+
+        /// <summary>
+        /// Gets or sets the name of the PC/SC reader that holds the MIFARE SAM AV3 (the contact slot of the reader pair whose other slot reads
+        /// the card). Empty for none: a task whose key slot names a key of the SAM then stops before any card call. It is never the
+        /// reader of the card. A settings file from before this setting existed reads as empty.
+        /// </summary>
+        public string SamReaderName
+        {
+            get => _samReaderName ?? string.Empty;
+            set => _samReaderName = value ?? string.Empty;
+        }
+
+        private string _samReaderName;
 
         /// <summary>
         ///

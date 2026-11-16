@@ -1,4 +1,4 @@
-﻿using LibLogicalAccess;
+using LibLogicalAccess;
 using LibLogicalAccess.Card;
 using LibLogicalAccess.Reader;
 using LibLogicalAccess.Crypto;
@@ -33,6 +33,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private ReaderProvider readerProvider;
         private ReaderUnit readerUnit;
         private string selectedReaderName;
+        private string samReaderName = string.Empty;
         private Chip card;
         public IReadOnlyCollection<string> AvailableReaders { get; private set; } = new List<string>();
 
@@ -42,11 +43,24 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
         }
 
+        /// <summary>Creates the provider for the reader that was chosen; no SAM reader is configured.</summary>
+        /// <param name="readerType">The kind of reader.</param>
+        /// <param name="readerName">The reader of the card.</param>
         public LibLogicalAccessProvider(ReaderTypes readerType, string readerName)
+            : this(readerType, readerName, string.Empty)
+        {
+        }
+
+        /// <summary>Creates the provider for the reader that was chosen, and never for the reader of the SAM.</summary>
+        /// <param name="readerType">The kind of reader.</param>
+        /// <param name="readerName">The reader of the card.</param>
+        /// <param name="samReaderName">The reader that holds the SAM; empty for none. The card is never read in it.</param>
+        public LibLogicalAccessProvider(ReaderTypes readerType, string readerName, string samReaderName)
         {
             try
             {
                 selectedReaderName = readerName;
+                this.samReaderName = samReaderName ?? string.Empty;
 
                 InitializeReaderProvider(readerType);
 
@@ -72,6 +86,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         private void InitializeReaderProvider(ReaderTypes readerType)
         {
+            // Before anything below can fail and return: a unit that is bound to the reader of the SAM (the fallback of an earlier
+            // start, or a SAM reader that was configured since) is never kept, whether or not the readers can be listed now.
+            if (readerUnit != null && PcscReaderChoice.IsSamReader(readerUnit.getName(), samReaderName))
+            {
+                DropReaderUnit();
+            }
+
             try
             {
                 readerProvider = LibraryManager.getInstance().getReaderProvider(
@@ -115,8 +136,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             if (readerUnit == null)
             {
-                readerUnit = readers.FirstOrDefault(r => r.getName() == selectedReaderName)
-                             ?? readerProvider.createReaderUnit();
+                // The library's default unit takes the first reader, which on a reader pair is the contact slot with the SAM in it.
+                var pick = PcscReaderChoice.Pick(AvailableReaders, selectedReaderName, samReaderName);
+
+                readerUnit = pick.Kind switch
+                {
+                    PcscReaderPick.Named => readers.FirstOrDefault(r => r.getName() == pick.Name),
+                    PcscReaderPick.Default => readerProvider.createReaderUnit(),
+                    _ => null,
+                };
             }
             else
             {
@@ -127,7 +155,77 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             ReaderUnitName = readerUnit?.getName();
         }
 
-        public void UpdateSelectedReader(string readerName)
+        /// <summary>
+        /// Tells the provider the reader of the card and the reader that holds the SAM, together: the card is never read in the SAM's
+        /// reader, and the unit is chosen once, with both names known (one name after the other would choose a unit with the other one
+        /// not known yet).
+        /// </summary>
+        /// <param name="cardReaderName">The reader of the card.</param>
+        /// <param name="samReaderName">The reader of the SAM; empty for none.</param>
+        public virtual void UpdateReaders(string cardReaderName, string samReaderName)
+        {
+            try
+            {
+                selectedReaderName = cardReaderName;
+                this.samReaderName = samReaderName ?? string.Empty;
+
+                // A choice that was confirmed picks its unit again: the unit that is held stays only when it is the reader that was
+                // confirmed for the card (UpdateSelectedReader, the preview of the dialog, keeps the unit that it has).
+                if (readerUnit != null && PcscReaderChoice.IsOtherReader(readerUnit.getName(), selectedReaderName))
+                {
+                    DropReaderUnit();
+                }
+
+                InitializeReaderProvider(ReaderTypes.PCSC);
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
+            }
+        }
+
+        // Lets go of the unit and of everything that belongs to it, whichever way the unit is dropped (it is the reader of the SAM now, or
+        // another reader was confirmed for the card). The chips that an operation took from it go with it: the file operations of a DESFire card
+        // use the chip that an earlier operation left, and must not find the one of a reader that is let go of, and least of all the one of the
+        // reader of the SAM.
+        private void DropReaderUnit()
+        {
+            var unit = readerUnit;
+
+            readerUnit = null;
+            ReaderUnitName = null;
+            card = null;
+            ultralightChip = null;
+
+            if (unit != null)
+            {
+                ReleaseUnit(unit);
+            }
+        }
+
+        // Lets go of a unit that nobody holds any more. Best effort: a unit that is not connected has nothing to let go of.
+        private static void ReleaseUnit(ReaderUnit unit)
+        {
+            try
+            {
+                unit.disconnect();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC disconnect of a unit that was replaced failed: {Fault}", PcscUltralightErrors.Describe(e));
+            }
+
+            try
+            {
+                unit.disconnectFromReader();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC release of a unit that was replaced failed: {Fault}", PcscUltralightErrors.Describe(e));
+            }
+        }
+
+        public virtual void UpdateSelectedReader(string readerName)
         {
             try
             {
