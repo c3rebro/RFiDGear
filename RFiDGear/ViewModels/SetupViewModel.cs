@@ -528,9 +528,6 @@ namespace RFiDGear.ViewModel
             {
                 refillingSamReaders = false;
             }
-
-            // The box lost its selection with its items: show the one that is chosen (and saved) again.
-            OnPropertyChanged(nameof(SelectedSamReaderName));
         }
 
         private void RefreshAvailableCardReaders()
