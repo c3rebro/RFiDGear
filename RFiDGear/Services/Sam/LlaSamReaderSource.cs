@@ -23,8 +23,6 @@ namespace RFiDGear.Services.Sam
         // How long the reader gets to report a card that is in it. An empty reader costs this much time in a search.
         private const int InsertionWaitMilliseconds = 600;
 
-        // The time a command gets: the key entry of a SAM is written to its EEPROM.
-        private const int CommandTimeoutMilliseconds = 5000;
 
         // What LibLogicalAccess calls the chip of a MIFARE SAM AV3 (probed on the bench SAM).
         private const string SamAv3ChipType = "SAM_AV3";
@@ -111,7 +109,7 @@ namespace RFiDGear.Services.Sam
                     return null;
                 }
 
-                var connection = new Connection(provider, unit, atr, new Transport(transport));
+                var connection = new Connection(provider, unit, atr, new LlaApduTransport(transport));
                 handedOver = true;
 
                 return connection;
@@ -149,28 +147,6 @@ namespace RFiDGear.Services.Sam
             }
         }
 
-        private sealed class Transport : ISamTransport
-        {
-            private readonly DataTransport _transport;
-
-            internal Transport(DataTransport transport)
-            {
-                _transport = transport;
-            }
-
-            public byte[] Exchange(byte[] apdu)
-            {
-                var command = new ByteVector();
-
-                foreach (var b in apdu)
-                {
-                    command.Add(b);
-                }
-
-                // Not the adapter's sendCommand: that one checks the result and throws for every status word but 9000.
-                return _transport.sendCommand(command, CommandTimeoutMilliseconds).ToArray();
-            }
-        }
 
         private sealed class Connection : ISamCardConnection
         {

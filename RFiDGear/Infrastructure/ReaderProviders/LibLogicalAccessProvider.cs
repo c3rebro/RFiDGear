@@ -26,7 +26,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     /// Initialize Reader
     /// </summary>
     ///
-    public class LibLogicalAccessProvider : ReaderDevice, IDisposable
+    public partial class LibLogicalAccessProvider : ReaderDevice, IDisposable
     {
         // global (cross-class) Instances go here ->
         private readonly ProjectManager projectManager = new ProjectManager();

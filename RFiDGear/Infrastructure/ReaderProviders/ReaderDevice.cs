@@ -5,6 +5,7 @@ using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
+using RFiDGear.Services.Sam;
 
 using System;
 using System.Collections.Generic;
@@ -238,6 +239,44 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// </returns>
         public virtual Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
             Task.FromResult(UltralightResult.Failed(ERROR.ProtocolConstraint));
+
+        #endregion
+
+        #region MifareDesfire with keys that stay in a SAM
+
+        /// <summary>
+        /// Says, without a card, whether this reader can authenticate a DESFire card, and change its keys, with keys that stay in a MIFARE SAM AV3.
+        /// A task asks before it asks for any key, so that a reader that cannot do it ends the task before anything is sent. The reader of the
+        /// TWN4 cannot (it does not see the SAM, and it has no relay between the SAM and the card); a PC/SC reader can when a reader for the SAM is
+        /// set.
+        /// </summary>
+        /// <returns><see langword="false"/> by default.</returns>
+        public virtual bool SupportsDesfireSamKeys => false;
+
+        /// <summary>
+        /// Authenticates a key of a DESFire card with a key entry of the SAM and does nothing else. The SAM is opened for this call (it checks that
+        /// the reader holds a MIFARE SAM AV3 before anything is sent to the card), the card is selected, the two parts of the authentication are
+        /// relayed, and the SAM is let go. One attempt: nothing is repeated.
+        /// </summary>
+        /// <param name="access">Which key of the card, and which key of the SAM.</param>
+        /// <returns>
+        /// The normalized error, and why: <see cref="ERROR.KeyUnavailable"/> when the SAM cannot be used (none set, not there, in use),
+        /// <see cref="ERROR.AuthFailure"/> when the card does not take the key, <see cref="ERROR.PermissionDenied"/> when it refuses the command,
+        /// <see cref="ERROR.ProtocolConstraint"/> for a request that cannot be made or a reader that cannot do it, <see cref="ERROR.TransportError"/>
+        /// when there is no card or a reader fails. This default does nothing and answers <see cref="ERROR.ProtocolConstraint"/>.
+        /// </returns>
+        public virtual Task<SamPiccResult> AuthenticateMifareDesfireWithSamAsync(DesfireSamAccess access) =>
+            Task.FromResult(SamPiccResult.Refused(ERROR.ProtocolConstraint, SamPiccFailure.NotSupported));
+
+        /// <summary>
+        /// Changes a key of a DESFire card with keys of the SAM: authenticates, has the SAM build the cryptogram, sends it to the card and
+        /// authenticates again with the new key. One attempt per step. <see cref="SamPiccResult.KeyMayHaveChanged"/> says when the card may hold the
+        /// new key although the answer is not a success.
+        /// </summary>
+        /// <param name="change">Which key to change, and the keys of the SAM that do it.</param>
+        /// <returns>The normalized error, as for <see cref="AuthenticateMifareDesfireWithSamAsync"/>. This default does nothing and answers <see cref="ERROR.ProtocolConstraint"/>.</returns>
+        public virtual Task<SamPiccResult> ChangeMifareDesfireKeyWithSamAsync(DesfireSamKeyChange change) =>
+            Task.FromResult(SamPiccResult.Refused(ERROR.ProtocolConstraint, SamPiccFailure.NotSupported));
 
         #endregion
 
