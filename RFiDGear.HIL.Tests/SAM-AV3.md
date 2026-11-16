@@ -174,9 +174,10 @@ log. What the window looks like, as the tests render it with a scripted SAM
   blank entry is the one to write down here. **Only authentications are sent: it
   writes nothing to the SAM or to the card.** It is skipped when no SAM is
   found, when no other reader holds a card, when the card is no DESFire card,
-  and when the card refuses its first authentication command before the SAM is
-  asked (it holds no key of that kind at key 0, as an AES authentication on a
-  card with a DES key: run the other of the two cases). It is the check that
+  and when the card answers its first authentication command with `91AE`
+  before the SAM is asked (it holds no key of that kind at key 0, as an AES
+  authentication on a card with a DES key: run the other of the two cases).
+  Any other refusal before the SAM fails the case. It is the check that
   the frames of `SAM-PICC-FIRST-CONTACT.md`
   work through the application and not only through the console; the task
   commands that use a key of the SAM on a card that was prepared for it come

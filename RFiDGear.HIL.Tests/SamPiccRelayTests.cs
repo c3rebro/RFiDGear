@@ -98,9 +98,11 @@ namespace RFiDGear.HIL.Tests
                     throw SkipException.ForSkip("The card in the reader of the card is no DESFire card, or could not be connected to (" + result.Failure + "). Put a DESFire card on it.");
                 }
 
-                // The card refused the select or its first authentication command: the relay never reached the SAM. A card that holds no key of
-                // this kind at key 0 does that (AES on a card with a DES key), and it is no reason to count the case as a pass.
-                if (result.Failure == SamPiccFailure.CardRefusedBeforeSam)
+                // The card refused its first authentication command with an authentication failure (91AE): the relay never reached the SAM. A card
+                // that holds no key of this kind at key 0 does that (AES on a card with a DES key), and it is no reason to count the case as a
+                // pass. Any other refusal before the SAM (the select, a status word that is no authentication failure, a challenge of the wrong
+                // length) is a fault of the relay and fails the case below.
+                if (result.Failure == SamPiccFailure.CardRefusedBeforeSam && result.Error == ERROR.AuthFailure && result.CardStatus == 0x91AE)
                 {
                     throw SkipException.ForSkip("The card refused its first authentication command (" + result.CardStatus.ToString("X4") + ") before the SAM was asked: it holds no " + type + " key at key 0 of the card. Run the other case, or use a card in the other state.");
                 }
