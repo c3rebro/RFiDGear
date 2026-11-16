@@ -261,26 +261,56 @@ namespace RFiDGear.Tests.KeySlots
             Assert.Contains("cannot be written", run.Status, StringComparison.Ordinal);
         }
 
-        // ── what the status text says about a failure of the write ──
+        // ── what the status text says about a failure ──
 
         [Theory]
-        [InlineData(ERROR.TransportError, "No chip answered")]
-        [InlineData(ERROR.ProtocolConstraint, "cannot do that")]
-        [InlineData(ERROR.PermissionDenied, "not allowed")]
-        [InlineData(ERROR.Unknown, "did not keep the data")]
-        public async Task A_failed_write_is_reported_as_what_the_reader_answered(ERROR error, string text)
+        [InlineData(TaskType_MifareClassicTask.ReadData, "ReadMifareClassicSectorAsync", ERROR.TransportError, "No chip answered")]
+        [InlineData(TaskType_MifareClassicTask.ReadData, "ReadMifareClassicSectorAsync", ERROR.ProtocolConstraint, "cannot do that")]
+        [InlineData(TaskType_MifareClassicTask.ReadData, "ReadMifareClassicSectorAsync", ERROR.AuthFailure, "Unable to Authenticate to Sector")]
+        [InlineData(TaskType_MifareClassicTask.EmptyCheck, "ReadMifareClassicSectorAsync", ERROR.TransportError, "No chip answered")]
+        [InlineData(TaskType_MifareClassicTask.EmptyCheck, "ReadMifareClassicSectorAsync", ERROR.AuthFailure, "Unable to Authenticate to Sector")]
+        [InlineData(TaskType_MifareClassicTask.WriteData, "WriteMifareClassicSingleBlock", ERROR.TransportError, "No chip answered")]
+        [InlineData(TaskType_MifareClassicTask.WriteData, "WriteMifareClassicSingleBlock", ERROR.PermissionDenied, "not allowed")]
+        [InlineData(TaskType_MifareClassicTask.WriteData, "WriteMifareClassicSingleBlock", ERROR.Unknown, "did not keep the data")]
+        [InlineData(TaskType_MifareClassicTask.WriteData, "WriteMifareClassicSingleBlock", ERROR.ProtocolConstraint, "cannot do that")]
+        public async Task A_failed_call_says_what_failed_and_is_reported_as_it_was_not_as_a_refused_key(
+            TaskType_MifareClassicTask type, string method, ERROR error, string text)
         {
-            // A block that did not read back as written, or keys that may not write, are no refused key: a project routes on the difference.
+            var run = await RunAsync(type, reader: reader =>
+            {
+                reader.FailMethod = method;
+                reader.FailWith = error;
+            });
+
+            Assert.Equal(error, run.Error);
+            Assert.Contains(text, run.Status, StringComparison.Ordinal);
+
+            if (error != ERROR.AuthFailure)
+            {
+                Assert.DoesNotContain("Authenticate", run.Status, StringComparison.Ordinal);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, "ReadMifareClassicApplicationAsync", ERROR.TransportError, "No chip answered")]
+        [InlineData(false, "ReadMifareClassicApplicationAsync", ERROR.ProtocolConstraint, "Application Directory")]
+        [InlineData(false, "ReadMifareClassicApplicationAsync", ERROR.AuthFailure, "Unable to Authenticate to MAD Sector")]
+        [InlineData(true, "WriteMifareClassicWithMAD", ERROR.TransportError, "No chip answered")]
+        [InlineData(true, "WriteMifareClassicWithMAD", ERROR.ProtocolConstraint, "Application Directory")]
+        [InlineData(true, "WriteMifareClassicWithMAD", ERROR.AuthFailure, "Unable to Authenticate to MAD Sector")]
+        public async Task A_failed_mad_call_says_what_failed(bool write, string method, ERROR error, string text)
+        {
             var run = await RunAsync(
-                TaskType_MifareClassicTask.WriteData,
-                reader: reader =>
+                write ? TaskType_MifareClassicTask.WriteData : TaskType_MifareClassicTask.ReadData,
+                vm => vm.UseMAD = true,
+                reader =>
                 {
-                    reader.FailMethod = "WriteMifareClassicSingleBlock";
+                    reader.FailMethod = method;
                     reader.FailWith = error;
                 });
 
             Assert.Equal(error, run.Error);
-            Assert.Contains(text, run.Status, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(text, run.Status, StringComparison.Ordinal);
         }
 
         [Theory]
@@ -290,9 +320,9 @@ namespace RFiDGear.Tests.KeySlots
         [InlineData(ERROR.Unknown, "did not keep")]
         [InlineData(ERROR.AuthFailure, "REFUSED")]
         [InlineData(ERROR.Empty, "REFUSED")]
-        public void The_words_of_the_status_text_follow_the_answer_of_the_reader(ERROR error, string expectedPart)
+        public void The_words_of_the_status_text_follow_the_answer_of_the_reader(ERROR error, string expectedStart)
         {
-            Assert.Contains(expectedPart, MifareClassicSetupViewModel.ClassicFailureText(error, "REFUSED"), StringComparison.Ordinal);
+            Assert.Contains(expectedStart, MifareClassicSetupViewModel.ClassicFailureText(error, "REFUSED"), StringComparison.Ordinal);
         }
 
         private sealed record Run(string Calls, ERROR Error, string Status);
