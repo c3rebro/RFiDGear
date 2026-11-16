@@ -117,11 +117,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await ReportSamResultAsync(result, "textBoxStatusSamKeyChanged", AppNumberCurrentAsInt, keyNumberForChange);
         }
 
-        // A key number of a project that was edited by hand can be anything (256 is key 0 as a byte): a card has the keys 0 to 13, and a number
-        // that is not one of them is no request, whatever it would wrap to. Nothing is sent.
+        // A key number of a project that was edited by hand can be anything (256 is key 0 as a byte, and a text that is no number, or too big for
+        // one, is read as 0): a card has the keys 0 to 13, and a number that is not one of them, or was not read, is no request. Nothing is sent.
         private async Task<bool> RejectKeyNumbersThatTheCardDoesNotHaveAsync(params int[] keyNumbers)
         {
-            if (keyNumbers.All(keyNumber => keyNumber >= 0 && keyNumber <= 0x0D))
+            if (!selectedDesfireAppKeyNumberCurrentIsUnreadable && keyNumbers.All(keyNumber => keyNumber >= 0 && keyNumber <= 0x0D))
             {
                 return false;
             }

@@ -163,6 +163,10 @@ namespace RFiDGear.Tests.SecureKeys
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "14")]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "256")]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "257")]
+        [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, "2147483648")]
+        [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, "not a number")]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "2147483648")]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "not a number")]
         public async Task A_key_number_that_the_card_does_not_have_is_refused_before_the_reader_and_never_wraps_to_another_key(TaskType_MifareDesfireTask type, string chosenKeyNumber)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
@@ -190,6 +194,8 @@ namespace RFiDGear.Tests.SecureKeys
         [InlineData("14")]
         [InlineData("256")]
         [InlineData("257")]
+        [InlineData("2147483648")]
+        [InlineData("not a number")]
         public async Task The_key_that_is_replaced_is_checked_too_when_another_key_authenticates(string chosenKeyNumber)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>

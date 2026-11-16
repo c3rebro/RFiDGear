@@ -2356,7 +2356,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => selectedDesfireAppKeyNumberCurrent;
             set
             {
-                if (int.TryParse(value, out selectedDesfireAppKeyNumberCurrentAsInt))
+                // A text that is no number leaves the number at 0 and the text as it was: a command that must not take a key that it cannot read
+                // for key 0 asks whether the last text was a number (the commands with a key of the SAM do).
+                var isNumber = int.TryParse(value, out selectedDesfireAppKeyNumberCurrentAsInt);
+                selectedDesfireAppKeyNumberCurrentIsUnreadable = !isNumber;
+
+                if (isNumber)
                 {
                     selectedDesfireAppKeyNumberCurrent = value;
                 }
@@ -2368,6 +2373,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
         private string selectedDesfireAppKeyNumberCurrent;
         private int selectedDesfireAppKeyNumberCurrentAsInt;
+        private bool selectedDesfireAppKeyNumberCurrentIsUnreadable;
 
         /// <summary>
         ///
