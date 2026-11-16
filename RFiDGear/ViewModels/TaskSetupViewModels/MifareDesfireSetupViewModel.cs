@@ -2356,12 +2356,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => selectedDesfireAppKeyNumberCurrent;
             set
             {
-                // A text that is no number leaves the number at 0 and the text as it was: a command that must not take a key that it cannot read
-                // for key 0 asks whether the last text was a number (the commands with a key of the SAM do).
+                // A text that is no number leaves the number at 0, and a command that must not take a key that it cannot read for key 0 asks
+                // whether the last text was a number (the commands with a key of the SAM do). The text is kept, so that what saves the task or
+                // copies its public properties carries the text and not a number that was there before, and whatever sets it again gets the
+                // same answer. Nothing (null or empty) is what a list writes while it is filled again: it does not replace the text.
                 var isNumber = int.TryParse(value, out selectedDesfireAppKeyNumberCurrentAsInt);
                 selectedDesfireAppKeyNumberCurrentIsUnreadable = !isNumber;
 
-                if (isNumber)
+                if (isNumber || !string.IsNullOrEmpty(value))
                 {
                     selectedDesfireAppKeyNumberCurrent = value;
                 }

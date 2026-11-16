@@ -11,8 +11,10 @@ using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 using Xunit;
 
@@ -187,6 +189,60 @@ namespace RFiDGear.Tests.SecureKeys
                 Assert.Empty(reader.SamAuthentications);
                 Assert.Empty(reader.SamChanges);
                 Assert.Empty(reader.Calls);
+            });
+        }
+
+        [Theory]
+        [InlineData("2147483648")]
+        [InlineData("not a number")]
+        public async Task A_key_number_that_was_not_read_is_still_not_read_after_the_task_was_saved_loaded_or_copied(string text)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The text that the person (or an edited file) gave is kept, so that whatever rebuilds the task from it (the project file, the
+                // copy that the edit dialog makes from the public properties) rebuilds the refusal too and not a key 0 or the number before.
+                var task = NewTask(TaskType_MifareDesfireTask.AuthenticateApplication);
+                task.SelectedDesfireAppKeyNumberCurrent = "1";
+                task.SelectedDesfireAppKeyNumberCurrent = text;
+                task.SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo;
+                task.KeyBindings = new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3) };
+
+                Assert.Equal(text, task.SelectedDesfireAppKeyNumberCurrent);
+
+                var project = new ChipTaskHandlerModel();
+                project.TaskCollection.Add(task);
+                string xml;
+
+                using (var writer = new StringWriter())
+                {
+                    new XmlSerializer(typeof(ChipTaskHandlerModel)).Serialize(writer, project);
+                    xml = writer.ToString();
+                }
+
+                MifareDesfireSetupViewModel loaded;
+
+                using (var reader = new StringReader(xml))
+                {
+                    var read = (ChipTaskHandlerModel)new XmlSerializer(typeof(ChipTaskHandlerModel)).Deserialize(reader)!;
+                    loaded = Assert.IsType<MifareDesfireSetupViewModel>(Assert.Single(read.TaskCollection));
+                }
+
+                // What the edit dialog does with the public properties of a task.
+                var copy = NewTask(TaskType_MifareDesfireTask.AuthenticateApplication);
+                copy.SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo;
+                copy.KeyBindings = new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3) };
+                copy.SelectedDesfireAppKeyNumberCurrent = task.SelectedDesfireAppKeyNumberCurrent;
+
+                foreach (var candidate in new[] { loaded, copy })
+                {
+                    Assert.Equal(text, candidate.SelectedDesfireAppKeyNumberCurrent);
+
+                    var reader = new KeyRecordingReader { SupportsSam = true };
+                    var run = await RunAsync(candidate, reader);
+
+                    Assert.Equal(ERROR.ProtocolConstraint, run.Error);
+                    Assert.Empty(reader.SamAuthentications);
+                }
             });
         }
 
