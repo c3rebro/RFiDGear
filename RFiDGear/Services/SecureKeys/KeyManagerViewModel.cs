@@ -161,15 +161,16 @@ namespace RFiDGear.Services.SecureKeys
             // window is open (it needs a restart).
             var resolve = CachedText.Of(text ?? ResourceLoader.GetResource);
             var catalog = new KeySlotProviderCatalog(resolve);
-            var items = catalog.Describe(providers);
 
+            // Each row lists the providers that are offered for its slot: the SAM only where a command can use a key of it.
             var rows = slotIds
                 .Distinct(StringComparer.Ordinal)
-                .Select(slotId => new KeyManagerSlotRow(
-                    new KeySlotEditorState(host, slotId, providers, dialogs, keyStore, resolve),
-                    KeySlotNames.For(slotId, resolve),
-                    items,
-                    resolve))
+                .Select(slotId =>
+                {
+                    var state = new KeySlotEditorState(host, slotId, providers, dialogs, keyStore, resolve);
+
+                    return new KeyManagerSlotRow(state, KeySlotNames.For(slotId, resolve), catalog.Describe(state.Providers), resolve);
+                })
                 .ToList();
 
             return new KeyManagerViewModel(rows, supplier, catalog, resolve, post);

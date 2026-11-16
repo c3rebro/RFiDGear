@@ -2009,6 +2009,12 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="keySlotProviderToolTipCredentialManager" xml:space="preserve">
     <value>Schlüssel in der Windows-Anmeldeinformationsverwaltung dieses PCs. Das Projekt speichert nur den Namen des Schlüssels, nie den Schlüssel selbst.</value>
   </data>
+  <data name="keySlotProviderNameSam" xml:space="preserve">
+    <value>MIFARE SAM AV3</value>
+  </data>
+  <data name="keySlotProviderToolTipSam" xml:space="preserve">
+    <value>Der Schlüssel bleibt in einer MIFARE SAM AV3 und gelangt nie zu RFiDGear. Die Referenz ist ein Schlüsseleintrag mit Version, zum Beispiel 3:0. Der Leser der SAM steht in den Leser-Einstellungen.</value>
+  </data>
   <data name="keySlotProviderNameBridgeClient" xml:space="preserve">
     <value>Verbundene externe Anwendung</value>
   </data>

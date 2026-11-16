@@ -205,6 +205,31 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Theory]
+        [MemberData(nameof(EveryScenario))]
+        public async Task ASlotBoundToAKeyOfTheSam_StopsTheTaskBeforeTheCard(string name)
+        {
+            var scenario = Scenarios[name];
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A key of the SAM is never bytes, and no Ultralight command can hand a reference to the SAM: the task stops, asks no
+                // provider, and does not fall back to the embedded key.
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(scenario);
+                task.KeyBindings = Slots.Keys.Select(slot => new KeyBindingEntry { Slot = slot, ProviderId = SamKeyProvider.ProviderId, Reference = "1:0" }).ToArray();
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+                Assert.False(run.Completed);
+                Assert.Equal(0, run.ReaderCalls);
+                Assert.DoesNotContain("1:0", run.Status, StringComparison.Ordinal);
+                Assert.Empty(vault.Requests);
+            });
+        }
+
         [Fact]
         public async Task ABindingForASlotOfAnotherTask_StopsTheTask_EvenWhenItDoesNotAuthenticate()
         {

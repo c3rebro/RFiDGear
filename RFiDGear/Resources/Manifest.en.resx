@@ -1987,6 +1987,12 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="keySlotProviderToolTipCredentialManager" xml:space="preserve">
     <value>Keys kept in the Windows Credential Manager of this PC. The project saves only the name of the key, never the key itself.</value>
   </data>
+  <data name="keySlotProviderNameSam" xml:space="preserve">
+    <value>MIFARE SAM AV3</value>
+  </data>
+  <data name="keySlotProviderToolTipSam" xml:space="preserve">
+    <value>The key stays in a MIFARE SAM AV3 and never reaches RFiDGear. The reference is a key entry and its version, for example 3:0. The reader of the SAM is set in the reader settings.</value>
+  </data>
   <data name="keySlotProviderNameBridgeClient" xml:space="preserve">
     <value>Connected external application</value>
   </data>

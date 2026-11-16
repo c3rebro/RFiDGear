@@ -84,6 +84,8 @@ namespace RFiDGear.Tests
             "messageKeySlotKeyInvalid",
             "keySlotProviderNameCredentialManager",
             "keySlotProviderToolTipCredentialManager",
+            "keySlotProviderNameSam",
+            "keySlotProviderToolTipSam",
             "keySlotProviderNameBridgeClient",
             "keySlotProviderToolTipBridgeClient",
             "keySlotProviderToolTipExtension",
@@ -288,6 +290,7 @@ namespace RFiDGear.Tests
         {
             "labelContentMifareDesfireBytes",
             "textSamSetupEntryKindAes",
+            "keySlotProviderNameSam",
             "statusHeaderReaderIsInitializing",
             "groupBoxHeaderMifareUltralightChip",
             "groupBoxHeaderMifareUltralightKeyC",

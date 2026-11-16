@@ -117,6 +117,25 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void No_row_lists_the_sam_while_no_command_can_use_a_key_of_it()
+        {
+            var sam = new SecureKeyProviderInfo(SamKeyProvider.ProviderId, SamKeyProvider.DisplayName);
+            using var viewModel = KeyManagerViewModel.Create(
+                new FakeKeySlotHost(),
+                new[] { SecureKeySlots.DesfirePiccCurrent, SecureKeySlots.DesfireRead },
+                new[] { CredentialManager, ExternalApplication, sam },
+                new ScriptedKeyDialogs(),
+                new WindowsCredentialKeyProvider(new FakeCredentialStore()),
+                new FakeSupplierStatus(),
+                TestText.English);
+
+            Assert.Equal(2, viewModel.Rows.Count);
+            Assert.All(viewModel.Rows, row => Assert.Equal(
+                new[] { WindowsCredentialKeyProvider.ProviderId, BridgeKeyProvider.ProviderId },
+                row.Providers.Select(item => item.Id)));
+        }
+
+        [Fact]
         public void A_text_is_read_from_the_resources_once_however_often_the_window_asks_for_it()
         {
             // The resources read the settings from the disk on every lookup, and a keystroke in a name makes every row ask for all

@@ -417,6 +417,19 @@ default of the application). Whatever fails ends the command with
 properties on the way to the card; acquire the keys first, and do not log,
 store or return the `AcquiredKeys`.
 
+A key of a MIFARE SAM AV3 is a third source for a slot: the binding names the
+provider id `sam` and a reference `entry:version` (`SamKeyReference`, entries 1
+to 127). It is no key and has no bytes, so `SamKeyProvider` (built in, which
+reserves the id and gets it listed) answers `Unsupported` to everything, and
+`KeyAcquisition` never asks the registry for it. A command that does not know
+the SAM gets `SamKeyPolicy.Refuse`, the default, and ends with
+`ERROR.KeyUnavailable` and no card call, whatever the kind of task. A command
+that can use one passes `AllOrNothing` and reads `AcquiredKeys.SamKey(slot)`;
+all its slots must be keys of the SAM, because the SAM builds the cryptogram of
+a key change from the old key and the new one. `AcquiredKeys.Hex` throws for
+such a slot. The key manager lists the SAM only for the slots in
+`SamKeySlots.Offered`, which is empty until a command can use it.
+
 An extension that needs more than the contract (services, a database driver,
 a PDF engine) keeps that code in a support library named
 `RFiDGear.ExtensionLibraries.<Name>`; the first is
