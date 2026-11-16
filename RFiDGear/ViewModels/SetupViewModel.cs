@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Created by SharpDevelop.
  * Date: 10/10/2017
  * Time: 20:31
@@ -29,6 +29,25 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of SetupDialogBoxViewModel.
     /// </summary>
+    /// <summary>One entry of the list of readers for the SAM: the name that is saved, and what the person reads.</summary>
+    public sealed class SamReaderItem
+    {
+        /// <summary>Creates the entry.</summary>
+        /// <param name="name">The name of the reader; empty for none.</param>
+        /// <param name="displayName">What the person reads.</param>
+        public SamReaderItem(string name, string displayName)
+        {
+            Name = name;
+            DisplayName = displayName;
+        }
+
+        /// <summary>Gets the name of the reader; empty for none.</summary>
+        public string Name { get; }
+
+        /// <summary>Gets what the person reads.</summary>
+        public string DisplayName { get; }
+    }
+
     public class SetupViewModel : ObservableObject, IUserDialogViewModel
     {
         private ReaderDevice device;
@@ -49,6 +68,7 @@ namespace RFiDGear.ViewModel
 
             device = _device;
             SelectedReaderName = settingsReaderWriter.DefaultSpecification.DefaultReaderName;
+            SelectedSamReaderName = settingsReaderWriter.DefaultSpecification.SamReaderName;
             // If running under RDP and PCSC was the configured provider, fall back to None silently
             var configuredProvider = settingsReaderWriter.DefaultSpecification.DefaultReaderProvider;
             SelectedReader = (IsRdpSession && configuredProvider == ReaderTypes.PCSC) ? ReaderTypes.None : configuredProvider;
@@ -135,17 +155,18 @@ namespace RFiDGear.ViewModel
                             if (!(device is LibLogicalAccessProvider))
                             {
                                 device.Dispose();
-                                device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                                device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName, SelectedSamReaderName);
                                 _ownsDevice = true;
                             }
                             else
                             {
+                                (device as LibLogicalAccessProvider)?.UpdateSamReader(SelectedSamReaderName);
                                 (device as LibLogicalAccessProvider)?.UpdateSelectedReader(SelectedReaderName);
                             }
                         }
                         else
                         {
-                            device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                            device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName, SelectedSamReaderName);
                             _ownsDevice = true;
                         }
 
@@ -356,9 +377,40 @@ namespace RFiDGear.ViewModel
             {
                 selectedReaderName = value;
                 OnPropertyChanged(nameof(SelectedReaderName));
+                OnPropertyChanged(nameof(SamReaderIsCardReader));
+                OnPropertyChanged(nameof(SamReaderWarningText));
             }
         }
         private string selectedReaderName;
+
+        /// <summary>
+        /// Gets the readers that can be chosen for the SAM: "none" first, then every PC/SC reader, and the configured one when it is
+        /// not there (a reader that is not plugged in is still what the setting says).
+        /// </summary>
+        public ObservableCollection<SamReaderItem> AvailableSamReaders { get; } = new ObservableCollection<SamReaderItem>();
+
+        /// <summary>
+        /// Gets or sets the name of the reader that holds the MIFARE SAM AV3; empty for none. A task whose key slot names a key of the SAM
+        /// needs it, and the card is never read in it.
+        /// </summary>
+        public string SelectedSamReaderName
+        {
+            get => selectedSamReaderName;
+            set
+            {
+                selectedSamReaderName = value ?? string.Empty;
+                OnPropertyChanged(nameof(SelectedSamReaderName));
+                OnPropertyChanged(nameof(SamReaderIsCardReader));
+                OnPropertyChanged(nameof(SamReaderWarningText));
+            }
+        }
+        private string selectedSamReaderName = string.Empty;
+
+        /// <summary>Gets whether the reader of the SAM is the reader of the card: one of them is wrong.</summary>
+        public bool SamReaderIsCardReader => PcscReaderChoice.IsSamReader(SelectedReaderName, SelectedSamReaderName);
+
+        /// <summary>Gets what to say when the reader of the SAM is the reader of the card; empty otherwise.</summary>
+        public string SamReaderWarningText => SamReaderIsCardReader ? ResourceLoader.GetResource("labelSamReaderIsCardReader") : string.Empty;
 
         /// <summary>
         ///
@@ -432,6 +484,33 @@ namespace RFiDGear.ViewModel
         private string defaultReader;
 
         private void RefreshAvailableReaders()
+        {
+            RefreshAvailableCardReaders();
+            RefreshAvailableSamReaders();
+        }
+
+        private void RefreshAvailableSamReaders()
+        {
+            AvailableSamReaders.Clear();
+            AvailableSamReaders.Add(new SamReaderItem(string.Empty, ResourceLoader.GetResource("textSamReaderNone")));
+
+            if (SelectedReader != ReaderTypes.PCSC)
+            {
+                return;
+            }
+
+            foreach (var reader in AvailableReaders)
+            {
+                AvailableSamReaders.Add(new SamReaderItem(reader, reader));
+            }
+
+            if (!string.IsNullOrWhiteSpace(SelectedSamReaderName) && AvailableSamReaders.All(item => item.Name != SelectedSamReaderName))
+            {
+                AvailableSamReaders.Add(new SamReaderItem(SelectedSamReaderName, SelectedSamReaderName));
+            }
+        }
+
+        private void RefreshAvailableCardReaders()
         {
             AvailableReaders.Clear();
 

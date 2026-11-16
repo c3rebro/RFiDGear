@@ -1898,6 +1898,10 @@ namespace RFiDGear.ViewModel
                             || (sender.SelectedReader == ReaderTypes.Elatec
                                 && !string.Equals(currentSettings.LastUsedComPort, sender.ComPort, StringComparison.Ordinal));
 
+                        // The reader of the SAM is saved only for the PC/SC provider: the dialog does not show it for another one.
+                        var samReaderToSave = PcscReaderChoice.SamReaderToSave(sender.SelectedReader == ReaderTypes.PCSC, sender.SelectedSamReaderName, currentSettings.SamReaderName);
+                        var samReaderChanged = !string.Equals(currentSettings.SamReaderName, samReaderToSave, StringComparison.Ordinal);
+
                         // The pipe is opened or not at start-up only, so a change needs a restart.
                         var externalControlChanged = currentSettings.EnableExternalControl != sender.EnableExternalControl;
 
@@ -1910,6 +1914,7 @@ namespace RFiDGear.ViewModel
                         currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
                         currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
                         currentSettings.EnableExternalControl = sender.EnableExternalControl;
+                        currentSettings.SamReaderName = samReaderToSave;
 
                         settings.DefaultSpecification = currentSettings;
 
@@ -1918,6 +1923,12 @@ namespace RFiDGear.ViewModel
                         // Switch the provider first: setting the name announces the change to extensions, and they read
                         // the connection and card state of whichever provider is current when that happens.
                         ReaderDevice.Reader = sender.SelectedReader;
+
+                        // The card is never read in the reader of the SAM: a provider that exists learns it now.
+                        if (samReaderChanged && sender.SelectedReader == ReaderTypes.PCSC && ReaderDevice.Instance is LibLogicalAccessProvider pcscProvider)
+                        {
+                            pcscProvider.UpdateSamReader(samReaderToSave);
+                        }
 
                         // Another reader: automatic mode does not carry on with it unasked, and forgets the card of the old
                         // one. (Not in the setter of CurrentReader: the reader monitor keeps assigning a status label to it.)

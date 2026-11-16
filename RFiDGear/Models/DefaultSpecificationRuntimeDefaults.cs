@@ -27,6 +27,8 @@ namespace RFiDGear.Models
 
         public string DefaultReaderName { get; set; } = string.Empty;
 
+        public string SamReaderName { get; set; } = string.Empty;
+
         public ReaderTypes DefaultReaderProvider { get; set; } = ReaderTypes.None;
 
         public string DefaultLanguage { get; set; } = "english";

@@ -114,6 +114,13 @@ combined with **MEF** (Managed Extensibility Framework) for ViewModel discovery.
 The active provider is selected at startup from settings and injected into the
 task system.
 
+The MIFARE SAM AV3 sits in a reader of its own (the contact slot of a pair such
+as the OMNIKEY 5422, the card in the other slot). Its name is the setting
+`SamReaderName` (Reader setup, PC/SC only; empty for none; no automatic search).
+With it set, the PC/SC provider never takes that reader for the card and never
+falls back to the library's default unit, which is the first reader and so the
+contact slot (`PcscReaderChoice`).
+
 ### Task System
 
 Tasks are modeled as sequential, indexed items with optional dependencies (prior

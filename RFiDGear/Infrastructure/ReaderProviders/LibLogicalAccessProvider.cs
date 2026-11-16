@@ -1,4 +1,4 @@
-﻿using LibLogicalAccess;
+using LibLogicalAccess;
 using LibLogicalAccess.Card;
 using LibLogicalAccess.Reader;
 using LibLogicalAccess.Crypto;
@@ -33,6 +33,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private ReaderProvider readerProvider;
         private ReaderUnit readerUnit;
         private string selectedReaderName;
+        private string samReaderName = string.Empty;
         private Chip card;
         public IReadOnlyCollection<string> AvailableReaders { get; private set; } = new List<string>();
 
@@ -42,11 +43,24 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
         }
 
+        /// <summary>Creates the provider for the reader that was chosen; no SAM reader is configured.</summary>
+        /// <param name="readerType">The kind of reader.</param>
+        /// <param name="readerName">The reader of the card.</param>
         public LibLogicalAccessProvider(ReaderTypes readerType, string readerName)
+            : this(readerType, readerName, string.Empty)
+        {
+        }
+
+        /// <summary>Creates the provider for the reader that was chosen, and never for the reader of the SAM.</summary>
+        /// <param name="readerType">The kind of reader.</param>
+        /// <param name="readerName">The reader of the card.</param>
+        /// <param name="samReaderName">The reader that holds the SAM; empty for none. The card is never read in it.</param>
+        public LibLogicalAccessProvider(ReaderTypes readerType, string readerName, string samReaderName)
         {
             try
             {
                 selectedReaderName = readerName;
+                this.samReaderName = samReaderName ?? string.Empty;
 
                 InitializeReaderProvider(readerType);
 
@@ -113,10 +127,23 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             AvailableReaders = readers.Select(x => x.getName()).ToList();
 
+            // A unit that is bound to the reader of the SAM (the fallback of an earlier start, or a SAM reader that was configured since) is dropped.
+            if (readerUnit != null && PcscReaderChoice.IsSamReader(readerUnit.getName(), samReaderName))
+            {
+                readerUnit = null;
+            }
+
             if (readerUnit == null)
             {
-                readerUnit = readers.FirstOrDefault(r => r.getName() == selectedReaderName)
-                             ?? readerProvider.createReaderUnit();
+                // The library's default unit takes the first reader, which on a reader pair is the contact slot with the SAM in it.
+                var pick = PcscReaderChoice.Pick(AvailableReaders, selectedReaderName, samReaderName);
+
+                readerUnit = pick.Kind switch
+                {
+                    PcscReaderPick.Named => readers.FirstOrDefault(r => r.getName() == pick.Name),
+                    PcscReaderPick.Default => readerProvider.createReaderUnit(),
+                    _ => null,
+                };
             }
             else
             {
@@ -125,6 +152,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
 
             ReaderUnitName = readerUnit?.getName();
+        }
+
+        /// <summary>Tells the provider which reader holds the SAM: the card is never read in it.</summary>
+        /// <param name="readerName">The reader of the SAM; empty for none.</param>
+        public void UpdateSamReader(string readerName)
+        {
+            try
+            {
+                samReaderName = readerName ?? string.Empty;
+                InitializeReaderProvider(ReaderTypes.PCSC);
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
+            }
         }
 
         public void UpdateSelectedReader(string readerName)

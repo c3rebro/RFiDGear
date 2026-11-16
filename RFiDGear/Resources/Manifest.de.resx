@@ -2603,7 +2603,18 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageSamSetupEntryDiffersNative" xml:space="preserve">
     <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist kein DES-/2K3DES-Schlüssel der Schlüsselklasse PICC, wie er geschrieben wurde. Verwenden Sie ihn nicht.</value>
   </data>
-  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
+  <data name="labelSamReader" xml:space="preserve">
+    <value>SAM-Leser:</value>
+  </data>
+  <data name="toolTipSamReader" xml:space="preserve">
+    <value>Der Leser mit der MIFARE SAM AV3: der Kontaktschacht eines Leserpaares wie des OMNIKEY 5422, die Karte liegt im anderen Schacht. Eine Aufgabe, deren Schlüsselfeld einen Schlüssel der SAM nennt, braucht ihn. Lassen Sie „(keiner)“ stehen, wenn keine SAM verwendet wird.</value>
+  </data>
+  <data name="textSamReaderNone" xml:space="preserve">
+    <value>(keiner)</value>
+  </data>
+  <data name="labelSamReaderIsCardReader" xml:space="preserve">
+    <value>Der Leser der SAM ist der Leser der Karte. Wählen Sie zwei verschiedene Leser: im Leser der SAM wird nie eine Karte gelesen.</value>
+  </data>  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
     <value>Von der SAM zurückgelesen: Schlüsseleintrag {0} ist aktiviert und enthält einen AES-128-Schlüssel der Schlüsselklasse PICC, aber „Keep IV“ (SET-Bit 2) ist nicht gesetzt. Eine DESFire-Karte lässt sich damit nicht authentisieren (die SAM weist die Antwort der Karte ab). Schreiben Sie den Schlüssel erneut.</value>
   </data>
   <data name="messageSamSetupEntryUnreadable" xml:space="preserve">

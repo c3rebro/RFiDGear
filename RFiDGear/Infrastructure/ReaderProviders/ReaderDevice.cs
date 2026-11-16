@@ -1,4 +1,4 @@
-﻿using Elatec.NET.Cards.Mifare;
+using Elatec.NET.Cards.Mifare;
 using LibLogicalAccess;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.FileAccess;
@@ -31,12 +31,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                                 if (instance == null)
                                 {      
-                                    instance = new LibLogicalAccessProvider(Reader, settings.DefaultReaderName);
+                                    instance = new LibLogicalAccessProvider(Reader, settings.DefaultReaderName, settings.SamReaderName);
                                     return instance;
                                 }
                                 else if (instance != null && !(instance is LibLogicalAccessProvider))
                                 {
-                                    instance = new LibLogicalAccessProvider(Reader, settings.DefaultReaderName);
+                                    instance = new LibLogicalAccessProvider(Reader, settings.DefaultReaderName, settings.SamReaderName);
                                     return instance;
                                 }
                                 else
