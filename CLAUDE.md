@@ -423,7 +423,9 @@ to 127). It is no key and has no bytes, so `SamKeyProvider` (built in, which
 reserves the id and gets it listed) answers `Unsupported` to everything, and
 `KeyAcquisition` never asks the registry for it. A command that does not know
 the SAM gets `SamKeyPolicy.Refuse`, the default, and ends with
-`ERROR.KeyUnavailable` and no card call, whatever the kind of task. A command
+`ERROR.KeyUnavailable` and no card call, whatever the kind of task, when it
+uses that slot (a slot that a command does not use is not asked for, from a
+provider or from the SAM). A command
 that can use one passes `AllOrNothing` and reads `AcquiredKeys.SamKey(slot)`;
 all its slots must be keys of the SAM, because the SAM builds the cryptogram of
 a key change from the old key and the new one. `AcquiredKeys.Hex` throws for
