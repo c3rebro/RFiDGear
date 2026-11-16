@@ -1,6 +1,7 @@
 using Elatec.NET.Cards.Mifare;
 using LibLogicalAccess;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.Classic;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Ultralight;
@@ -94,6 +95,30 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         public MifareClassicSectorModel Sector { get; set; }
         public MifareClassicDataBlockModel DataBlock { get; set; }
+
+        /// <summary>
+        /// Makes the model that the dialogs show from a sector that was read: one entry per block of the sector, the trailer last; a block that
+        /// no key could read has no data and is not authenticated.
+        /// </summary>
+        /// <param name="read">The sector that <see cref="ClassicOperations"/> read.</param>
+        /// <returns>The model.</returns>
+        protected static MifareClassicSectorModel ToSectorModel(ClassicSectorRead read)
+        {
+            ArgumentNullException.ThrowIfNull(read);
+
+            var sector = new MifareClassicSectorModel { IsAuthenticated = read.IsAuthenticated };
+
+            foreach (var block in read.Blocks)
+            {
+                sector.DataBlock.Add(new MifareClassicDataBlockModel(block.Block, block.BlockInSector)
+                {
+                    Data = block.Data,
+                    IsAuthenticated = block.WasRead
+                });
+            }
+
+            return sector;
+        }
 
         public GenericChipModel GenericChip { get; set; }
         public MifareDesfireChipModel DesfireChip { get; set; }

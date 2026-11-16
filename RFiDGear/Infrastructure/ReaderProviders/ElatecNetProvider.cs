@@ -1,6 +1,7 @@
 ﻿using ByteArrayHelper.Extensions;
 using Elatec.NET;
 using Elatec.NET.Cards.Mifare;
+using RFiDGear.Infrastructure.Classic;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
@@ -350,32 +351,96 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        /// <inheritdoc />
-        public async override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        /// <summary>
+        /// Searches for the chip and gives the reader's access to it for a Classic operation. Overridden by the tests.
+        /// </summary>
+        /// <returns>The access, or <c>null</c> when the reader is not connected or finds no chip.</returns>
+        protected virtual async Task<IClassicPort> OpenClassicPortAsync()
         {
-            await _comPortLock.WaitAsync();
+            if (readerDevice == null || !readerDevice.IsConnected)
+            {
+                return null;
+            }
+
             try
             {
-                return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, null);
+                if (await readerDevice.SearchTagAsync() == null)
+                {
+                    return null;
+                }
             }
-            finally
+            catch (Exception e)
             {
-                _comPortLock.Release();
+                Log.ForContext<ElatecNetProvider>().Debug(e, "No chip on the Elatec reader.");
+
+                return null;
             }
+
+            // The size is what the last read of the chip found; a chip of another kind is no Classic chip, and then it is not guessed.
+            return new ElatecClassicPort(
+                readerDevice,
+                ClassicLayout.TryGetSize(GenericChip?.CardType ?? CARD_TYPE.NOTAG, out var size) ? size : null);
         }
 
         /// <inheritdoc />
-        public async override Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
+        public async override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
-            await _comPortLock.WaitAsync();
-            try
+            var keysAreKeys = ClassicSectorKeys.TryCreate(aKey, bKey, out var keys);
+
+            using (keys)
             {
-                return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
+                await _comPortLock.WaitAsync();
+
+                try
+                {
+                    // The sector of this read is made under the lock and set only under it: a read that waited, or one that is refused before
+                    // it starts, cannot replace the sector of another read in the middle of it.
+                    Sector = new MifareClassicSectorModel();
+
+                    // A key that is no key never reaches the chip: it is a failed authentication, as it always was.
+                    if (!keysAreKeys)
+                    {
+                        return ERROR.AuthFailure;
+                    }
+
+                    var port = await OpenClassicPortAsync();
+
+                    if (port == null)
+                    {
+                        return ERROR.TransportError;
+                    }
+
+                    var read = await new ClassicOperations(port).ReadSectorAsync(sectorNumber, keys);
+
+                    Sector = ToSectorModel(read);
+
+                    return read.Error;
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
+
+                    return ERROR.TransportError;
+                }
+                finally
+                {
+                    _comPortLock.Release();
+                }
             }
-            finally
-            {
-                _comPortLock.Release();
-            }
+        }
+
+        /// <summary>
+        /// Writing a whole sector is not available yet: it answers <see cref="ERROR.ProtocolConstraint"/> and touches no chip. The method
+        /// that was here wrote the buffer to the block 0 to 3 of the chip, whatever sector was meant.
+        /// </summary>
+        /// <param name="sectorNumber">The sector.</param>
+        /// <param name="aKey">Key A.</param>
+        /// <param name="bKey">Key B.</param>
+        /// <param name="buffer">The data.</param>
+        /// <returns><see cref="ERROR.ProtocolConstraint"/>.</returns>
+        public override Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
+        {
+            return Task.FromResult(ERROR.ProtocolConstraint);
         }
 
 
@@ -393,114 +458,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             bool _useMADToAuth, bool _aiToUseIsMAD)
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sectorNumber"></param>
-        /// <param name="aKey"></param>
-        /// <param name="bKey"></param>
-        /// <param name="buffer"></param>
-        /// <returns></returns>
-        private async Task<ERROR> ReadWriteAccessOnClassicSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
-        {
-            if (!readerDevice.IsConnected)
-            {
-                return ERROR.TransportError;
-            }
-
-            try { await readerDevice.SearchTagAsync(); } catch { }
-
-            Sector = new MifareClassicSectorModel();
-
-            var elatecSpecificSectorNumber = sectorNumber > 31 ? (sectorNumber - 32) * 4 + 32 : sectorNumber; // elatec uses special sectornumbers
-
-            for (byte k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
-            {
-                DataBlock = new MifareClassicDataBlockModel(
-                    (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                    k);
-
-                try
-                {
-                    var isAuth = false;
-
-                    try
-                    {
-                        await readerDevice.MifareClassic_LoginAsync(aKey, 0, (byte)elatecSpecificSectorNumber);
-                        isAuth = true;
-                    }
-                    catch
-                    {
-                        isAuth = false;
-                    }
-
-                    if (buffer == null || buffer.Length != 16 && isAuth) // Read Mode
-                    {
-                        try
-                        {
-                            var data = await readerDevice.MifareClassic_ReadBlockAsync((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k));
-
-                            if (data.Length > 1)
-                            {
-                                DataBlock.Data = data;
-                                DataBlock.IsAuthenticated = true;
-                                Sector.IsAuthenticated = isAuth;
-                                Sector.DataBlock.Add(DataBlock);
-                            }
-                        }
-                        catch // No Read Access Allowed, try bKey
-                        {
-                            try
-                            {
-                                await readerDevice.MifareClassic_LoginAsync(bKey, 1, (byte)elatecSpecificSectorNumber);
-                                isAuth = true;
-
-                                var data = await readerDevice.MifareClassic_ReadBlockAsync((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k));
-
-                                if (data.Length > 1)
-                                {
-                                    DataBlock.Data = data;
-                                    DataBlock.IsAuthenticated = true;
-                                    Sector.IsAuthenticated = isAuth;
-                                    Sector.DataBlock.Add(DataBlock);
-                                }
-                            }
-                            catch
-                            {
-                                isAuth = false;
-                                Sector.IsAuthenticated = false;
-                                DataBlock.IsAuthenticated = false; // finally failed to read data
-                            }
-                        }
-                    } // read Data
-
-                    else if (buffer != null && buffer.Length == 16)
-                    {
-                        try
-                        {
-                            await readerDevice.MifareClassic_WriteBlockAsync(buffer, k);
-                            return ERROR.NoError;
-                        }
-                        catch
-                        {
-                            return ERROR.AuthFailure;
-                        }
-                    } // write Data
-                }
-                catch
-                {
-                    return ERROR.TransportError; // IO ElatecError
-                }
-            }
-
-            if (Sector.IsAuthenticated)
-            {
-                return ERROR.NoError; //NO ElatecError
-            }
-
-            return ERROR.AuthFailure; // Auth ElatecError
         }
 
         #endregion
