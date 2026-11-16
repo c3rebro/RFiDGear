@@ -53,10 +53,13 @@ folder, from Visual Studio and from `dotnet test`. It has five settings:
   depend on `readerScan`. `SECURE-KEYS.md` has the cases, the checklist for the
   ones that need a person, and how to clean up after an interrupted run.
 - `cardWrites`: also run the cases that write to the card
-  (`UltralightWorkflowTests`): on a chip of the Ultralight family they write
-  one page of the user memory and put it back, and they try a write to a
-  protected page that must be refused. It has no effect while `readerScan` is
-  false. `ULTRALIGHT.md` has the cases and the checklist.
+  (`UltralightWorkflowTests`, `ClassicWorkflowTests`): on a chip of the
+  Ultralight family they write one page of the user memory and put it back, and
+  they try a write to a protected page that must be refused; on a MIFARE
+  Classic card as it left the factory they write a block, a sector and an
+  application through a MAD and put everything back. It has no effect while
+  `readerScan` is false. `ULTRALIGHT.md` and `CLASSIC.md` have the cases and
+  the checklists.
 - `readerKind`: `"auto"` (the default), `"elatec"` or `"pcsc"`. Which reader the
   tests use. With `"auto"` an Elatec TWN4 is tried first and a PC/SC reader
   after it, which means that a machine with both always used the Elatec reader.
@@ -176,6 +179,15 @@ family on a real card: four cases, of which two write to the card and need
 gives, and has the checklist for the cards and steps that are not automated.
 `HilUltralightScenarioSelfCheckTests` runs the same steps against readers that
 hold a chip in memory.
+
+**The MIFARE Classic cases:**
+
+`ClassicWorkflowTests` read and write a MIFARE Classic card as it left the
+factory: five cases, of which three write to the card and need `cardWrites`.
+`CLASSIC.md` says what each does, what each reader gives, how to put a card back
+when the MAD case stopped half way, and has the checklist for the steps that are
+not automated (the TWN4 has not been tried on a card at all).
+`HilClassicScenarioSelfCheckTests` runs the same steps against a chip in memory.
 
 **The DESFire workflow tests:**
 
