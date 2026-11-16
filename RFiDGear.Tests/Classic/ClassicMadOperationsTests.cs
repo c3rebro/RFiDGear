@@ -703,6 +703,55 @@ namespace RFiDGear.Tests.Classic
             Assert.Null(tooMuch.Data);
         }
 
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        public async Task AnExplicitStart_ThatSkipsASectorTheApplicationOwnsAlready_IsRefused_AndNothingIsWritten(int start)
+        {
+            // The AID owns sector 1. A write that starts behind it would leave sector 1 registered, and a read would return its old bytes first.
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+
+            var result = await Ops(chip).WriteApplicationAsync(Request(start: start));
+
+            Assert.Equal(ERROR.ProtocolConstraint, result.Error);
+            Assert.Equal(ClassicMadStatus.SkipsListedSectors, result.Status);
+            Assert.Equal(0, chip.Writes);
+        }
+
+        [Fact]
+        public async Task AnExplicitStart_AtTheFirstSectorTheApplicationOwns_IsFine_AndAnApplicationThatStartsAnywhereReadsBackAsWritten()
+        {
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+            var first = await Ops(chip).WriteApplicationAsync(Request(data: Pattern(0x10, 20)));
+
+            Assert.True(first.Succeeded);
+
+            // Another application, which starts where it wants to, is read as written.
+            var data = Pattern(0x60, 70);
+            var second = await Ops(chip).WriteApplicationAsync(Request(aid: 0x4321, start: 5, data: data));
+            var read = await Ops(chip).ReadApplicationAsync(0x4321, 70, Keys(KeyAText, null), Keys(Ff, Ff));
+
+            Assert.True(second.Succeeded);
+            Assert.True(read.Succeeded);
+            Assert.Equal(data, read.Data);
+        }
+
+        [Fact]
+        public async Task NewKeys_AreWrittenToASectorWhoseAccessBitsAreFinal_AsTheyAre()
+        {
+            // The trailer 000 can never be changed in its access bits, and the keys may change: the bits are written again as they are, and
+            // nothing is written before that is known.
+            var chip = ChipWithMad(ClassicMadVersion.Mad1, ClassicCardSize.K4, mad => mad.SetAid(1, Aid));
+            var finalBits = new ClassicAccessBits(0, 0, 0, 0);
+
+            chip.SetTrailer(1, Ff6, finalBits, 0x69, Ff6);
+
+            var result = await Ops(chip).WriteApplicationAsync(Request(start: 0, newApplicationKeys: Keys(AppKeyAText, AppKeyBText)));
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(finalBits.BuildTrailer(Convert.FromHexString(AppKeyAText), 0x69, Convert.FromHexString(AppKeyBText)), chip.Peek(7));
+        }
+
         [Fact]
         public async Task AShortWrite_WritesOnlyTheBlocksThatTheDataReaches()
         {

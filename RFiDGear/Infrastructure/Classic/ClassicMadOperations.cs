@@ -34,7 +34,10 @@ namespace RFiDGear.Infrastructure.Classic
         WrongRequest = 7,
 
         /// <summary>A trailer is to be written, and a key that goes into it is neither new nor given as the current one.</summary>
-        KeysMissing = 8
+        KeysMissing = 8,
+
+        /// <summary>The write starts at a sector after sectors that the directory already lists for the AID: they would stay, and a read would return their old bytes first.</summary>
+        SkipsListedSectors = 9
     }
 
     /// <summary>The result of <see cref="ClassicMadOperations.ReadMadAsync(ClassicSectorKeys)"/>.</summary>
@@ -423,6 +426,10 @@ namespace RFiDGear.Infrastructure.Classic
         private static ClassicApplicationWriteResult Refused(ClassicMadStatus status) =>
             new ClassicApplicationWriteResult(ERROR.ProtocolConstraint, status, Array.Empty<int>(), 0, null);
 
+        // The policy refused a block in the middle of the writes: the blocks that were written before it are said, and the block that was refused.
+        private static ClassicApplicationWriteResult Violated(IReadOnlyList<int> sectors, int written, int? block) =>
+            new ClassicApplicationWriteResult(ERROR.ProtocolConstraint, ClassicMadStatus.WrongRequest, sectors, written, block);
+
         private static ClassicApplicationWriteResult Complete(IReadOnlyList<int> sectors, int written) =>
             new ClassicApplicationWriteResult(ERROR.NoError, ClassicMadStatus.Ok, sectors, written, null);
 
@@ -535,6 +542,12 @@ namespace RFiDGear.Infrastructure.Classic
                 return new SectorPlan(ClassicMadStatus.Ok, covered);
             }
 
+            // The application reads its sectors in ascending order: sectors that it owns before the start would be read first, with their old bytes.
+            if (mad.FindSectors(request.Aid).Any(owned => owned < request.StartSector))
+            {
+                return new SectorPlan(ClassicMadStatus.SkipsListedSectors, new List<int>());
+            }
+
             var sectors = new List<int>();
             var sector = request.StartSector;
 
@@ -595,7 +608,7 @@ namespace RFiDGear.Infrastructure.Classic
                 {
                     return result.Violation == ClassicWriteViolation.None
                         ? Failed(result.Error, sectors, written, result.FailedBlock)
-                        : Refused(ClassicMadStatus.WrongRequest);
+                        : Violated(sectors, written, result.FailedBlock);
                 }
 
                 offset += chunk.Length;
@@ -661,7 +674,7 @@ namespace RFiDGear.Infrastructure.Classic
                 {
                     return result.Violation == ClassicWriteViolation.None
                         ? Failed(result.Error, sectors, written, block)
-                        : Refused(ClassicMadStatus.WrongRequest);
+                        : Violated(sectors, written, block);
                 }
 
                 written += result.BlocksWritten;
@@ -736,7 +749,7 @@ namespace RFiDGear.Infrastructure.Classic
                 {
                     return result.Violation == ClassicWriteViolation.None
                         ? Failed(result.Error, sectors, written, block)
-                        : Refused(ClassicMadStatus.WrongRequest);
+                        : Violated(sectors, written, block);
                 }
 
                 written += result.BlocksWritten;
@@ -746,6 +759,11 @@ namespace RFiDGear.Infrastructure.Classic
         }
 
         // ── the keys of the application ──
+
+        // New keys with the access bits that the sector has already: writing the same bits again locks nothing that was not locked (the bits that
+        // can never be changed again, like 000, are the ones of a sector whose keys may change), so they need no say-so. New access bits that are
+        // final are refused before the first block, in IsPossible.
+        private static readonly ClassicWriteOptions KeepsTheBits = new ClassicWriteOptions { AllowTrailer = true, AllowFinalAccessBits = true };
 
         private async Task<ClassicApplicationWriteResult> RekeyAsync(ClassicApplicationWrite request, List<int> sectors, int writtenBefore)
         {
@@ -775,13 +793,13 @@ namespace RFiDGear.Infrastructure.Classic
                 }
 
                 var trailer = bits.BuildTrailer(keyA, read.Blocks[^1].Data![9], keyB);
-                var result = await operations.WriteBlockAsync(ClassicLayout.TrailerBlock(sector), trailer, request.ApplicationKeys!, WithTrailer);
+                var result = await operations.WriteBlockAsync(ClassicLayout.TrailerBlock(sector), trailer, request.ApplicationKeys!, request.NewAccessBits == null ? KeepsTheBits : WithTrailer);
 
                 if (!result.Succeeded)
                 {
                     return result.Violation == ClassicWriteViolation.None
                         ? Failed(result.Error, sectors, written, ClassicLayout.TrailerBlock(sector))
-                        : Refused(ClassicMadStatus.WrongRequest);
+                        : Violated(sectors, written, ClassicLayout.TrailerBlock(sector));
                 }
 
                 written += result.BlocksWritten;
