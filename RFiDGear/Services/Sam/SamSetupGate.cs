@@ -6,7 +6,7 @@ using RFiDGear.Infrastructure.ExtensionHost;
 namespace RFiDGear.Services.Sam
 {
     /// <summary>
-    /// Holds the reader for as long as the SAM setup is open: the slot of the coordinator (as for a reader scan of an extension: no
+    /// Holds the reader and the SAM for as long as the SAM setup is open: the slot of the coordinator (as for a reader scan of an extension: no
     /// load, run, project edit or scan is admitted meanwhile, and the setup is not admitted while one is in progress) and the gate
     /// of the reader (the reads of the main window and the polls of the automatic mode). The setup keeps a host session of the
     /// SAM open between its steps, and any other connect to the same reader (a task, the automatic mode, a read) could reset the
@@ -48,6 +48,14 @@ namespace RFiDGear.Services.Sam
                     return false;
                 }
 
+                // The SAM itself: a command that uses a key of the SAM holds it too, and two connections would share its state.
+                if (!SamPortGate.TryEnter())
+                {
+                    gate.Exit();
+
+                    return false;
+                }
+
                 var flagSet = false;
 
                 try
@@ -73,6 +81,7 @@ namespace RFiDGear.Services.Sam
                         setBusy(false);
                     }
 
+                    SamPortGate.Exit();
                     gate.Exit();
                 }
             }
