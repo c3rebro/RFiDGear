@@ -318,7 +318,7 @@ namespace RFiDGear.HIL.Tests
         }
 
         // Whether the sector reads with the factory key and its trailer is the factory trailer (the access bits, the general purpose byte, key B).
-        private static async Task<bool> HasTheFactoryTrailerAsync(ReaderDevice device, int sector)
+        internal static async Task<bool> HasTheFactoryTrailerAsync(ReaderDevice device, int sector)
         {
             var read = await device.ReadMifareClassicSectorAsync(sector, Factory, Factory);
 

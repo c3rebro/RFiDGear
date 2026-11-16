@@ -293,21 +293,84 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(before, Everything(chip, ClassicCardSize.K4));
         }
 
-        [Fact]
-        public async Task AMadCase_WhoseCardIsReplacedDuringThePutBack_WritesNothingMoreToTheOtherCard()
+        [Theory]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
+        [InlineData(11)]
+        [InlineData(12)]
+        public async Task AMadCase_WhoseCardIsReplacedDuringThePutBack_WritesNothingMoreToTheOtherCard(int replacedFrom)
         {
+            // The reader is asked 4 times before the put-back (before the read, after it, in the steps, before the put-back), then once before each
+            // of the 2 trailers and once before each of the 7 blocks: from the answer number replacedFrom on, another card is on the reader.
             var chip = new SimulatedClassicChip();
             var asked = 0;
+            var writesBeforeThePutBack = -1;
+            var writesWhenReplaced = -1;
 
-            // Before the read, after it, in the steps, before the put-back: the card of the case. Then every answer is another card.
-            Task<string?> Replaced() => Task.FromResult<string?>(asked++ < 4 ? "04AABBCC" : "04112233");
+            Task<string?> Replaced()
+            {
+                if (asked == 3)
+                {
+                    writesBeforeThePutBack = chip.Writes;
+                }
+
+                if (asked == replacedFrom)
+                {
+                    writesWhenReplaced = chip.Writes;
+                }
+
+                return Task.FromResult<string?>(asked++ < replacedFrom ? "04AABBCC" : "04112233");
+            }
 
             var failure = await FailureOf(() => ClassicScenarios.AnApplicationIsWrittenThroughTheMadAndPutBackAsync(new ScenarioReader(chip), ClassicCardSize.K4, Replaced));
 
             Assert.Contains("replaced during the put-back", failure.Message, StringComparison.Ordinal);
 
-            // Nothing was put back: the data of the case is still in block 4.
-            Assert.Contains(chip.Peek(4), b => b != 0);
+            // Each answer of the put-back is followed by exactly one write, and the first comes before any: the writes up to the answer that
+            // said "another card" are the writes of the case and one for each answer before it, and none came after it.
+            Assert.Equal(writesBeforeThePutBack + (replacedFrom - 4), writesWhenReplaced);
+            Assert.Equal(writesWhenReplaced, chip.Writes);
+        }
+
+        [Fact]
+        public async Task ATrailerIsTheFactoryTrailer_OnlyWithTheFactoryKeys_TheFactoryAccessBitsAndTheFactoryByteAndKeyB()
+        {
+            var chip = new SimulatedClassicChip();
+            var ff = Convert.FromHexString("FFFFFFFFFFFF");
+
+            chip.SetTrailer(2, ff, ClassicAccessBits.Transport, 0x00, ff);
+            chip.SetTrailer(3, ff, new ClassicAccessBits(0, 0, 1, 4), 0x69, ff);
+            chip.SetTrailer(4, ff, ClassicAccessBits.Transport, 0x69, Convert.FromHexString("B0B1B2B3B4B5"));
+            chip.SetTrailer(5, Convert.FromHexString("A0A1A2A3A4A5"), ClassicAccessBits.Transport, 0x69, ff);
+
+            var reader = new ScenarioReader(chip);
+
+            Assert.True(await ClassicScenarios.HasTheFactoryTrailerAsync(reader, 1));
+            Assert.False(await ClassicScenarios.HasTheFactoryTrailerAsync(reader, 2));
+            Assert.False(await ClassicScenarios.HasTheFactoryTrailerAsync(reader, 3));
+            Assert.False(await ClassicScenarios.HasTheFactoryTrailerAsync(reader, 4));
+            Assert.False(await ClassicScenarios.HasTheFactoryTrailerAsync(reader, 5));
+        }
+
+        [Fact]
+        public async Task ASectorWithTheFactoryKeysAndOtherAccessBitsForADataBlock_IsNoFactorySector_AndMakesTheCasesSkip()
+        {
+            // Key B is data (the transport trailer) and readable, but the data blocks do not have the conditions of a factory sector.
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(1, Convert.FromHexString("FFFFFFFFFFFF"), new ClassicAccessBits(0, 0, 1, 4), 0x69, Convert.FromHexString("FFFFFFFFFFFF"));
+
+            var reader = new ScenarioReader(chip);
+
+            await SkipOf(() => ClassicScenarios.AWrongKeyIsRefused_AndTheNextReadWorksAsync(reader));
+            await SkipOf(() => ClassicScenarios.ABlockIsWrittenReadBackAndPutBackAsync(reader, Same));
+
+            Assert.Equal(0, chip.Writes);
         }
 
         [Fact]
