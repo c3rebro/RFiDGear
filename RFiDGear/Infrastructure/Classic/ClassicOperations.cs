@@ -360,6 +360,15 @@ namespace RFiDGear.Infrastructure.Classic
             return look.Error == ERROR.TransportError ? ERROR.TransportError : ERROR.AuthFailure;
         }
 
+        // A refused access halts the chip: it is woken once, so that the next call finds it awake. The verification is not repeated and the write
+        // is not either; a chip that is gone is a transport error, and anything else is the answer that the block did not read back as written.
+        private async Task<ERROR> UnknownAfterARefusalAsync()
+        {
+            var look = await port.ReselectAsync();
+
+            return look.Error == ERROR.TransportError ? ERROR.TransportError : ERROR.Unknown;
+        }
+
         // A data block reads back as it was written. A trailer is read back with the key A that was written (the old keys are gone): its access
         // bits and general purpose byte must read back as written.
         private async Task<ERROR> VerifyWrittenAsync(SectorState state, int block, byte[] data)
@@ -375,7 +384,7 @@ namespace RFiDGear.Infrastructure.Classic
 
                 if (!login.Succeeded)
                 {
-                    return ERROR.Unknown;
+                    return await UnknownAfterARefusalAsync();
                 }
 
                 state.LoggedIn = ClassicKeyType.KeyA;
@@ -390,7 +399,7 @@ namespace RFiDGear.Infrastructure.Classic
 
             if (!read.Succeeded)
             {
-                return ERROR.Unknown;
+                return await UnknownAfterARefusalAsync();
             }
 
             return ReadsBackAsWritten(block, data, read.Data!) ? ERROR.NoError : ERROR.Unknown;

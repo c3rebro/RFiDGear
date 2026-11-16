@@ -122,6 +122,54 @@ namespace RFiDGear.Tests.Classic
             Assert.Equal(approved, chip.Peek(8).Concat(chip.Peek(9)).Concat(chip.Peek(10)).ToArray());
         }
 
+        // ── a refused read back halts the chip: it is woken once ──
+
+        [Fact]
+        public async Task ARefusedReadBack_IsReported_AndTheChipIsWokenOnce_SoThatTheNextCallWorks()
+        {
+            var chip = new SimulatedClassicChip();
+
+            // The read back of the block that was written is refused (the chip is halted by it).
+            chip.FailNextReadOf(5);
+
+            var result = await new ClassicOperations(chip).WriteBlockAsync(5, new byte[16], Keys(Ff, null), ClassicWriteOptions.DataOnly);
+
+            Assert.Equal(ERROR.Unknown, result.Error);
+            Assert.Equal(1, chip.Writes);
+            Assert.Equal(1, chip.Reselects);
+
+            // The next call with key A only works the first time (a halted chip fails the first command).
+            var next = await new ClassicOperations(chip).ReadSectorAsync(1, Keys(Ff, null));
+
+            Assert.True(next.IsAuthenticated);
+        }
+
+        [Fact]
+        public async Task ARefusedLoginWithTheNewKeyA_IsReported_AndTheChipIsWokenOnce()
+        {
+            // A chip that judges a login at once, and stores the key A that it was given wrong: the login with the new key A is refused.
+            var chip = new SimulatedClassicChip { JudgesLoginAtOnce = true, CorruptsWrites = true, CorruptedByte = 0 };
+            var trailer = ClassicAccessBits.Transport.BuildTrailer(KeyA, 0x00, KeyB);
+
+            var result = await new ClassicOperations(chip).WriteBlockAsync(7, trailer, Keys(Ff, null), new ClassicWriteOptions { AllowTrailer = true });
+
+            Assert.Equal(ERROR.Unknown, result.Error);
+            Assert.Equal(1, chip.Writes);
+            Assert.Equal(1, chip.Reselects);
+        }
+
+        [Fact]
+        public async Task AByteThatDoesNotReadBackAsWritten_NeedsNoWake()
+        {
+            // The chip answered, so it is awake: waking it would halt it.
+            var chip = new SimulatedClassicChip { CorruptsWrites = true, CorruptedByte = 5 };
+
+            var result = await new ClassicOperations(chip).WriteBlockAsync(5, new byte[16], Keys(Ff, null), ClassicWriteOptions.DataOnly);
+
+            Assert.Equal(ERROR.Unknown, result.Error);
+            Assert.Equal(0, chip.Reselects);
+        }
+
         // ── what a trailer reads back as ──
 
         [Fact]
