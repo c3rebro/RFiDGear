@@ -242,8 +242,13 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   go of) through three virtual operations of `ReaderDevice`
   (`SupportsDesfireSamKeys`, `AuthenticateMifareDesfireWithSamAsync`,
   `ChangeMifareDesfireKeyWithSamAsync`); the TWN4 keeps the defaults
-  (`ProtocolConstraint`), and no task command calls them yet. What the SAM and
-  the card did: `RFiDGear.HIL.Tests/SAM-PICC-FIRST-CONTACT.md`.
+  (`ProtocolConstraint`). Four commands of the DESFire task call them
+  (`MifareDesfireSetupViewModel.Sam.cs`): the task "Check: App Key", "Change
+  PICC Master Key" and "Change Application Key", and the button that
+  authenticates the PICC master key; every other command and every check task
+  refuses a key of the SAM. What the SAM and the card did:
+  `RFiDGear.HIL.Tests/SAM-PICC-FIRST-CONTACT.md`; the checklist of the
+  commands, not run on a card yet: `RFiDGear.HIL.Tests/SAM-PICC.md`.
 - Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (a read-only case, a case that
   writes a key entry, and the checklist for the window).
   `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md` is the record of the first
@@ -442,7 +447,8 @@ that can use one passes `AllOrNothing` and reads `AcquiredKeys.SamKey(slot)`;
 all its slots must be keys of the SAM, because the SAM builds the cryptogram of
 a key change from the old key and the new one. `AcquiredKeys.Hex` throws for
 such a slot. The key manager lists the SAM only for the slots in
-`SamKeySlots.Offered`, which is empty until a command can use it.
+`SamKeySlots.Offered`: the keys of the authentication and of the key changes
+of the PICC and of an application, which four commands use.
 
 An extension that needs more than the contract (services, a database driver,
 a PDF engine) keeps that code in a support library named

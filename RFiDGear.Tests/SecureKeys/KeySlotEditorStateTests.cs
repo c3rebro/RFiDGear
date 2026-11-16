@@ -58,14 +58,24 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
-        public void The_sam_is_no_provider_to_bind_a_slot_to_while_no_command_can_use_it()
+        public void The_sam_is_a_provider_only_for_the_slots_that_a_command_can_use_a_key_of_it_for()
         {
             var sam = new SecureKeyProviderInfo(SamKeyProvider.ProviderId, SamKeyProvider.DisplayName);
 
+            // The slot of the tests here is the read key of a file: no command can use a key of the SAM for it.
             var state = NewState(new FakeHost(), new ScriptedDialogs(), new[] { CredentialManager, sam });
+            var authenticating = new KeySlotEditorState(
+                new FakeHost(),
+                SecureKeySlots.DesfirePiccCurrent,
+                new[] { CredentialManager, sam },
+                new ScriptedDialogs(),
+                NewKeyStore(new FakeCredentialStore()),
+                TestText.English);
 
             Assert.Equal(new[] { WindowsCredentialKeyProvider.ProviderId }, state.Providers.Select(provider => provider.Id));
             Assert.False(state.ShowProviderChoice);
+            Assert.Equal(new[] { WindowsCredentialKeyProvider.ProviderId, SamKeyProvider.ProviderId }, authenticating.Providers.Select(provider => provider.Id));
+            Assert.True(authenticating.ShowProviderChoice);
         }
 
         [Fact]

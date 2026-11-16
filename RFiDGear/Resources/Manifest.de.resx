@@ -1895,6 +1895,33 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusKeyUnavailable" xml:space="preserve">
     <value>{0}: Der Schlüssel für {1} ist nicht verfügbar; es wurde nichts an die Karte gesendet.</value>
   </data>
+  <data name="textBoxStatusSamAuthenticated" xml:space="preserve">
+    <value>{0}: Mit einem Schlüssel der SAM an AppID {1}, Schlüssel {2}, authentisiert.</value>
+  </data>
+  <data name="textBoxStatusSamKeyChanged" xml:space="preserve">
+    <value>{0}: Schlüssel {2} von AppID {1} mit Schlüsseln der SAM geändert und durch Authentisierung mit dem neuen Schlüssel geprüft. Die Karte hat die Schlüsselversion des SAM-Eintrags.</value>
+  </data>
+  <data name="textBoxStatusSamFailed" xml:space="preserve">
+    <value>{0}: Der Vorgang mit der SAM hat nicht funktioniert: {1} (SAM {2}, Karte {3}).</value>
+  </data>
+  <data name="textBoxStatusSamKeyMayHaveChanged" xml:space="preserve">
+    <value>{0}: Die Karte enthält möglicherweise den neuen Schlüssel, obwohl der Wechsel nicht bestätigt wurde. Authentisieren Sie erneut, bevor Sie den Wechsel wiederholen.</value>
+  </data>
+  <data name="textBoxStatusSamNotSupported" xml:space="preserve">
+    <value>{0}: Ein Schlüssel der SAM kann nur verwendet werden, um einen PICC- oder Anwendungsschlüssel zu authentisieren und diese Schlüssel zu wechseln, mit einem PC/SC-Leser.</value>
+  </data>
+  <data name="textBoxStatusSamMixedKeys" xml:space="preserve">
+    <value>{0}: Ein Befehl, der einen Schlüssel der SAM verwendet, braucht alle seine Schlüssel aus der SAM.</value>
+  </data>
+  <data name="textBoxStatusSamNotConfigured" xml:space="preserve">
+    <value>{0}: Für die SAM ist kein Leser eingestellt. Wählen Sie ihn in den Leser-Einstellungen.</value>
+  </data>
+  <data name="labelKeyManagerSamReference" xml:space="preserve">
+    <value>Schlüsseleintrag und Version</value>
+  </data>
+  <data name="toolTipKeySlotReferenceSam" xml:space="preserve">
+    <value>Der Schlüsseleintrag der SAM (1 bis 127) und die Version des Schlüssels darin, als Eintrag:Version, zum Beispiel 3:0. Das Projekt speichert diese Referenz, nie einen Schlüssel.</value>
+  </data>
   <data name="ENUM.ERROR.KeyUnavailable" xml:space="preserve">
     <value>Schlüssel nicht verfügbar</value>
   </data>

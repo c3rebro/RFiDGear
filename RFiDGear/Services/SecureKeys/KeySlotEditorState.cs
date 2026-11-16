@@ -138,6 +138,10 @@ namespace RFiDGear.Services.SecureKeys
         public bool ProviderOffersStoreKey =>
             IsReferenceMode && string.Equals(ProviderId, WindowsCredentialKeyProvider.ProviderId, StringComparison.Ordinal);
 
+        /// <summary>Gets whether the slot names a key entry of the SAM: its reference is the entry and the version, not the name of a stored key.</summary>
+        public bool ProviderIsSam =>
+            IsReferenceMode && string.Equals(ProviderId, SamKeyProvider.ProviderId, StringComparison.Ordinal);
+
         /// <summary>Gets the command that switches between the key in the task and a reference.</summary>
         public ICommand ToggleModeCommand { get; }
 

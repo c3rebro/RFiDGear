@@ -1,8 +1,10 @@
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
+using RFiDGear.Services.Sam;
 
 using System;
 using System.Collections.Generic;
@@ -55,6 +57,42 @@ namespace RFiDGear.Tests.KeySlots
 
         /// <summary>Gets or sets whether the reader behaves like a PC/SC reader (see <see cref="ReaderDevice.IsPcscReader"/>).</summary>
         public bool Pcsc { get; set; }
+
+        /// <summary>Gets or sets whether the reader can authenticate and change keys with keys that stay in a SAM (see <see cref="ReaderDevice.SupportsDesfireSamKeys"/>).</summary>
+        public bool SupportsSam { get; set; }
+
+        /// <summary>Gets or sets what the two operations with a SAM answer.</summary>
+        public SamPiccResult SamAnswer { get; set; } = SamPiccResult.Ok;
+
+        /// <summary>Gets or sets what happens while an operation with a SAM is under way (a person editing the dialog, for instance).</summary>
+        public Action? WhileASamOperationRuns { get; set; }
+
+        /// <summary>Gets the authentications with a key of the SAM that reached the reader: references, never keys.</summary>
+        public List<DesfireSamAccess> SamAuthentications { get; } = new List<DesfireSamAccess>();
+
+        /// <summary>Gets the key changes with keys of the SAM that reached the reader: references, never keys.</summary>
+        public List<DesfireSamKeyChange> SamChanges { get; } = new List<DesfireSamKeyChange>();
+
+        /// <inheritdoc />
+        public override bool SupportsDesfireSamKeys => SupportsSam;
+
+        /// <inheritdoc />
+        public override Task<SamPiccResult> AuthenticateMifareDesfireWithSamAsync(DesfireSamAccess access)
+        {
+            SamAuthentications.Add(access);
+            WhileASamOperationRuns?.Invoke();
+
+            return Task.FromResult(SamAnswer);
+        }
+
+        /// <inheritdoc />
+        public override Task<SamPiccResult> ChangeMifareDesfireKeyWithSamAsync(DesfireSamKeyChange change)
+        {
+            SamChanges.Add(change);
+            WhileASamOperationRuns?.Invoke();
+
+            return Task.FromResult(SamAnswer);
+        }
 
         /// <inheritdoc />
         public override bool IsConnected => Connected ?? (Card != null || base.IsConnected);

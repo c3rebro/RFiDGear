@@ -178,7 +178,7 @@ namespace RFiDGear.Services.SecureKeys
         public string KeyStoreLabel => _text("labelKeyManagerKeyStore");
 
         /// <summary>Gets the label of the name of the key.</summary>
-        public string KeyNameLabel => _text("labelKeyManagerKeyName");
+        public string KeyNameLabel => _text(_state.ProviderIsSam ? "labelKeyManagerSamReference" : "labelKeyManagerKeyName");
 
         /// <summary>Gets the label of the box in which a key is entered, which says how many digits it has.</summary>
         public string KeyPrompt => string.Format(CultureInfo.CurrentCulture, _text("labelKeySlotStoreKeyPrompt"), _state.ExpectedKeyHexLength);
@@ -190,7 +190,7 @@ namespace RFiDGear.Services.SecureKeys
         public string ProviderToolTip => _text("toolTipKeySlotProvider");
 
         /// <summary>Gets the tooltip of the box for the name of the key.</summary>
-        public string ReferenceToolTip => _text("toolTipKeySlotReference");
+        public string ReferenceToolTip => _text(_state.ProviderIsSam ? "toolTipKeySlotReferenceSam" : "toolTipKeySlotReference");
 
         /// <summary>Gets the text of the button that stores the entered key.</summary>
         public string StoreButtonText => _text("buttonContentKeyManagerStoreKey");
