@@ -37,6 +37,16 @@ namespace RFiDGear.Services.Sam
         Task ChangeKeyEntryAsync(byte keyEntryNo, SamAv3KeyEntry entry);
 
         /// <summary>
+        /// Writes a DESFire native TDEA key (DES or 2K3DES, 16 bytes) into a key entry as a key of the PICC key class (SAM_ChangeKeyEntry, SET
+        /// <c>0x0000</c>): the library only writes AES-128 entries. Only the entries 1 to 127; the settings are fixed.
+        /// </summary>
+        /// <param name="keyEntryNo">The key entry, 1 to 127.</param>
+        /// <param name="key">The 16 bytes of the key. The caller erases them.</param>
+        /// <param name="version">The key version.</param>
+        /// <returns>A task that ends when the SAM has answered.</returns>
+        Task WriteNativeKeyEntryAsync(byte keyEntryNo, byte[] key, byte version);
+
+        /// <summary>
         /// Reads the settings of a key entry back (SAM_GetKeyEntry under the secure session): what the SAM holds for it, never a key.
         /// Needs a host authentication. An answer that is not what a key entry looks like is <c>null</c>.
         /// </summary>
@@ -71,6 +81,28 @@ namespace RFiDGear.Services.Sam
         /// <inheritdoc />
         public Task ChangeKeyEntryAsync(byte keyEntryNo, SamAv3KeyEntry entry) =>
             _session.ChangeKeyEntryAsync(keyEntryNo, entry, allowMasterKeyChange: false, allowIrreversibleLock: false);
+
+        /// <inheritdoc />
+        public async Task WriteNativeKeyEntryAsync(byte keyEntryNo, byte[] key, byte version)
+        {
+            // ExecuteSecureAsync has none of the guards of ChangeKeyEntryAsync (the master entry, the lock): they are here. The settings are
+            // constants of SamKeyEntryFrame, never a caller's, so no lock bit and no host key can be written through this path.
+            if (keyEntryNo < 1 || keyEntryNo > 127)
+            {
+                throw new ArgumentOutOfRangeException(nameof(keyEntryNo), "Only the key entries 1 to 127 are written.");
+            }
+
+            var data = SamKeyEntryFrame.NativeTdeaPiccKey(key, version);
+
+            try
+            {
+                await _session.ExecuteSecureAsync(0xC1, keyEntryNo, 0xFF, data, null).ConfigureAwait(false);
+            }
+            finally
+            {
+                Array.Clear(data, 0, data.Length);
+            }
+        }
 
         /// <inheritdoc />
         public async Task<SamKeyEntryInfo?> ReadKeyEntryAsync(byte keyEntryNo)

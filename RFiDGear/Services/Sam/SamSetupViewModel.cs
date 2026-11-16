@@ -70,6 +70,25 @@ namespace RFiDGear.Services.Sam
         public string DisplayName { get; }
     }
 
+    /// <summary>One kind of key that the setup can write: what the person reads, and the kind it stands for.</summary>
+    internal sealed class SamEntryKindChoice
+    {
+        /// <summary>Creates the choice.</summary>
+        /// <param name="kind">The kind of key.</param>
+        /// <param name="displayName">What the person reads.</param>
+        internal SamEntryKindChoice(SamEntryKind kind, string displayName)
+        {
+            Kind = kind;
+            DisplayName = displayName;
+        }
+
+        /// <summary>Gets the kind of key.</summary>
+        public SamEntryKind Kind { get; }
+
+        /// <summary>Gets what the person reads.</summary>
+        public string DisplayName { get; }
+    }
+
     /// <summary>
     /// What the SAM setup of the menu shows and does: the SAMs that were found, and the four steps (check, authenticate,
     /// activate, write a key entry) of <see cref="SamSetupService"/>, each of them one attempt. No key is ever held here: a key
@@ -95,6 +114,8 @@ namespace RFiDGear.Services.Sam
         private bool _masterUsesFactoryKey = true;
         private string _masterReference = string.Empty;
         private string _newKeyReference = string.Empty;
+        private readonly IReadOnlyList<SamEntryKindChoice> _entryKinds;
+        private SamEntryKind _entryKind = SamEntryKind.Aes128;
         private string _entryNumberText = FirstEntry.ToString(CultureInfo.InvariantCulture);
         private string _versionText = string.Empty;
         private string _statusText = string.Empty;
@@ -114,6 +135,11 @@ namespace RFiDGear.Services.Sam
             _text = text ?? throw new ArgumentNullException(nameof(text));
 
             _storedKeys = new[] { new SamKeyChoice(string.Empty, _text("labelSamSetupEnterBelow")) };
+            _entryKinds = new[]
+            {
+                new SamEntryKindChoice(SamEntryKind.Aes128, _text("textSamSetupEntryKindAes")),
+                new SamEntryKindChoice(SamEntryKind.NativeTdea, _text("textSamSetupEntryKindNative")),
+            };
             _closeCommand = new RelayCommand(() => CloseRequested?.Invoke(this, EventArgs.Empty), () => CanClose);
             _refreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsRunning);
             _checkCommand = new AsyncRelayCommand(CheckAsync, () => CanCheck);
@@ -252,6 +278,16 @@ namespace RFiDGear.Services.Sam
             }
         }
 
+        /// <summary>Gets the kinds of key that can be written: AES-128, and a DESFire native key (DES or 2K3DES).</summary>
+        public IReadOnlyList<SamEntryKindChoice> EntryKinds => _entryKinds;
+
+        /// <summary>Gets or sets the kind of key that is written.</summary>
+        public SamEntryKind SelectedEntryKind
+        {
+            get => _entryKind;
+            set => SetProperty(ref _entryKind, value);
+        }
+
         /// <summary>Gets whether the entry number is one that may be written: 1 to 127.</summary>
         public bool IsEntryNumberValid => TryGetEntryNumber(out _);
 
@@ -335,6 +371,12 @@ namespace RFiDGear.Services.Sam
 
         /// <summary>Gets the label of the key entry number.</summary>
         public string EntryLabel => _text("labelSamSetupEntry");
+
+        /// <summary>Gets the label of the box for the kind of key.</summary>
+        public string EntryKindLabel => _text("labelSamSetupEntryKind");
+
+        /// <summary>Gets the tooltip of the box for the kind of key.</summary>
+        public string EntryKindToolTip => _text("toolTipSamSetupEntryKind");
 
         /// <summary>Gets the tooltip of the key entry number.</summary>
         public string EntryToolTip => _text("toolTipSamSetupEntry");
@@ -518,7 +560,7 @@ namespace RFiDGear.Services.Sam
                 return KeyWasTried(outcome.Result);
             });
 
-        /// <summary>Writes an AES-128 PICC key into the key entry that was chosen. Needs a host authentication first.</summary>
+        /// <summary>Writes a PICC key of the chosen kind (AES-128, or DES / 2K3DES native) into the key entry that was chosen. Needs a host authentication first.</summary>
         /// <param name="typedKey">What was typed into the box; used only when the key is not a stored one.</param>
         /// <returns><see langword="true"/> when the SAM was asked and the typed digits are no longer needed.</returns>
         internal Task<bool> WriteKeyAsync(SecureString? typedKey) =>
@@ -540,12 +582,14 @@ namespace RFiDGear.Services.Sam
                     return false;
                 }
 
-                var outcome = await _service.WriteKeyEntryAsync(entry, source);
+                // What the person chose now: the box may change while the SAM answers.
+                var kind = _entryKind;
+                var outcome = await _service.WriteKeyEntryAsync(entry, source, kind);
 
                 if (outcome.Result == SamStepResult.Done)
                 {
                     AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupWritten"), entry), false);
-                    ReportEntryCheck(entry, outcome.Check);
+                    ReportEntryCheck(entry, outcome.Check, kind);
                 }
                 else if (outcome.Result == SamStepResult.MayHaveTakenEffect)
                 {
@@ -595,18 +639,18 @@ namespace RFiDGear.Services.Sam
             int.TryParse(_entryNumberText, NumberStyles.None, CultureInfo.InvariantCulture, out entry) && entry >= FirstEntry && entry <= LastEntry;
 
         // What reading the entry back found, after the line that says that the key was written: the last line is the one in colour.
-        private void ReportEntryCheck(int entry, SamKeyEntryCheck check)
+        private void ReportEntryCheck(int entry, SamKeyEntryCheck check, SamEntryKind kind)
         {
             switch (check)
             {
                 case SamKeyEntryCheck.Matches:
-                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryVerified"), entry), false);
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text(kind == SamEntryKind.NativeTdea ? "messageSamSetupEntryVerifiedNative" : "messageSamSetupEntryVerified"), entry), false);
                     break;
                 case SamKeyEntryCheck.Disabled:
                     AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryDisabled"), entry), true);
                     break;
                 case SamKeyEntryCheck.WrongKind:
-                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryDiffers"), entry), true);
+                    AppendStatus(string.Format(CultureInfo.CurrentCulture, _text(kind == SamEntryKind.NativeTdea ? "messageSamSetupEntryDiffersNative" : "messageSamSetupEntryDiffers"), entry), true);
                     break;
                 case SamKeyEntryCheck.MissingKeepIv:
                     AppendStatus(string.Format(CultureInfo.CurrentCulture, _text("messageSamSetupEntryNoKeepIv"), entry), true);

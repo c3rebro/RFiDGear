@@ -244,6 +244,46 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public async Task The_key_type_box_offers_both_kinds_and_a_native_key_is_written_by_the_native_path()
+        {
+            var setup = new Setup();
+
+            await OnWindow(setup, async (window, viewModel) =>
+            {
+                Of<Button>(window, "CheckButton").Command.Execute(null);
+                await Until(() => viewModel.State == SamSetupState.Connected);
+
+                Click(Of<Button>(window, "AuthenticateButton"));
+                await Until(() => viewModel.State == SamSetupState.Authenticated);
+                await Settle(window);
+
+                var box = Of<ComboBox>(window, "EntryKindBox");
+
+                // Both kinds are offered, AES-128 first and chosen.
+                Assert.Equal(new[] { SamEntryKind.Aes128, SamEntryKind.NativeTdea }, box.Items.Cast<SamEntryKindChoice>().Select(c => c.Kind));
+                Assert.Equal(SamEntryKind.Aes128, box.SelectedValue);
+
+                box.SelectedValue = SamEntryKind.NativeTdea;
+                await Settle(window);
+
+                Assert.Equal(SamEntryKind.NativeTdea, viewModel.SelectedEntryKind);
+
+                Of<TextBox>(window, "EntryBox").Text = "7";
+                Hidden(window, "NewKeyBox").Password = TypedKeyHex;
+                await Settle(window);
+
+                Click(Of<Button>(window, "WriteButton"));
+                await Until(() => setup.Session.Calls.Any(call => call.StartsWith("writenative", StringComparison.Ordinal)));
+                await Until(() => !viewModel.IsRunning);
+                await Settle(window);
+
+                Assert.Equal(7, setup.Session.LastEntryNumber);
+                Assert.True(setup.Session.LastWriteWasNative);
+                Assert.DoesNotContain(setup.Session.Calls, call => call.StartsWith("change", StringComparison.Ordinal));
+                Assert.Contains("DES / 2K3DES key of the PICC key class", Of<TextBlock>(window, "ResultText").Text, StringComparison.Ordinal);
+            });
+        }
+        [Fact]
         public async Task A_typed_master_key_is_used_and_cleared_and_an_entry_that_is_no_key_stays_for_the_person_to_correct()
         {
             var setup = new Setup();
@@ -407,6 +447,7 @@ namespace RFiDGear.Tests.Sam
                     (Of<Button>(window, "AuthenticateButton"), viewModel.AuthenticateToolTip),
                     (Of<Button>(window, "ActivateButton"), viewModel.ActivateToolTip),
                     (Of<TextBox>(window, "EntryBox"), viewModel.EntryToolTip),
+                    (Of<ComboBox>(window, "EntryKindBox"), viewModel.EntryKindToolTip),
                     (Of<ComboBox>(window, "NewStoredBox"), viewModel.StoredKeyToolTip),
                     (Of<Button>(window, "WriteButton"), viewModel.WriteToolTip),
                 })

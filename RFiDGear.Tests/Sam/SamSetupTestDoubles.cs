@@ -33,6 +33,12 @@ namespace RFiDGear.Tests.Sam
 
         internal SamAv3KeyEntry? LastEntry { get; private set; }
 
+        /// <summary>Whether the last write was a native TDEA entry (<see cref="WriteNativeKeyEntryAsync"/>) and not an AES one.</summary>
+        internal bool LastWriteWasNative { get; private set; }
+
+        /// <summary>The key version of the last native write.</summary>
+        internal byte LastNativeVersion { get; private set; }
+
         internal bool Disposed { get; private set; }
 
         public bool IsAuthenticated { get; set; }
@@ -79,6 +85,24 @@ namespace RFiDGear.Tests.Sam
             Remember(entry.KeyA);
             LastEntryNumber = keyEntryNo;
             LastEntry = entry;
+            LastWriteWasNative = false;
+
+            if (ChangeFails != null)
+            {
+                IsAuthenticated = false;
+                throw ChangeFails;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task WriteNativeKeyEntryAsync(byte keyEntryNo, byte[] key, byte version)
+        {
+            Calls.Add("writenative " + keyEntryNo);
+            Remember(key);
+            LastEntryNumber = keyEntryNo;
+            LastNativeVersion = version;
+            LastWriteWasNative = true;
 
             if (ChangeFails != null)
             {
@@ -110,6 +134,12 @@ namespace RFiDGear.Tests.Sam
             if (ReadAnswer != null)
             {
                 return Task.FromResult(SamKeyEntryInfo.Parse(ReadAnswer));
+            }
+
+            if (LastWriteWasNative)
+            {
+                // A SAM that holds a native TDEA entry as SamKeyEntryFrame writes it: SET 0x0000, ExtSET 0x01, no key usage counter.
+                return Task.FromResult(SamKeyEntryInfo.Parse(new byte[] { LastNativeVersion, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0x00, 0x00, 0x01 }));
             }
 
             // A SAM that holds what was written: versions, the entry's own fields and SET and ExtSET as they were written.

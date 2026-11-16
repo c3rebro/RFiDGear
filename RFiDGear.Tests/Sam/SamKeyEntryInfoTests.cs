@@ -129,6 +129,39 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Theory]
+        [InlineData(0x0000, 0x01, "Matches")]
+        [InlineData(0x0004, 0x01, "WrongKind")]
+        [InlineData(0x0024, 0x01, "WrongKind")]
+        [InlineData(0x0000, 0x00, "WrongKind")]
+        [InlineData(0x0000, 0x02, "WrongKind")]
+        [InlineData(0x0018, 0x01, "WrongKind")]
+        [InlineData(0x0200, 0x01, "Disabled")]
+        public void A_native_tdea_entry_matches_only_with_type_000_the_picc_class_and_keep_iv_clear(int set, int extSet, string expected)
+        {
+            var answer = new byte[13];
+            answer[9] = 0xFF;
+            answer[10] = (byte)(set & 0xFF);
+            answer[11] = (byte)(set >> 8);
+            answer[12] = (byte)extSet;
+
+            var info = SamKeyEntryInfo.Parse(answer);
+
+            Assert.Equal(Enum.Parse<SamKeyEntryCheck>(expected), info!.VerdictFor(SamEntryKind.NativeTdea));
+        }
+
+        [Fact]
+        public void The_native_entry_that_was_written_to_the_bench_sam_reads_back_as_native()
+        {
+            // Entry 2, the factory key of the DESFire card: SET 0x0000, ExtSET 01 (read back from the SAM on 2026-11-15).
+            var info = SamKeyEntryInfo.Parse(Convert.FromHexString("000000000000000000FF000001"));
+
+            Assert.True(info!.IsNativeTdea);
+            Assert.False(info.IsAes128);
+            Assert.Equal(SamKeyEntryCheck.Matches, info.VerdictFor(SamEntryKind.NativeTdea));
+            Assert.Equal(SamKeyEntryCheck.WrongKind, info.VerdictFor(SamEntryKind.Aes128));
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(12)]
         [InlineData(14)]

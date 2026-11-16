@@ -2465,7 +2465,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Only for a new SAM that answered 'not activated'. Asks first. No way to undo the activation is known.</value>
   </data>
   <data name="labelSamSetupNewKey" xml:space="preserve">
-    <value>Key to write (AES-128 key for cards, a PICC key)</value>
+    <value>Key to write (a PICC key of a DESFire card)</value>
   </data>
   <data name="labelSamSetupEntry" xml:space="preserve">
     <value>Key entry (1 to 127)</value>
@@ -2562,6 +2562,24 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageSamSetupEntryDiffers" xml:space="preserve">
     <value>Read back from the SAM: key entry {0} is not an AES-128 key of the PICC key class, as it was written. Do not use it.</value>
+  </data>
+  <data name="labelSamSetupEntryKind" xml:space="preserve">
+    <value>Key type:</value>
+  </data>
+  <data name="toolTipSamSetupEntryKind" xml:space="preserve">
+    <value>The kind of key to write, as the DESFire card holds it. AES-128: a card whose key is AES (written with SET 0x0024, "Keep IV" set). DES / 2K3DES: a card with the native key type, such as the factory key of a new card (written with SET 0x0000). Both are keys of the PICC key class and have 16 bytes (a DES key is two equal halves).</value>
+  </data>
+  <data name="textSamSetupEntryKindAes" xml:space="preserve">
+    <value>AES-128 (DESFire)</value>
+  </data>
+  <data name="textSamSetupEntryKindNative" xml:space="preserve">
+    <value>DES / 2K3DES (DESFire native)</value>
+  </data>
+  <data name="messageSamSetupEntryVerifiedNative" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is enabled and holds a DES / 2K3DES key of the PICC key class, as written.</value>
+  </data>
+  <data name="messageSamSetupEntryDiffersNative" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is not a DES / 2K3DES key of the PICC key class, as it was written. Do not use it.</value>
   </data>
   <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
     <value>Read back from the SAM: key entry {0} is enabled and holds an AES-128 key of the PICC key class, but "Keep IV" (SET bit 2) is not set. A DESFire card cannot be authenticated with it (the SAM refuses the answer of the card). Write the key again.</value>
