@@ -31,9 +31,10 @@ namespace RFiDGear.HIL.Tests
         // The last key entry that a person can write: blank (disabled) unless somebody used it.
         private const string EntryText = "127:0";
 
-        // Status words that are no refusal of a key entry but a mistake of the frame or of the SAM: a wrong length, an instruction or a class that
-        // the SAM does not know. A relay that ends with one of them did not work, however it is named.
-        private static readonly ushort[] ProtocolErrors = { 0x6700, 0x6D00, 0x6E00, 0x6F00 };
+        // Status words that are no refusal of a key entry: a wrong length, an instruction or a class that the SAM does not know, and the words of
+        // success (9000) and of "more data" (90AF), which the SAM sends for an answer that was not the one that was expected (a refusal is an
+        // error). A relay that ends with one of them did not work, however it is named.
+        private static readonly ushort[] NoRefusal = { 0x6700, 0x6D00, 0x6E00, 0x6F00, 0x9000, 0x90AF };
 
         private readonly ITestOutputHelper _output;
 
@@ -102,8 +103,8 @@ namespace RFiDGear.HIL.Tests
                     "Relay with " + type + ": " + result.Error + " / " + result.Failure + " (SAM " + result.SamStatus.ToString("X4") + ", card " + result.CardStatus.ToString("X4") + ")");
 
                 // Three ways in which the relay worked: the SAM refused the entry (it is blank) with a status word of its own, the card refused the
-                // key, or the key was taken. A SAM that answers a wrong length or an unknown instruction is not a refusal of an entry.
-                var worked = (result.Error == ERROR.KeyUnavailable && result.Failure == SamPiccFailure.SamRefused && result.SamStatus != 0 && !ProtocolErrors.Contains(result.SamStatus))
+                // key, or the key was taken. A SAM that answers a wrong length, an unknown instruction, success or "more data" is not a refusal of an entry.
+                var worked = (result.Error == ERROR.KeyUnavailable && result.Failure == SamPiccFailure.SamRefused && result.SamStatus != 0 && !NoRefusal.Contains(result.SamStatus))
                     || (result.Error == ERROR.AuthFailure && result.Failure == SamPiccFailure.CardRefused)
                     || result.Succeeded;
 

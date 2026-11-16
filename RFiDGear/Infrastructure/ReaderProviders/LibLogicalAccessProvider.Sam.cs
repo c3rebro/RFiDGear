@@ -116,7 +116,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             try
             {
-                var open = CreateSamPiccConnector().Open(samReaderName, ReaderUnitName);
+                // Opening the SAM reads the readers and waits for a card (the insertion wait is 600 ms): off the thread of the caller, which may
+                // be a window. The gate was free, so everything up to here has run on that thread.
+                var samReader = samReaderName;
+                var cardReader = ReaderUnitName;
+                var open = await Task.Run(() => CreateSamPiccConnector().Open(samReader, cardReader)).ConfigureAwait(false);
 
                 if (open.Connection == null)
                 {

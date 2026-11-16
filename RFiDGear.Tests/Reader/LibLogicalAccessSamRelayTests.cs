@@ -8,6 +8,7 @@ using RFiDGear.Tests.Sam;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -65,6 +66,31 @@ namespace RFiDGear.Tests.Reader
                 Assert.Equal(SamPiccFailure.NotSupported, result.Failure);
                 Assert.False(result.KeyMayHaveChanged);
             }
+        }
+
+        [Fact]
+        public async Task The_sam_is_opened_off_the_thread_of_the_caller_so_that_a_window_does_not_freeze()
+        {
+            var reader = new RelayReader();
+            var context = new SynchronizationContext();
+            var before = SynchronizationContext.Current;
+            Task<SamPiccResult> call;
+
+            // The gate is free, so the call runs on until its first real wait: whatever blocks before that blocks the caller (a window).
+            SynchronizationContext.SetSynchronizationContext(context);
+
+            try
+            {
+                call = reader.AuthenticateMifareDesfireWithSamAsync(Access());
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(before);
+            }
+
+            Assert.True((await call).Succeeded);
+            Assert.True(reader.SamOpened);
+            Assert.NotSame(context, reader.ContextWhenTheSamWasOpened);
         }
 
         // ── the order: the SAM first, the card second ──
@@ -413,6 +439,11 @@ namespace RFiDGear.Tests.Reader
 
             internal Func<byte[], byte[]?>? CardOverride { get; set; }
 
+            /// <summary>Gets the synchronization context of the thread that opened the SAM: the one of the caller, or none.</summary>
+            internal SynchronizationContext? ContextWhenTheSamWasOpened { get; private set; }
+
+            internal bool SamOpened { get; private set; }
+
             internal SamPiccFailure? CardLinkFails { get; set; }
 
             internal Exception? CardLinkThrows { get; set; }
@@ -515,6 +546,9 @@ namespace RFiDGear.Tests.Reader
 
                 public SamPiccOpen Open(string? samReaderName, string? cardReaderName)
                 {
+                    _reader.ContextWhenTheSamWasOpened = SynchronizationContext.Current;
+                    _reader.SamOpened = true;
+
                     var open = new SamPiccConnector(new SamReaderFinder(_reader.Sam)).Open(samReaderName, cardReaderName);
 
                     if (open.Connection != null)

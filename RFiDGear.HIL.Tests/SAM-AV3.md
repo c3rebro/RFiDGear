@@ -166,8 +166,9 @@ log. What the window looks like, as the tests render it with a scripted SAM
   the entry is in use, the card refuses the key or takes it. All three are the
   relay working from the SAM to the card and back, and nothing else passes: a
   reader that fails, a SAM that cannot be opened, a SAM that answers with a
-  wrong length or an unknown instruction (`6700`, `6D00`, `6E00`, `6F00`) or
-  an integrity error of the SAM (`901E`, which is the sign of a key entry
+  wrong length or an unknown instruction (`6700`, `6D00`, `6E00`, `6F00`), with
+  success or "more data" (`9000`, `90AF`) where a refusal is expected, or an
+  integrity error of the SAM (`901E`, which is the sign of a key entry
   without Keep IV) fail the case with the result and the status words. The
   case writes what it saw to its output: the status word of the SAM for a
   blank entry is the one to write down here. **Only authentications are sent: it
