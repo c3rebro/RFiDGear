@@ -432,11 +432,14 @@ library for the SAM AV2 (public mirrors of it).
 
 **The trace of the second session:**
 
-Complete, except two things. The first runs of the offline `layout-check` (they
-compared frames that differed, because of the Le byte, see finding 2) are left
-out; the last run, which shows equal frames, is in. And two runs of the probe
+Complete, except three things. The first runs of the offline `layout-check`
+(they compared frames that differed, because of the Le byte, see finding 2) are
+left out; the last run, which shows equal frames, is in. Two runs of the probe
 that only tested whether LibLogicalAccess writes its own log are left out (they
-show what the first run shows).
+show what the first run shows). And the first run of `desfire-sam-auth` (type
+`SAM_AV3`) ended with an unhandled exception that the console printed and the
+trace never recorded; its text is in finding 4, and the runs after it are in
+the trace.
 
 ```text
 23:40:43.474  ##### stage: desfire-probe  (trace file C:\tmp\sam-session\tra
