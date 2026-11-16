@@ -541,6 +541,9 @@ namespace RFiDGear.Tests.SecureKeys
                 SelectedTaskType = scenario.Type,
                 CurrentTaskIndex = "0",
                 UseMAD = scenario.UseMad,
+
+                // Sector 1: block 0 of sector 0 is the manufacturer block, which no write is allowed to touch.
+                SelectedClassicSectorCurrent = "1",
             };
 
             if (withEmbeddedKeys)

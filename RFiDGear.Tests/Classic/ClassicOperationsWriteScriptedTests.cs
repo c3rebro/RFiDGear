@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Classic;
@@ -41,7 +42,18 @@ namespace RFiDGear.Tests.Classic
 
             public ClassicCardSize? Size => inner.Size;
 
-            public Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key) => inner.LoginAsync(block, keyType, key);
+            /// <summary>Gets or sets what happens on the first login (the caller's array that changes while the call waits for the reader).</summary>
+            public Action? OnFirstLogin { get; set; }
+
+            public Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key)
+            {
+                var hook = OnFirstLogin;
+
+                OnFirstLogin = null;
+                hook?.Invoke();
+
+                return inner.LoginAsync(block, keyType, key);
+            }
 
             public Task<ClassicBlockResult> ReadBlockAsync(int block) => inner.ReadBlockAsync(block);
 
@@ -63,6 +75,114 @@ namespace RFiDGear.Tests.Classic
             }
 
             public Task<ClassicPortResult> ReselectAsync() => inner.ReselectAsync();
+        }
+
+        // ── the bytes that were approved are the bytes that are written ──
+
+        [Fact]
+        public async Task ABlock_IsWrittenAsItWasWhenTheCallStarted_WhateverTheCallerDoesToTheArrayMeanwhile()
+        {
+            var chip = new SimulatedClassicChip();
+            var data = Enumerable.Range(0x10, 16).Select(i => (byte)i).ToArray();
+            var approved = (byte[])data.Clone();
+            var port = new ScriptedPort(chip) { OnFirstLogin = () => Array.Fill(data, (byte)0xEE) };
+
+            var result = await new ClassicOperations(port).WriteBlockAsync(5, data, Keys(Ff, null), ClassicWriteOptions.DataOnly);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(approved, chip.Peek(5));
+        }
+
+        [Fact]
+        public async Task ATrailer_IsWrittenAsItWasApproved_AndNotAsTheEditorLeftIt()
+        {
+            // The access bits that were approved are consistent and can be changed again; the array is made final while the call waits.
+            var chip = new SimulatedClassicChip();
+            var trailer = ClassicAccessBits.Transport.BuildTrailer(KeyA, 0x00, KeyB);
+            var approved = (byte[])trailer.Clone();
+            var port = new ScriptedPort(chip) { OnFirstLogin = () => new ClassicAccessBits(7, 7, 7, 7).BuildTrailer(KeyA, 0x00, KeyB).CopyTo(trailer, 0) };
+
+            var result = await new ClassicOperations(port).WriteBlockAsync(7, trailer, Keys(Ff, null), new ClassicWriteOptions { AllowTrailer = true });
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(approved, chip.Peek(7));
+        }
+
+        [Fact]
+        public async Task ASector_IsWrittenAsItWasWhenTheCallStarted_WhateverTheCallerDoesToTheArrayMeanwhile()
+        {
+            var chip = new SimulatedClassicChip();
+            var data = Enumerable.Range(1, 48).Select(i => (byte)i).ToArray();
+            var approved = (byte[])data.Clone();
+            var port = new ScriptedPort(chip) { OnFirstLogin = () => Array.Fill(data, (byte)0xEE) };
+
+            var result = await new ClassicOperations(port).WriteSectorAsync(2, data, Keys(Ff, null), ClassicWriteOptions.DataOnly);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(approved, chip.Peek(8).Concat(chip.Peek(9)).Concat(chip.Peek(10)).ToArray());
+        }
+
+        // ── what a trailer reads back as ──
+
+        [Fact]
+        public async Task ATrailerWhoseKeyBDoesNotReadBackAsWritten_IsReported_WhenKeyACanReadIt()
+        {
+            // The transport access bits let key A read key B: the new key B is part of what must read back.
+            var chip = new SimulatedClassicChip { CorruptsWrites = true, CorruptedByte = 12 };
+            var trailer = ClassicAccessBits.Transport.BuildTrailer(KeyA, 0x00, KeyB);
+
+            var result = await new ClassicOperations(chip).WriteBlockAsync(7, trailer, Keys(Ff, Ff), new ClassicWriteOptions { AllowTrailer = true });
+
+            Assert.Equal(ERROR.Unknown, result.Error);
+            Assert.Equal(7, result.FailedBlock);
+        }
+
+        [Fact]
+        public async Task ATrailerWhoseKeyBIsHiddenByTheNewAccessBits_IsNotComparedForKeyB()
+        {
+            // With the access bits of the MAD key B is never shown (it reads as zeros): there is nothing to compare, and the write is not reported as wrong.
+            var chip = new SimulatedClassicChip { CorruptsWrites = true, CorruptedByte = 12 };
+            var trailer = ClassicAccessBits.MadStandard.BuildTrailer(KeyA, 0xC1, KeyB);
+
+            var result = await new ClassicOperations(chip).WriteBlockAsync(7, trailer, Keys(Ff, Ff), new ClassicWriteOptions { AllowTrailer = true });
+
+            Assert.True(result.Succeeded);
+        }
+
+        // ── a key that the chip refused is not a key to write with ──
+
+        [Fact]
+        public async Task AKeyThatTheChipRefused_IsNotUsedToWrite_WhenKeyBMayWriteToo()
+        {
+            // The data blocks are 000 (both keys may write) and the trailer 011 (key B logs in): key A is wrong, key B opens the sector.
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(1, KeyA, new ClassicAccessBits(0, 0, 0, 6), 0x69, KeyB);
+
+            var data = Enumerable.Range(0x20, 16).Select(i => (byte)i).ToArray();
+            var result = await new ClassicOperations(chip).WriteBlockAsync(5, data, Keys("111111111111", KeyBText), ClassicWriteOptions.DataOnly);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(data, chip.Peek(5));
+
+            // The wrong key A was tried once, at the start, and never again.
+            Assert.Single(chip.Log, entry => entry == "login 1 KeyA");
+        }
+
+        [Fact]
+        public async Task AKeyThatTheChipRefused_IsNotUsedToWriteASector_WhenKeyBMayWriteToo()
+        {
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(1, KeyA, new ClassicAccessBits(0, 0, 0, 6), 0x69, KeyB);
+
+            var data = Enumerable.Range(1, 48).Select(i => (byte)i).ToArray();
+            var result = await new ClassicOperations(chip).WriteSectorAsync(1, data, Keys("111111111111", KeyBText), ClassicWriteOptions.DataOnly);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(3, result.BlocksWritten);
+            Assert.Equal(data, chip.Peek(4).Concat(chip.Peek(5)).Concat(chip.Peek(6)).ToArray());
+            Assert.Single(chip.Log, entry => entry == "login 1 KeyA");
         }
 
         [Fact]

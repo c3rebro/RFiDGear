@@ -366,6 +366,67 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task AWriteThatNeedsNoCardToBeRefused_IsRefusedAsSuch_AndTheChipIsNotSelected()
+        {
+            // No chip on the reader: a request that the policy refuses is a protocol constraint and not a transport error, and the port is not opened.
+            var reader = new ClassicPcscTestReader((IClassicPort?)null);
+            var broken = ClassicAccessBits.Transport.BuildTrailer(new byte[6], 0, new byte[6]);
+
+            broken[7] ^= 0x01;
+
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleBlock(0, Ff, Ff, new byte[16]));
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleBlock(7, Ff, Ff, broken));
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleBlock(5, Ff, Ff, new byte[15]));
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleBlock(5, Ff, Ff, null!));
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleBlock(256, Ff, Ff, new byte[16]));
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleSector(2, Ff, Ff, new byte[47]));
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleSector(40, Ff, Ff, new byte[48]));
+            Assert.Equal(ERROR.ProtocolConstraint, await reader.WriteMifareClassicSingleSector(2, Ff, Ff, null!));
+            Assert.Equal(0, reader.Opened);
+
+            // A request that is fine reaches the port, and finds no chip.
+            Assert.Equal(ERROR.TransportError, await reader.WriteMifareClassicSingleBlock(5, Ff, Ff, new byte[16]));
+            Assert.Equal(1, reader.Opened);
+        }
+
+        [Fact]
+        public async Task ABlockWrite_IsWrittenAsItWasWhenTheCallStarted_EvenWhenItWaitsForTheGate()
+        {
+            // A read holds the gate; the write waits for it. The caller changes the array meanwhile: what was checked at the call is what is written.
+            var chip = new SimulatedClassicChip { YieldsOnEveryCall = true };
+            var reader = new ClassicPcscTestReader(chip);
+            var data = Enumerable.Range(0x30, 16).Select(i => (byte)i).ToArray();
+            var approved = (byte[])data.Clone();
+
+            var read = reader.ReadMifareClassicSingleSector(1, Ff, Ff);
+            var write = reader.WriteMifareClassicSingleBlock(5, Ff, Ff, data);
+
+            Array.Fill(data, (byte)0xEE);
+
+            Assert.Equal(ERROR.NoError, await read);
+            Assert.Equal(ERROR.NoError, await write);
+            Assert.Equal(approved, chip.Peek(5));
+        }
+
+        [Fact]
+        public async Task ASectorWrite_IsWrittenAsItWasWhenTheCallStarted_EvenWhenItWaitsForTheGate()
+        {
+            var chip = new SimulatedClassicChip { YieldsOnEveryCall = true };
+            var reader = new ClassicPcscTestReader(chip);
+            var data = Enumerable.Range(1, 48).Select(i => (byte)i).ToArray();
+            var approved = (byte[])data.Clone();
+
+            var read = reader.ReadMifareClassicSingleSector(1, Ff, Ff);
+            var write = reader.WriteMifareClassicSingleSector(2, Ff, Ff, data);
+
+            Array.Fill(data, (byte)0xEE);
+
+            Assert.Equal(ERROR.NoError, await read);
+            Assert.Equal(ERROR.NoError, await write);
+            Assert.Equal(approved, chip.Peek(8).Concat(chip.Peek(9)).Concat(chip.Peek(10)).ToArray());
+        }
+
+        [Fact]
         public async Task AWriteWithAKeyThatIsNoKey_NeverReachesTheChip()
         {
             var reader = new ClassicPcscTestReader(new SimulatedClassicChip());

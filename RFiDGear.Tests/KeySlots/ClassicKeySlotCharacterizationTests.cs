@@ -281,6 +281,9 @@ namespace RFiDGear.Tests.KeySlots
         {
             SelectedTaskType = type,
             CurrentTaskIndex = "0",
+
+            // Sector 1: block 0 of sector 0 is the manufacturer block, which no write is allowed to touch.
+            SelectedClassicSectorCurrent = "1",
             ClassicKeyAKeyCurrent = "111111111111",
             ClassicKeyBKeyCurrent = "222222222222",
             ClassicKeyAKeyTarget = "333333333333",

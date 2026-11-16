@@ -1962,18 +1962,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    (ERROR Error, MifareClassicSectorModel Sector) read = default;
-
                     var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
+
+                    // The read is made before the answers are looked at; a key that is not there is no read.
+                    var read = keys.Failed
+                        ? (Error: ERROR.Unknown, Sector: new MifareClassicSectorModel())
+                        : await device.ReadMifareClassicSectorAsync(
+                            selectedClassicSectorCurrentAsInt,
+                            keys.Hex(SecureKeySlots.ClassicACurrent),
+                            keys.Hex(SecureKeySlots.ClassicBCurrent));
 
                     if (keys.Failed)
                     {
                         ReportKeyUnavailable(keys);
                     }
-                    else if ((read = await device.ReadMifareClassicSectorAsync(
-                        selectedClassicSectorCurrentAsInt,
-                        keys.Hex(SecureKeySlots.ClassicACurrent),
-                        keys.Hex(SecureKeySlots.ClassicBCurrent))).Error == ERROR.NoError)
+                    else if (read.Error == ERROR.NoError)
                     {
                         StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
@@ -2044,18 +2047,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (!useMAD)
                     {
-                        (ERROR Error, MifareClassicSectorModel Sector) read = default;
-
                         var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
+
+                        // The read is made before the answers are looked at; a key that is not there is no read.
+                        var read = keys.Failed
+                            ? (Error: ERROR.Unknown, Sector: new MifareClassicSectorModel())
+                            : await device.ReadMifareClassicSectorAsync(
+                                selectedClassicSectorCurrentAsInt,
+                                keys.Hex(SecureKeySlots.ClassicACurrent),
+                                keys.Hex(SecureKeySlots.ClassicBCurrent));
 
                         if (keys.Failed)
                         {
                             ReportKeyUnavailable(keys);
                         }
-                        else if ((read = await device.ReadMifareClassicSectorAsync(
-                            selectedClassicSectorCurrentAsInt,
-                            keys.Hex(SecureKeySlots.ClassicACurrent),
-                            keys.Hex(SecureKeySlots.ClassicBCurrent))).Error == ERROR.NoError)
+                        else if (read.Error == ERROR.NoError)
                         {
 
                             childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
@@ -2193,31 +2199,48 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
                         childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 
+                        // The bytes of the block are copied once, here: the editor of the dialog can change them while the write waits for the reader,
+                        // and what is checked is what is written. What needs no card is decided before a key is asked for and before the chip is
+                        // selected: a block without 16 bytes, block 0, or a trailer whose access bits are not consistent is never sent.
+                        var block = CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite);
+                        var blockData = childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data?.ToArray();
+                        var preflight = ClassicWritePolicy.CheckBlock(block, blockData, new ClassicWriteOptions { AllowTrailer = true });
+
+                        if (!preflight.IsAllowed)
+                        {
+                            StatusText = StatusText + string.Format(
+                                "{0}: {1}\n",
+                                DateTime.Now,
+                                preflight.Violation == ClassicWriteViolation.WrongLength
+                                    ? "There are no 16 bytes for this block: read it or enter its data first."
+                                    : "This block cannot be written (" + preflight.Violation + "): nothing was sent to the chip.");
+                            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                            IsTaskCompletedSuccessfully = false;
+
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+
+                            return;
+                        }
+
                         var keys = await AcquireKeysAsync(Need(SecureKeySlots.ClassicACurrent), Need(SecureKeySlots.ClassicBCurrent));
 
                         if (keys.Failed)
                         {
                             ReportKeyUnavailable(keys);
                         }
-                        else if (childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data is not { Length: ClassicLayout.BytesPerBlock })
-                        {
-                            // A block that was not read has no data, and a block is 16 bytes: nothing is sent to the chip.
-                            StatusText = StatusText + string.Format("{0}: There are no 16 bytes for this block: read it or enter its data first.\n", DateTime.Now);
-                            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
-                        }
                         else
                         {
                             await device.ReadChipPublic();
 
-                            if (await device.WriteMifareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
+                            if (await device.WriteMifareClassicSingleBlock(block,
                                                                     keys.Hex(SecureKeySlots.ClassicACurrent),
                                                                     keys.Hex(SecureKeySlots.ClassicBCurrent),
-                                                                    childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
+                                                                    blockData) == ERROR.NoError)
                             {
                                 StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
                                                                         DateTime.Now,
                                                                         childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-                                                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
+                                                                        CustomConverter.HexToString(blockData));
                                 CurrentTaskErrorLevel = ERROR.NoError;
                             }
                             else

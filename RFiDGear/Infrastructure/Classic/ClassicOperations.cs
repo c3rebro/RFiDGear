@@ -196,13 +196,17 @@ namespace RFiDGear.Infrastructure.Classic
             ArgumentNullException.ThrowIfNull(keys);
             ArgumentNullException.ThrowIfNull(options);
 
-            var decision = ClassicWritePolicy.CheckBlock(Size, block, data, options);
+            // The bytes are copied before they are checked: a caller's array can change while the call waits for the reader (the editor of a
+            // dialog does), and what was approved is what is written and read back.
+            var approved = data?.ToArray();
+            var decision = ClassicWritePolicy.CheckBlock(Size, block, approved, options);
 
             if (!decision.IsAllowed)
             {
                 return ClassicWriteResult.Refused(decision.Violation);
             }
 
+            var snapshot = approved!;
             var state = new SectorState(ClassicLayout.SectorOf(block), keys);
             var opened = await OpenFirstSessionAsync(state);
 
@@ -216,12 +220,12 @@ namespace RFiDGear.Infrastructure.Classic
                 return ClassicWriteResult.Refused(ClassicWriteViolation.AccessBitsUnknown);
             }
 
-            if (!state.TryChooseWriteKey(block, data, out var key))
+            if (!state.TryChooseWriteKey(block, snapshot, out var key))
             {
                 return ClassicWriteResult.Failed(ERROR.PermissionDenied, block, 0);
             }
 
-            return await WriteOneAsync(state, block, data, key, 0);
+            return await WriteOneAsync(state, block, snapshot, key, 0);
         }
 
         /// <summary>
@@ -239,13 +243,16 @@ namespace RFiDGear.Infrastructure.Classic
             ArgumentNullException.ThrowIfNull(keys);
             ArgumentNullException.ThrowIfNull(options);
 
-            var decision = ClassicWritePolicy.CheckSector(Size, sector, data, options);
+            // Copied before it is checked, as in WriteBlockAsync.
+            var approved = data?.ToArray();
+            var decision = ClassicWritePolicy.CheckSector(Size, sector, approved, options);
 
             if (!decision.IsAllowed)
             {
                 return ClassicWriteResult.Refused(decision.Violation);
             }
 
+            var snapshot = approved!;
             var state = new SectorState(sector, keys);
             var opened = await OpenFirstSessionAsync(state);
 
@@ -266,7 +273,7 @@ namespace RFiDGear.Infrastructure.Classic
                 return ClassicWriteResult.Failed(ERROR.PermissionDenied, ClassicLayout.FirstBlock(sector), 0);
             }
 
-            return await WritePlanAsync(state, plan, data);
+            return await WritePlanAsync(state, plan, snapshot);
         }
 
         private async Task<ClassicWriteResult> WritePlanAsync(SectorState state, IReadOnlyList<(int Block, ClassicKeyType Key)> plan, byte[] data)
@@ -386,13 +393,25 @@ namespace RFiDGear.Infrastructure.Classic
                 return ERROR.Unknown;
             }
 
-            var comparedFrom = ClassicLayout.IsTrailer(block) ? ClassicKey.Length : 0;
-            var comparedLength = ClassicLayout.IsTrailer(block) ? 4 : ClassicLayout.BytesPerBlock;
-
-            return read.Data.AsSpan(comparedFrom, comparedLength).SequenceEqual(data.AsSpan(comparedFrom, comparedLength))
-                ? ERROR.NoError
-                : ERROR.Unknown;
+            return ReadsBackAsWritten(block, data, read.Data!) ? ERROR.NoError : ERROR.Unknown;
         }
+
+        // A data block reads back whole. A trailer reads back its access bits and its general purpose byte, and its key B when the access bits that
+        // were written let key A read it (key A itself is never shown, and a key B that is hidden reads as zeros: there is nothing to compare).
+        private static bool ReadsBackAsWritten(int block, byte[] written, byte[] read)
+        {
+            if (!ClassicLayout.IsTrailer(block))
+            {
+                return read.AsSpan(0, ClassicLayout.BytesPerBlock).SequenceEqual(written.AsSpan(0, ClassicLayout.BytesPerBlock));
+            }
+
+            var comparedLength = KeyBIsShown(written) ? ClassicLayout.BytesPerBlock : ClassicKey.Length + 4;
+
+            return read.AsSpan(ClassicKey.Length, comparedLength - ClassicKey.Length).SequenceEqual(written.AsSpan(ClassicKey.Length, comparedLength - ClassicKey.Length));
+        }
+
+        private static bool KeyBIsShown(byte[] trailer) =>
+            ClassicAccessBits.TryFromTrailer(trailer, out var bits) && bits.TrailerRights.KeyBRead.Allows(ClassicKeyType.KeyA);
 
         // Key A first, then key B, one attempt each: the first that logs in (and proves it by reading the trailer) is the session.
         private async Task<ERROR> OpenFirstSessionAsync(SectorState state)
@@ -412,6 +431,9 @@ namespace RFiDGear.Infrastructure.Classic
 
                     return ERROR.NoError;
                 }
+
+                // The chip refused this key: a write does not try it again with another block.
+                state.Reject(type);
             }
 
             return ERROR.AuthFailure;
@@ -521,6 +543,7 @@ namespace RFiDGear.Infrastructure.Classic
         {
             private readonly byte[]?[] data;
             private readonly List<int> pending;
+            private readonly HashSet<ClassicKeyType> rejected = new HashSet<ClassicKeyType>();
 
             public SectorState(int sector, ClassicSectorKeys keys)
             {
@@ -555,11 +578,15 @@ namespace RFiDGear.Infrastructure.Classic
                 Bits = ClassicAccessBits.TryFromTrailer(trailer, out var parsed) ? parsed : null;
             }
 
+            // A key that the chip refused when the session was opened is not a key to write with, even if its access bits would allow it: the
+            // key that logged in is.
+            public void Reject(ClassicKeyType type) => rejected.Add(type);
+
             // The key that may write a block, if one of the keys that there are may. For a trailer the rights of every part that changes are needed.
             public bool TryChooseWriteKey(int block, byte[] newData, out ClassicKeyType key) =>
-                Bits!.TryChooseKey(WriteRights(block, newData), Keys.Has(ClassicKeyType.KeyA), Keys.Has(ClassicKeyType.KeyB), out key);
+                Bits!.TryChooseKey(WriteRights(block, newData), Usable(ClassicKeyType.KeyA), Usable(ClassicKeyType.KeyB), out key);
 
-            // The blocks of the sector from the one at the given position on (the trailer not among them), each with the key that may write it;
+            // The blocks of the sector, from the given position on and without the trailer, each with the key that may write it;
             // null when a key that there is cannot write one of them.
             public List<(int Block, ClassicKeyType Key)>? PlanDataWrites(int firstPosition)
             {
@@ -635,6 +662,8 @@ namespace RFiDGear.Infrastructure.Classic
 
                 return needed;
             }
+
+            private bool Usable(ClassicKeyType type) => Keys.Has(type) && !rejected.Contains(type);
 
             private bool MayRead(int block, ClassicKeyType type)
             {

@@ -258,6 +258,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// </returns>
         public virtual async Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
+            // The caller's array can change while the call waits (for the gate, for the reader): what is checked is what is written.
+            var snapshot = (byte[])buffer?.Clone();
+
+            // What needs no card is decided first: a request that cannot be carried out does not select the chip, whatever the keys are.
+            if (!ClassicWritePolicy.CheckSector(sectorNumber, snapshot, ClassicWriteOptions.DataOnly).IsAllowed)
+            {
+                return ERROR.ProtocolConstraint;
+            }
+
             if (!ClassicSectorKeys.TryCreate(aKey, bKey, out var keys))
             {
                 return ERROR.AuthFailure;
@@ -266,7 +275,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             using (keys)
             {
                 return await RunClassicAsync(async operations =>
-                    (await operations.WriteSectorAsync(sectorNumber, buffer, keys, ClassicWriteOptions.DataOnly)).Error);
+                    (await operations.WriteSectorAsync(sectorNumber, snapshot, keys, ClassicWriteOptions.DataOnly)).Error);
             }
         }
 
@@ -282,6 +291,17 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <returns>The same answers as <see cref="WriteMifareClassicSingleSector(int, string, string, byte[])"/>.</returns>
         public virtual async Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
         {
+            var options = new ClassicWriteOptions { AllowTrailer = true };
+
+            // The caller's array can change while the call waits (for the gate, for the reader): what is checked is what is written.
+            var snapshot = (byte[])buffer?.Clone();
+
+            // What needs no card is decided first: a request that cannot be carried out does not select the chip, whatever the keys are.
+            if (!ClassicWritePolicy.CheckBlock(_blockNumber, snapshot, options).IsAllowed)
+            {
+                return ERROR.ProtocolConstraint;
+            }
+
             if (!ClassicSectorKeys.TryCreate(aKey, bKey, out var keys))
             {
                 return ERROR.AuthFailure;
@@ -289,10 +309,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             using (keys)
             {
-                var options = new ClassicWriteOptions { AllowTrailer = true };
-
                 return await RunClassicAsync(async operations =>
-                    (await operations.WriteBlockAsync(_blockNumber, buffer, keys, options)).Error);
+                    (await operations.WriteBlockAsync(_blockNumber, snapshot, keys, options)).Error);
             }
         }
 

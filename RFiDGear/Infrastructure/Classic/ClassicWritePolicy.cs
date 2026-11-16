@@ -131,6 +131,25 @@ namespace RFiDGear.Infrastructure.Classic
                 : Refuse(ClassicWriteViolation.WrongLength);
         }
 
+        /// <summary>
+        /// Decides whether one block may be written at all, before the card is asked what it is: everything that does not depend on the size of the
+        /// chip (the data, block 0, a trailer and its access bits), and the blocks that no chip has. A chip that is smaller refuses the block later.
+        /// </summary>
+        /// <param name="block">The block, as the chip numbers it.</param>
+        /// <param name="data">The 16 bytes that were to be written.</param>
+        /// <param name="options">What may be written.</param>
+        /// <returns>The decision.</returns>
+        public static ClassicWriteDecision CheckBlock(int block, byte[]? data, ClassicWriteOptions options) =>
+            CheckBlock(ClassicCardSize.K4, block, data, options);
+
+        /// <summary>Decides whether the data blocks of one sector may be written at all, before the card is asked what it is (see <see cref="CheckBlock(int, byte[], ClassicWriteOptions)"/>).</summary>
+        /// <param name="sector">The sector, 0 to 39.</param>
+        /// <param name="data">The bytes that were to be written (see <see cref="SectorDataLength(int, ClassicWriteOptions)"/>).</param>
+        /// <param name="options">What may be written.</param>
+        /// <returns>The decision.</returns>
+        public static ClassicWriteDecision CheckSector(int sector, byte[]? data, ClassicWriteOptions options) =>
+            CheckSector(ClassicCardSize.K4, sector, data, options);
+
         private static ClassicWriteDecision CheckTrailer(byte[] data, ClassicWriteOptions options)
         {
             if (!options.AllowTrailer)
