@@ -86,6 +86,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         private void InitializeReaderProvider(ReaderTypes readerType)
         {
+            // Before anything below can fail and return: a unit that is bound to the reader of the SAM (the fallback of an earlier
+            // start, or a SAM reader that was configured since) is never kept, whether or not the readers can be listed now.
+            if (readerUnit != null && PcscReaderChoice.IsSamReader(readerUnit.getName(), samReaderName))
+            {
+                readerUnit = null;
+                ReaderUnitName = null;
+            }
+
             try
             {
                 readerProvider = LibraryManager.getInstance().getReaderProvider(
@@ -127,12 +135,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             AvailableReaders = readers.Select(x => x.getName()).ToList();
 
-            // A unit that is bound to the reader of the SAM (the fallback of an earlier start, or a SAM reader that was configured since) is dropped.
-            if (readerUnit != null && PcscReaderChoice.IsSamReader(readerUnit.getName(), samReaderName))
-            {
-                readerUnit = null;
-            }
-
             if (readerUnit == null)
             {
                 // The library's default unit takes the first reader, which on a reader pair is the contact slot with the SAM in it.
@@ -156,7 +158,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         /// <summary>Tells the provider which reader holds the SAM: the card is never read in it.</summary>
         /// <param name="readerName">The reader of the SAM; empty for none.</param>
-        public void UpdateSamReader(string readerName)
+        public virtual void UpdateSamReader(string readerName)
         {
             try
             {
@@ -169,7 +171,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        public void UpdateSelectedReader(string readerName)
+        public virtual void UpdateSelectedReader(string readerName)
         {
             try
             {

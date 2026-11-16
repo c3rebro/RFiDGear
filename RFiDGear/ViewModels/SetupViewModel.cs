@@ -160,7 +160,13 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                (device as LibLogicalAccessProvider)?.UpdateSamReader(SelectedSamReaderName);
+                                // The provider of the application keeps the SAM reader that was saved until OK is pressed: a choice
+                                // that is cancelled must not leave it changed (and the card unprotected from the SAM reader).
+                                if (_ownsDevice)
+                                {
+                                    (device as LibLogicalAccessProvider)?.UpdateSamReader(SelectedSamReaderName);
+                                }
+
                                 (device as LibLogicalAccessProvider)?.UpdateSelectedReader(SelectedReaderName);
                             }
                         }
@@ -398,6 +404,12 @@ namespace RFiDGear.ViewModel
             get => selectedSamReaderName;
             set
             {
+                // The box says "nothing" while its items are replaced; that is no choice of the person and must not erase the saved one.
+                if (refillingSamReaders)
+                {
+                    return;
+                }
+
                 selectedSamReaderName = value ?? string.Empty;
                 OnPropertyChanged(nameof(SelectedSamReaderName));
                 OnPropertyChanged(nameof(SamReaderIsCardReader));
@@ -405,6 +417,7 @@ namespace RFiDGear.ViewModel
             }
         }
         private string selectedSamReaderName = string.Empty;
+        private bool refillingSamReaders;
 
         /// <summary>Gets whether the reader of the SAM is the reader of the card: one of them is wrong.</summary>
         public bool SamReaderIsCardReader => PcscReaderChoice.IsSamReader(SelectedReaderName, SelectedSamReaderName);
@@ -491,23 +504,33 @@ namespace RFiDGear.ViewModel
 
         private void RefreshAvailableSamReaders()
         {
-            AvailableSamReaders.Clear();
-            AvailableSamReaders.Add(new SamReaderItem(string.Empty, ResourceLoader.GetResource("textSamReaderNone")));
+            refillingSamReaders = true;
 
-            if (SelectedReader != ReaderTypes.PCSC)
+            try
             {
-                return;
+                AvailableSamReaders.Clear();
+                AvailableSamReaders.Add(new SamReaderItem(string.Empty, ResourceLoader.GetResource("textSamReaderNone")));
+
+                if (SelectedReader == ReaderTypes.PCSC)
+                {
+                    foreach (var reader in AvailableReaders)
+                    {
+                        AvailableSamReaders.Add(new SamReaderItem(reader, reader));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(SelectedSamReaderName) && AvailableSamReaders.All(item => item.Name != SelectedSamReaderName))
+                    {
+                        AvailableSamReaders.Add(new SamReaderItem(SelectedSamReaderName, SelectedSamReaderName));
+                    }
+                }
+            }
+            finally
+            {
+                refillingSamReaders = false;
             }
 
-            foreach (var reader in AvailableReaders)
-            {
-                AvailableSamReaders.Add(new SamReaderItem(reader, reader));
-            }
-
-            if (!string.IsNullOrWhiteSpace(SelectedSamReaderName) && AvailableSamReaders.All(item => item.Name != SelectedSamReaderName))
-            {
-                AvailableSamReaders.Add(new SamReaderItem(SelectedSamReaderName, SelectedSamReaderName));
-            }
+            // The box lost its selection with its items: show the one that is chosen (and saved) again.
+            OnPropertyChanged(nameof(SelectedSamReaderName));
         }
 
         private void RefreshAvailableCardReaders()

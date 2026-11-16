@@ -277,6 +277,130 @@ namespace RFiDGear.Tests
             });
         }
 
+        /// <summary>A PC/SC provider that touches no reader and says which settings the dialog pushed into it.</summary>
+        private sealed class RecordingPcscProvider : LibLogicalAccessProvider
+        {
+            public List<string> SamReaders { get; } = new List<string>();
+
+            public List<string> CardReaders { get; } = new List<string>();
+
+            public override void UpdateSamReader(string readerName) => SamReaders.Add(readerName);
+
+            public override void UpdateSelectedReader(string readerName) => CardReaders.Add(readerName);
+
+            public override Task<ERROR> ReadChipPublic() => Task.FromResult(ERROR.NoError);
+        }
+
+        [Fact]
+        public async Task Connect_leaves_the_sam_reader_of_the_shared_provider_alone_until_the_dialog_is_confirmed()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var directory = Directory.CreateTempSubdirectory("SamReaderSetup").FullName;
+
+                try
+                {
+                    using var settings = new SettingsReaderWriter(directory, loadSettings: false);
+                    settings.DefaultSpecification.DefaultReaderProvider = ReaderTypes.PCSC;
+                    settings.DefaultSpecification.SamReaderName = SamReader;
+
+                    // The provider of the application: what the person has not confirmed must not reach it, or a cancel leaves it changed.
+                    var shared = new RecordingPcscProvider();
+                    var viewModel = new SetupViewModel(shared, settings, new ObservableCollection<IDialogViewModel>());
+
+                    Assert.Equal(ReaderTypes.PCSC, viewModel.SelectedReader);
+
+                    viewModel.SelectedSamReaderName = string.Empty;
+                    viewModel.SelectedReaderName = SamReader;
+
+                    await viewModel.ConnectToReaderCommand.ExecuteAsync(null);
+
+                    Assert.Empty(shared.SamReaders);
+                    Assert.Equal(new[] { SamReader }, shared.CardReaders);
+                }
+                finally
+                {
+                    Directory.Delete(directory, true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task The_chosen_sam_reader_is_not_erased_when_the_box_is_refilled_for_another_provider_and_back()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var directory = Directory.CreateTempSubdirectory("SamReaderSetup").FullName;
+                var window = new Window { Width = 600, Height = 400, ShowActivated = false, ShowInTaskbar = false };
+
+                try
+                {
+                    using var settings = new SettingsReaderWriter(directory, loadSettings: false);
+                    settings.DefaultSpecification.DefaultReaderProvider = ReaderTypes.PCSC;
+                    settings.DefaultSpecification.SamReaderName = SamReader;
+
+                    var viewModel = new SetupViewModel(new RecordingPcscProvider(), settings, new ObservableCollection<IDialogViewModel>());
+                    var tab = new TabPageReaderSettingsView { DataContext = viewModel };
+                    window.Content = tab;
+                    window.Show();
+                    window.UpdateLayout();
+                    await Flush();
+
+                    var box = LogicalDescendants(tab).OfType<ComboBox>().Single(candidate => candidate.Name == "SamReaderBox");
+                    Assert.Equal(SamReader, box.SelectedValue);
+
+                    // The box is emptied and filled again: the box says "nothing" while it is empty, and that is no choice of the person.
+                    viewModel.SelectedReader = ReaderTypes.Elatec;
+                    await Flush();
+                    Assert.Equal(SamReader, viewModel.SelectedSamReaderName);
+
+                    viewModel.SelectedReader = ReaderTypes.PCSC;
+                    await Flush();
+
+                    Assert.Equal(SamReader, viewModel.SelectedSamReaderName);
+                    Assert.Equal(SamReader, box.SelectedValue);
+                }
+                finally
+                {
+                    window.Close();
+                    Directory.Delete(directory, true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task A_choice_of_the_person_is_still_taken_while_the_box_is_not_being_refilled()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var directory = Directory.CreateTempSubdirectory("SamReaderSetup").FullName;
+
+                try
+                {
+                    using var settings = new SettingsReaderWriter(directory, loadSettings: false);
+                    settings.DefaultSpecification.DefaultReaderProvider = ReaderTypes.Elatec;
+                    settings.DefaultSpecification.SamReaderName = SamReader;
+
+                    var viewModel = new SetupViewModel(null!, settings, new ObservableCollection<IDialogViewModel>());
+
+                    viewModel.SelectedSamReaderName = string.Empty;
+                    Assert.Equal(string.Empty, viewModel.SelectedSamReaderName);
+
+                    viewModel.SelectedSamReaderName = null!;
+                    Assert.Equal(string.Empty, viewModel.SelectedSamReaderName);
+
+                    viewModel.SelectedSamReaderName = "another reader";
+                    Assert.Equal("another reader", viewModel.SelectedSamReaderName);
+                }
+                finally
+                {
+                    Directory.Delete(directory, true);
+                }
+
+                return Task.CompletedTask;
+            });
+        }
+
         private sealed class StubTab
         {
             public string LocalizationResourceSet { get; } = string.Empty;
