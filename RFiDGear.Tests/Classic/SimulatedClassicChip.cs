@@ -19,7 +19,8 @@ namespace RFiDGear.Tests.Classic
 
         private readonly byte[][] memory;
         private readonly ClassicCardSize size;
-        private readonly HashSet<int> readFaults = new HashSet<int>();
+        private readonly Dictionary<int, int> readFaults = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> readCounts = new Dictionary<int, int>();
 
         private int? loggedSector;
         private ClassicKeyType loggedType;
@@ -47,6 +48,9 @@ namespace RFiDGear.Tests.Classic
 
         public bool CardPresent { get; set; } = true;
 
+        /// <summary>Gets or sets a value that makes the chip answer a login at once with what it thinks of the key (the TWN4 does; a PC/SC reader says yes and the chip judges at the next access).</summary>
+        public bool JudgesLoginAtOnce { get; set; }
+
         /// <summary>Gets or sets a value that makes every call give up the thread before it is answered, so that two operations that are not held apart interleave their calls.</summary>
         public bool YieldsOnEveryCall { get; set; }
 
@@ -73,7 +77,10 @@ namespace RFiDGear.Tests.Classic
         public byte[] Peek(int block) => (byte[])memory[block].Clone();
 
         /// <summary>Makes the next read of a block fail once, as if the chip had refused it.</summary>
-        public void FailNextReadOf(int block) => readFaults.Add(block);
+        public void FailNextReadOf(int block) => FailReadOf(block, 1);
+
+        /// <summary>Makes one read of a block fail, as if the chip had refused it: the n-th read of that block (1 is the first).</summary>
+        public void FailReadOf(int block, int occurrence) => readFaults[block] = occurrence;
 
         public async Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key)
         {
@@ -151,7 +158,15 @@ namespace RFiDGear.Tests.Classic
             loggedType = keyType;
             loginIsGood = stored.SequenceEqual(key) && bits != null && bits.AllowsLoginWith(keyType);
 
-            // The reader says yes whatever the chip thinks.
+            if (JudgesLoginAtOnce && !loginIsGood)
+            {
+                halted = true;
+                loggedSector = null;
+
+                return new ClassicPortResult(ERROR.AuthFailure);
+            }
+
+            // A PC/SC reader says yes whatever the chip thinks.
             return ClassicPortResult.Ok;
         }
 
@@ -165,6 +180,7 @@ namespace RFiDGear.Tests.Classic
             }
 
             Reads++;
+            readCounts[block] = readCounts.TryGetValue(block, out var seen) ? seen + 1 : 1;
 
             if (halted)
             {
@@ -174,8 +190,9 @@ namespace RFiDGear.Tests.Classic
             }
 
             var sector = ClassicLayout.SectorOf(block);
+            var faulty = readFaults.TryGetValue(block, out var occurrence) && occurrence == readCounts[block];
 
-            if (loggedSector != sector || !loginIsGood || readFaults.Remove(block))
+            if (loggedSector != sector || !loginIsGood || faulty)
             {
                 return Refuse();
             }

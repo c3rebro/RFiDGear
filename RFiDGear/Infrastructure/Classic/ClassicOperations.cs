@@ -171,10 +171,11 @@ namespace RFiDGear.Infrastructure.Classic
                 return BlockOutcome.Read;
             }
 
-            if (type != state.LoggedIn)
+            // The first pass is the key that logged in; the second pass is the other key, and it logs in first.
+            if (type != state.Session)
             {
-                // The chip is awake here (the reads before this one worked, or this is the first login after a refusal that was followed by a
-                // wake): a wake is a login that is expected to fail, and on a chip that is awake it would halt it.
+                // The chip is awake here (the reads before this one worked, or the last login that failed was followed by a wake): a wake is a
+                // login that is expected to fail, and on a chip that is awake it would halt it.
                 var opened = await OpenSessionAsync(state, type, wakeFirst: false);
 
                 if (opened.Error == ERROR.TransportError)
@@ -186,8 +187,6 @@ namespace RFiDGear.Infrastructure.Classic
                 {
                     return BlockOutcome.Refused;
                 }
-
-                state.LoggedIn = type;
             }
 
             foreach (var block in wanted)
@@ -287,15 +286,12 @@ namespace RFiDGear.Infrastructure.Classic
 
             public ClassicAccessBits? Bits { get; private set; }
 
-            // The key that logged in first, and the key that is logged in now.
+            // The key that logged in first.
             public ClassicKeyType Session { get; private set; }
-
-            public ClassicKeyType LoggedIn { get; set; }
 
             public void StartSession(ClassicKeyType type, byte[] trailer)
             {
                 Session = type;
-                LoggedIn = type;
                 data[^1] = trailer;
                 Bits = ClassicAccessBits.TryFromTrailer(trailer, out var parsed) ? parsed : null;
             }

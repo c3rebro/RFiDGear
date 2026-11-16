@@ -162,6 +162,103 @@ namespace RFiDGear.Tests.Classic
             Assert.Equal(ERROR.TransportError, read.Error);
             Assert.Contains(read.Blocks, b => b.WasRead);
             Assert.Contains(read.Blocks, b => !b.WasRead);
+
+            // The read that found the chip gone is the last call: nobody wakes or logs in again to find that out a second time.
+            Assert.Equal("read 9", chip.Log[^1]);
+        }
+
+        [Fact]
+        public async Task AChipThatDisappearsWhileItIsWoken_IsATransportError_NotAnAuthFailure()
+        {
+            // The key was refused, and the look at the chip that follows finds nothing: the chip is gone, which is not a wrong key.
+            var chip = new SimulatedClassicChip();
+            var read = await new ClassicOperations(new GoneWhenWoken(chip)).ReadSectorAsync(2, Keys("000000000000", null));
+
+            Assert.Equal(ERROR.TransportError, read.Error);
+        }
+
+        [Fact]
+        public async Task AChipThatJudgesTheLoginAtOnce_IsNotAskedForTheTrailerAfterARefusedLogin()
+        {
+            // The TWN4 says no to a wrong key at the login. There is nothing to prove then, and the trailer is not read with it.
+            var chip = new SimulatedClassicChip { JudgesLoginAtOnce = true };
+
+            MakeMadSector(chip, 3);
+
+            var read = await new ClassicOperations(chip).ReadSectorAsync(3, Keys(Ff, "B0B1B2B3B4B5"));
+
+            Assert.Equal(ERROR.NoError, read.Error);
+            Assert.Equal(ClassicKeyType.KeyB, read.LoginKey);
+            Assert.Equal(
+                new[] { "login 3 KeyA", "reselect", "login 3 KeyB", "read 15", "read 12", "read 13", "read 14" },
+                chip.Log);
+        }
+
+        [Fact]
+        public async Task ARefusedReadWhoseNewLoginIsRefusedToo_EndsTheReadOfThatKey()
+        {
+            // Block 9 is refused, and the trailer that proves the new login is refused as well: the session is lost, so block 10 is not asked for.
+            var chip = new SimulatedClassicChip();
+
+            chip.FailReadOf(9, 1);
+            chip.FailReadOf(11, 2);
+
+            var read = await new ClassicOperations(chip).ReadSectorAsync(2, Keys(Ff, null));
+
+            Assert.Equal(ERROR.NoError, read.Error);
+            Assert.True(read.Blocks[0].WasRead);
+            Assert.False(read.Blocks[1].WasRead);
+            Assert.False(read.Blocks[2].WasRead);
+            Assert.True(read.Blocks[3].WasRead);
+            Assert.DoesNotContain("read 10", chip.Log);
+        }
+
+        [Fact]
+        public async Task AKeyBThatIsData_IsNotTriedForABlockThatOnlyKeyBMayRead()
+        {
+            // The trailer 001 lets key A read key B, so key B cannot log in; the second group (101) is for key B only. Nothing can read it, and
+            // nothing is tried: a login with key B would fail and halt the chip.
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(6, KeyA, new ClassicAccessBits(1, 5, 0, 4), 0x00, KeyB);
+
+            var read = await new ClassicOperations(chip).ReadSectorAsync(6, Keys("A0A1A2A3A4A5", "B0B1B2B3B4B5"));
+
+            Assert.Equal(ERROR.NoError, read.Error);
+            Assert.False(read.Blocks[1].WasRead);
+            Assert.DoesNotContain(chip.Log, entry => entry.Contains("KeyB", StringComparison.Ordinal));
+            Assert.Equal(0, chip.Reselects);
+        }
+
+        [Fact]
+        public async Task AKeyBThatThereIsNot_IsNotAskedFor_ForABlockThatOnlyKeyBMayRead()
+        {
+            // Key B is a key here (trailer 011) and reads the second group alone, but the operation has no key B: that block stays unread.
+            var chip = new SimulatedClassicChip();
+
+            chip.SetTrailer(6, KeyA, new ClassicAccessBits(1, 6, 0, 6), 0x00, KeyB);
+
+            var read = await new ClassicOperations(chip).ReadSectorAsync(6, Keys("A0A1A2A3A4A5", null));
+
+            Assert.Equal(ERROR.NoError, read.Error);
+            Assert.False(read.Blocks[1].WasRead);
+            Assert.DoesNotContain(chip.Log, entry => entry.Contains("KeyB", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task WithoutAccessBits_ABlockThatTheLoginKeyCannotRead_IsNotLeftToTheOtherKey()
+        {
+            // Nothing says that the other key could read it, so it is not tried: a guess costs a refusal and a halted chip.
+            var port = new ScriptedPort();
+
+            port.Refused.Add(9);
+
+            var read = await new ClassicOperations(port).ReadSectorAsync(2, Keys(Ff, "B0B1B2B3B4B5"));
+
+            Assert.Equal(ERROR.NoError, read.Error);
+            Assert.Null(read.AccessBits);
+            Assert.False(read.Blocks[1].WasRead);
+            Assert.DoesNotContain(port.Logins, login => login.Contains("KeyB", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -302,6 +399,22 @@ namespace RFiDGear.Tests.Classic
         }
 
         [Fact]
+        public void BothKeys_AreCleared_WhenTheOperationEnds()
+        {
+            Assert.True(ClassicSectorKeys.TryCreate("A0A1A2A3A4A5", "B0B1B2B3B4B5", out var keys));
+
+            var a = keys.Get(ClassicKeyType.KeyA);
+            var b = keys.Get(ClassicKeyType.KeyB);
+
+            Assert.Equal("ClassicSectorKeys(A, B)", keys.ToString());
+
+            keys.Dispose();
+
+            Assert.All(a, value => Assert.Equal(0, value));
+            Assert.All(b, value => Assert.Equal(0, value));
+        }
+
+        [Fact]
         public async Task ANullPortOrNullKeys_AreRefused()
         {
             Assert.Throws<ArgumentNullException>(() => new ClassicOperations(null!));
@@ -314,6 +427,9 @@ namespace RFiDGear.Tests.Classic
             public System.Collections.Generic.List<int> ReadOrder { get; } = new System.Collections.Generic.List<int>();
 
             public System.Collections.Generic.List<string> Logins { get; } = new System.Collections.Generic.List<string>();
+
+            // Blocks that the chip refuses to read, whatever happens.
+            public System.Collections.Generic.HashSet<int> Refused { get; } = new System.Collections.Generic.HashSet<int>();
 
             public ClassicCardSize? Size => ClassicCardSize.K1;
 
@@ -328,7 +444,9 @@ namespace RFiDGear.Tests.Classic
             {
                 ReadOrder.Add(block);
 
-                return Task.FromResult(new ClassicBlockResult(ERROR.NoError, new byte[16]));
+                return Task.FromResult(Refused.Contains(block)
+                    ? new ClassicBlockResult(ERROR.AuthFailure, null)
+                    : new ClassicBlockResult(ERROR.NoError, new byte[16]));
             }
 
             public Task<ClassicPortResult> WriteBlockAsync(int block, byte[] data)
@@ -339,6 +457,32 @@ namespace RFiDGear.Tests.Classic
             }
 
             public Task<ClassicPortResult> ReselectAsync() => Task.FromResult(ClassicPortResult.Ok);
+        }
+
+        // The chip is gone as soon as it is woken.
+        private sealed class GoneWhenWoken : IClassicPort
+        {
+            private readonly SimulatedClassicChip inner;
+
+            public GoneWhenWoken(SimulatedClassicChip inner)
+            {
+                this.inner = inner;
+            }
+
+            public ClassicCardSize? Size => inner.Size;
+
+            public Task<ClassicPortResult> LoginAsync(int block, ClassicKeyType keyType, byte[] key) => inner.LoginAsync(block, keyType, key);
+
+            public Task<ClassicBlockResult> ReadBlockAsync(int block) => inner.ReadBlockAsync(block);
+
+            public Task<ClassicPortResult> WriteBlockAsync(int block, byte[] data) => inner.WriteBlockAsync(block, data);
+
+            public Task<ClassicPortResult> ReselectAsync()
+            {
+                inner.CardPresent = false;
+
+                return inner.ReselectAsync();
+            }
         }
 
         // Takes the chip away after a number of reads.
