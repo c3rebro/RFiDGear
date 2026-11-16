@@ -193,6 +193,30 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public async Task A_list_that_is_filled_again_writes_nothing_and_changes_nothing_about_the_key_number(string? written)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A list writes null or empty while its items are replaced, and then the choice again; when it does not, the number that is
+                // shown (and saved) is still the one the task was run with, and neither the number nor its being a number may change.
+                var task = NewTask(TaskType_MifareDesfireTask.AuthenticateApplication);
+                task.SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo;
+                task.SelectedDesfireAppKeyNumberCurrent = "3";
+                task.SelectedDesfireAppKeyNumberCurrent = written!;
+                task.KeyBindings = new[] { Sam(SecureKeySlots.DesfireAppCurrent, Entry3) };
+                var reader = new KeyRecordingReader { SupportsSam = true };
+
+                var run = await RunAsync(task, reader);
+
+                Assert.Equal("3", task.SelectedDesfireAppKeyNumberCurrent);
+                Assert.Equal(ERROR.NoError, run.Error);
+                Assert.Equal((byte)3, Assert.Single(reader.SamAuthentications).KeyNumber);
+            });
+        }
+
+        [Theory]
         [InlineData("2147483648")]
         [InlineData("not a number")]
         public async Task A_key_number_that_was_not_read_is_still_not_read_after_the_task_was_saved_loaded_or_copied(string text)
