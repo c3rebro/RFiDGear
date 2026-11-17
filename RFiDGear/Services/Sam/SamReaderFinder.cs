@@ -24,13 +24,26 @@ namespace RFiDGear.Services.Sam
     /// </summary>
     internal sealed class SamConnection : IDisposable
     {
-        private readonly ISamCardConnection _connection;
+        private readonly Action _release;
+        private bool _disposed;
 
+        /// <summary>Creates the connection to a SAM in a PC/SC reader: its channel is the APDU transport of the card, and letting go means letting go of the card.</summary>
+        /// <param name="reader">The reader the SAM is in.</param>
+        /// <param name="connection">The connection to the card.</param>
         internal SamConnection(SamReaderInfo reader, ISamCardConnection connection)
+            : this(reader, new LlaSamApduChannel((connection ?? throw new ArgumentNullException(nameof(connection))).Transport), connection.Dispose)
         {
-            Reader = reader;
-            _connection = connection;
-            Channel = new LlaSamApduChannel(connection.Transport);
+        }
+
+        /// <summary>Creates the connection to a SAM that a reader of another kind opened (a socket of a TWN4).</summary>
+        /// <param name="reader">The reader the SAM is in.</param>
+        /// <param name="channel">The way to send APDUs to the SAM.</param>
+        /// <param name="release">Lets go of the SAM (for a TWN4, powers its socket down); runs once.</param>
+        internal SamConnection(SamReaderInfo reader, ISamApduChannel channel, Action release)
+        {
+            Reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            Channel = channel ?? throw new ArgumentNullException(nameof(channel));
+            _release = release ?? throw new ArgumentNullException(nameof(release));
         }
 
         /// <summary>The reader the SAM is in.</summary>
@@ -40,7 +53,16 @@ namespace RFiDGear.Services.Sam
         internal ISamApduChannel Channel { get; }
 
         /// <inheritdoc />
-        public void Dispose() => _connection.Dispose();
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _release();
+        }
     }
 
     /// <summary>
@@ -48,7 +70,7 @@ namespace RFiDGear.Services.Sam
     /// the ATR of each card from the state of the readers; it connects to no card and sends no command to any. Only a card that
     /// is a SAM is connected to, by <see cref="Open"/>.
     /// </summary>
-    internal sealed class SamReaderFinder
+    internal sealed class SamReaderFinder : ISamFinder
     {
         // A reader that is no slot of a card reader: Windows makes it up for the credentials of Windows Hello. Left alone.
         private static readonly string[] VirtualReaders = { "Windows Hello for Business" };
@@ -64,7 +86,7 @@ namespace RFiDGear.Services.Sam
 
         /// <summary>Looks at the card of each reader.</summary>
         /// <returns>The readers that hold a MIFARE SAM AV3, and whether the PC/SC service could be asked at all.</returns>
-        internal SamSearchResult Find()
+        public SamSearchResult Find()
         {
             IReadOnlyList<string> names;
 
@@ -110,7 +132,7 @@ namespace RFiDGear.Services.Sam
         /// <summary>Connects to the SAM in a reader.</summary>
         /// <param name="readerName">The reader.</param>
         /// <returns>The connection, or <c>null</c> when there is no card in the reader or it is no MIFARE SAM AV3.</returns>
-        internal SamConnection? Open(string readerName)
+        public SamConnection? Open(string readerName)
         {
             if (string.IsNullOrEmpty(readerName) || IsVirtual(readerName))
             {
