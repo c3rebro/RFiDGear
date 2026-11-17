@@ -1,5 +1,5 @@
 ---
-title: MIFARE SAM AV3, first sessions with a real SAM (2026-11-15 and 16)
+title: MIFARE SAM AV3, first sessions with a real SAM (2026-11-15 to 17)
 ---
 
 This is the record of the first two sessions with a real MIFARE SAM AV3 in a
@@ -98,7 +98,8 @@ traces hold nothing that needs protecting. Times are local.
   second session).
 - The window itself (search, check, authenticate, write, read-back) has been
   clicked with fakes only; `RFiDGear.HIL.Tests/SAM-AV3.md` is the checklist.
-- The TWN4 does not detect the SAM (Elatec.NET issue 28).
+- The TWN4 does not detect the SAM (Elatec.NET issue 28). Answered by the third
+  session: it was the hardware revision of the reader.
 
 **The trace of the first session:**
 
@@ -427,8 +428,8 @@ library for the SAM AV2 (public mirrors of it).
   8; the corrected run in finding 10 used a fresh connection.)
 - Whether the activation can be undone, and what the last byte of
   SAM_GetVersion means (from the first session).
-- The window itself has not been clicked with a real SAM, and the TWN4 does not
-  detect the SAM (Elatec.NET issue 28).
+- The window itself has not been clicked with a real SAM. (The question of the
+  TWN4, Elatec.NET issue 28, is answered by the third session below.)
 
 **The trace of the second session:**
 
@@ -800,4 +801,141 @@ the trace.
 00:35:00.087  <- SW=9000
 00:35:00.089  RESULT: MUTUALLY AUTHENTICATED: the card accepted the SAM's pa
     rt 1 and the SAM accepted the card's part 2 (key entry 1)
+```
+
+**The third session: the SAM in a TWN4 (2026-11-17):**
+
+The question of Elatec.NET issue 28, why a TWN4 does not see the SAM, has an
+answer, and it is neither the library nor the SAM: **the hardware revision of
+the reader**. Elatec support named the cause (as the maintainer reported it):
+his readers were revision D (TWN4 Legic 45) and revision E (TWN4 MultiTech),
+and a SAM AV3 needs revision G (TWN4 MultiTech 2, two SAM slots). The documents
+of the developer pack do not say so (see below).
+
+What the old readers did, with the activated SAM in SAM1 (a throwaway console
+that only reads: version, slot status, power-on; no command went to the SAM):
+
+- Firmware `TWN4/B1.06/CCF4.51/PRS1.04`, and `CCF5.07` after the update of the
+  developer pack 5.07: SAM1 `NoIccPresent` (command status 1, error 254, clock
+  stopped low), and the power-on with Auto, 5 V, 3 V and 1.8 V gave no ATR.
+- A GSM card in SAM2 of the same reader (a control) was detected and gave an
+  ATR. So the slots, the API and the probe worked: the reader did not see the
+  SAM, in either firmware.
+
+The new reader, revision G, firmware `TWN4/B1.64/NCF5.07/PRS1.04/PIMBAV` (device
+type `MifareNfc`, USB serial, PID 0420), with the activated SAM in SAM1:
+
+- SAM1 is `PresentAndActive` before anything is sent: the scan of the reader at
+  power-up has activated it. SAM2 is empty.
+- The power-on gives the ATR that the OMNIKEY gave, which `SamDetection` takes
+  for a SAM AV3.
+- The settings for T=1 come from that ATR: TC1 `FF` (guard time), TD1 `81`
+  (T=1), TA3 `FE` (IFSC), TB3 `43` (BWI 4, CWI 3). There is no TA2, so the SAM
+  works with the defaults F=372 and D=1 until a PPS, and none is sent. They
+  were set with `ISO7816_SetCommSettings`: T=1, 3.75 MHz, F 372, D 1,
+  `FindexDindex` 0x11, guard time 0xFF, waiting integers 0x43, IFSC 0xFE.
+- `SAM_GetVersion` through `Twn4SamApduChannel` of Elatec.NET answers `9000`
+  with the same 31 bytes as on the OMNIKEY (UID masked), last byte `A3`.
+- The host authentication with the factory key (key entry 0, version 0)
+  through the same channel: `90AF`, `90AF`, `9000`, authenticated, which the
+  library checks with the proof of the SAM.
+- `SAM_GetKeyEntry` of the entries 1, 0 and 2 in that session (secure
+  messaging with a MAC) gives what the session over PC/SC gave after the Keep IV
+  fix: entry 1 SET `0x0024` and ExtSET 01 (AES, Keep IV, PICC), entry 0 SET
+  `0x0020`, entry 2 SET `0x0000` and ExtSET 01 (native DES, PICC).
+
+Nothing was written to the SAM in this session: no activation, no key, no
+entry.
+
+**What the documents of Elatec say (developer pack 5.07):**
+
+"AV3" is in none of the six documents that were read (API reference DocRev31,
+system overview DocRev48, MultiTech 2 and 3, PC/SC description, simple
+protocol). Chapter 24 of the API reference is "SAM AV1/AV2": calls `SAMAVx_*`,
+which are not used here, and the statement that the reader scans the slots for
+SAM cards at power-up. The SAM was driven with its own APDUs through the generic
+ISO7816 API (chapter 33), which works for an AV3 on revision G. The selection
+of the voltage in `ISO7816_IccPowerOn` is documented for the TWN4 SmartCard
+only; Auto was used and gave an ATR.
+
+**What the third session means for the application:**
+
+- A TWN4 of revision G can do what the setup does over PC/SC: find the SAM,
+  read its version, authenticate as host, read key entries. The setup window
+  still works with PC/SC readers only.
+- A key of the SAM could be relayed to a DESFire card on one TWN4 (the SAM in
+  SAM1, the card on the antenna of the same reader). `ElatecNetProvider` does
+  not do it yet: `SupportsDesfireSamKeys` is false there, and a task with a key
+  of the SAM ends with `KeyUnavailable` before anything is sent (the reader
+  operations themselves answer `ProtocolConstraint`, the default).
+- The TWN4 of revisions D and E cannot be used for a SAM at all.
+
+**The trace of the third session:**
+
+Complete (a probe, `SAM_GetVersion`, host authentication and the three reads;
+the UID of the SAM is masked in the answer of `SAM_GetVersion`). The key is the
+public factory key.
+
+```text
+19:15:36.770  ##### stage: twn4-probe  (trace file C:\tmp\sam-session\trace-
+    20261117.txt)
+19:15:36.787  ##### twn4-probe on COM8 (read-only: no APDU is sent to a SAM,
+     no key is used)
+19:15:36.846  connect: True
+19:15:36.853  device type: MifareNfc
+19:15:36.861  version: TWN4/B1.64/NCF5.07/PRS1.04/PIMBAV
+19:15:36.872  slot status Sam1: IccStatus PresentAndActive, CommandStatus 0,
+     Error 0, ClockStatus Running
+19:15:36.876  slot status Sam2: IccStatus NoIccPresent, CommandStatus 1, Err
+    or 254, ClockStatus StoppedLow
+19:15:36.880  slot status Sam3: no answer (null)
+19:15:36.886  slot status Sam4: no answer (null)
+19:15:36.891  slot status Sc1: no answer (null)
+19:15:36.927  power on Sam1 (Auto): status PresentAndActive, command status
+    0, error 0, ATR 3BDF18FF81F1FE43003F07834D49464152452053414D204156333011
+19:15:36.930  RESULT: an ATR came back on Sam1: 3BDF18FF81F1FE43003F07834D49
+    464152452053414D204156333011
+19:15:36.932          a MIFARE SAM AV3 by its historical bytes: True
+19:15:36.941  power off Sam1
+19:16:43.246  ##### stage: twn4-version  (trace file C:\tmp\sam-session\trac
+    e-20261117.txt)
+19:16:43.261  ##### twn4-version on COM8 (SAM_GetVersion only: read-only, no
+     key)
+19:16:43.329  connect: True
+19:16:43.336  version: TWN4/B1.64/NCF5.07/PRS1.04/PIMBAV
+19:16:43.379  ATR 3BDF18FF81F1FE43003F07834D49464152452053414D204156333011 A
+    V3=True
+19:16:43.391  comm settings set: T=1, 3.75 MHz, F=372 D=1, IFSC 0xFE, guard
+    time 0xFF, waiting integers 0x43, no PPS
+19:16:43.394  -> 8060000000
+19:16:43.472  <- 0401010500230104010105011F01EEEEEEEEEEEEEE20253900001801160
+    0A3 SW=9000   (UID bytes 14..20 shown as EE)
+19:16:43.474  RESULT SAM_GetVersion: SW=9000, 31 data bytes
+19:16:43.481  power off SAM1
+19:19:10.058  ##### stage: twn4-auth  (trace file C:\tmp\sam-session\trace-2
+    0261117.txt)
+19:19:10.072  ##### twn4-auth on COM8 (host authentication with the factory
+    key + read of key entries 1, 0, 2: nothing is written)
+19:19:10.150  connect: True
+19:19:10.189  ATR 3BDF18FF81F1FE43003F07834D49464152452053414D204156333011 A
+    V3=True
+19:19:10.201  comm settings set (as in twn4-version)
+19:19:10.207  -> 80A400000300000200
+19:19:10.268  <- BD7DC184558282DB8DFAE929 SW=90AF
+19:19:10.280  -> 80A4000014FF70D04C9775D6C46CCF34D27A51A6386051F88700
+19:19:10.371  <- 1412F0435CF82F934D18A6EECC037382FD4E5AC50986DAEF SW=90AF
+19:19:10.373  -> 80A40000209FE4C50AAD9D337A10D0F3BA0BBCD8EDA20708892CF859D82
+    976135AE95D223B00
+19:19:10.471  <- 875AF2666D203690B812995A9EC73AAA SW=9000
+19:19:10.473  RESULT authenticated=True
+19:19:10.475  -> 8064010008E7BC8F6659802E7A00
+19:19:10.556  <- E28A23E88AE7FB1212CF713FED8061090045ABCD1F53559E SW=9000
+19:19:10.558  RESULT entry 1: 13 bytes: 000000000000000000FF240001
+19:19:10.559  -> 806400000818F53D8ABA2370E400
+19:19:10.636  <- 2EBB84546ACCD198C245D7855A610DBD30CC099057230A0A SW=9000
+19:19:10.637  RESULT entry 0: 13 bytes: 000000000000000000FF200000
+19:19:10.638  -> 8064020008F769224E5EBF7ADA00
+19:19:10.716  <- 0F06A1041D60EAEC7227DD984DF8297CD953CF2AB6FAE707 SW=9000
+19:19:10.717  RESULT entry 2: 13 bytes: 000000000000000000FF000001
+19:19:10.733  power off SAM1
 ```

@@ -247,7 +247,13 @@ Tools > "MIFARE SAM AV3 setup..." (`SamSetupView`, `SamSetupViewModel`) sets up
 a MIFARE SAM AV3 that sits in a PC/SC reader (issue 347). It needs no project.
 It finds the SAM, activates a new one, authenticates as host and writes one key
 into a key entry. Using the key in a SAM is not part of it, and neither is the
-TWN4, which does not detect the SAM (Elatec.NET issue 28).
+TWN4. A TWN4 sees a SAM AV3 only from hardware revision G (TWN4 MultiTech 2,
+two SAM slots); the revisions D (TWN4 Legic 45) and E (TWN4 MultiTech) never
+do, which was the cause of Elatec.NET issue 28 (Elatec support, 2026-11-17).
+On a revision G a probe got the ATR of the SAM in SAM1, `SAM_GetVersion`, the
+host authentication and the key entries through Elatec.NET's
+`Twn4SamApduChannel` (T=1 from the ATR, no PPS); RFiDGear does not use that
+yet. The record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
 
 - The code is `Services/Sam`. `SamReaderFinder` looks at the ATR of the card in
   each PC/SC reader (historical bytes `MIFARE SAM AV3`) **without connecting to
@@ -303,8 +309,9 @@ TWN4, which does not detect the SAM (Elatec.NET issue 28).
   gate of the provider: the SAM is opened first, the card second, both are let
   go of) through three virtual operations of `ReaderDevice`
   (`SupportsDesfireSamKeys`, `AuthenticateMifareDesfireWithSamAsync`,
-  `ChangeMifareDesfireKeyWithSamAsync`); the TWN4 keeps the defaults
-  (`ProtocolConstraint`). Four commands of the DESFire task call them
+  `ChangeMifareDesfireKeyWithSamAsync`); the TWN4 keeps the defaults, so
+  a task there ends `KeyUnavailable` before anything is sent (the operations
+  answer `ProtocolConstraint`). Four commands of the DESFire task call them
   (`MifareDesfireSetupViewModel.Sam.cs`): the task "Check: App Key", "Change
   PICC Master Key" and "Change Application Key", and the button that
   authenticates the PICC master key; every other command and every check task

@@ -650,7 +650,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <summary>
         /// Says, without a card, whether this reader can authenticate a DESFire card, and change its keys, with keys that stay in a MIFARE SAM AV3.
         /// A task asks before it asks for any key, so that a reader that cannot do it ends the task before anything is sent. The reader of the
-        /// TWN4 cannot (it does not see the SAM, and it has no relay between the SAM and the card); a PC/SC reader can when a reader for the SAM is
+        /// TWN4 does not yet (its SAM slot is not used, and it has no relay between the SAM and the card); a PC/SC reader can when a reader for the SAM is
         /// set.
         /// </summary>
         /// <returns><see langword="false"/> by default.</returns>

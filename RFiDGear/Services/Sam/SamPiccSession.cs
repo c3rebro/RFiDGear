@@ -55,7 +55,7 @@ namespace RFiDGear.Services.Sam
         /// <summary>The request cannot be sent: an application number of more than 24 bits, a key number of the card that does not exist, or a SAM key that is no reference (entry 0). Nothing was sent.</summary>
         InvalidRequest,
 
-        /// <summary>The reader cannot make the call at all (the reader of the TWN4 cannot see the SAM, and a base reader has no such operation). Nothing was sent.</summary>
+        /// <summary>The reader cannot make the call at all (the TWN4 provider has no relay to its SAM slot yet, and a base reader has no such operation). Nothing was sent.</summary>
         NotSupported,
 
         /// <summary>No card on the reader, or it could not be connected to. The SAM had been opened already and nothing was sent to it.</summary>
