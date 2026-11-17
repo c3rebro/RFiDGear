@@ -10,18 +10,28 @@ namespace RFiDGear.Services.Sam
     /// <summary>The SAM, opened for one operation. It holds the SAM (<see cref="SamPortGate"/>) until it is disposed.</summary>
     internal sealed class SamPiccConnection : IDisposable
     {
-        private readonly SamConnection _connection;
+        private readonly ISamApduChannel _channel;
+        private readonly Action _release;
         private bool _disposed;
 
         /// <summary>Creates the connection; the gate of the SAM is already held and is given back by <see cref="Dispose"/>.</summary>
         /// <param name="connection">The connection to the SAM.</param>
         internal SamPiccConnection(SamConnection connection)
+            : this((connection ?? throw new ArgumentNullException(nameof(connection))).Channel, connection.Dispose)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+        }
+
+        /// <summary>Creates the connection to a SAM that a reader of another kind opened; the gate of the SAM is already held and is given back by <see cref="Dispose"/>.</summary>
+        /// <param name="channel">The channel to the SAM.</param>
+        /// <param name="release">Lets go of the SAM (for a TWN4, powers its socket down); runs once, before the gate is given back.</param>
+        internal SamPiccConnection(ISamApduChannel channel, Action release)
+        {
+            _channel = channel ?? throw new ArgumentNullException(nameof(channel));
+            _release = release ?? throw new ArgumentNullException(nameof(release));
         }
 
         /// <summary>Gets the channel to the SAM.</summary>
-        internal ISamApduChannel Channel => _connection.Channel;
+        internal ISamApduChannel Channel => _channel;
 
         /// <summary>Lets go of the SAM (which resets its state: nothing that was left half done survives) and gives the gate back.</summary>
         public void Dispose()
@@ -35,7 +45,7 @@ namespace RFiDGear.Services.Sam
 
             try
             {
-                _connection.Dispose();
+                _release();
             }
             finally
             {

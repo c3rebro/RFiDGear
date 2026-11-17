@@ -63,6 +63,9 @@ namespace RFiDGear.Services.Sam
 
         /// <summary>The card on the reader is no DESFire card, so nothing of a DESFire authentication was sent to it.</summary>
         NotDesfire,
+
+        /// <summary>A SAM AV3 sits in each socket of the reader (a TWN4): their keys differ, so none is chosen. Nothing was sent to the card.</summary>
+        SamAmbiguous,
     }
 
     /// <summary>
