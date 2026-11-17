@@ -73,13 +73,14 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
    2), say so in the status line with the reason and the status words, and
    leave the card as it was (check with the typed AES key).
 4. Change the key back: the current key AES bound to `1:0`, the new key DES
-   bound to `2:0`. **This direction (AES to DES) has not been tried on a
-   card.** Expect success and the factory key on the card; if it fails, write
-   down the status words of the line and check which key the card holds.
+   bound to `2:0`. **This direction (AES to DES) was seen on a TWN4 (the TWN4
+   section of `SAM-PICC-FIRST-CONTACT.md`), not yet with a PC/SC reader.**
+   Expect success and the factory key on the card; if it fails, write down
+   the status words of the line and check which key the card holds.
 5. Create an application with AES keys that you know: its keys 0 and 1 both
    hold the test key of the SAM entry `1:0`. **The change of an application
-   key through the SAM has not been tried on a card**; the two cases below are
-   what it needs.
+   key through the SAM was seen on a TWN4, not yet with a PC/SC reader**; the
+   two cases below are what it needs.
    a. Key number 0, so that the key that authenticates is the key that is
       replaced: run "Change Application Key" with the application key bound
       to the SAM `1:0` and the new key bound to `3:0` (another AES entry).

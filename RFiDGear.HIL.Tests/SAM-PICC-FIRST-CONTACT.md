@@ -317,6 +317,12 @@ What was found:
   key authenticates and the DES key is refused (`91AE`). The change **back,
   AES (entry 1) to DES (entry 2), which had never been tried on a card on any
   reader,** took 677 ms, and the card holds its factory DES key again.
+- **Case 3 fails as it should.** With the card holding the AES key, the same
+  change, DES (entry 2) to AES (entry 1), is refused by the card at once
+  (`91AE`, before the SAM is asked): the answer is `AuthFailure`, the key
+  "may have changed" is false, and the card still holds the AES key (the AES
+  key authenticates and the DES key is refused). The change back (case 4) then
+  put the factory key on the card.
 - **The application keys work too** (the cases 5a, 5b and 6 of `SAM-PICC.md`).
   A third AES key entry was written into the SAM for them (entry 3, version 0,
   SET `0x0024`; the SAM was authenticated as host with its factory master key,
@@ -525,4 +531,39 @@ write of entry 3 and of the application keys:
      fail): Error=ProtocolConstraint Failure=CardRefusedBeforeSam SAM=0000 c
     ard=91A0 keyMayHaveChanged=False
 22:28:07.198  RESULT exit 0
+```
+
+The trace of case 3 (the same change twice, then the way back):
+
+```text
+22:37:09.642  ##### stage: twn4-case3  (trace file C:\tmp\sam-session\trace-
+    20261117.txt)
+22:37:09.657  ##### twn4-case3 (case 3: the same change twice, the second mu
+    st fail and change nothing; the card is put back at the end)
+22:37:09.748  connect: NoError
+22:37:10.406  PROBE before: DES entry 2 -> Error=NoError Failure=None SAM=00
+    00 card=0000 keyMayHaveChanged=False | AES entry 1 -> Error=AuthFailure
+    Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False
+22:37:11.096  CASE 1 DES entry 2 -> AES entry 1: Error=NoError Failure=None
+    SAM=0000 card=0000 keyMayHaveChanged=False
+22:37:11.351  CASE 3 the same change again (the card holds AES now): Error=A
+    uthFailure Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveCha
+    nged=False
+22:37:11.995  PROBE after the failed second change: DES entry 2 -> Error=Aut
+    hFailure Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChang
+    ed=False | AES entry 1 -> Error=NoError Failure=None SAM=0000 card=0000
+    keyMayHaveChanged=False
+22:37:11.997  CASE 3 as expected: AuthFailure, nothing may have changed, the
+     card still holds the AES key
+22:37:12.631  PROBE before the way back: DES entry 2 -> Error=AuthFailure Fa
+    ilure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False |
+    AES entry 1 -> Error=NoError Failure=None SAM=0000 card=0000 keyMayHaveC
+    hanged=False
+22:37:13.315  CASE 4 AES entry 1 -> DES entry 2: Error=NoError Failure=None
+    SAM=0000 card=0000 keyMayHaveChanged=False
+22:37:13.895  PROBE at the end: DES entry 2 -> Error=NoError Failure=None SA
+    M=0000 card=0000 keyMayHaveChanged=False | AES entry 1 -> Error=AuthFail
+    ure Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=Fa
+    lse
+22:37:13.898  RESULT: the card holds the factory DES key again
 ```
