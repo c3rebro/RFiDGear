@@ -274,11 +274,12 @@ in socket 1 (SAM1) and the spare DESFire EV3 on the antenna of the same
 reader. Hardware revision G (TWN4 MultiTech 2), firmware
 `TWN4/B1.64/NCF5.07/PRS1.04/PIMBAV`, USB serial (PID 0420). The card held its
 factory DES key at key 0 (key type DES, key settings free create and delete
-without the master key). **Authentication only: no key was changed, nothing
-was written to the SAM or to the card.** First with a throwaway console
-(spike, the second run is traced below), then with the classes of the
-application (`ElatecTwn4Ports`, `Twn4SamRelay.Parts`, `SamRelay.RunAsync`) on
-the same reader and card.
+without the master key). **The first runs were authentication only; the key
+changes come last.** First a throwaway console (spike, the second run is
+traced below), then the classes of the application (`ElatecTwn4Ports`,
+`Twn4SamRelay.Parts`, `SamRelay.RunAsync`) on the same reader and card, and
+at last the provider of the application (`ElatecNetProvider`) changing the
+PICC master key through the SAM. Nothing was written to the SAM at any time.
 
 What was found:
 
@@ -308,10 +309,19 @@ What was found:
   card as before (the key type is DES).
 - An AES authentication on this card is refused by the card at once (`91AE`,
   the card holds a DES key): the case ends as `CardRefusedBeforeSam`.
+- **The key changes work through the provider of the application** (the SAM
+  holds the AES key `0F1E2D3C4B5A69788796A5B4C3D2E1F0` in entry 1 and the DES
+  zero key in entry 2; the master key of the SAM is the factory key and was
+  not used): the PICC master key DES (entry 2) to AES (entry 1) took 665 ms,
+  including the check by authentication with the new key; afterwards the AES
+  key authenticates and the DES key is refused (`91AE`). The change **back,
+  AES (entry 1) to DES (entry 2), which had never been tried on a card on any
+  reader,** took 677 ms, and the card holds its factory DES key again.
 
-What has not been tried on a TWN4: a key change, AES keys and application
-keys (the spare card holds a DES key), and the task commands in the
-application window. `SAM-PICC.md` has the cases.
+What has not been tried on a TWN4: the application keys (they need a third
+key entry in the SAM, an AES key other than entry 1, and an application on
+the card), and the task commands in the application window. `SAM-PICC.md`
+has the cases.
 
 The trace (the second run of the spike, then the two runs of the classes of
 the application; the SAM is entry 2 for the card key and entry 127 for the
@@ -400,4 +410,34 @@ blank one, nothing here is secret):
     card=0000 keyMayHaveChanged=False  (356 ms)
 21:06:31.274  slot status after: IccStatus PresentAndInactive, CommandStatus
      0, Error 0, ClockStatus Running
+```
+
+The trace of the key changes (the provider of the application; "PROBE" asks
+the card which key it holds by authenticating with entry 2 as DES and with
+entry 1 as AES):
+
+```text
+22:01:01.365  ##### stage: twn4-change  (trace file C:\tmp\sam-session\trace
+    -20261117.txt)
+22:01:01.377  ##### twn4-change (PICC master key of the spare card: DES -> A
+    ES -> DES through the SAM, entries 1 and 2)
+22:01:01.491  connect: NoError
+22:01:02.157  PROBE before: DES entry 2 -> Error=NoError Failure=None SAM=00
+    00 card=0000 keyMayHaveChanged=False
+22:01:02.159  PROBE before: AES entry 1 -> Error=AuthFailure Failure=CardRef
+    usedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False
+22:01:02.827  CHANGE DES entry 2 -> AES entry 1: Error=NoError Failure=None
+    SAM=0000 card=0000 keyMayHaveChanged=False  (665 ms)
+22:01:03.456  PROBE after DES -> AES: DES entry 2 -> Error=AuthFailure Failu
+    re=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False
+22:01:03.458  PROBE after DES -> AES: AES entry 1 -> Error=NoError Failure=N
+    one SAM=0000 card=0000 keyMayHaveChanged=False
+22:01:04.136  CHANGE AES entry 1 -> DES entry 2: Error=NoError Failure=None
+    SAM=0000 card=0000 keyMayHaveChanged=False  (677 ms)
+22:01:04.716  PROBE after AES -> DES: DES entry 2 -> Error=NoError Failure=N
+    one SAM=0000 card=0000 keyMayHaveChanged=False
+22:01:04.718  PROBE after AES -> DES: AES entry 1 -> Error=AuthFailure Failu
+    re=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False
+22:01:04.720  RESULT: the card holds the factory DES key again (as at the st
+    art)
 ```

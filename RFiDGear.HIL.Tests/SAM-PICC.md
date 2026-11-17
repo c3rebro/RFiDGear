@@ -112,10 +112,10 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
     again (only the reader changes; case 4 put the card back into the factory
     state). Then run the cases 5 and 6 with a **fresh application**: the one
     of the first run is still on the card, so create another one (another
-    AID) whose keys 0 and 1 hold the key `1:0`. **Only an authentication with
-    the DES key of entry 2 has been seen on a TWN4 and a card** (the TWN4
-    section of `SAM-PICC-FIRST-CONTACT.md`); the key change, the AES cases and
-    the application keys have not.
+    AID) whose keys 0 and 1 hold the key `1:0`. **The cases 1 to 4 have been
+    seen on a TWN4 and a card** through the provider of the application (the
+    TWN4 section of `SAM-PICC-FIRST-CONTACT.md`); the application keys (the
+    cases 5 and 6) and the task window have not.
 12. With the TWN4 and both sockets empty, or a TWN4 of an older revision (D or
     E): run case 2. Expect "key not available", the line "No MIFARE SAM AV3
     was found" with the hint on the hardware revision, and nothing sent to
