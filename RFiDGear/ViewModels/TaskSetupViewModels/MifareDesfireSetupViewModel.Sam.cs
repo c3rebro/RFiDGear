@@ -157,6 +157,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 StatusText += LocalizedStatusLine("textBoxStatusSamNotConfigured", DateTime.Now);
             }
+            else if (result.Failure == SamPiccFailure.SamNotFound)
+            {
+                StatusText += LocalizedStatusLine("textBoxStatusSamNotFound", DateTime.Now);
+            }
+            else if (result.Failure == SamPiccFailure.SamAmbiguous)
+            {
+                StatusText += LocalizedStatusLine("textBoxStatusSamAmbiguous", DateTime.Now);
+            }
             else
             {
                 StatusText += LocalizedStatusLine(

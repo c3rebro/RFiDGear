@@ -8,6 +8,7 @@ using RFiDGear.Models;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -17,7 +18,8 @@ using static LibLogicalAccess.Card.DESFireCommands;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
 {
-    public class ElatecNetProvider : ReaderDevice, IDisposable
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half is ElatecNetProvider.Sam.cs; the analysis reads one file at a time and cannot see it.")]
+    public partial class ElatecNetProvider : ReaderDevice, IDisposable
     {
         private TWN4ReaderDevice readerDevice;
         private readonly byte DESFIRE_AUTHMODE_COMPATIBLE = 0;
