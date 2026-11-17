@@ -309,8 +309,9 @@ yet. The record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
   gate of the provider: the SAM is opened first, the card second, both are let
   go of) through three virtual operations of `ReaderDevice`
   (`SupportsDesfireSamKeys`, `AuthenticateMifareDesfireWithSamAsync`,
-  `ChangeMifareDesfireKeyWithSamAsync`); the TWN4 keeps the defaults
-  (`ProtocolConstraint`, for now). Four commands of the DESFire task call them
+  `ChangeMifareDesfireKeyWithSamAsync`); the TWN4 keeps the defaults, so
+  a task there ends `KeyUnavailable` before anything is sent (the operations
+  answer `ProtocolConstraint`). Four commands of the DESFire task call them
   (`MifareDesfireSetupViewModel.Sam.cs`): the task "Check: App Key", "Change
   PICC Master Key" and "Change Application Key", and the button that
   authenticates the PICC master key; every other command and every check task

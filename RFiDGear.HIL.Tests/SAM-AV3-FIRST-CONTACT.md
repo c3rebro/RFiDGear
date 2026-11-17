@@ -866,7 +866,8 @@ only; Auto was used and gave an ATR.
 - A key of the SAM could be relayed to a DESFire card on one TWN4 (the SAM in
   SAM1, the card on the antenna of the same reader). `ElatecNetProvider` does
   not do it yet: `SupportsDesfireSamKeys` is false there, and a task with a key
-  of the SAM ends with `ProtocolConstraint` before anything is sent.
+  of the SAM ends with `KeyUnavailable` before anything is sent (the reader
+  operations themselves answer `ProtocolConstraint`, the default).
 - The TWN4 of revisions D and E cannot be used for a SAM at all.
 
 **The trace of the third session:**
