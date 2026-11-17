@@ -20,8 +20,8 @@ SAM is the window: that, and a second SAM, are what this checklist is for.
 - The SAM sits in a **PC/SC reader** (the contact slot of an OMNIKEY 5422, for
   instance) and is reached through LibLogicalAccess. It is not the TWN4: a TWN4
   sees a SAM AV3 only from hardware revision G (TWN4 MultiTech 2), and this
-  window does not use it (see the third session in
-  `SAM-AV3-FIRST-CONTACT.md`).
+  window does not use it; the task commands do (`SAM-PICC.md`, and the third
+  session in `SAM-AV3-FIRST-CONTACT.md`).
 - It sets a SAM up: find it, activate a new one, authenticate as host, write one
   key into a key entry. **Using** that key, in the TWN4 or anywhere else, is the
   next task and is not checked here.

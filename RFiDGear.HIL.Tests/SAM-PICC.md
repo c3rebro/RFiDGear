@@ -8,7 +8,8 @@ for **you** to run in the application: they change the keys of a card. Nothing
 here has run as application code yet. The frames were seen on one bench SAM and
 one DESFire EV3 with a throwaway console (`SAM-PICC-FIRST-CONTACT.md` and
 `SAM-AV3-FIRST-CONTACT.md` are the record), and `SamPiccRelayTests` (see
-`SAM-AV3.md`) checks the way through the application without changing anything.
+`SAM-AV3.md`) checks the way through the application without changing
+anything; `Twn4SamRelayTests` does the same on a TWN4.
 
 **What it is:**
 
@@ -22,8 +23,10 @@ one DESFire EV3 with a throwaway console (`SAM-PICC-FIRST-CONTACT.md` and
   "Authenticate with PICC MasterKey". All the keys of such a command have to
   be keys of the SAM (the SAM needs the old key and the new key to build the
   cryptogram of a key change), and the reader has to be a PC/SC reader with a
-  reader set for the SAM. Every other command, and every check task, ends with
-  "key not available" before it touches the card.
+  reader set for the SAM, or a TWN4 of hardware revision G with the SAM in one
+  of its two sockets (no setting: the SAM is found by its ATR). Every other
+  command, and every check task, ends with "key not available" before it
+  touches the card.
 - The version of a new key is the version of its key entry. The version box of
   the dialog is not used for a key of the SAM.
 
@@ -37,11 +40,19 @@ one DESFire EV3 with a throwaway console (`SAM-PICC-FIRST-CONTACT.md` and
   SAM in the reader settings (the contact slot) and the reader of the card
   (the contactless slot), PC/SC provider. Close the SAM setup window and every
   other program that uses the readers.
-- Prepare two key entries with the SAM setup window (Tools > "MIFARE SAM AV3
-  setup..."): entry 1 an AES-128 PICC key, for example
-  `0F1E2D3C4B5A69788796A5B4C3D2E1F0` (SET `0x0024`), and entry 2 a DES/2K3DES
-  PICC key, sixteen zero bytes, which is the factory key of the card (SET
-  `0x0000`). The window says in green when an entry reads back as usable.
+- With a **TWN4** (hardware revision G, TWN4 MultiTech 2): the SAM in one of
+  its two SAM sockets (not in both), the card on its antenna, the provider
+  Elatec in the reader settings, and no other program on its COM port. The
+  setup window works with PC/SC readers only: prepare the key entries with a
+  PC/SC reader first, then put the SAM into the TWN4.
+- Prepare three key entries with the SAM setup window (Tools > "MIFARE SAM
+  AV3 setup..."): entry 1 an AES-128 PICC key, for example
+  `0F1E2D3C4B5A69788796A5B4C3D2E1F0` (SET `0x0024`), entry 2 a DES/2K3DES PICC
+  key, sixteen zero bytes, which is the factory key of the card (SET
+  `0x0000`), and entry 3 another AES-128 PICC key, for example
+  `00112233445566778899AABBCCDDEEFF`, which the cases 5 and 6 use for the
+  keys of an application. The window says in green when an entry reads back as
+  usable.
 - The log has lines that start with `SAM PICC:`. They hold the step, the
   result and the status words, never a key, a reference, a reader name or the
   text of an error. Keep the lines of your run: they are what to send back.
@@ -77,9 +88,10 @@ one DESFire EV3 with a throwaway console (`SAM-PICC-FIRST-CONTACT.md` and
       key 0 authenticates and key 1 is replaced (the P1 and the P2 of a key
       other than the one that authenticated): the dialog shows a box for the
       old key then. Bind the application key (key 0, the key that
-      authenticates) to the SAM `1:0`, the old application key (what key 1
-      holds now) to the SAM `1:0` as well, and the new key to `3:0`. Expect
-      success and a check by authentication of key 1 with the new key.
+      authenticates, which holds the key `3:0` since case 5a) to the SAM
+      `3:0`, the old application key (what key 1 holds now) to the SAM `1:0`,
+      and the new key to `3:0`. Expect success and a check by authentication
+      of key 1 with the new key.
 6. Run the task "Check: App Key" for that application with the
    current key bound to the SAM `3:0`. Expect success.
 7. Leave the reader of the SAM empty in the reader settings and run any of the
@@ -96,8 +108,25 @@ one DESFire EV3 with a throwaway console (`SAM-PICC-FIRST-CONTACT.md` and
     started): expect an error, and the line "The card may hold the new key
     although the change was not confirmed" if the cryptogram had been sent.
     Check which key the card holds before you do anything else.
-11. Switch the provider to the TWN4 and run case 2: expect the line that a key
-    of the SAM needs a PC/SC reader, and nothing sent to the card.
+11. With the TWN4 and the SAM in one of its sockets, first make sure that the
+    card holds its factory DES key (case 10 or a failed run may have left it
+    with the AES key or another one: authenticate with each key you know and
+    restore the factory key if need be). Then run the cases 1 to 4 again
+    (only the reader changes; case 4 puts the card back into the factory
+    state). Then run the cases 5 and 6 with a **fresh application**: the one
+    of the first run is still on the card, so create another one (another
+    AID) whose keys 0 and 1 hold the key `1:0`. **The cases 1 to 4 have been
+    seen on a TWN4 and a card** through the provider of the application (the
+    TWN4 section of `SAM-PICC-FIRST-CONTACT.md`); the application keys (the
+    cases 5 and 6) and the task window have not.
+12. With the TWN4 and both sockets empty, or a TWN4 of an older revision (D or
+    E): run case 2. Expect "key not available", the line "No MIFARE SAM AV3
+    was found" with the hint on the hardware revision, and nothing sent to
+    the card.
+13. With a SAM in each socket: run case 2. Expect "key not available", the
+    line that a SAM sits in each socket, and nothing sent to the card.
+14. Take the SAM out of its socket, or the card off the antenna, in the middle
+    of case 1: as case 10; check which key the card holds.
 
 **What is not covered:** 3K3DES keys (a SAM entry cannot be one), key
 diversification, the ISO and the EV2 modes of the authentication, and every
