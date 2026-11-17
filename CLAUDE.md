@@ -331,9 +331,9 @@ relay below); the record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
   authenticates the PICC master key; every other command and every check task
   refuses a key of the SAM. What the SAM and the card did:
   `RFiDGear.HIL.Tests/SAM-PICC-FIRST-CONTACT.md`; the checklist of the
-  commands, not run on a card yet (on a TWN4 the provider changed the PICC
-  master key DES to AES and back, but nothing was run through the task
-  window): `RFiDGear.HIL.Tests/SAM-PICC.md`.
+  commands, not run on a card yet (on a TWN4 the provider ran the cases 1 to
+  6, the PICC master key and the application keys, but nothing was run
+  through the task window): `RFiDGear.HIL.Tests/SAM-PICC.md`.
 - Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (a read-only case, a case that
   writes a key entry, and the checklist for the window).
   `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md` is the record of the first
