@@ -44,11 +44,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         internal virtual ITwn4SamRelayPorts? CreateTwn4Ports() =>
             readerDevice is { IsConnected: true } device ? new ElatecTwn4Ports(device) : null;
 
-        // One relay is one boundary, under the lock of the COM port (see SamRelay): everything that talks to the reader waits for it, and it waits
-        // for them, because the SAM and the card are reached through the same port. The SAM is opened first and found in whichever socket it is;
-        // the card is searched once, afterwards; nothing of the library's own DESFire calls is used, because they repeat steps. The reader is
-        // taken before the lock is waited for: the monitor replaces it only when it is not connected, and the ports ask the reader on every call.
-        private Task<SamPiccResult> RunWithSamAsync(string operation, Func<SamPiccSession, Task<SamPiccResult>> run)
+        // One relay is one boundary, under the lock of the COM port (see SamRelay). Everything else that talks to the reader waits for it,
+        // and it waits for them, because the SAM and the card are reached through the same port. The SAM is opened first and found in
+        // whichever socket it is in, and the card is searched once, afterwards. The library's own DESFire calls are not used, because they
+        // repeat steps. The reader is taken before the lock is waited for, which is safe because the monitor replaces it only when it is
+        // not connected, and the ports ask the reader on every call.        private Task<SamPiccResult> RunWithSamAsync(string operation, Func<SamPiccSession, Task<SamPiccResult>> run)
         {
             var ports = CreateTwn4Ports();
 
