@@ -42,6 +42,9 @@ namespace RFiDGear.Tests.Sam
         /// <summary>Gets or sets a task that the search for the card waits for, to keep a relay under way.</summary>
         internal TaskCompletionSource<bool>? HoldSearch { get; set; }
 
+        /// <summary>Gets what looking at a socket throws, by socket (a reader that fails for one socket only).</summary>
+        internal Dictionary<Twn4SamSlot, Exception> HasCardThrows { get; } = new Dictionary<Twn4SamSlot, Exception>();
+
         /// <summary>Gets or sets what setting the socket up for T=1 throws.</summary>
         internal Exception? SetT1Throws { get; set; }
 
@@ -55,7 +58,7 @@ namespace RFiDGear.Tests.Sam
         {
             Events.Add("has " + slot);
 
-            return Task.FromResult(Cards.ContainsKey(slot));
+            return HasCardThrows.TryGetValue(slot, out var failure) ? Task.FromException<bool>(failure) : Task.FromResult(Cards.ContainsKey(slot));
         }
 
         public Task<byte[]?> SamSlotPowerOnAsync(Twn4SamSlot slot)

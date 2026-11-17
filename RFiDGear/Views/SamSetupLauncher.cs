@@ -7,6 +7,7 @@ using RFiDGear.Contracts;
 using RFiDGear.ExtensionSdk;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ExtensionHost;
+using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Services.Sam;
 using RFiDGear.Services.SecureKeys;
 
@@ -14,7 +15,7 @@ namespace RFiDGear.View
 {
     /// <summary>
     /// Shows the SAM setup of the menu as a modal window of the main window, on the real PC/SC readers (through
-    /// LibLogicalAccess) and the real Credential Manager. It holds the gate of the reader while the window is open.
+    /// LibLogicalAccess), the SAM sockets of a connected TWN4 and the real Credential Manager. It holds the gate of the reader while the window is open.
     /// </summary>
     internal sealed class WpfSamSetupLauncher : ISamSetupLauncher
     {
@@ -37,6 +38,22 @@ namespace RFiDGear.View
             }
         }
 
+        // The SAM sockets of a TWN4 are looked at only while the Elatec reader is the one in use and connected: there is no second reader object
+        // for the window to open. A PC/SC reader is always looked at.
+        private static ITwn4SamRelayPorts? ConnectedTwn4Ports()
+        {
+            try
+            {
+                return ReaderDevice.Reader == ReaderTypes.Elatec && ReaderDevice.Instance is ElatecNetProvider elatec ? elatec.CreateTwn4Ports() : null;
+            }
+            catch (Exception e)
+            {
+                Serilog.Log.ForContext<WpfSamSetupLauncher>().Warning("SAM setup: the Elatec reader could not be asked for its SAM sockets ({ExceptionType}).", e.GetType().Name);
+
+                return null;
+            }
+        }
+
         private static void ShowWindow(Window? owner)
         {
             var keyStore = new WindowsCredentialKeyProvider(new NativeCredentialStore());
@@ -48,7 +65,7 @@ namespace RFiDGear.View
                 Array.Empty<Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>>());
             var dialogs = new WpfSamSetupDialogs(() => Application.Current?.Windows.OfType<Window>().FirstOrDefault(candidate => candidate.IsActive) ?? owner);
             var service = new SamSetupService(
-                new SamReaderFinder(new LlaSamReaderSource()),
+                SamFinders.Create(new LlaSamReaderSource(), ConnectedTwn4Ports()),
                 channel => new Av3HostSession(channel),
                 dialogs,
                 new SamKeyReader(registry));

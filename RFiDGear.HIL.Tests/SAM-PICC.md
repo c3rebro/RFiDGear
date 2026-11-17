@@ -43,8 +43,9 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
 - With a **TWN4** (hardware revision G, TWN4 MultiTech 2): the SAM in one of
   its two SAM sockets (not in both), the card on its antenna, the provider
   Elatec in the reader settings, and no other program on its COM port. The
-  setup window works with PC/SC readers only: prepare the key entries with a
-  PC/SC reader first, then put the SAM into the TWN4.
+  setup window lists the SAM in a socket of the TWN4 too (the Elatec reader
+  has to be selected and connected): prepare the key entries there, or with a
+  PC/SC reader first.
 - Prepare three key entries with the SAM setup window (Tools > "MIFARE SAM
   AV3 setup..."): entry 1 an AES-128 PICC key, for example
   `0F1E2D3C4B5A69788796A5B4C3D2E1F0` (SET `0x0024`), entry 2 a DES/2K3DES PICC
