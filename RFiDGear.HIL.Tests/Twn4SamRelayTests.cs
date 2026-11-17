@@ -15,8 +15,9 @@ namespace RFiDGear.HIL.Tests
     /// The Elatec TWN4 as the relay between a MIFARE SAM AV3 in one of its SAM sockets and a DESFire card on its antenna (see
     /// <c>SAM-PICC.md</c>). Like <see cref="SamPiccRelayTests"/> it <b>authenticates only</b>: the case asks the SAM to authenticate the card with
     /// the last key entry of the SAM (127), which is blank (disabled) unless somebody used it, so the SAM refuses it and the case ends at the
-    /// first answer of the SAM. If the entry is in use, the card refuses the key or takes it; every one of the three outcomes is the relay working
-    /// from the SAM to the card and back. Nothing is written to the SAM or to the card.
+    /// first answer of the SAM. If the entry is in use, the card refuses the key or takes it. The refusal of the SAM checks only the first half
+    /// of the way (the challenge of the card reaches the SAM and the SAM answers; nothing goes back to the card), a partial path; the refusal of
+    /// the card and the success check the whole way to the card and back. Nothing is written to the SAM or to the card.
     /// <para>
     /// It needs the reader-scan tests and the cases that change state (<c>readerScan</c> and <c>cardWrites</c> in <c>hil.settings.json</c>),
     /// because it uses the key entry 127 of the SAM once: it is meant for a SAM that you can spare and an entry that is blank. If that entry

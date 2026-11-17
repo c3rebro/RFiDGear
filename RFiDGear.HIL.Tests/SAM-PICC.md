@@ -108,8 +108,11 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
     started): expect an error, and the line "The card may hold the new key
     although the change was not confirmed" if the cryptogram had been sent.
     Check which key the card holds before you do anything else.
-11. With the TWN4 and the SAM in one of its sockets, run the cases 1 to 4
-    again (only the reader changes; case 4 put the card back into the factory
+11. With the TWN4 and the SAM in one of its sockets, first make sure that the
+    card holds its factory DES key (case 10 or a failed run may have left it
+    with the AES key or another one: authenticate with each key you know and
+    restore the factory key if need be). Then run the cases 1 to 4 again
+    (only the reader changes; case 4 puts the card back into the factory
     state). Then run the cases 5 and 6 with a **fresh application**: the one
     of the first run is still on the card, so create another one (another
     AID) whose keys 0 and 1 hold the key `1:0`. **The cases 1 to 4 have been
