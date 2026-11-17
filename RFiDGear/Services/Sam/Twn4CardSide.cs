@@ -18,6 +18,19 @@ namespace RFiDGear.Services.Sam
             answer != null && answer.Length >= 4 && answer[0] == 0x04 && answer[1] == 0x01
             && answer[^2] == 0x91 && (answer[^1] == 0xAF || answer[^1] == 0x00);
 
+        /// <summary>Tells from the SAK of a card whether it talks ISO 14443-4, which a DESFire card does. No SAK is a fault of the reader.</summary>
+        /// <param name="sak">The SAK of the card that was found, or <see langword="null"/> when the reader gave none (Elatec.NET answers that when the command fails).</param>
+        /// <returns><see langword="true"/> when bit 5 of the SAK is set.</returns>
+        internal static bool TalksIso14443Part4(byte? sak)
+        {
+            if (sak == null)
+            {
+                throw new SamReaderException("The reader gave no SAK of the card.");
+            }
+
+            return (sak.Value & 0x20) != 0;
+        }
+
         /// <summary>Says from the answer to GetVersion what the card is. No answer is a fault of the reader and not a card that is no DESFire card.</summary>
         /// <param name="answer">The answer with its status word, or <see langword="null"/> when the reader gave none.</param>
         /// <returns>A DESFire card, or not.</returns>

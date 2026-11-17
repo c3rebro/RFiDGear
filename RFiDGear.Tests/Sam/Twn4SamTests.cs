@@ -64,6 +64,30 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public void An_atr_with_data_after_its_check_byte_gives_no_settings()
+        {
+            // T0 says that there are no historical bytes, so the check byte ends the ATR: what follows, even the words of a SAM, is no part of it.
+            var trailing = new byte[] { 0x3B, 0x80, 0x01, 0x81 }.Concat(System.Text.Encoding.ASCII.GetBytes("MIFARE SAM AV3")).ToArray();
+
+            Assert.Null(Twn4AtrReader.SettingsOf(trailing));
+            Assert.Null(Twn4AtrReader.SettingsOf(SamTestData.SamAtr.Concat(new byte[] { 0x00 }).ToArray()));
+        }
+
+        [Fact]
+        public async Task A_card_whose_atr_only_ends_in_the_words_of_a_sam_is_not_opened_as_one()
+        {
+            var ports = new FakeTwn4Ports();
+            ports.Cards[Twn4SamSlot.Sam1] = new byte[] { 0x3B, 0x80, 0x01, 0x81 }.Concat(System.Text.Encoding.ASCII.GetBytes("MIFARE SAM AV3")).ToArray();
+
+            var open = await new Twn4SamConnector(ports).OpenAsync();
+
+            Assert.Null(open.Connection);
+            Assert.Equal(SamPiccFailure.SamRefused, open.Failure);
+            Assert.DoesNotContain("set t1 Sam1", ports.Events);
+            Assert.False(SamPortGate.IsHeld);
+        }
+
+        [Fact]
         public void An_atr_with_a_wrong_check_byte_gives_no_settings()
         {
             var corrupt = (byte[])SamTestData.SamAtr.Clone();

@@ -68,11 +68,12 @@ namespace RFiDGear.Services.Sam
                 group++;
             }
 
-            // The historical bytes follow, and then the check byte, which a card that offers T=1 must send: the XOR of everything from T0 to
-            // and including it is zero. A cut-off or damaged ATR is refused here and never reaches the reader as settings.
+            // The historical bytes follow, and then the check byte, which a card that offers T=1 must send and which ends the ATR: the XOR of
+            // everything from T0 to and including it is zero. A cut-off, damaged or too long ATR is refused here and never reaches the reader as
+            // settings (what follows the check byte is no part of the ATR, even when it spells the words of a SAM).
             var checkIndex = index + historicalBytes;
 
-            if (!offersT1 || atr.Length <= checkIndex || !HasValidCheckByte(atr, checkIndex))
+            if (!offersT1 || atr.Length != checkIndex + 1 || !HasValidCheckByte(atr, checkIndex))
             {
                 return null;
             }

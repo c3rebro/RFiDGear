@@ -23,7 +23,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         // F index 1 (372) and D index 1 (1): what the ATR announces as the defaults, and what is used while no PPS is sent.
         private const byte DefaultFindexDindex = 0x11;
 
-        private const byte SakIso14443Part4 = 0x20;
 
         private readonly TWN4ReaderDevice _reader;
 
@@ -90,11 +89,17 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return Twn4CardSighting.None;
             }
 
+            // Only a card of ISO 14443-A (the TWN4 calls them MIFARE) can be a DESFire card; of another technology there is no SAK to ask for.
+            if (tag.ChipType != ChipType.MIFARE)
+            {
+                return Twn4CardSighting.NotDesfire;
+            }
+
             // A card that talks ISO 14443-4 (SAK bit 5) and answers the first frame of GetVersion like a DESFire card. Ultralight, NTAG and
-            // Classic cards stop at the SAK, and nothing is sent to them.
+            // Classic cards stop at the SAK, and nothing is sent to them. No SAK for a card that was just found is a fault of the reader.
             var sak = await _reader.ISO14443A_GetSakAsync().ConfigureAwait(false);
 
-            if (sak == null || (sak.Value & SakIso14443Part4) == 0)
+            if (!Twn4CardSide.TalksIso14443Part4(sak))
             {
                 return Twn4CardSighting.NotDesfire;
             }

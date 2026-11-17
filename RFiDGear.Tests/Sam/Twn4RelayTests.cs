@@ -41,6 +41,24 @@ namespace RFiDGear.Tests.Sam
             Assert.False(Twn4CardSide.IsDesfireVersion(null));
         }
 
+        [Theory]
+        [InlineData(0x20, true)]
+        [InlineData(0x28, true)]
+        [InlineData(0x00, false)]
+        [InlineData(0x08, false)]
+        [InlineData(0x18, false)]
+        public void The_sak_tells_a_card_that_talks_iso_14443_4(byte sak, bool talks)
+        {
+            Assert.Equal(talks, Twn4CardSide.TalksIso14443Part4(sak));
+        }
+
+        [Fact]
+        public void No_sak_is_a_fault_of_the_reader_and_not_a_card_that_is_no_desfire_card()
+        {
+            // The reader answers nothing when the command fails: a card that was just found would be reported as an unsupported one.
+            Assert.Throws<SamReaderException>(() => Twn4CardSide.TalksIso14443Part4(null));
+        }
+
         [Fact]
         public void No_answer_to_get_version_is_a_fault_of_the_reader_and_not_a_card_that_is_no_desfire_card()
         {
