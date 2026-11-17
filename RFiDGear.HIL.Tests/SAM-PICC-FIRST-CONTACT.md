@@ -316,6 +316,7 @@ application window. `SAM-PICC.md` has the cases.
 The trace (the second run of the spike, then the two runs of the classes of
 the application; the SAM is entry 2 for the card key and entry 127 for the
 blank one, nothing here is secret):
+
 ```text
 19:55:17.419  ##### stage: twn4-relay  (trace file C:\tmp\sam-session\trace-
     20261117.txt)

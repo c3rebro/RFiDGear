@@ -45,11 +45,14 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
   Elatec in the reader settings, and no other program on its COM port. The
   setup window works with PC/SC readers only: prepare the key entries with a
   PC/SC reader first, then put the SAM into the TWN4.
-- Prepare two key entries with the SAM setup window (Tools > "MIFARE SAM AV3
-  setup..."): entry 1 an AES-128 PICC key, for example
-  `0F1E2D3C4B5A69788796A5B4C3D2E1F0` (SET `0x0024`), and entry 2 a DES/2K3DES
-  PICC key, sixteen zero bytes, which is the factory key of the card (SET
-  `0x0000`). The window says in green when an entry reads back as usable.
+- Prepare three key entries with the SAM setup window (Tools > "MIFARE SAM
+  AV3 setup..."): entry 1 an AES-128 PICC key, for example
+  `0F1E2D3C4B5A69788796A5B4C3D2E1F0` (SET `0x0024`), entry 2 a DES/2K3DES PICC
+  key, sixteen zero bytes, which is the factory key of the card (SET
+  `0x0000`), and entry 3 another AES-128 PICC key, for example
+  `00112233445566778899AABBCCDDEEFF`, which the cases 5 and 6 use for the
+  keys of an application. The window says in green when an entry reads back as
+  usable.
 - The log has lines that start with `SAM PICC:`. They hold the step, the
   result and the status words, never a key, a reference, a reader name or the
   text of an error. Keep the lines of your run: they are what to send back.
@@ -85,9 +88,10 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
       key 0 authenticates and key 1 is replaced (the P1 and the P2 of a key
       other than the one that authenticated): the dialog shows a box for the
       old key then. Bind the application key (key 0, the key that
-      authenticates) to the SAM `1:0`, the old application key (what key 1
-      holds now) to the SAM `1:0` as well, and the new key to `3:0`. Expect
-      success and a check by authentication of key 1 with the new key.
+      authenticates, which holds the key `3:0` since case 5a) to the SAM
+      `3:0`, the old application key (what key 1 holds now) to the SAM `1:0`,
+      and the new key to `3:0`. Expect success and a check by authentication
+      of key 1 with the new key.
 6. Run the task "Check: App Key" for that application with the
    current key bound to the SAM `3:0`. Expect success.
 7. Leave the reader of the SAM empty in the reader settings and run any of the
@@ -104,11 +108,14 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
     started): expect an error, and the line "The card may hold the new key
     although the change was not confirmed" if the cryptogram had been sent.
     Check which key the card holds before you do anything else.
-11. With the TWN4 and the SAM in one of its sockets, run the cases 1 to 6
-    again (only the reader changes). **Only an authentication with the DES key
-    of entry 2 has been seen on a TWN4 and a card** (the TWN4 section of
-    `SAM-PICC-FIRST-CONTACT.md`); the key change, the AES cases and the
-    application keys have not.
+11. With the TWN4 and the SAM in one of its sockets, run the cases 1 to 4
+    again (only the reader changes; case 4 put the card back into the factory
+    state). Then run the cases 5 and 6 with a **fresh application**: the one
+    of the first run is still on the card, so create another one (another
+    AID) whose keys 0 and 1 hold the key `1:0`. **Only an authentication with
+    the DES key of entry 2 has been seen on a TWN4 and a card** (the TWN4
+    section of `SAM-PICC-FIRST-CONTACT.md`); the key change, the AES cases and
+    the application keys have not.
 12. With the TWN4 and both sockets empty, or a TWN4 of an older revision (D or
     E): run case 2. Expect "key not available", the line "No MIFARE SAM AV3
     was found" with the hint on the hardware revision, and nothing sent to
