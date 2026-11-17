@@ -12,11 +12,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half is LibLogicalAccessProvider.cs; the analysis reads one file at a time and cannot see it.")]
     public partial class LibLogicalAccessProvider
     {
-        /// <summary>The card of a relay: the way to send it APDUs, or why there is none.</summary>
-        /// <param name="Failure">Why there is no transport; <see cref="SamPiccFailure.None"/> when there is one.</param>
-        /// <param name="Transport">The transport to the card, or <see langword="null"/>.</param>
-        internal readonly record struct SamCardLink(SamPiccFailure Failure, ISamTransport? Transport);
-
         /// <inheritdoc />
         /// <remarks>
         /// A PC/SC reader can, and when no reader is set for the SAM the call answers <see cref="ERROR.KeyUnavailable"/>, which says what is missing.
@@ -107,57 +102,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 }
             });
 
-        // One relay is one boundary, under the session gate of the provider (ReadChipPublic disconnects first, which would take the card away
-        // from a relay that is running). The SAM is opened first and checked to be a SAM AV3, and until then nothing is sent to the card. Nothing is
-        // repeated: the session makes one attempt per step. No key, reference, reader name or text of an exception reaches the log.
-        private async Task<SamPiccResult> RunWithSamAsync(string operation, Func<SamPiccSession, Task<SamPiccResult>> run)
+        // One relay is one boundary, under the session gate of the provider (see SamRelay): the PC/SC reader opens the SAM in the reader that is
+        // set for it, and the card in the reader of the application.
+        private Task<SamPiccResult> RunWithSamAsync(string operation, Func<SamPiccSession, Task<SamPiccResult>> run) =>
+            SamRelay.RunAsync(new SamRelayParts("PC/SC", pcscSessionGate, OpenSamForRelay, OpenCardLinkForSamAsync, ReleaseCardLinkForSamAsync), operation, run);
+
+        // Opening the SAM reads the readers and waits for a card (the insertion wait is 600 ms): off the thread of the caller, which may be a
+        // window. The names are read here, once the gate is held, and the opening runs on a thread of the pool.
+        private Task<SamPiccOpen> OpenSamForRelay()
         {
-            await pcscSessionGate.WaitAsync().ConfigureAwait(false);
+            var samReader = samReaderName;
+            var cardReader = ReaderUnitName;
 
-            try
-            {
-                // Opening the SAM reads the readers and waits for a card (the insertion wait is 600 ms): off the thread of the caller, which may
-                // be a window. The gate was free, so everything up to here has run on that thread.
-                var samReader = samReaderName;
-                var cardReader = ReaderUnitName;
-                var open = await Task.Run(() => CreateSamPiccConnector().Open(samReader, cardReader)).ConfigureAwait(false);
-
-                if (open.Connection == null)
-                {
-                    return SamPiccResult.OfOpenFailure(open.Failure);
-                }
-
-                using (open.Connection)
-                {
-                    try
-                    {
-                        var link = await OpenCardLinkForSamAsync().ConfigureAwait(false);
-
-                        if (link.Transport == null)
-                        {
-                            return SamPiccResult.OfCardFailure(link.Failure);
-                        }
-
-                        return await run(new SamPiccSession(open.Connection.Channel, link.Transport)).ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        // Once the card was asked for it is let go of, however far it got: a card that was connected and is no DESFire card, or
-                        // whose chip could not be looked at, must not stay connected.
-                        await ReleaseCardLinkForSamAsync().ConfigureAwait(false);
-                    }
-                }
-            }
-            catch (Exception e) when (e is not OperationCanceledException)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Warning("PC/SC: the SAM operation {Operation} failed ({ExceptionType}).", operation, e.GetType().Name);
-
-                return new SamPiccResult(ERROR.TransportError, SamPiccFailure.ReaderFailure);
-            }
-            finally
-            {
-                pcscSessionGate.Release();
-            }
+            return Task.Run(() => CreateSamPiccConnector().Open(samReader, cardReader));
         }
     }
 }
