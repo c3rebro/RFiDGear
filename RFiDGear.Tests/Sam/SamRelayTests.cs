@@ -168,6 +168,7 @@ namespace RFiDGear.Tests.Sam
 
             internal Task<SamPiccResult> Run(SamPiccSession session)
             {
+                ArgumentNullException.ThrowIfNull(session);
                 Events.Add("run");
 
                 if (RunThrows != null)
