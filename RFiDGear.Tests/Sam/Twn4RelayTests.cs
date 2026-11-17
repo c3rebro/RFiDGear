@@ -30,6 +30,9 @@ namespace RFiDGear.Tests.Sam
         [InlineData("05010133001A0591AF", false)]
         [InlineData("04010133001A05", false)]
         [InlineData("0401", false)]
+        [InlineData("040191AF", false)]
+        [InlineData("040101330091AF", false)]
+        [InlineData("04010133001A0691AF", true)]
         public void The_first_frame_of_get_version_tells_a_desfire_card(string hex, bool desfire)
         {
             Assert.Equal(desfire, Twn4CardSide.IsDesfireVersion(Convert.FromHexString(hex.Replace(" ", string.Empty))));

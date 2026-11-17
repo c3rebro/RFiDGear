@@ -11,11 +11,15 @@ namespace RFiDGear.Services.Sam
         /// <summary>The first frame of GetVersion, as the PC/SC reader sends it: it ends with <c>91AF</c> and the card answers 7 bytes.</summary>
         internal static readonly byte[] GetVersionApdu = { 0x90, 0x60, 0x00, 0x00, 0x00 };
 
+        // The first frame of GetVersion: 7 bytes (vendor, type, subtype, version 2, size, protocol) and the status word. A shorter answer is
+        // cut off and says nothing about the card.
+        private const int GetVersionFrameLength = 9;
+
         /// <summary>Tells from the answer to GetVersion whether the card is a DESFire card (the vendor is NXP, <c>04</c>, and the type is <c>01</c>).</summary>
         /// <param name="answer">The answer with its status word.</param>
         /// <returns><see langword="true"/> for a DESFire card.</returns>
         internal static bool IsDesfireVersion(byte[]? answer) =>
-            answer != null && answer.Length >= 4 && answer[0] == 0x04 && answer[1] == 0x01
+            answer != null && answer.Length >= GetVersionFrameLength && answer[0] == 0x04 && answer[1] == 0x01
             && answer[^2] == 0x91 && (answer[^1] == 0xAF || answer[^1] == 0x00);
 
         /// <summary>Tells from the SAK of a card whether it talks ISO 14443-4, which a DESFire card does. No SAK is a fault of the reader.</summary>
