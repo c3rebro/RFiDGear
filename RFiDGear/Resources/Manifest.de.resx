@@ -1908,13 +1908,19 @@ https://github.com/c3rebro/rfidgear</value>
     <value>{0}: Die Karte enthält möglicherweise den neuen Schlüssel, obwohl der Wechsel nicht bestätigt wurde. Authentisieren Sie erneut, bevor Sie den Wechsel wiederholen.</value>
   </data>
   <data name="textBoxStatusSamNotSupported" xml:space="preserve">
-    <value>{0}: Ein Schlüssel der SAM kann nur verwendet werden, um einen PICC- oder Anwendungsschlüssel zu authentisieren und diese Schlüssel zu wechseln, mit einem PC/SC-Leser.</value>
+    <value>{0}: Ein Schlüssel der SAM kann nur verwendet werden, um einen PICC- oder Anwendungsschlüssel zu authentisieren und diese Schlüssel zu wechseln.</value>
   </data>
   <data name="textBoxStatusSamMixedKeys" xml:space="preserve">
     <value>{0}: Ein Befehl, der einen Schlüssel der SAM verwendet, braucht alle seine Schlüssel aus der SAM.</value>
   </data>
   <data name="textBoxStatusSamNotConfigured" xml:space="preserve">
     <value>{0}: Für die SAM ist kein Leser eingestellt. Wählen Sie ihn in den Leser-Einstellungen.</value>
+  </data>
+  <data name="textBoxStatusSamNotFound" xml:space="preserve">
+    <value>{0}: Es wurde keine MIFARE SAM AV3 gefunden. Mit einem PC/SC-Leser muss sie in dem Leser stecken, der für die SAM eingestellt ist; ein TWN4 sieht sie erst ab Hardware-Revision G, in einem seiner beiden SAM-Steckplätze.</value>
+  </data>
+  <data name="textBoxStatusSamAmbiguous" xml:space="preserve">
+    <value>{0}: In jedem SAM-Steckplatz des Lesers steckt eine SAM AV3. Entfernen Sie eine davon: die Schlüssel der beiden SAMs sind nicht gleich, daher wird keine ausgewählt.</value>
   </data>
   <data name="labelKeyManagerSamReference" xml:space="preserve">
     <value>Schlüsseleintrag und Version</value>

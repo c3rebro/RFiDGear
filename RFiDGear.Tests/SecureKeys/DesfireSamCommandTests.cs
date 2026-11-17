@@ -498,6 +498,8 @@ namespace RFiDGear.Tests.SecureKeys
             new object[] { ERROR.PermissionDenied, SamPiccFailure.CardRefused, false },
             new object[] { ERROR.KeyUnavailable, SamPiccFailure.SamRefused, false },
             new object[] { ERROR.KeyUnavailable, SamPiccFailure.NotConfigured, false },
+            new object[] { ERROR.KeyUnavailable, SamPiccFailure.SamNotFound, false },
+            new object[] { ERROR.KeyUnavailable, SamPiccFailure.SamAmbiguous, false },
             new object[] { ERROR.TransportError, SamPiccFailure.NoCard, false },
             new object[] { ERROR.Unknown, SamPiccFailure.ChangeUnverified, true },
         };
@@ -521,6 +523,14 @@ namespace RFiDGear.Tests.SecureKeys
                 if (failure == SamPiccFailure.NotConfigured)
                 {
                     Assert.Contains(ResourceLoader.GetResource("textBoxStatusSamNotConfigured").Substring(5), run.Status, StringComparison.Ordinal);
+                }
+                else if (failure == SamPiccFailure.SamNotFound)
+                {
+                    Assert.Contains(ResourceLoader.GetResource("textBoxStatusSamNotFound").Substring(5), run.Status, StringComparison.Ordinal);
+                }
+                else if (failure == SamPiccFailure.SamAmbiguous)
+                {
+                    Assert.Contains(ResourceLoader.GetResource("textBoxStatusSamAmbiguous").Substring(5), run.Status, StringComparison.Ordinal);
                 }
                 else if (error != ERROR.NoError)
                 {

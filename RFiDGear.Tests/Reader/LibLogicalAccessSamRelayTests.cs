@@ -45,28 +45,12 @@ namespace RFiDGear.Tests.Reader
         // ── what the reader says it can do ──
 
         [Fact]
-        public void Only_the_pcsc_reader_can_work_with_keys_that_stay_in_a_sam()
+        public void The_pcsc_reader_and_the_twn4_can_work_with_keys_that_stay_in_a_sam()
         {
             using var elatec = new ElatecNetProvider();
 
             Assert.True(new RelayReader().SupportsDesfireSamKeys);
-            Assert.False(elatec.SupportsDesfireSamKeys);
-        }
-
-        [Fact]
-        public async Task A_reader_that_cannot_answers_protocol_constraint_and_touches_nothing()
-        {
-            using var reader = new ElatecNetProvider();
-
-            var authenticated = await reader.AuthenticateMifareDesfireWithSamAsync(Access());
-            var changed = await reader.ChangeMifareDesfireKeyWithSamAsync(Change());
-
-            foreach (var result in new[] { authenticated, changed })
-            {
-                Assert.Equal(ERROR.ProtocolConstraint, result.Error);
-                Assert.Equal(SamPiccFailure.NotSupported, result.Failure);
-                Assert.False(result.KeyMayHaveChanged);
-            }
+            Assert.True(elatec.SupportsDesfireSamKeys);
         }
 
         [Fact]

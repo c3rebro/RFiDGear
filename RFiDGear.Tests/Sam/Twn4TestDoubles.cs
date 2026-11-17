@@ -39,6 +39,9 @@ namespace RFiDGear.Tests.Sam
         /// <summary>Gets or sets what the search for the card throws (a reader that fails).</summary>
         internal Exception? SearchThrows { get; set; }
 
+        /// <summary>Gets or sets a task that the search for the card waits for, to keep a relay under way.</summary>
+        internal TaskCompletionSource<bool>? HoldSearch { get; set; }
+
         /// <summary>Gets or sets what setting the socket up for T=1 throws.</summary>
         internal Exception? SetT1Throws { get; set; }
 
@@ -84,11 +87,21 @@ namespace RFiDGear.Tests.Sam
             return Channel;
         }
 
-        public Task<Twn4CardSighting> SearchCardAsync()
+        public async Task<Twn4CardSighting> SearchCardAsync()
         {
             Events.Add("search card");
 
-            return SearchThrows == null ? Task.FromResult(Sighting) : Task.FromException<Twn4CardSighting>(SearchThrows);
+            if (HoldSearch != null)
+            {
+                await HoldSearch.Task;
+            }
+
+            if (SearchThrows != null)
+            {
+                throw SearchThrows;
+            }
+
+            return Sighting;
         }
 
         public Task<byte[]?> ExchangeWithCardAsync(byte[] apdu)

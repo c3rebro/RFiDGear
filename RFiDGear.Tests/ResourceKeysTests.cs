@@ -287,6 +287,9 @@ namespace RFiDGear.Tests
             "textSamSetupEntryKindAes",
             "textSamSetupEntryKindNative",
             "messageSamSetupEntryUnreadable",
+            "textBoxStatusSamNotSupported",
+            "textBoxStatusSamNotFound",
+            "textBoxStatusSamAmbiguous",
         };
 
         // The unit of a size, the INIT of the status bar, and the names of chips and of a protocol term read the same in both languages.
