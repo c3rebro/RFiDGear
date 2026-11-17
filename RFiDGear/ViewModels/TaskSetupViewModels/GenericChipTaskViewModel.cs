@@ -373,6 +373,30 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             return await OnNewCheckChipTypeCommand(null);
         }
+        /// <summary>
+        /// Whether the chip that was found is of the type the task checks for. A type that is only a family (the low byte is 0, as
+        /// <c>MifareClassic</c>) is a match for every chip of the family; any other type has to be the exact type of the chip, so
+        /// that a DESFire EV1 of 2K is not a DESFire EV1 of 4K.
+        /// </summary>
+        /// <param name="selected">The type the task checks for.</param>
+        /// <param name="found">The type of the chip on the reader.</param>
+        /// <returns><c>true</c> when the chip is of that type.</returns>
+        internal static bool ChipTypeMatches(CARD_TYPE selected, CARD_TYPE found)
+        {
+            if (((int)selected | 0xF000) == 0xF000)
+            {
+                var family = (CARD_TYPE)((int)found & 0xF000);
+
+                // Until Elatec.NET 0.7.0-beta.2 an NTAG was reported as MifareUltralight, so a project that checks for "Mifare
+                // Ultralight" has been passing for the NTAGs that it works with, and what hangs on its result still does. It keeps
+                // passing for them: the NTAG family (0xA000) is a Mifare Ultralight for this check. A check for an NTAG type
+                // (the family or one chip) is exact as before, and so is a check for any exact type such as Ultralight C.
+                return family == selected || (selected == CARD_TYPE.MifareUltralight && family == CARD_TYPE.NTAG_210);
+            }
+
+            return found == selected;
+        }
+
         private async Task<ERROR> OnNewCheckChipTypeCommand(GenericChipModel chipList)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
@@ -395,29 +419,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         chipToUse = device.GenericChip;
                     }
                     
-                    if (((int)SelectedChipType | 0xF000) == 0xF000) // Do NOT Check for explicit Subtype e.g desfire ev1 >2k, 4k, 8k etc.<
-                    {
-                        if ((CARD_TYPE)((int)chipToUse.CardType & 0xF000) == (CARD_TYPE)SelectedChipType)
-                        {
-                            result = ERROR.NoError;
-                        }
-                        else
-                        {
-                            result = ERROR.IsNotTrue;
-                        }
-
-                    }
-                    else // Take explicit Type into account
-                    {
-                        if (chipToUse.CardType == SelectedChipType)
-                        {
-                            result = ERROR.NoError;
-                        }
-                        else
-                        {
-                            result = ERROR.IsNotTrue;
-                        }
-                    }
+                    result = ChipTypeMatches(SelectedChipType, chipToUse.CardType) ? ERROR.NoError : ERROR.IsNotTrue;
 
                     CurrentTaskErrorLevel = result;
                 }

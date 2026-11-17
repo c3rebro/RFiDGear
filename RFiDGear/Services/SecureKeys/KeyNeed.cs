@@ -14,11 +14,17 @@ namespace RFiDGear.Services.SecureKeys
     /// <param name="KeyNumber">The number of the key within its application, or <c>null</c>.</param>
     internal readonly record struct KeyNeed(string Slot, SecureKeyAlgorithm Algorithm, SecureKeyUsage Usage, uint? ApplicationId, int? KeyNumber)
     {
-        /// <summary>Gets how many hexadecimal digits a key of this algorithm has: 12 for a MIFARE Classic key, 48 for 3K3DES, 32 otherwise.</summary>
+        /// <summary>
+        /// Gets how many hexadecimal digits a key of this algorithm has: 12 for a MIFARE Classic key, 48 for 3K3DES, 8 for the
+        /// password of an Ultralight EV1 or an NTAG, 4 for its PACK, 32 otherwise (DES as two halves, 2K3DES and the key of an
+        /// Ultralight C, AES-128). A new algorithm has to be listed here: the test that counts them says so.
+        /// </summary>
         internal int HexLength => Algorithm switch
         {
             SecureKeyAlgorithm.Classic6Byte => 12,
             SecureKeyAlgorithm.TripleDes3K => 48,
+            SecureKeyAlgorithm.UltralightPassword => 8,
+            SecureKeyAlgorithm.UltralightPack => 4,
             _ => 32,
         };
     }

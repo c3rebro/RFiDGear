@@ -434,7 +434,62 @@ namespace RFiDGear.ViewModel
                 if (value >= 0)
                 {
                     sectorModel.SectorNumber = value;
+
+                    EnsureBlockNodes();
                 }
+            }
+        }
+
+        // How many nodes of blocks the sector of this node needs: 4, or 16 for a sector of a 4K from 32 on; none for a node that is no sector.
+        private int RequiredBlockNodes()
+        {
+            switch (_cardType)
+            {
+                case CARD_TYPE.Mifare1K:
+                case CARD_TYPE.Mifare2K:
+                case CARD_TYPE.MifarePlus_SL1_1K:
+                case CARD_TYPE.MifarePlus_SL1_2K:
+                    return 4;
+
+                case CARD_TYPE.Mifare4K:
+                case CARD_TYPE.MifarePlus_SL1_4K:
+                    return SectorNumber < 32 ? 4 : 16;
+
+                default:
+                    return 0;
+            }
+        }
+
+        // The nodes of the blocks are as many as the sector needs. This node counts its own nodes and not the number that the model had before: the
+        // model can be shared by two nodes (the dialog has one for the chip and one for the task), and it can change before either node is told.
+        // What is not a block (a key that was found) stays.
+        private void EnsureBlockNodes()
+        {
+            var required = RequiredBlockNodes();
+
+            if (children == null || required == 0)
+            {
+                return;
+            }
+
+            // A node without a node of a block does not show the blocks (the dialog of a MAD holds the node of the application there): it is left as it is.
+            var own = children.Count(child => child.MifareClassicDataBlock != null);
+
+            if (own == 0 || own == required)
+            {
+                return;
+            }
+
+            // The nodes of the blocks come first, as they are made, and the others (a key that was found) after them: the code that reads a sector
+            // goes through the children by the number of the block.
+            var others = children.Where(child => child.MifareClassicDataBlock == null).ToList();
+
+            children.Clear();
+            LoadChildren();
+
+            foreach (var other in others)
+            {
+                children.Add(other);
             }
         }
 
@@ -488,13 +543,24 @@ namespace RFiDGear.ViewModel
         {
             get
             {
-                switch ((CARD_TYPE)((short)_cardType & 0xF000))
+                // The high nibble of the type, taken from the int: the application is built with overflow checks, and a type from
+                // 0x8000 up (an Ultralight is 0x9000, a chip of the NTAG family 0xA000 and up) does not fit a short.
+                switch ((CARD_TYPE)((int)_cardType & 0xF000))
                 {
                     case CARD_TYPE.MifareClassic:
                         childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
                         break;
                     case CARD_TYPE.MifareUltralight:
                         childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                        break;
+
+                    // The NTAG21x are Type 2 tags with pages like the Ultralight; 0xA000 is the family of their chip types.
+                    case CARD_TYPE.NTAG_210:
+                        if (pageModel != null)
+                        {
+                            childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                        }
+
                         break;
 
                     case CARD_TYPE.DESFireEV0:

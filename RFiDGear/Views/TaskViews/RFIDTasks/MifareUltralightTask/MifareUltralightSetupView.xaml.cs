@@ -15,6 +15,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 namespace RFiDGear.View
 {
@@ -27,6 +28,10 @@ namespace RFiDGear.View
         {
             InitializeComponent();
             this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight - 8;
+
+            // The buttons are off while an operation runs, and so is the close button of the window: a write that waits for its key
+            // would reach the card after the dialog was gone.
+            Closing += (_, e) => e.Cancel = DataContext is MifareUltralightSetupViewModel { IsRunning: true };
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using LibLogicalAccess;
+using LibLogicalAccess;
 using LibLogicalAccess.Card;
 using LibLogicalAccess.Reader;
 using LibLogicalAccess.Crypto;
@@ -7,13 +7,17 @@ using ByteArrayHelper.Extensions;
 using RFiDGear.Models;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Globalization;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.Classic;
 using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.Infrastructure.Ultralight;
 using Serilog;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
@@ -24,13 +28,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     /// Initialize Reader
     /// </summary>
     ///
-    public class LibLogicalAccessProvider : ReaderDevice, IDisposable
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other half is LibLogicalAccessProvider.Sam.cs; the analysis reads one file at a time and cannot see it.")]
+    public partial class LibLogicalAccessProvider : ReaderDevice, IDisposable
     {
         // global (cross-class) Instances go here ->
-        private readonly ProjectManager projectManager = new ProjectManager();
         private ReaderProvider readerProvider;
         private ReaderUnit readerUnit;
         private string selectedReaderName;
+        private string samReaderName = string.Empty;
         private Chip card;
         public IReadOnlyCollection<string> AvailableReaders { get; private set; } = new List<string>();
 
@@ -40,11 +45,24 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
         }
 
+        /// <summary>Creates the provider for the reader that was chosen; no SAM reader is configured.</summary>
+        /// <param name="readerType">The kind of reader.</param>
+        /// <param name="readerName">The reader of the card.</param>
         public LibLogicalAccessProvider(ReaderTypes readerType, string readerName)
+            : this(readerType, readerName, string.Empty)
+        {
+        }
+
+        /// <summary>Creates the provider for the reader that was chosen, and never for the reader of the SAM.</summary>
+        /// <param name="readerType">The kind of reader.</param>
+        /// <param name="readerName">The reader of the card.</param>
+        /// <param name="samReaderName">The reader that holds the SAM; empty for none. The card is never read in it.</param>
+        public LibLogicalAccessProvider(ReaderTypes readerType, string readerName, string samReaderName)
         {
             try
             {
                 selectedReaderName = readerName;
+                this.samReaderName = samReaderName ?? string.Empty;
 
                 InitializeReaderProvider(readerType);
 
@@ -70,6 +88,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         private void InitializeReaderProvider(ReaderTypes readerType)
         {
+            // Before anything below can fail and return: a unit that is bound to the reader of the SAM (the fallback of an earlier
+            // start, or a SAM reader that was configured since) is never kept, whether or not the readers can be listed now.
+            if (readerUnit != null && PcscReaderChoice.IsSamReader(readerUnit.getName(), samReaderName))
+            {
+                DropReaderUnit();
+            }
+
             try
             {
                 readerProvider = LibraryManager.getInstance().getReaderProvider(
@@ -113,8 +138,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             if (readerUnit == null)
             {
-                readerUnit = readers.FirstOrDefault(r => r.getName() == selectedReaderName)
-                             ?? readerProvider.createReaderUnit();
+                // The library's default unit takes the first reader, which on a reader pair is the contact slot with the SAM in it.
+                var pick = PcscReaderChoice.Pick(AvailableReaders, selectedReaderName, samReaderName);
+
+                readerUnit = pick.Kind switch
+                {
+                    PcscReaderPick.Named => readers.FirstOrDefault(r => r.getName() == pick.Name),
+                    PcscReaderPick.Default => readerProvider.createReaderUnit(),
+                    _ => null,
+                };
             }
             else
             {
@@ -125,7 +157,77 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             ReaderUnitName = readerUnit?.getName();
         }
 
-        public void UpdateSelectedReader(string readerName)
+        /// <summary>
+        /// Tells the provider the reader of the card and the reader that holds the SAM, together: the card is never read in the SAM's
+        /// reader, and the unit is chosen once, with both names known (one name after the other would choose a unit with the other one
+        /// not known yet).
+        /// </summary>
+        /// <param name="cardReaderName">The reader of the card.</param>
+        /// <param name="samReaderName">The reader of the SAM; empty for none.</param>
+        public virtual void UpdateReaders(string cardReaderName, string samReaderName)
+        {
+            try
+            {
+                selectedReaderName = cardReaderName;
+                this.samReaderName = samReaderName ?? string.Empty;
+
+                // A choice that was confirmed picks its unit again: the unit that is held stays only when it is the reader that was
+                // confirmed for the card (UpdateSelectedReader, the preview of the dialog, keeps the unit that it has).
+                if (readerUnit != null && PcscReaderChoice.IsOtherReader(readerUnit.getName(), selectedReaderName))
+                {
+                    DropReaderUnit();
+                }
+
+                InitializeReaderProvider(ReaderTypes.PCSC);
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
+            }
+        }
+
+        // Lets go of the unit and of everything that belongs to it, whichever way the unit is dropped (it is the reader of the SAM now, or
+        // another reader was confirmed for the card). The chips that an operation took from it go with it: the file operations of a DESFire card
+        // use the chip that an earlier operation left, and must not find the one of a reader that is let go of, and least of all the one of the
+        // reader of the SAM.
+        private void DropReaderUnit()
+        {
+            var unit = readerUnit;
+
+            readerUnit = null;
+            ReaderUnitName = null;
+            card = null;
+            ultralightChip = null;
+
+            if (unit != null)
+            {
+                ReleaseUnit(unit);
+            }
+        }
+
+        // Lets go of a unit that nobody holds any more. Best effort: a unit that is not connected has nothing to let go of.
+        private static void ReleaseUnit(ReaderUnit unit)
+        {
+            try
+            {
+                unit.disconnect();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC disconnect of a unit that was replaced failed: {Fault}", PcscUltralightErrors.Describe(e));
+            }
+
+            try
+            {
+                unit.disconnectFromReader();
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC release of a unit that was replaced failed: {Fault}", PcscUltralightErrors.Describe(e));
+            }
+        }
+
+        public virtual void UpdateSelectedReader(string readerName)
         {
             try
             {
@@ -201,7 +303,46 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return Task.FromResult(ERROR.TransportError);
         }
 
+        /// <summary>
+        /// Describes the chips that need no command of the card to be described: those of the Ultralight family, and those that
+        /// LibLogicalAccess names with a type this application has no value for (an NTAG215 is "__UNSUPPORTED__UNKNOWN" to it).
+        /// </summary>
+        /// <param name="uidAsString">The UID of the chip as text.</param>
+        /// <param name="cardType">The card type that LibLogicalAccess gave the chip.</param>
+        /// <returns>The model, or <c>null</c> for a chip that is described with the commands of the card (DESFire, Classic).</returns>
+        internal static GenericChipModel DescribeUltralightOrUnknownChip(string uidAsString, string cardType)
+        {
+            // A name of CARD_TYPE and not a number: Enum.TryParse would take "4096" for MifareClassic.
+            if (string.IsNullOrEmpty(cardType) || char.IsDigit(cardType[0]) || cardType[0] == '-'
+                || !Enum.TryParse(cardType, false, out CARD_TYPE chipType) || !Enum.IsDefined(typeof(CARD_TYPE), chipType))
+            {
+                return new GenericChipModel(uidAsString, CARD_TYPE.Unspecified);
+            }
+
+            if (chipType == CARD_TYPE.MifareUltralight || chipType == CARD_TYPE.MifareUltralightC || chipType == CARD_TYPE.MifareUltralight_EV1)
+            {
+                return new MifareUltralightChipModel(uidAsString, chipType);
+            }
+
+            return null;
+        }
+
+        /// <inheritdoc />
         public override async Task<ERROR> ReadChipPublic()
+        {
+            // It disconnects from the card first: not while a page operation is in the reader.
+            await pcscSessionGate.WaitAsync();
+            try
+            {
+                return await ReadChipPublicCoreAsync();
+            }
+            finally
+            {
+                pcscSessionGate.Release();
+            }
+        }
+
+        private async Task<ERROR> ReadChipPublicCoreAsync()
         {
             try
             {
@@ -220,6 +361,17 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         try
                         {
                             var uidAsString = ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray());
+
+                            // Before the masks below: 0x9000 & 0x1000 == 0x1000, so an Ultralight matches the mask of the Classic chips.
+                            var described = DescribeUltralightOrUnknownChip(uidAsString, card.getCardType());
+
+                            if (described != null)
+                            {
+                                GenericChip = described;
+
+                                return ERROR.NoError;
+                            }
+
                             var chipType = (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType());
 
                             if ((chipType & CARD_TYPE.DESFire) == CARD_TYPE.DESFire)
@@ -289,521 +441,496 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region mifare classic
 
-        /// <inheritdoc />
-        public override async Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        /// <summary>
+        /// Connects to the chip on the reader for a Classic operation: a fresh session, every step looked at (see <c>ConnectToAFreshChipAsync</c>).
+        /// Overridden by the tests.
+        /// </summary>
+        /// <returns>The reader's access to the chip, or <c>null</c> when there is no reader, no chip, or a chip that has no Classic commands.</returns>
+        protected override async Task<IClassicPort> OpenClassicPortAsync()
         {
-            try
+            if (!await ConnectToAFreshChipAsync())
             {
-                await projectManager.LoadSettingsAsync();
-                Sector = new MifareClassicSectorModel();
+                return null;
+            }
 
-                var keyA = new MifareKey(CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
-                var keyB = new MifareKey(CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
-
-                if (await tryInitReader())
+            return await Task.Run(() =>
+            {
+                try
                 {
+                    var chip = readerUnit.getSingleChip();
 
-                    card = readerUnit.getSingleChip();
-
-                    var cmd = card.getCommands() as MifareCommands;
-
-                    try
-                    { //try to Auth with Keytype A
-                        for (int k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
-                        {
-                            cmd.loadKey(0, MifareKeyType.KT_KEY_A, keyA);
-
-                            DataBlock = new MifareClassicDataBlockModel(
-                                (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                k);
-
-                            try
-                            {
-                                cmd.authenticate((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                                      0,
-                                                      MifareKeyType.KT_KEY_A);
-
-                                Sector.IsAuthenticated = true;
-
-                                try
-                                {
-                                    ByteVector data = cmd.readBinary(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                        48);
-
-                                    DataBlock.Data = data.ToArray();
-
-                                    DataBlock.IsAuthenticated = true;
-
-                                    Sector.DataBlock.Add(DataBlock);
-                                }
-                                catch
-                                {
-                                    DataBlock.IsAuthenticated = false;
-                                    Sector.DataBlock.Add(DataBlock);
-                                }
-                            }
-                            catch
-                            { // Try Auth with keytype b
-
-                                try
-                                {
-                                    cmd.loadKey(1, MifareKeyType.KT_KEY_B, keyB);
-
-                                    cmd.authenticate(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                        1,
-                                        MifareKeyType.KT_KEY_B);
-
-                                    Sector.IsAuthenticated = true;
-
-                                    try
-                                    {
-                                        object data = cmd.readBinary(
-                                            (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                            48);
-
-                                        DataBlock.Data = (byte[])data;
-
-                                        DataBlock.IsAuthenticated = true;
-
-                                        Sector.DataBlock.Add(DataBlock);
-                                    }
-                                    catch
-                                    {
-
-                                        DataBlock.IsAuthenticated = false;
-
-                                        Sector.DataBlock.Add(DataBlock);
-
-                                        return ERROR.AuthFailure;
-                                    }
-                                }
-                                catch
-                                {
-                                    Sector.IsAuthenticated = false;
-                                    DataBlock.IsAuthenticated = false;
-
-                                    Sector.DataBlock.Add(DataBlock);
-
-                                    return ERROR.AuthFailure;
-                                }
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        return ERROR.NoError;
-                    }
-                    return ERROR.NoError;
-
+                    return chip?.getCommands() is MifareCommands commands
+                        ? new LlaClassicPort(commands, LlaClassicPort.SizeOf(chip.getCardType()))
+                        : null;
                 }
-                return ERROR.TransportError;
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                return ERROR.AuthFailure;
-            }
-        }
-
-        /// <inheritdoc />
-        public override async Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
-        {
-            try
-            {
-                var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
-                var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
-
-                int blockCount = 0;
-
-                if (await tryInitReader())
+                catch (Exception e)
                 {
-                    card = readerUnit.getSingleChip();
+                    Log.ForContext<LibLogicalAccessProvider>().Debug("No Classic chip on the PC/SC reader: {Fault}", PcscUltralightErrors.Describe(e));
 
-                    var cmd = card.getCommands() as MifareCommands;
-
-                    try
-                    { //try to Auth with Keytype A
-                        cmd.loadKey(0, MifareKeyType.KT_KEY_A, keyA);
-                        cmd.loadKey(1, MifareKeyType.KT_KEY_B, keyB);
-
-                        for (int k = 0; k < blockCount; k++)
-                        {
-                            try
-                            {
-                                cmd.authenticate(
-                                    (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                    0,
-                                    MifareKeyType.KT_KEY_A);
-
-                                try
-                                {
-                                    cmd.updateBinary(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                        new ByteVector(buffer));
-
-                                    return ERROR.NoError;
-                                }
-                                catch
-                                {
-                                    return ERROR.AuthFailure;
-                                }
-                            }
-                            catch
-                            { // Try Auth with keytype b
-
-                                try
-                                {
-                                    cmd.authenticate((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                                          1,
-                                                          MifareKeyType.KT_KEY_B);
-
-                                    try
-                                    {
-                                        cmd.updateBinary(
-                                            (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                                            new ByteVector(buffer));
-
-                                        return ERROR.NoError;
-
-                                    }
-                                    catch
-                                    {
-                                        return ERROR.AuthFailure;
-                                    }
-                                }
-                                catch
-                                {
-
-                                }
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        return ERROR.TransportError;
-                    }
-                    return ERROR.TransportError;
+                    return null;
                 }
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-
-                return ERROR.TransportError;
-            }
-            return ERROR.TransportError;
-        }
-
-        /// <inheritdoc />
-        public override async Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
-        {
-            try
-            {
-                var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
-                var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
-
-                if (await tryInitReader())
-                {
-                    card = readerUnit.getSingleChip();
-
-                    var cmd = card.getCommands() as MifareCommands;
-
-                    try
-                    {
-                        cmd.loadKey(0, MifareKeyType.KT_KEY_A, keyA); // FIXME "sectorNumber" to 0
-
-                        try
-                        { //try to Auth with Keytype A
-                            cmd.authenticate((byte)_blockNumber, 0, MifareKeyType.KT_KEY_A); // FIXME same as '303
-
-                            cmd.updateBinary((byte)_blockNumber, new ByteVector(buffer));
-
-                            return ERROR.NoError;
-                        }
-                        catch
-                        { // Try Auth with Keytype b
-
-                            cmd.loadKey(0, MifareKeyType.KT_KEY_B, keyB);
-
-                            try
-                            {
-                                cmd.authenticate((byte)_blockNumber, 0, MifareKeyType.KT_KEY_B); // FIXME same as '303
-
-                                cmd.updateBinary((byte)_blockNumber, new ByteVector(buffer));
-
-                                return ERROR.NoError;
-                            }
-                            catch
-                            {
-                                return ERROR.AuthFailure;
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        return ERROR.AuthFailure;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-
-                return ERROR.TransportError;
-            }
-            return ERROR.TransportError;
-        }
-
-        /// <inheritdoc />
-        public async Task<ERROR> ReadMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey)
-        {
-            try
-            {
-                var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey));
-                var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey));
-
-                if (await tryInitReader())
-                {
-                    card = readerUnit.getSingleChip();
-
-                    if (!string.IsNullOrWhiteSpace(ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray())))
-                    {
-                        try
-                        {
-                            GenericChip = new GenericChipModel(ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
-                        }
-                        catch (Exception e)
-                        {
-                            Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                        }
-                    }
-
-                    var cmd = card.getCommands() as MifareCommands;
-
-                    try
-                    {
-                        cmd.loadKey(0, MifareKeyType.KT_KEY_A, keyA); // FIXME "sectorNumber" to 0
-
-                        try
-                        { //try to Auth with Keytype A
-                            cmd.authenticate((byte)_blockNumber, 0, MifareKeyType.KT_KEY_A); // FIXME same as '303
-
-                            MifareClassicData = cmd.readBinary((byte)_blockNumber, 48).ToArray();
-
-                            return ERROR.NoError;
-                        }
-                        catch
-                        { // Try Auth with keytype b
-
-                            cmd.loadKey(0, MifareKeyType.KT_KEY_B, keyB);
-
-                            try
-                            {
-                                cmd.authenticate((byte)_blockNumber, 0, MifareKeyType.KT_KEY_B); // FIXME same as '303
-
-                                MifareClassicData = cmd.readBinary((byte)_blockNumber, 48).ToArray();
-
-                                return ERROR.NoError;
-                            }
-                            catch
-                            {
-                                return ERROR.AuthFailure;
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        return ERROR.AuthFailure;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-
-                return ERROR.TransportError;
-            }
-            return ERROR.TransportError;
-        }
-
-        /// <inheritdoc />
-        public override async Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
-            string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-            string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-            byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
-        {
-            try
-            {
-                Sector = new MifareClassicSectorModel();
-                await projectManager.LoadSettingsAsync();
-
-                var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
-                var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));
-
-                var mAKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToWrite) ? _aKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToWrite));
-                var mBKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToWrite) ? _bKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToWrite));
-
-                var madAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madAKeyToUse) ? _madAKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToUse));
-                var madBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madBKeyToUse) ? _madBKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToUse));
-
-                var madAKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madAKeyToWrite) ? _madAKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToWrite));
-                var madBKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madBKeyToWrite) ? _madBKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToWrite));
-
-                if (await tryInitReader())
-                {
-                    card = readerUnit.getSingleChip();
-
-                    MifareLocation mlocation = new MifareLocation
-                    {
-                        aid = (ushort)_madApplicationID,
-                        useMAD = _keyToWriteUseMAD,
-                        sector = _madStartSector
-                    };
-
-                    MifareAccessInfo aiToWrite = new MifareAccessInfo
-                    {
-                        useMAD = _keyToWriteUseMAD,
-
-                    };
-
-                    aiToWrite.madKeyA.fromString(_madAKeyToUse == _madAKeyToWrite ? madAKeyToUse.getString(true) : madAKeyToWrite.getString(true)); // only set new madkey if mad key has changed
-                    aiToWrite.madKeyB.fromString(_madBKeyToUse == _madBKeyToWrite ? madBKeyToUse.getString(true) : madBKeyToWrite.getString(true)); // only set new madkey if mad key has changed
-                    aiToWrite.keyA.fromString(_aKeyToUse == _aKeyToWrite ? mAKeyToUse.getString(true) : mAKeyToWrite.getString(true));
-                    aiToWrite.keyB.fromString(_bKeyToUse == _bKeyToWrite ? mBKeyToUse.getString(true) : mBKeyToWrite.getString(true));
-                    aiToWrite.madGPB = _madGPB;
-
-                    var aiToUse = new MifareAccessInfo
-                    {
-                        useMAD = _useMADToAuth,
-                        keyA = mAKeyToUse,
-                        keyB = mBKeyToUse
-                    };
-
-                    if (_useMADToAuth)
-                    {
-                        aiToUse.madKeyA = madAKeyToUse;
-                        aiToUse.madKeyB = madBKeyToUse;
-                        aiToUse.madGPB = _madGPB;
-                    }
-
-                    //TODO: report BUG when using SL1
-                    var cmd = card.getCommands() as MifareCommands;
-                    var cardService = card.getService(CardServiceType.CST_STORAGE) as StorageCardService;
-
-                    try
-                    {
-                        cardService.writeData(mlocation, aiToUse, aiToWrite, new ByteVector(buffer), CardBehavior.CB_AUTOSWITCHAREA);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                        return ERROR.AuthFailure;
-                    }
-                    return ERROR.NoError;
-                }
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                return ERROR.AuthFailure;
-            }
-            return ERROR.NoError;
-        }
-
-        /// <inheritdoc />
-        public override async Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse,
-            string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length,
-            byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
-        {
-            try
-            {
-                Sector = new MifareClassicSectorModel();
-                await projectManager.LoadSettingsAsync();
-
-                var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
-                var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));
-
-                var madAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madAKeyToUse) ? _madAKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToUse));
-                var madBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madBKeyToUse) ? _madBKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToUse));
-
-                if (await tryInitReader())
-                {
-                    card = readerUnit.getSingleChip();
-
-                    MifareLocation mlocation = card.createLocation() as MifareLocation;
-                    mlocation.aid = (ushort)madApplicationID;
-                    mlocation.useMAD = _useMADToAuth;
-
-                    var aiToUse = new MifareAccessInfo
-                    {
-                        useMAD = true,
-                        keyA = mAKeyToUse,
-                        keyB = mBKeyToUse,
-                        madKeyA = madAKeyToUse,
-                        madKeyB = madBKeyToUse,
-                        madGPB = _madGPB
-                    };
-
-                    var cmd = card.getCommands() as MifareCommands;
-                    var cardService = card.getService(CardServiceType.CST_STORAGE) as StorageCardService;
-
-                    try
-                    {
-                        MifareClassicData = cardService.readData(mlocation, aiToUse, (uint)_length, CardBehavior.CB_AUTOSWITCHAREA).ToArray();
-                    }
-                    catch (Exception e)
-                    {
-                        Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                        return ERROR.AuthFailure;
-                    }
-                    return ERROR.NoError;
-                }
-            }
-            catch (Exception e)
-            {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                return ERROR.AuthFailure;
-            }
-            return ERROR.NoError;
+            });
         }
 
         #endregion mifare classic
 
         #region mifare ultralight
 
-        public override async Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
+        /// <summary>What the PC/SC reader found: whether a chip answered and what LibLogicalAccess calls it.</summary>
+        protected readonly struct PcscUltralightSighting : IEquatable<PcscUltralightSighting>
+        {
+            /// <summary>Creates the sighting.</summary>
+            /// <param name="chipFound">Whether a chip answered.</param>
+            /// <param name="cardType">The card type of LibLogicalAccess ("MifareUltralight", "MifareUltralightC", or the name it gives a chip it does not know), or <c>null</c>.</param>
+            public PcscUltralightSighting(bool chipFound, string cardType)
+            {
+                ChipFound = chipFound;
+                CardType = cardType;
+            }
+
+            /// <summary>Gets a value that says whether a chip answered.</summary>
+            public bool ChipFound { get; }
+
+            /// <summary>Gets the card type of LibLogicalAccess, or <c>null</c>.</summary>
+            public string CardType { get; }
+
+            /// <summary>Whether two sightings are the same.</summary>
+            /// <param name="left">The first sighting.</param>
+            /// <param name="right">The second sighting.</param>
+            /// <returns><c>true</c> when they are equal.</returns>
+            public static bool operator ==(PcscUltralightSighting left, PcscUltralightSighting right) => left.Equals(right);
+
+            /// <summary>Whether two sightings differ.</summary>
+            /// <param name="left">The first sighting.</param>
+            /// <param name="right">The second sighting.</param>
+            /// <returns><c>true</c> when they are not equal.</returns>
+            public static bool operator !=(PcscUltralightSighting left, PcscUltralightSighting right) => !left.Equals(right);
+
+            /// <inheritdoc />
+            public bool Equals(PcscUltralightSighting other) => ChipFound == other.ChipFound && string.Equals(CardType, other.CardType, StringComparison.Ordinal);
+
+            /// <inheritdoc />
+            public override bool Equals(object obj) => obj is PcscUltralightSighting other && Equals(other);
+
+            /// <inheritdoc />
+            public override int GetHashCode() => HashCode.Combine(ChipFound, CardType);
+        }
+
+        // The chip of the call that is running: set by the selection, used by the page operations after it. Only one call is in the
+        // reader at a time (pcscSessionGate), so it is never another call's chip.
+        private Chip ultralightChip;
+
+        // One user of the reader session at a time: the chip handle and the card session are shared, a key that was sent belongs to
+        // the call that sent it, and ReadChipPublic disconnects first, which would take the card away from a page operation that is
+        // running. The page operations and ReadChipPublic hold it; the other PC/SC operations of this class do not (they never did).
+        private readonly SemaphoreSlim pcscSessionGate = new SemaphoreSlim(1, 1);
+
+        /// <inheritdoc />
+        protected override SemaphoreSlim ClassicGate => pcscSessionGate;
+
+        /// <summary>Connects to the chip on the reader and tells what LibLogicalAccess calls it; the first call of every page operation. Overridden by the tests.</summary>
+        /// <returns>What the reader found.</returns>
+        protected virtual async Task<PcscUltralightSighting> SelectPcscUltralightChipAsync()
+        {
+            ultralightChip = null;
+
+            if (!await ConnectToAFreshChipAsync())
+            {
+                return new PcscUltralightSighting(false, null);
+            }
+
+            return await Task.Run(() => TranslateCardFault(() =>
+            {
+                var chip = readerUnit.getSingleChip();
+                ultralightChip = chip;
+
+                return chip == null ? new PcscUltralightSighting(false, null) : new PcscUltralightSighting(true, chip.getCardType());
+            }));
+        }
+
+        // A fresh session for every call, every step checked. tryInitReader reuses a connected session without waiting for a card and
+        // without looking at the result of connect(), so the chip of that session can be the card that was taken away or replaced
+        // since. This is the full path that it takes after a disconnect (connect to the reader, wait for a card, connect to it), with
+        // each result looked at: a step that fails is no sighting, and nothing is accepted on a session that was not just made. A fault of the
+        // native reader ends the step as "no sighting" unless the caller asks for it to be rethrown (the relay does).
+        private Task<bool> ConnectToAFreshChipAsync(bool rethrowFaults = false) =>
+            Task.Run(() =>
+            {
+                if (readerUnit == null)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    try
+                    {
+                        // Nothing may be connected, and then there is nothing to disconnect (ReadChipPublic does the same).
+                        readerUnit.disconnect();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.ForContext<LibLogicalAccessProvider>().Debug("PC/SC disconnect before the selection failed: {Fault}", PcscUltralightErrors.Describe(e));
+                    }
+
+                    if (!readerUnit.connectToReader() || !readerUnit.waitInsertion(Constants.MAX_WAIT_INSERTION) || !readerUnit.connect())
+                    {
+                        return false;
+                    }
+
+                    ReaderUnitName = ReaderUnitName ?? readerUnit.getConnectedName();
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<LibLogicalAccessProvider>().Warning("PC/SC connection for a page operation failed: {Fault}", PcscUltralightErrors.Describe(e));
+
+                    if (rethrowFaults)
+                    {
+                        // A reader that fails is not a reader without a card: the relay says which it was.
+                        throw;
+                    }
+
+                    return false;
+                }
+            });
+
+        /// <summary>Reads one page (4 bytes). Overridden by the tests.</summary>
+        /// <param name="page">The page.</param>
+        /// <returns>The bytes the chip answered with.</returns>
+        protected virtual Task<byte[]> ReadPcscUltralightPageAsync(int page) =>
+            Task.Run(() => TranslateCardFault(() =>
+            {
+                using (var bytes = PcscUltralightCommands().readPage(page))
+                {
+                    return bytes.ToArray();
+                }
+            }));
+
+        /// <summary>Writes one page (4 bytes). Overridden by the tests.</summary>
+        /// <param name="page">The page.</param>
+        /// <param name="data">The 4 bytes.</param>
+        /// <returns>A task that ends when the page was written.</returns>
+        protected virtual Task WritePcscUltralightPageAsync(int page, byte[] data) =>
+            Task.Run(() => TranslateCardFault(() =>
+            {
+                using (var bytes = new ByteVector(data))
+                {
+                    PcscUltralightCommands().writePage(page, bytes);
+                }
+
+                return true;
+            }));
+
+        /// <summary>Authenticates to an Ultralight C with its 16-byte key (once). Overridden by the tests.</summary>
+        /// <param name="key">The 16 bytes of the key.</param>
+        /// <returns>A task that ends when the chip took the key.</returns>
+        protected virtual Task AuthenticatePcscUltralightCAsync(byte[] key) =>
+            Task.Run(() => TranslateCardFault(() =>
+            {
+                var commands = (ultralightChip as MifareUltralightCChip)?.getMifareUltralightCCommands()
+                               ?? throw new PcscCardRefusal(CardException.ErrorType.FUNCTION_NOT_SUPPORTED);
+
+                using (var bytes = new ByteVector(key))
+                using (var tripleDes = new TripleDESKey(bytes))
+                {
+                    try
+                    {
+                        commands.authenticate(tripleDes);
+                    }
+                    finally
+                    {
+                        // What is cleared here is the copy of the native objects; the arrays of the request are cleared by the request.
+                        tripleDes.clear();
+                        bytes.Clear();
+                    }
+                }
+
+                return true;
+            }));
+
+        private MifareUltralightCommands PcscUltralightCommands() =>
+            (ultralightChip as MifareUltralightChip)?.getMifareUltralightCommands()
+            ?? throw new PcscCardRefusal(CardException.ErrorType.FUNCTION_NOT_SUPPORTED);
+
+        // The native card exception becomes a managed one that carries its error code and nothing else.
+        private static T TranslateCardFault<T>(Func<T> call)
         {
             try
             {
-                if (await tryInitReader())
-                {
-                    ReaderUnitName = readerUnit.getConnectedName();
-                    RawFormat format = new RawFormat();
-
-                    var chip = readerUnit.getSingleChip() as MifareUltralightChip;
-
-                    var service = chip.getService(CardServiceType.CST_STORAGE) as StorageCardService;
-
-                    Location location = chip.createLocation() as Location;
-
-                    if (chip.getCardType() == "MifareUltralight")
-                    {
-                        var cmd = chip.getCommands() as MifareUltralightCommands;
-                        MifareUltralightPageData = cmd.readPages(_pageNo, _pageNo).ToArray();
-                    }
-
-                    return ERROR.NoError;
-                }
-                return ERROR.NoError;
+                return call();
             }
-            catch (Exception e)
+            catch (CardException e)
             {
-                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
-                return ERROR.TransportError;
+                throw new PcscCardRefusal(e.error_code());
             }
         }
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> ReadMifareUltralightPagesAsync(UltralightAccess access, int startPage, int pageCount) =>
+            PerformPcscUltralightAsync(UltralightRequest.ForRead(access, startPage, pageCount));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            // ForWrite copies the payload here, in the call, before the request can wait for the session gate: the caller's array is not kept.
+            PerformPcscUltralightAsync(UltralightRequest.ForWrite(access, startPage, data));
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
+            PerformPcscUltralightAsync(UltralightRequest.ForAuthenticate(access));
+
+        // One call is one boundary: what is wrong with the call itself, and what LibLogicalAccess cannot do, is found before the card
+        // is touched; then the chip is selected and told, the call is checked against what it is, the key is sent once, and the work is
+        // done. Nothing is repeated after a refusal. The bytes of the key are cleared when the request is disposed, whatever happens.
+        private async Task<UltralightResult> PerformPcscUltralightAsync(UltralightRequest request)
+        {
+            using (request)
+            {
+                if (request.Error != ERROR.NoError)
+                {
+                    return UltralightResult.Failed(request.Error);
+                }
+
+                // LibLogicalAccess knows the plain Ultralight and the Ultralight C, and has no command for the password of an
+                // Ultralight EV1 and an NTAG: those are a protocol constraint, and no card is asked.
+                if (!SupportsUltralightAccess(request.Access))
+                {
+                    return UltralightResult.Failed(ERROR.ProtocolConstraint);
+                }
+
+                await pcscSessionGate.WaitAsync();
+                try
+                {
+                    return await RunPcscUltralightAsync(request);
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // A fault outside the calls that classify their own.
+                    LogPcscUltralightFailure(request.Operation, "unexpected", e);
+
+                    return UltralightResult.Failed(PcscUltralightErrors.Classify(e, UltralightCall.Select));
+                }
+                finally
+                {
+                    pcscSessionGate.Release();
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// LibLogicalAccess knows the plain Ultralight and the Ultralight C, and has no command for the password of an Ultralight EV1 or an
+        /// NTAG, nor a name for those chips: they are a protocol constraint here, and a task knows that before it asks for a key.
+        /// </remarks>
+        public override bool SupportsUltralightAccess(UltralightAccess access)
+        {
+            if (access.Auth == UltralightAuth.Password)
+            {
+                return false;
+            }
+
+            return !access.Expected.TryGetVariant(out var variant) || variant == UltralightVariant.Plain || variant == UltralightVariant.C;
+        }
+
+        // What LibLogicalAccess calls a chip it knows. It gives an Ultralight EV1 and an NTAG the name of a chip it does not know
+        // (an NTAG215 was seen as "__UNSUPPORTED__UNKNOWN"), so they have no layout here and are refused, never guessed at.
+        private static UltralightMemoryMap MapOfPcscCardType(string cardType)
+        {
+            switch (cardType)
+            {
+                case "MifareUltralight":
+                    return UltralightMemoryMap.For(UltralightVariant.Plain);
+
+                case "MifareUltralightC":
+                    return UltralightMemoryMap.For(UltralightVariant.C);
+
+                default:
+                    return null;
+            }
+        }
+
+        private async Task<UltralightResult> RunPcscUltralightAsync(UltralightRequest request)
+        {
+            PcscUltralightSighting sighting;
+
+            try
+            {
+                sighting = await SelectPcscUltralightChipAsync();
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogPcscUltralightFailure(request.Operation, UltralightCall.Select.ToString(), e);
+
+                return UltralightResult.Failed(PcscUltralightErrors.Classify(e, UltralightCall.Select));
+            }
+
+            if (!sighting.ChipFound)
+            {
+                return UltralightResult.Failed(ERROR.TransportError);
+            }
+
+            var map = MapOfPcscCardType(sighting.CardType);
+
+            if (map == null)
+            {
+                return UltralightResult.Failed(ERROR.ProtocolConstraint);
+            }
+
+            var variant = map.Variant;
+            var check = request.CheckAgainst(map);
+
+            if (check != ERROR.NoError)
+            {
+                return new UltralightResult(check, null, variant, false, 0, null);
+            }
+
+            var authenticated = false;
+
+            if (request.Access.Auth == UltralightAuth.UltralightC)
+            {
+                try
+                {
+                    await AuthenticatePcscUltralightCAsync(request.Key);
+
+                    authenticated = true;
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // Once. A wrong key is not tried again, and nothing is read or written after it.
+                    LogPcscUltralightFailure(request.Operation, UltralightCall.AuthUltralightC.ToString(), e);
+
+                    return new UltralightResult(PcscUltralightErrors.Classify(e, UltralightCall.AuthUltralightC), null, variant, false, 0, null);
+                }
+            }
+
+            switch (request.Operation)
+            {
+                case UltralightOperation.Read:
+                    return await ReadPcscRangeAsync(request.StartPage, request.PageCount, variant, authenticated);
+
+                case UltralightOperation.Write:
+                    return await WritePcscRangeAsync(request, map, authenticated);
+
+                default:
+                    return new UltralightResult(ERROR.NoError, null, variant, authenticated, 0, null);
+            }
+        }
+
+        // One page per call: the range is never asked for in one piece, so a page that cannot be read is a refusal of that page and not
+        // a short answer for the range, and the pages before it are kept.
+        private async Task<UltralightResult> ReadPcscRangeAsync(int startPage, int pageCount, UltralightVariant variant, bool authenticated)
+        {
+            var data = new byte[pageCount * UltralightMemoryMap.PageSize];
+
+            for (var done = 0; done < pageCount; done++)
+            {
+                var page = startPage + done;
+                var (error, content) = await ReadPcscOnePageAsync(page);
+
+                if (error != ERROR.NoError)
+                {
+                    return new UltralightResult(error, data.Take(done * UltralightMemoryMap.PageSize).ToArray(), variant, authenticated, done, page);
+                }
+
+                Array.Copy(content, 0, data, done * UltralightMemoryMap.PageSize, UltralightMemoryMap.PageSize);
+            }
+
+            return new UltralightResult(ERROR.NoError, data, variant, authenticated, pageCount, null);
+        }
+
+        private async Task<(ERROR Error, byte[] Page)> ReadPcscOnePageAsync(int page)
+        {
+            byte[] bytes;
+
+            try
+            {
+                bytes = await ReadPcscUltralightPageAsync(page);
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                LogPcscUltralightFailure(UltralightOperation.Read, UltralightCall.Read.ToString(), e);
+
+                return (PcscUltralightErrors.Classify(e, UltralightCall.Read), null);
+            }
+
+            // An empty or a short answer is no page, and never a success (the old code answered NoError whether or not it read).
+            if (bytes == null || bytes.Length < UltralightMemoryMap.PageSize)
+            {
+                return (ERROR.Unknown, null);
+            }
+
+            var content = new byte[UltralightMemoryMap.PageSize];
+            Array.Copy(bytes, 0, content, 0, UltralightMemoryMap.PageSize);
+
+            return (ERROR.NoError, content);
+        }
+
+        private async Task<UltralightResult> WritePcscRangeAsync(UltralightRequest request, UltralightMemoryMap map, bool authenticated)
+        {
+            var variant = map.Variant;
+            var written = 0;
+
+            while (written < request.PageCount)
+            {
+                var page = request.StartPage + written;
+                var chunk = new byte[UltralightMemoryMap.PageSize];
+                Array.Copy(request.Data, written * UltralightMemoryMap.PageSize, chunk, 0, UltralightMemoryMap.PageSize);
+
+                try
+                {
+                    await WritePcscUltralightPageAsync(page, chunk);
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // One attempt: the page that was refused is not written again, and no later page is written.
+                    LogPcscUltralightFailure(UltralightOperation.Write, UltralightCall.Write.ToString(), e);
+
+                    return new UltralightResult(PcscUltralightErrors.Classify(e, UltralightCall.Write), null, variant, authenticated, written, page);
+                }
+                finally
+                {
+                    // The page is a copy of the payload, which can be the key of an Ultralight C: it does not outlive the write, kept or refused.
+                    System.Security.Cryptography.CryptographicOperations.ZeroMemory(chunk);
+                }
+
+                written++;
+            }
+
+            // What the call returned says nothing about the page: every page is read back (reads only, no second write), except those
+            // that cannot read back as they were written (the key of an Ultralight C).
+            for (var i = 0; i < request.PageCount; i++)
+            {
+                var page = request.StartPage + i;
+
+                if (!map.ReadsBackAsWritten(page))
+                {
+                    continue;
+                }
+
+                var (error, content) = await ReadPcscOnePageAsync(page);
+
+                if (error != ERROR.NoError)
+                {
+                    return new UltralightResult(error, null, variant, authenticated, written, page);
+                }
+
+                if (!content.AsSpan().SequenceEqual(request.Data.AsSpan(i * UltralightMemoryMap.PageSize, UltralightMemoryMap.PageSize)))
+                {
+                    return new UltralightResult(ERROR.Unknown, null, variant, authenticated, written, page);
+                }
+            }
+
+            return new UltralightResult(ERROR.NoError, null, variant, authenticated, written, null);
+        }
+
+        // The log gets the operation, the call, and the name of the exception type and card error code: never a key, a UID or the text of an exception.
+        private static void LogPcscUltralightFailure(UltralightOperation operation, string call, Exception exception) =>
+            Log.ForContext<LibLogicalAccessProvider>().Warning(
+                "PC/SC Ultralight {Operation} failed at {Call}: {Fault}",
+                operation,
+                call,
+                PcscUltralightErrors.Describe(exception));
 
         #endregion mifare ultralight
 

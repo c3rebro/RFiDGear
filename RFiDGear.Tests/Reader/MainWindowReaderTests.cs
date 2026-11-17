@@ -339,6 +339,34 @@ namespace RFiDGear.Tests.Reader
             });
         }
 
+        // The reset walks every task of the project. An Ultralight task used to stop it with an InvalidCastException, which
+        // also stopped the start of a run, as that begins with the reset.
+        [Fact]
+        public async Task TheResetCommands_ResetAnUltralightTaskToo()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                var task = new MifareUltralightSetupViewModel { CurrentTaskIndex = "1" };
+                task.IsTaskCompletedSuccessfully = true;
+                task.CurrentTaskErrorLevel = ERROR.AuthFailure;
+                viewModel.ChipTasks.TaskCollection.Add(task);
+                viewModel.SelectedSetupViewModel = task;
+
+                await Within(viewModel.ResetTaskStatusCommand.ExecuteAsync(null));
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+
+                task.IsTaskCompletedSuccessfully = true;
+                task.CurrentTaskErrorLevel = ERROR.AuthFailure;
+                await Within(viewModel.ResetSelectedTaskStatusCommand.ExecuteAsync(null));
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+
+                Assert.True(coordinator.TryBeginProjectOperation());   // every command gave the slot back
+                coordinator.EndProjectOperation();
+            });
+        }
+
         [Fact]
         public async Task TheResetAndRemoveCommands_WorkWhenNothingIsRunning_AndGiveTheSlotBack()
         {
@@ -562,6 +590,37 @@ namespace RFiDGear.Tests.Reader
 
                     Assert.False(viewModel.IsReaderInitializing);
                 }
+            });
+        }
+
+        [Fact]
+        public async Task ALookThatEndsAfterTheReaderWasTaken_DoesNotSayThatTheReaderIsFree()
+        {
+            await WithViewModel((viewModel, _, _) =>
+            {
+                // The SAM setup (like a scan) took the reader while the look was under way: it has said that the reader is busy.
+                viewModel.IsReaderBusy = true;
+                Assert.True(viewModel.ReaderGate.TryEnter());
+
+                viewModel.ApplyProbeResult(new RFiDGear.Services.ReaderProbeResult(true, false, "the label"));
+
+                Assert.True(viewModel.IsReaderBusy);
+                Assert.Equal("the label", viewModel.CurrentReader);
+
+                // Nobody holds the reader: what the look found is what the status bar shows.
+                viewModel.ReaderGate.Exit();
+                viewModel.ApplyProbeResult(new RFiDGear.Services.ReaderProbeResult(true, false, "the next label"));
+
+                Assert.False(viewModel.IsReaderBusy);
+                Assert.Equal("the next label", viewModel.CurrentReader);
+
+                // A look that does not change the busy state never does, with the gate held or free.
+                viewModel.IsReaderBusy = true;
+                viewModel.ApplyProbeResult(new RFiDGear.Services.ReaderProbeResult(false, null, "still"));
+
+                Assert.True(viewModel.IsReaderBusy);
+
+                return Task.CompletedTask;
             });
         }
 

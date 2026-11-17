@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="RFiDGear.View.TabPageMifareUltralightChipView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:ult="clr-namespace:RFiDGear.Infrastructure.Ultralight"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <dal:ResourceLoader x:Key="Localization" />
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <GroupBox
+            Margin="8,8,8,8"
+            VerticalAlignment="Top"
+            Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareUltralightChip'}">
+            <Grid Margin="0,4,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="190" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Label
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="8,7,8,3"
+                    VerticalContentAlignment="Center"
+                    Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareUltralightExpectedChip'}" />
+                <ComboBox
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Height="26"
+                    MaxWidth="420"
+                    Margin="8,7,8,3"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    VerticalContentAlignment="Center"
+                    ItemsSource="{dal:Enumerate {x:Type ult:UltralightExpectation}}"
+                    SelectedItem="{Binding ExpectedChip, Converter={StaticResource Localization}, ConverterParameter={x:Type ult:UltralightExpectation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Margin="8,0,8,10"
+                    Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                    Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='textBlockMifareUltralightExpectedChipHint'}"
+                    TextWrapping="Wrap" />
+                <Label
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Margin="8,7,8,3"
+                    VerticalContentAlignment="Center"
+                    Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareUltralightAuthentication'}" />
+                <ComboBox
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Height="26"
+                    MaxWidth="420"
+                    Margin="8,7,8,3"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    VerticalContentAlignment="Center"
+                    ItemsSource="{dal:Enumerate {x:Type ult:UltralightAuth}}"
+                    SelectedItem="{Binding Authentication, Converter={StaticResource Localization}, ConverterParameter={x:Type ult:UltralightAuth}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                <CheckBox
+                    Grid.Row="3"
+                    Grid.Column="1"
+                    Margin="8,16,8,3"
+                    VerticalContentAlignment="Center"
+                    Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='checkBoxContentMifareUltralightAllowProtectedPages'}"
+                    IsChecked="{Binding AllowProtectedPages, Mode=TwoWay}" />
+                <TextBlock
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    Margin="28,0,8,8"
+                    Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                    Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='textBlockMifareUltralightProtectedPagesWarning'}"
+                    TextWrapping="Wrap" />
+            </Grid>
+        </GroupBox>
+    </ScrollViewer>
+</UserControl>

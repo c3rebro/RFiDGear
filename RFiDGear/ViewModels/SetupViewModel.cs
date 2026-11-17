@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Created by SharpDevelop.
  * Date: 10/10/2017
  * Time: 20:31
@@ -29,12 +29,32 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of SetupDialogBoxViewModel.
     /// </summary>
+    /// <summary>One entry of the list of readers for the SAM: the name that is saved, and what the person reads.</summary>
+    public sealed class SamReaderItem
+    {
+        /// <summary>Creates the entry.</summary>
+        /// <param name="name">The name of the reader; empty for none.</param>
+        /// <param name="displayName">What the person reads.</param>
+        public SamReaderItem(string name, string displayName)
+        {
+            Name = name;
+            DisplayName = displayName;
+        }
+
+        /// <summary>Gets the name of the reader; empty for none.</summary>
+        public string Name { get; }
+
+        /// <summary>Gets what the person reads.</summary>
+        public string DisplayName { get; }
+    }
+
     public class SetupViewModel : ObservableObject, IUserDialogViewModel
     {
         private ReaderDevice device;
         private bool _ownsDevice;
         private readonly SettingsReaderWriter settingsReaderWriter;
         private ObservableCollection<IDialogViewModel> _dialogs;
+        private readonly Func<LibLogicalAccessProvider> pcscProviderFactory;
 
         public SetupViewModel()
             : this(null, new SettingsReaderWriter())
@@ -42,13 +62,25 @@ namespace RFiDGear.ViewModel
         }
 
         public SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings, ObservableCollection<IDialogViewModel> dialogs = null)
+            : this(_device, settings, dialogs, null)
+        {
+        }
+
+        /// <summary>Creates the dialog; the tests say how the PC/SC provider of the dialog is made.</summary>
+        /// <param name="_device">The provider of the application, or <see langword="null"/>.</param>
+        /// <param name="settings">The settings.</param>
+        /// <param name="dialogs">The dialogs.</param>
+        /// <param name="pcscProviderFactory">Makes the provider that the dialog owns when it was given none; <see langword="null"/> for the real one.</param>
+        internal SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings, ObservableCollection<IDialogViewModel> dialogs, Func<LibLogicalAccessProvider> pcscProviderFactory)
         {
             settingsReaderWriter = settings ?? throw new ArgumentNullException(nameof(settings));
+            this.pcscProviderFactory = pcscProviderFactory ?? (() => new LibLogicalAccessProvider());
 
             IsRdpSession = RdpSessionDetector.IsRemoteDesktopSession && !RdpSessionDetector.CanEstablishPcscContext();
 
             device = _device;
             SelectedReaderName = settingsReaderWriter.DefaultSpecification.DefaultReaderName;
+            SelectedSamReaderName = settingsReaderWriter.DefaultSpecification.SamReaderName;
             // If running under RDP and PCSC was the configured provider, fall back to None silently
             var configuredProvider = settingsReaderWriter.DefaultSpecification.DefaultReaderProvider;
             SelectedReader = (IsRdpSession && configuredProvider == ReaderTypes.PCSC) ? ReaderTypes.None : configuredProvider;
@@ -135,17 +167,29 @@ namespace RFiDGear.ViewModel
                             if (!(device is LibLogicalAccessProvider))
                             {
                                 device.Dispose();
-                                device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                                device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName, SelectedSamReaderName);
                                 _ownsDevice = true;
                             }
                             else
                             {
-                                (device as LibLogicalAccessProvider)?.UpdateSelectedReader(SelectedReaderName);
+                                var provider = (LibLogicalAccessProvider)device;
+
+                                // The provider of the application keeps the SAM reader that was saved until OK is pressed: a choice
+                                // that is cancelled must not leave it changed (and the card unprotected from the SAM reader). A
+                                // provider of the dialog learns both readers at once, so that it chooses its unit knowing both.
+                                if (_ownsDevice)
+                                {
+                                    provider.UpdateReaders(SelectedReaderName, SelectedSamReaderName);
+                                }
+                                else
+                                {
+                                    provider.UpdateSelectedReader(SelectedReaderName);
+                                }
                             }
                         }
                         else
                         {
-                            device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                            device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName, SelectedSamReaderName);
                             _ownsDevice = true;
                         }
 
@@ -317,7 +361,7 @@ namespace RFiDGear.ViewModel
                             _ownsDevice = true;
                             break;
                         case ReaderTypes.PCSC:
-                            device = new LibLogicalAccessProvider();
+                            device = pcscProviderFactory();
                             _ownsDevice = true;
                             break;
 
@@ -356,9 +400,47 @@ namespace RFiDGear.ViewModel
             {
                 selectedReaderName = value;
                 OnPropertyChanged(nameof(SelectedReaderName));
+                OnPropertyChanged(nameof(SamReaderIsCardReader));
+                OnPropertyChanged(nameof(SamReaderWarningText));
             }
         }
         private string selectedReaderName;
+
+        /// <summary>
+        /// Gets the readers that can be chosen for the SAM: "none" first, then every PC/SC reader, and the configured one when it is
+        /// not there (a reader that is not plugged in is still what the setting says).
+        /// </summary>
+        public ObservableCollection<SamReaderItem> AvailableSamReaders { get; } = new ObservableCollection<SamReaderItem>();
+
+        /// <summary>
+        /// Gets or sets the name of the reader that holds the MIFARE SAM AV3; empty for none. A task whose key slot names a key of the SAM
+        /// needs it, and the card is never read in it.
+        /// </summary>
+        public string SelectedSamReaderName
+        {
+            get => selectedSamReaderName;
+            set
+            {
+                // The box says "nothing" while its items are replaced; that is no choice of the person and must not erase the saved one.
+                if (refillingSamReaders)
+                {
+                    return;
+                }
+
+                selectedSamReaderName = value ?? string.Empty;
+                OnPropertyChanged(nameof(SelectedSamReaderName));
+                OnPropertyChanged(nameof(SamReaderIsCardReader));
+                OnPropertyChanged(nameof(SamReaderWarningText));
+            }
+        }
+        private string selectedSamReaderName = string.Empty;
+        private bool refillingSamReaders;
+
+        /// <summary>Gets whether the reader of the SAM is the reader of the card: one of them is wrong.</summary>
+        public bool SamReaderIsCardReader => PcscReaderChoice.IsSamReader(SelectedReaderName, SelectedSamReaderName);
+
+        /// <summary>Gets what to say when the reader of the SAM is the reader of the card; empty otherwise.</summary>
+        public string SamReaderWarningText => SamReaderIsCardReader ? ResourceLoader.GetResource("labelSamReaderIsCardReader") : string.Empty;
 
         /// <summary>
         ///
@@ -432,6 +514,40 @@ namespace RFiDGear.ViewModel
         private string defaultReader;
 
         private void RefreshAvailableReaders()
+        {
+            RefreshAvailableCardReaders();
+            RefreshAvailableSamReaders();
+        }
+
+        private void RefreshAvailableSamReaders()
+        {
+            refillingSamReaders = true;
+
+            try
+            {
+                AvailableSamReaders.Clear();
+                AvailableSamReaders.Add(new SamReaderItem(string.Empty, ResourceLoader.GetResource("textSamReaderNone")));
+
+                if (SelectedReader == ReaderTypes.PCSC)
+                {
+                    foreach (var reader in AvailableReaders)
+                    {
+                        AvailableSamReaders.Add(new SamReaderItem(reader, reader));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(SelectedSamReaderName) && AvailableSamReaders.All(item => item.Name != SelectedSamReaderName))
+                    {
+                        AvailableSamReaders.Add(new SamReaderItem(SelectedSamReaderName, SelectedSamReaderName));
+                    }
+                }
+            }
+            finally
+            {
+                refillingSamReaders = false;
+            }
+        }
+
+        private void RefreshAvailableCardReaders()
         {
             AvailableReaders.Clear();
 

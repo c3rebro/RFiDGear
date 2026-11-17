@@ -24,8 +24,8 @@ namespace RFiDGear.HIL.Tests
     {
         private readonly HilSettings _settings;
         private readonly HilFixture _reader;
-        private readonly Func<Task> _initialize;
-        private readonly Func<Task> _dispose;
+        private readonly Func<ValueTask> _initialize;
+        private readonly Func<ValueTask> _dispose;
         private bool _started;
 
         /// <summary>Creates the fixture for a test run, from the settings of the run.</summary>
@@ -39,7 +39,7 @@ namespace RFiDGear.HIL.Tests
         /// <param name="reader">The fixture that finds the reader and the card.</param>
         /// <param name="initialize">Starts the reader; <see cref="HilFixture.InitializeAsync"/> when <see langword="null"/>.</param>
         /// <param name="dispose">Ends it; <see cref="HilFixture.DisposeAsync"/> when <see langword="null"/>.</param>
-        internal HilSecureKeyFixture(HilSettings settings, HilFixture reader, Func<Task>? initialize, Func<Task>? dispose)
+        internal HilSecureKeyFixture(HilSettings settings, HilFixture reader, Func<ValueTask>? initialize, Func<ValueTask>? dispose)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
@@ -54,7 +54,7 @@ namespace RFiDGear.HIL.Tests
         internal bool Started => _started;
 
         /// <inheritdoc/>
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             if (!_settings.SecureKeysRequested)
             {
@@ -66,7 +66,7 @@ namespace RFiDGear.HIL.Tests
         }
 
         /// <inheritdoc/>
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             if (_started)
             {
@@ -76,8 +76,8 @@ namespace RFiDGear.HIL.Tests
 
         /// <summary>
         /// Ends the test as a skip when the secure-key cases were not asked for or when no reader or DESFire card was found.
-        /// A skip from inside a test is reported by xunit 2 as a failure with the message prefix <c>$XunitDynamicSkip$</c>,
-        /// which <c>Run-HilTests.ps1</c> counts as skipped.
+        /// A skip from inside a test is reported by xunit.v3 as a skip (xunit 2 reported it as a failure with the message prefix
+        /// <c>$XunitDynamicSkip$</c>, which <c>Run-HilTests.ps1</c> still counts as skipped).
         /// </summary>
         public void SkipIfNoHardware()
         {

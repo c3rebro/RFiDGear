@@ -80,7 +80,7 @@ namespace RFiDGear.Services.SecureKeys
                 return KeyBindingProblem.InvalidProviderId;
             }
 
-            return SecureKeySyntax.IsValidReference(entry.Reference) ? null : KeyBindingProblem.InvalidReference;
+            return SecureKeySyntax.IsValidReferenceFor(entry.ProviderId, entry.Reference) ? null : KeyBindingProblem.InvalidReference;
         }
     }
 }

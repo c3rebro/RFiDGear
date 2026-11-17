@@ -1,4 +1,5 @@
-using Xunit;
+using Xunit.Sdk;
+using Xunit.v3;
 
 // Tests run one at a time because they share process-wide and machine-wide state that the
 // per-class [Collection] attributes do not fully cover:
@@ -8,4 +9,4 @@ using Xunit;
 //    `new SettingsReaderWriter()` / ResourceLoader.GetResource call sites that cannot be injected yet.
 // Project load/save tests are already isolated through an injected ProjectManager root, so they do not
 // depend on this. Re-enable parallelism only once the settings access above is injectable.
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: Parallelization(Mode = ParallelMode.None)]

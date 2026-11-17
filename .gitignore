@@ -40,6 +40,7 @@
 RFiDGear/.claude/settings.local.json
 /website
 /docs/plans
+/docs/sam-keys.md
 /RFiDGear.Contracts/bin
 /RFiDGear.Contracts/obj
 /RFiDGear.Bridge.Contracts/bin

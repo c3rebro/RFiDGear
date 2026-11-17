@@ -210,6 +210,28 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public async Task A_binding_to_a_key_of_the_sam_is_saved_and_read_like_any_other_and_writes_no_key()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var task = NewDesfireTask();
+                task.KeyBindings = new[] { new KeyBindingEntry { Slot = SecureKeySlots.DesfirePiccCurrent, ProviderId = "sam", Reference = "3:1" } };
+
+                var xml = Serialize(task);
+
+                AssertNoKey(xml, DesfireSlots[SecureKeySlots.DesfirePiccCurrent].Key);
+                Assert.Contains("<ProviderId>sam</ProviderId>", xml, StringComparison.Ordinal);
+                Assert.Contains("<Reference>3:1</Reference>", xml, StringComparison.Ordinal);
+
+                var reloaded = Assert.IsType<MifareDesfireSetupViewModel>(Assert.Single(Deserialize(xml).TaskCollection));
+                var entry = Assert.Single(reloaded.KeyBindings);
+
+                Assert.Equal(("sam", "3:1"), (entry.ProviderId, entry.Reference));
+                Assert.True(reloaded.IsKeyBound(SecureKeySlots.DesfirePiccCurrent));
+            });
+        }
+
+        [Fact]
         public async Task A_reference_that_contains_the_old_error_name_comes_back_unchanged()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>

@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- xunit.v3 test projects are executables; dotnet test and the test explorer run them through the VSTest adapter. -->
+    <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64;x86</Platforms>
@@ -8,14 +10,22 @@
     <!-- HIL tests are excluded from CI by default.
          Run explicitly: dotnet test RFiDGear.HIL.Tests when a reader and DESFire card are present. -->
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <!-- As in RFiDGear.csproj: the native files of LibLogicalAccess are in runtimes\win10-x64 and win10-x86, which the runtime finds
+         only through the old runtime graph. Without it the managed library loads and the first call into the native one fails, so a
+         PC/SC reader cannot even be listed. -->
+    <UseRidGraph>true</UseRidGraph>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Elatec.NET" Version="0.7.0-beta.1" />
+    <PackageReference Include="Elatec.NET" Version="0.7.0-beta.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="xunit" Version="2.8.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
+    <!-- xunit.v3 without Microsoft.Testing.Platform: the .NET 10 SDK refuses to run a test project that is built on it through
+         the VSTest path of dotnet test, and Run-HilTests.ps1 and the filters of this repository use that path. -->
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear\RFiDGear.csproj" />

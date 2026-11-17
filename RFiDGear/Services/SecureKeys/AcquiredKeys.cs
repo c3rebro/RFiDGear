@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 
+using RFiDGear.Services.Sam;
+
 namespace RFiDGear.Services.SecureKeys
 {
     /// <summary>
@@ -25,11 +27,13 @@ namespace RFiDGear.Services.SecureKeys
     {
         private readonly Dictionary<string, string?> _hex;
         private readonly HashSet<string> _bound;
+        private readonly Dictionary<string, SamKeyReference> _sam;
 
-        private AcquiredKeys(Dictionary<string, string?> hex, HashSet<string> bound, KeyFailure? failure)
+        private AcquiredKeys(Dictionary<string, string?> hex, HashSet<string> bound, Dictionary<string, SamKeyReference> sam, KeyFailure? failure)
         {
             _hex = hex;
             _bound = bound;
+            _sam = sam;
             Failure = failure;
         }
 
@@ -43,18 +47,48 @@ namespace RFiDGear.Services.SecureKeys
         /// <param name="hex">The key of each slot; an embedded key is passed on as it is, even when it is empty.</param>
         /// <param name="bound">The slots whose key came from a provider.</param>
         /// <returns>The keys.</returns>
-        internal static AcquiredKeys Obtained(Dictionary<string, string?> hex, HashSet<string> bound) => new AcquiredKeys(hex, bound, null);
+        internal static AcquiredKeys Obtained(Dictionary<string, string?> hex, HashSet<string> bound) =>
+            new AcquiredKeys(hex, bound, new Dictionary<string, SamKeyReference>(StringComparer.Ordinal), null);
+
+        /// <summary>Creates the result of a successful acquisition in which some slots name a key of the SAM.</summary>
+        /// <param name="hex">The key of each slot that is not a key of the SAM.</param>
+        /// <param name="bound">The slots whose key came from a provider, and the slots of the SAM.</param>
+        /// <param name="sam">The key of each slot that names one in the SAM: the key entry and its version, and no key.</param>
+        /// <returns>The keys.</returns>
+        internal static AcquiredKeys Obtained(Dictionary<string, string?> hex, HashSet<string> bound, Dictionary<string, SamKeyReference> sam) =>
+            new AcquiredKeys(hex, bound, sam, null);
 
         /// <summary>Creates the result of a failed acquisition. It holds no key.</summary>
         /// <param name="failure">What went wrong.</param>
         /// <returns>The failure.</returns>
         internal static AcquiredKeys Unavailable(KeyFailure failure) =>
-            new AcquiredKeys(new Dictionary<string, string?>(), new HashSet<string>(StringComparer.Ordinal), failure);
+            new AcquiredKeys(new Dictionary<string, string?>(), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, SamKeyReference>(StringComparer.Ordinal), failure);
 
         /// <summary>Returns whether the key of a slot came from a provider.</summary>
         /// <param name="slot">The slot id.</param>
         /// <returns><c>true</c> when it did.</returns>
         internal bool IsBound(string slot) => _bound.Contains(slot);
+
+        /// <summary>Returns whether the key of a slot stays in the SAM: there is no text of it.</summary>
+        /// <param name="slot">The slot id.</param>
+        /// <returns><c>true</c> when it does.</returns>
+        internal bool IsSam(string slot) => _sam.ContainsKey(slot);
+
+        /// <summary>Returns the key entry and the key version of a slot that names a key of the SAM.</summary>
+        /// <param name="slot">The slot id; it must be one that <see cref="IsSam"/> says is a key of the SAM.</param>
+        /// <returns>The reference.</returns>
+        /// <exception cref="InvalidOperationException">The acquisition failed, or the slot is no key of the SAM.</exception>
+        internal SamKeyReference SamKey(string slot)
+        {
+            if (Failed)
+            {
+                throw new InvalidOperationException("The keys could not be obtained.");
+            }
+
+            return _sam.TryGetValue(slot, out var reference)
+                ? reference
+                : throw new InvalidOperationException($"The key of slot {slot} is not a key of the SAM.");
+        }
 
         /// <summary>Returns the key of a slot as hexadecimal text.</summary>
         /// <param name="slot">The slot id; it must be one the command asked for.</param>
@@ -65,6 +99,12 @@ namespace RFiDGear.Services.SecureKeys
             if (Failed)
             {
                 throw new InvalidOperationException("The keys could not be obtained.");
+            }
+
+            if (_sam.ContainsKey(slot))
+            {
+                // A key of the SAM has no text, and a command that asks for it has to be one that gives the reference to the SAM.
+                throw new InvalidOperationException($"The key of slot {slot} stays in the SAM.");
             }
 
             return _hex.TryGetValue(slot, out var hex)

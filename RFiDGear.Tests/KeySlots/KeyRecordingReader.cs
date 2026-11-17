@@ -1,7 +1,10 @@
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Models;
+using RFiDGear.Services.Sam;
 
 using System;
 using System.Collections.Generic;
@@ -14,6 +17,14 @@ namespace RFiDGear.Tests.KeySlots
     /// <param name="Method">The name of the reader method.</param>
     /// <param name="Keys">The keys as the reader received them, without spaces and in upper case.</param>
     internal sealed record KeyCall(string Method, IReadOnlyList<string> Keys);
+
+    /// <summary>One page operation of the Ultralight family that reached the reader.</summary>
+    /// <param name="Method">The name of the reader method.</param>
+    /// <param name="Access">The access as the reader received it, with the keys as hexadecimal text.</param>
+    /// <param name="StartPage">The first page.</param>
+    /// <param name="PageCount">The number of pages.</param>
+    /// <param name="Data">A copy of the bytes of a write; <c>null</c> for a read or an authentication.</param>
+    internal sealed record UltralightPageCall(string Method, UltralightAccess Access, int StartPage, int PageCount, byte[]? Data);
 
     /// <summary>
     /// A reader that records every call that carries a card key, and answers success to all of them. It never looks at
@@ -38,11 +49,65 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets or sets the text of the exception thrown by <see cref="ThrowMethod"/>.</summary>
         public string ThrowText { get; set; } = "The reader failed.";
 
+        /// <summary>Gets or sets the position of a block of the sector that is read that no key could read (no data, not authenticated); <c>null</c> for none.</summary>
+        public int? UnreadableBlock { get; set; }
+
+        /// <summary>Gets or sets what the blocks of the sector that is read hold (every byte); 0 by default.</summary>
+        public byte BlockFill { get; set; }
+
+        /// <summary>Gets or sets how many blocks the sector that is read has (the trailer included); 4 by default. A reader that leaves out what it could not read returns fewer than the sector has.</summary>
+        public int BlockCount { get; set; } = 4;
+
         /// <summary>Gets or sets the card the reader finds when the chip is read; <c>null</c> for none.</summary>
         public GenericChipModel? Card { get; set; }
 
+        /// <summary>Gets or sets whether the reader says it is connected; <c>null</c> (the default) leaves it to <see cref="Card"/>.</summary>
+        public bool? Connected { get; set; }
+
+        /// <summary>Gets or sets whether the reader behaves like a PC/SC reader (see <see cref="ReaderDevice.IsPcscReader"/>).</summary>
+        public bool Pcsc { get; set; }
+
+        /// <summary>Gets or sets whether the reader can authenticate and change keys with keys that stay in a SAM (see <see cref="ReaderDevice.SupportsDesfireSamKeys"/>).</summary>
+        public bool SupportsSam { get; set; }
+
+        /// <summary>Gets or sets what the two operations with a SAM answer.</summary>
+        public SamPiccResult SamAnswer { get; set; } = SamPiccResult.Ok;
+
+        /// <summary>Gets or sets what happens while an operation with a SAM is under way (a person editing the dialog, for instance).</summary>
+        public Action? WhileASamOperationRuns { get; set; }
+
+        /// <summary>Gets the authentications with a key of the SAM that reached the reader: references, never keys.</summary>
+        public List<DesfireSamAccess> SamAuthentications { get; } = new List<DesfireSamAccess>();
+
+        /// <summary>Gets the key changes with keys of the SAM that reached the reader: references, never keys.</summary>
+        public List<DesfireSamKeyChange> SamChanges { get; } = new List<DesfireSamKeyChange>();
+
         /// <inheritdoc />
-        public override bool IsConnected => Card != null || base.IsConnected;
+        public override bool SupportsDesfireSamKeys => SupportsSam;
+
+        /// <inheritdoc />
+        public override Task<SamPiccResult> AuthenticateMifareDesfireWithSamAsync(DesfireSamAccess access)
+        {
+            SamAuthentications.Add(access);
+            WhileASamOperationRuns?.Invoke();
+
+            return Task.FromResult(SamAnswer);
+        }
+
+        /// <inheritdoc />
+        public override Task<SamPiccResult> ChangeMifareDesfireKeyWithSamAsync(DesfireSamKeyChange change)
+        {
+            SamChanges.Add(change);
+            WhileASamOperationRuns?.Invoke();
+
+            return Task.FromResult(SamAnswer);
+        }
+
+        /// <inheritdoc />
+        public override bool IsConnected => Connected ?? (Card != null || base.IsConnected);
+
+        /// <inheritdoc />
+        public override bool IsPcscReader => Pcsc;
 
         /// <summary>Gets how often the chip was read; a call that carries no key and so is not in <see cref="Calls"/>.</summary>
         public int ReadChipCalls { get; private set; }
@@ -212,29 +277,86 @@ namespace RFiDGear.Tests.KeySlots
         /// <inheritdoc />
         public override Task<ERROR> CommitTransactionAsync() => Task.FromResult(ERROR.NoError);
 
+        // ── Ultralight ──
+
+        /// <summary>Gets or sets whether the reader takes the access that a task asks about before it asks for keys.</summary>
+        public bool AcceptsUltralightAccess { get; set; } = true;
+
+        /// <summary>Gets what the task asked the reader about before it asked for keys, in order.</summary>
+        public List<UltralightAccess> UltralightAccessesAsked { get; } = new List<UltralightAccess>();
+
+        /// <inheritdoc />
+        public override bool SupportsUltralightAccess(UltralightAccess access)
+        {
+            UltralightAccessesAsked.Add(access);
+
+            return AcceptsUltralightAccess;
+        }
+
+        /// <summary>Gets every page operation of the Ultralight family that reached the reader, in order.</summary>
+        public List<UltralightPageCall> UltralightCalls { get; } = new List<UltralightPageCall>();
+
+        /// <summary>Gets or sets the result the page operations answer with instead of the default one; <c>null</c> for none.</summary>
+        public UltralightResult? ScriptedUltralightResult { get; set; }
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> ReadMifareUltralightPagesAsync(UltralightAccess access, int startPage, int pageCount) =>
+            UltralightPageOperation(nameof(ReadMifareUltralightPagesAsync), access, startPage, pageCount, null);
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> WriteMifareUltralightPagesAsync(UltralightAccess access, int startPage, byte[] data) =>
+            UltralightPageOperation(nameof(WriteMifareUltralightPagesAsync), access, startPage, data == null ? 0 : data.Length / 4, data);
+
+        /// <inheritdoc />
+        public override Task<UltralightResult> AuthenticateMifareUltralightAsync(UltralightAccess access) =>
+            UltralightPageOperation(nameof(AuthenticateMifareUltralightAsync), access, 0, 0, null);
+
+        private Task<UltralightResult> UltralightPageOperation(string method, UltralightAccess access, int startPage, int pageCount, byte[]? data)
+        {
+            UltralightCalls.Add(new UltralightPageCall(method, access, startPage, pageCount, data == null ? null : (byte[])data.Clone()));
+
+            // The key and the PACK as the reader received them, so that a test can say which slot each came from.
+            var error = Record(method, access.KeyHex, access.PackHex);
+
+            if (ScriptedUltralightResult != null)
+            {
+                return Task.FromResult(ScriptedUltralightResult);
+            }
+
+            if (error != ERROR.NoError)
+            {
+                return Task.FromResult(UltralightResult.Failed(error));
+            }
+
+            // What a successful read leaves: a recognizable byte per position, so that the pages can be told apart.
+            var bytes = method == nameof(ReadMifareUltralightPagesAsync)
+                ? Enumerable.Range(0, pageCount * 4).Select(i => (byte)(startPage * 4 + i)).ToArray()
+                : null;
+
+            return Task.FromResult(new UltralightResult(ERROR.NoError, bytes, UltralightVariant.Ntag215, access.Auth != UltralightAuth.None, pageCount, null));
+        }
+
         // ── Classic ──
 
         /// <inheritdoc />
-        public override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        public override Task<(ERROR Error, MifareClassicSectorModel Sector)> ReadMifareClassicSectorAsync(int sectorNumber, string aKey, string bKey)
         {
-            var scripted = Record(nameof(ReadMifareClassicSingleSector), aKey, bKey);
+            var scripted = Record(nameof(ReadMifareClassicSectorAsync), aKey, bKey);
 
-            // The view model reads the sector that a successful call leaves behind.
-            if (scripted == ERROR.NoError)
-            {
-                Sector = NewSector(sectorNumber);
-            }
-
-            return Task.FromResult(scripted);
+            // The view model reads the sector that a successful call hands back.
+            return Task.FromResult((scripted, scripted == ERROR.NoError ? NewSector(sectorNumber) : new MifareClassicSectorModel()));
         }
 
-        private static MifareClassicSectorModel NewSector(int sectorNumber)
+        private MifareClassicSectorModel NewSector(int sectorNumber)
         {
             var sector = new MifareClassicSectorModel { SectorNumber = sectorNumber, IsAuthenticated = true };
 
-            for (var block = 0; block < 4; block++)
+            for (var block = 0; block < BlockCount; block++)
             {
-                sector.DataBlock.Add(new MifareClassicDataBlockModel(sectorNumber * 4 + block, block) { Data = new byte[16], IsAuthenticated = true });
+                var unreadable = UnreadableBlock == block;
+                var data = unreadable ? null : Enumerable.Repeat(BlockFill, 16).ToArray();
+
+                sector.DataBlock.Add(new MifareClassicDataBlockModel(sectorNumber * 4 + block, block) { Data = data, IsAuthenticated = !unreadable });
             }
 
             return sector;
@@ -258,19 +380,13 @@ namespace RFiDGear.Tests.KeySlots
                 _aKeyToUse, _bKeyToUse, _aKeyToWrite, _bKeyToWrite, _madAKeyToUse, _madBKeyToUse, _madAKeyToWrite, _madBKeyToWrite));
 
         /// <inheritdoc />
-        public override Task<ERROR> ReadMifareClassicWithMAD(
-            int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse,
-            int _length, byte _madGPB, bool _useMADToAuth, bool _aiToUseIsMAD)
+        public override Task<(ERROR Error, byte[] Data)> ReadMifareClassicApplicationAsync(
+            int madApplicationID, string aKey, string bKey, string madAKey, string madBKey, int length)
         {
-            var scripted = Record(nameof(ReadMifareClassicWithMAD), _aKeyToUse, _bKeyToUse, _madAKeyToUse, _madBKeyToUse);
+            var scripted = Record(nameof(ReadMifareClassicApplicationAsync), aKey, bKey, madAKey, madBKey);
 
-            // The view model reads the data that a successful call leaves behind.
-            if (scripted == ERROR.NoError)
-            {
-                MifareClassicData = new byte[Math.Max(_length, 0)];
-            }
-
-            return Task.FromResult(scripted);
+            // The view model reads the data that a successful call hands back.
+            return Task.FromResult((scripted, scripted == ERROR.NoError ? new byte[Math.Max(length, 0)] : null));
         }
     }
 }

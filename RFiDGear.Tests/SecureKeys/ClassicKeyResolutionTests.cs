@@ -52,17 +52,17 @@ namespace RFiDGear.Tests.SecureKeys
             ["EmptyCheck"] = new Scenario(
                 TaskType_MifareClassicTask.EmptyCheck,
                 false,
-                "ReadMifareClassicSingleSector[ACurrent,BCurrent]",
+                "ReadMifareClassicSectorAsync[ACurrent,BCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent }),
             ["Read"] = new Scenario(
                 TaskType_MifareClassicTask.ReadData,
                 false,
-                "ReadMifareClassicSingleSector[ACurrent,BCurrent]",
+                "ReadMifareClassicSectorAsync[ACurrent,BCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent }),
             ["ReadMad"] = new Scenario(
                 TaskType_MifareClassicTask.ReadData,
                 true,
-                "ReadMifareClassicWithMAD[ACurrent,BCurrent,MadACurrent,MadBCurrent]",
+                "ReadMifareClassicApplicationAsync[ACurrent,BCurrent,MadACurrent,MadBCurrent]",
                 new[] { SecureKeySlots.ClassicACurrent, SecureKeySlots.ClassicBCurrent, SecureKeySlots.ClassicMadACurrent, SecureKeySlots.ClassicMadBCurrent }),
             ["Write"] = new Scenario(
                 TaskType_MifareClassicTask.WriteData,
@@ -203,6 +203,32 @@ namespace RFiDGear.Tests.SecureKeys
             });
         }
 
+        [Theory]
+        [MemberData(nameof(EveryScenario))]
+        public async Task A_slot_bound_to_a_key_of_the_sam_stops_every_task_before_the_card_is_touched(string name)
+        {
+            var scenario = Scenarios[name];
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A key of the SAM is never bytes, and no Classic command can hand a reference to the SAM: the task stops, asks no
+                // provider, and does not fall back to the embedded key.
+                var vault = new Vault();
+                vault.Install();
+                var task = NewTask(scenario);
+                task.KeyBindings = Slots.Keys.Select(slot => new KeyBindingEntry { Slot = slot, ProviderId = SamKeyProvider.ProviderId, Reference = "1:0" }).ToArray();
+
+                var run = await RunAsync(task);
+
+                Assert.Equal(string.Empty, run.Calls);
+                Assert.Equal(0, run.ReadChipCalls);
+                Assert.Equal(ERROR.KeyUnavailable, run.Error);
+                Assert.DoesNotContain("1:0", StatusLines.WithoutTimestamps(run.Status), StringComparison.Ordinal);
+                Assert.Empty(vault.Requests);
+                AssertNothingSecretIn(run.Status);
+            });
+        }
+
         [Fact]
         public async Task A_bound_key_B_that_cannot_be_obtained_does_not_leave_the_reader_to_try_key_A_alone()
         {
@@ -337,7 +363,7 @@ namespace RFiDGear.Tests.SecureKeys
 
                 var run = await RunAsync(task);
 
-                Assert.Equal("ReadMifareClassicSingleSector[embedded:ACurrent,BCurrent]", run.Calls);
+                Assert.Equal("ReadMifareClassicSectorAsync[embedded:ACurrent,BCurrent]", run.Calls);
                 Assert.Equal(SecureKeySlots.ClassicBCurrent, Assert.Single(vault.Requests).SlotId);
             });
         }
@@ -515,6 +541,9 @@ namespace RFiDGear.Tests.SecureKeys
                 SelectedTaskType = scenario.Type,
                 CurrentTaskIndex = "0",
                 UseMAD = scenario.UseMad,
+
+                // Sector 1: block 0 of sector 0 is the manufacturer block, which no write is allowed to touch.
+                SelectedClassicSectorCurrent = "1",
             };
 
             if (withEmbeddedKeys)

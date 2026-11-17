@@ -431,8 +431,9 @@ namespace RFiDGear.Tests.SecureKeys
         {
             var registry = SecureKeyRegistry.FromContainer(null, SecureKeyRegistry.BuiltInProviders());
 
-            // The built-in ones: the Credential Manager, and the program that is connected to the external control bridge.
-            Assert.Equal(new[] { BridgeKeyProvider.ProviderId, WindowsCredentialKeyProvider.ProviderId }, registry.Providers.Select(p => p.Id));
+            // The built-in ones: the Credential Manager, the program that is connected to the external control bridge, and the SAM
+            // (its id is reserved, and it hands out no key).
+            Assert.Equal(new[] { BridgeKeyProvider.ProviderId, SamKeyProvider.ProviderId, WindowsCredentialKeyProvider.ProviderId }, registry.Providers.Select(p => p.Id));
             var info = Assert.Single(registry.Providers, p => p.Id == WindowsCredentialKeyProvider.ProviderId);
             Assert.Equal(WindowsCredentialKeyProvider.DisplayName, info.DisplayName);
         }

@@ -1,25 +1,29 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- xunit.v3 test projects are executables; dotnet test and the test explorer run them through the VSTest adapter. -->
+    <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- The analyzers that come with xunit.v3 advise on tests that were written for xunit 2, and none of it was reported before
+         the move: xUnit1051 (pass TestContext.Current.CancellationToken, about 240 calls), xUnit2031 and xUnit2029 (overloads
+         of Assert.Single and Assert.DoesNotContain), xUnit1069 (a test with a Timeout) and xUnit1073 (the collections of the
+         hardware tests that are linked in and not used here). They are a follow-up of their own; xUnit1031 is not hidden. -->
+    <NoWarn>$(NoWarn);xUnit1051;xUnit2031;xUnit2029;xUnit1069;xUnit1073</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="xunit" Version="2.8.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
+    <!-- xunit.v3 without Microsoft.Testing.Platform: the .NET 10 SDK refuses to run a test project that is built on it through
+         the VSTest path of dotnet test, and the filters, loggers and scripts of this repository use that path. -->
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
     <!-- A real SQL engine for the order store's tests only; it is not shipped and the library does not use it. -->
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
-    <!-- Microsoft.Data.Sqlite 10.0.1 brings SQLitePCLRaw.lib.e_sqlite3 2.1.11, whose SQLite (3.49.1) is older than 3.50.2 and has a
-         flaw that can corrupt memory (CVE-2025-6965, GHSA-2m69-gcr7-jv3q; NuGet warns with NU1903 at every restore). A direct
-         reference to a later version wins over it. TestDatabaseEngineTests asks the engine for its version, so a package that
-         brings the old one back fails a test and not only a warning. -->
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.14" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Fixtures\**" />
@@ -29,6 +33,13 @@
     <Compile Include="..\RFiDGear.HIL.Tests\ReaderScenarios.cs" Link="Reader\HilScenarios\ReaderScenarios.cs" />
     <!-- The settings file of the hardware tests: its parsing and lookup are tested here (Reader/HilSettingsTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\HilSettings.cs" Link="Reader\HilScenarios\HilSettings.cs" />
+    <!-- The tasks and the steps of the Ultralight / NTAG hardware cases, run here against fakes of the reader that hold a chip in
+         memory (Reader/HilUltralightScenarioSelfCheckTests). -->
+    <Compile Include="..\RFiDGear.HIL.Tests\HilUltralightTasks.cs" Link="Reader\HilScenarios\HilUltralightTasks.cs" />
+    <Compile Include="..\RFiDGear.HIL.Tests\UltralightScenarios.cs" Link="Reader\HilScenarios\UltralightScenarios.cs" />
+    <!-- The steps of the MIFARE Classic hardware cases, run here against a chip in memory behind the real reader code
+         (Reader/HilClassicScenarioSelfCheckTests). -->
+    <Compile Include="..\RFiDGear.HIL.Tests\ClassicScenarios.cs" Link="Reader\HilScenarios\ClassicScenarios.cs" />
     <!-- The tasks and the vault of the secure-key hardware cases, checked here against a scripted reader and a dictionary
          as the vault (SecureKeys/HilSecureKeyScenarioSelfCheckTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\HilConstants.cs" Link="Reader\HilScenarios\HilConstants.cs" />

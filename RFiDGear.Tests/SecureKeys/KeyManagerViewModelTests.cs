@@ -94,7 +94,7 @@ namespace RFiDGear.Tests.SecureKeys
         {
             var text = TestText.In(culture);
 
-            foreach (var slot in SecureKeySlots.Desfire.Concat(SecureKeySlots.Classic))
+            foreach (var slot in SecureKeySlots.Desfire.Concat(SecureKeySlots.Classic).Concat(SecureKeySlots.Ultralight))
             {
                 var key = KeySlotNames.ResourceKeyOf(slot);
 
@@ -114,6 +114,59 @@ namespace RFiDGear.Tests.SecureKeys
 
             Assert.Contains(typedKeyIsSaved, intro);
             Assert.DoesNotContain(claimOfAnyKey, intro);
+        }
+
+        [Fact]
+        public void Only_the_rows_of_the_slots_that_a_command_can_use_a_key_of_the_sam_for_list_the_sam()
+        {
+            var sam = new SecureKeyProviderInfo(SamKeyProvider.ProviderId, SamKeyProvider.DisplayName);
+            using var viewModel = KeyManagerViewModel.Create(
+                new FakeKeySlotHost(),
+                new[] { SecureKeySlots.DesfirePiccCurrent, SecureKeySlots.DesfireRead },
+                new[] { CredentialManager, ExternalApplication, sam },
+                new ScriptedKeyDialogs(),
+                new WindowsCredentialKeyProvider(new FakeCredentialStore()),
+                new FakeSupplierStatus(),
+                TestText.English);
+
+            Assert.Equal(2, viewModel.Rows.Count);
+            Assert.Equal(
+                new[] { WindowsCredentialKeyProvider.ProviderId, BridgeKeyProvider.ProviderId, SamKeyProvider.ProviderId },
+                viewModel.Rows.Single(row => row.SlotId == SecureKeySlots.DesfirePiccCurrent).Providers.Select(item => item.Id));
+            Assert.Equal(
+                new[] { WindowsCredentialKeyProvider.ProviderId, BridgeKeyProvider.ProviderId },
+                viewModel.Rows.Single(row => row.SlotId == SecureKeySlots.DesfireRead).Providers.Select(item => item.Id));
+        }
+
+        [Fact]
+        public void A_slot_that_names_a_key_of_the_sam_asks_for_the_key_entry_and_the_version_and_not_for_a_name()
+        {
+            var host = new FakeKeySlotHost();
+            host.BindKeySlot(SecureKeySlots.DesfirePiccCurrent, SamKeyProvider.ProviderId, "3:1");
+            var sam = new SecureKeyProviderInfo(SamKeyProvider.ProviderId, SamKeyProvider.DisplayName);
+            using var viewModel = KeyManagerViewModel.Create(
+                host,
+                new[] { SecureKeySlots.DesfirePiccCurrent },
+                new[] { CredentialManager, sam },
+                new ScriptedKeyDialogs(),
+                new WindowsCredentialKeyProvider(new FakeCredentialStore()),
+                new FakeSupplierStatus(),
+                TestText.English);
+            var row = Assert.Single(viewModel.Rows);
+
+            Assert.Equal(TestText.English("labelKeyManagerSamReference"), row.KeyNameLabel);
+            Assert.Equal(TestText.English("toolTipKeySlotReferenceSam"), row.ReferenceToolTip);
+            Assert.True(row.UsesFreeTextReference);
+            Assert.True(row.IsReferenceValid);
+
+            // A reference that is no key entry is red, as a name that is no name is.
+            row.Reference = "0:0";
+            Assert.False(row.IsReferenceValid);
+
+            // Another key store is asked for by name again.
+            row.ProviderId = WindowsCredentialKeyProvider.ProviderId;
+            Assert.Equal(TestText.English("labelKeyManagerKeyName"), row.KeyNameLabel);
+            Assert.Equal(TestText.English("toolTipKeySlotReference"), row.ReferenceToolTip);
         }
 
         [Fact]

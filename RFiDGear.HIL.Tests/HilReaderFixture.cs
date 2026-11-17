@@ -26,7 +26,7 @@ namespace RFiDGear.HIL.Tests
         public string? FailureReason { get; private set; }
 
         /// <inheritdoc/>
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             if (!HilSettings.Current.HardwareRequested)
             {
@@ -37,31 +37,42 @@ namespace RFiDGear.HIL.Tests
 
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                if (await IsReaderPresentAsync(ReaderTypes.Elatec, needsCard: false))
+                // The kinds of reader that hil.settings.json allows: an Elatec reader before a PC/SC reader unless the file names one.
+                foreach (var kind in HilSettings.Current.ReaderKindsToTry)
                 {
-                    Kind = ReaderTypes.Elatec;
-                    return;
+                    if (kind == HilReaderKind.Elatec && await IsReaderPresentAsync(ReaderTypes.Elatec, needsCard: false))
+                    {
+                        Kind = ReaderTypes.Elatec;
+                        return;
+                    }
+
+                    if (kind == HilReaderKind.Pcsc && await IsReaderPresentAsync(ReaderTypes.PCSC, needsCard: true))
+                    {
+                        Kind = ReaderTypes.PCSC;
+                        return;
+                    }
                 }
 
-                if (await IsReaderPresentAsync(ReaderTypes.PCSC, needsCard: true))
+                FailureReason = HilSettings.Current.ReaderKind switch
                 {
-                    Kind = ReaderTypes.PCSC;
-                    return;
-                }
-
-                FailureReason = "No reader was found. Connect an Elatec TWN4 reader (it needs no card), or put a card on a PC/SC " +
-                                "reader, close every other program and RFiDGear window that uses the reader, and run the tests again.";
+                    HilReaderKind.Elatec => "No Elatec TWN4 reader was found (\"readerKind\" in hil.settings.json asks for that kind only). " +
+                                            "Connect it, close every other program and RFiDGear window that uses the reader, and run the tests again.",
+                    HilReaderKind.Pcsc => "No PC/SC reader with a card on it was found (\"readerKind\" in hil.settings.json asks for that kind only). " +
+                                          "Put a card on it, close every other program and RFiDGear window that uses the reader, and run the tests again.",
+                    _ => "No reader was found. Connect an Elatec TWN4 reader (it needs no card), or put a card on a PC/SC " +
+                         "reader, close every other program and RFiDGear window that uses the reader, and run the tests again.",
+                };
             });
         }
 
         /// <inheritdoc/>
-        public Task DisposeAsync() => Task.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
         /// <summary>
         /// Makes a host for one test, so that every test starts with a host that has not scanned yet. When tests were asked
         /// for but no reader was found, the test ends as the DESFire tests do: with the dynamic skip of the assert library,
-        /// which xunit 2 reports as a failure with the message prefix <c>$XunitDynamicSkip$</c> and which
-        /// <c>Run-HilTests.ps1</c> counts as skipped.
+        /// which xunit.v3 reports as a skip (xunit 2 reported it as a failure with the message prefix <c>$XunitDynamicSkip$</c>,
+        /// which <c>Run-HilTests.ps1</c> still counts as skipped).
         /// </summary>
         /// <returns>The host; dispose it at the end of the test.</returns>
         public HeadlessExtensionHost NewHost()

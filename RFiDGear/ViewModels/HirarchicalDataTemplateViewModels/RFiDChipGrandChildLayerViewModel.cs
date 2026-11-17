@@ -210,6 +210,12 @@ namespace RFiDGear.ViewModel
         {
             get
             {
+                // A block that was not read has no data, and nothing to show but what is being typed for it.
+                if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data == null)
+                {
+                    return draftChars ?? string.Empty;
+                }
+
                 if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data.Length == 16 && dataBlockAsCharString.Length == 16)
                 {
                     var tempString = new char[mifareClassicDataBlock.Data.Length];
@@ -268,7 +274,19 @@ namespace RFiDGear.ViewModel
             }
             set
             {
+                // What is typed for a block that was not read is a draft until it is a whole block: it is shown as typed (the box refreshes on every
+                // key) and it is no data.
+                if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data == null && value.Length != 16)
+                {
+                    draftChars = value;
+                    IsTask = false;
+                    IsValidDataContent = false;
+                    OnPropertyChanged(nameof(DataAsCharString));
 
+                    return;
+                }
+
+                draftChars = null;
                 dataBlockAsCharString = value;
 
                 if (dataBlockAsCharString.Length == 16 || desfireFile != null || mifareClassicMAD != null)
@@ -279,6 +297,9 @@ namespace RFiDGear.ViewModel
                     {
                         if (mifareClassicDataBlock != null)
                         {
+                            // Input for a block that was not read starts a block of its own (the bytes that no key could read stay unknown).
+                            mifareClassicDataBlock.Data ??= new byte[16];
+
                             for (var i = 0; i < mifareClassicDataBlock.Data.Length; i++)
                             {
                                 if (mifareClassicDataBlock.Data != null &&
@@ -341,6 +362,8 @@ namespace RFiDGear.ViewModel
             }
         }
         private string dataBlockAsCharString;
+        private string draftChars;
+        private string draftHex;
 
         /// <summary>
         /// Creates a printable representation for the data buffer, substituting non-printable bytes.
@@ -370,6 +393,12 @@ namespace RFiDGear.ViewModel
         {
             get
             {
+                // A block that was not read has no data, and nothing to show but what is being typed for it.
+                if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data == null)
+                {
+                    return draftHex ?? string.Empty;
+                }
+
                 if (mifareClassicDataBlock != null &&
                     mifareClassicDataBlock.Data.Length == 16 &&
                     dataBlockAsHexString.Length == 32)
@@ -389,6 +418,17 @@ namespace RFiDGear.ViewModel
             }
             set
             {
+                // The same for hex: a draft until it is a whole block.
+                if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data == null && !(value.Length == 32 && CustomConverter.IsInHexFormat(value)))
+                {
+                    draftHex = value;
+                    IsValidDataContent = false;
+                    OnPropertyChanged(nameof(DataAsHexString));
+
+                    return;
+                }
+
+                draftHex = null;
                 dataBlockAsHexString = value.Replace("\r", "").Replace("\n", "").Replace(" ", "").Replace("-", "");
 
                 if (mifareClassicDataBlock != null && value.Length == 32 && CustomConverter.IsInHexFormat(value))
@@ -717,6 +757,22 @@ namespace RFiDGear.ViewModel
 
         [XmlIgnore]
         public bool IsModal { get; private set; }
+
+        /// <summary>
+        /// Empties the block of a sector that no key could read: it has no data then, what was typed for it is gone, and nothing of what it held
+        /// before stays on show.
+        /// </summary>
+        public void ClearData()
+        {
+            if (mifareClassicDataBlock != null)
+            {
+                mifareClassicDataBlock.Data = null;
+            }
+
+            draftChars = null;
+            draftHex = null;
+            RequestRefresh();
+        }
 
         public virtual void RequestRefresh()
         {

@@ -14,6 +14,7 @@
     ShowInTaskbar="False"
     SizeToContent="Height"
     ToolTipService.ShowDuration="30000"
+    UseLayoutRounding="True"
     WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <ResourceDictionary>
@@ -112,7 +113,7 @@
                                         x:Name="ModeButton"
                                         Grid.Column="1"
                                         Height="24"
-                                        Margin="4,0,0,4"
+                                        Margin="4,1,1,4"
                                         Padding="6,2"
                                         Command="{Binding ToggleModeCommand}"
                                         Content="{Binding ModeButtonText}">
@@ -139,7 +140,7 @@
                                 <StackPanel x:Name="ReferencePanel" Visibility="{Binding IsReferenceMode, Converter={StaticResource BoolToVisConv}}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="140" />
+                                            <ColumnDefinition Width="170" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
 
@@ -177,7 +178,7 @@
                                     <!-- Another key store: the name of the key is typed. -->
                                     <Grid x:Name="FreeReferencePanel" Visibility="{Binding UsesFreeTextReference, Converter={StaticResource BoolToVisConv}}">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="140" />
+                                            <ColumnDefinition Width="170" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
 
@@ -220,7 +221,7 @@
                                     <StackPanel x:Name="StoredKeyPanel" Visibility="{Binding ShowStoredKeyChoice, Converter={StaticResource BoolToVisConv}}">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="140" />
+                                                <ColumnDefinition Width="170" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
 

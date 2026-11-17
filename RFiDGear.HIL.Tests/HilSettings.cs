@@ -2,10 +2,24 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace RFiDGear.HIL.Tests
 {
+    /// <summary>The kind of reader the hardware tests are to use.</summary>
+    public enum HilReaderKind
+    {
+        /// <summary>Try an Elatec TWN4 reader first and a PC/SC reader after it, as the tests always did.</summary>
+        Auto,
+
+        /// <summary>Use an Elatec TWN4 reader only, also when a PC/SC reader is attached too.</summary>
+        Elatec,
+
+        /// <summary>Use a PC/SC reader only, also when an Elatec TWN4 reader is attached too.</summary>
+        Pcsc,
+    }
+
     /// <summary>
     /// What the person who runs the hardware tests has asked for, read from <c>hil.settings.json</c>. The reader-scan
     /// tests open a reader only when the file says so, so that they never touch a reader by accident: without the file
@@ -31,8 +45,10 @@ namespace RFiDGear.HIL.Tests
         private const string ReaderScanName = "readerScan";
         private const string InteractiveName = "interactive";
         private const string SecureKeysName = "secureKeys";
+        private const string CardWritesName = "cardWrites";
+        private const string ReaderKindName = "readerKind";
 
-        private static readonly string[] SettingNames = { ReaderScanName, InteractiveName, SecureKeysName };
+        private static readonly string[] SettingNames = { ReaderScanName, InteractiveName, SecureKeysName, CardWritesName, ReaderKindName };
 
         private static readonly JsonDocumentOptions ReadOptions = new JsonDocumentOptions
         {
@@ -42,17 +58,22 @@ namespace RFiDGear.HIL.Tests
 
         private static readonly Lazy<HilSettings> CurrentSettings = new Lazy<HilSettings>(() => LoadForThisRun(AppContext.BaseDirectory));
 
-        private HilSettings(bool readerScan, bool interactive, bool secureKeys, string? source, string? problem)
+        private HilSettings(bool readerScan, bool interactive, bool secureKeys, bool cardWrites, HilReaderKind readerKind, string? source, string? problem)
         {
             ReaderScan = readerScan;
             Interactive = interactive;
             SecureKeys = secureKeys;
+            CardWrites = cardWrites;
+            ReaderKind = readerKind;
             Source = source;
             Problem = problem;
         }
 
         /// <summary>Gets the settings of this test run, read once from the folder of the test assembly upwards.</summary>
         public static HilSettings Current => CurrentSettings.Value;
+
+        /// <summary>Gets the names of the settings, as they are written in the file. The runner knows the same names.</summary>
+        public static IReadOnlyList<string> Names => SettingNames;
 
         /// <summary>Gets what the file says about the reader-scan tests.</summary>
         public bool ReaderScan { get; }
@@ -65,6 +86,15 @@ namespace RFiDGear.HIL.Tests
         /// write credentials into the Windows Credential Manager of the user (and remove them again).
         /// </summary>
         public bool SecureKeys { get; }
+
+        /// <summary>
+        /// Gets what the file says about the cases that write to the card: the Ultralight and NTAG cases that write a page of
+        /// the user memory and put it back, and the ones that try a write that must be refused.
+        /// </summary>
+        public bool CardWrites { get; }
+
+        /// <summary>Gets the kind of reader the file asks for; <see cref="HilReaderKind.Auto"/> when it says nothing.</summary>
+        public HilReaderKind ReaderKind { get; }
 
         /// <summary>Gets the full path of the file, or <c>null</c> when there is none.</summary>
         public string? Source { get; }
@@ -80,6 +110,21 @@ namespace RFiDGear.HIL.Tests
 
         /// <summary>Gets whether the secure-key cases were asked for. They do not depend on the reader-scan tests.</summary>
         public bool SecureKeysRequested => Problem == null && SecureKeys;
+
+        /// <summary>Gets whether the cases that write to the card were asked for; they need the reader-scan tests.</summary>
+        public bool CardWritesRequested => HardwareRequested && CardWrites;
+
+        /// <summary>
+        /// Gets the kinds of reader to try, in the order to try them: the one the file names, or an Elatec reader and then a
+        /// PC/SC reader when it says nothing, as the tests always did.
+        /// </summary>
+        public IReadOnlyList<HilReaderKind> ReaderKindsToTry =>
+            ReaderKind switch
+            {
+                HilReaderKind.Elatec => new[] { HilReaderKind.Elatec },
+                HilReaderKind.Pcsc => new[] { HilReaderKind.Pcsc },
+                _ => new[] { HilReaderKind.Elatec, HilReaderKind.Pcsc },
+            };
 
         /// <summary>Finds the file in a folder or in the nearest folder above it.</summary>
         /// <param name="startDirectory">The folder to start in.</param>
@@ -117,7 +162,7 @@ namespace RFiDGear.HIL.Tests
             var settings = LoadFile(startDirectory);
 
             return string.Equals(interactiveFromRunner, "1", StringComparison.Ordinal) && settings.Problem == null
-                ? new HilSettings(settings.ReaderScan, true, settings.SecureKeys, settings.Source, null)
+                ? new HilSettings(settings.ReaderScan, true, settings.SecureKeys, settings.CardWrites, settings.ReaderKind, settings.Source, null)
                 : settings;
         }
 
@@ -126,7 +171,7 @@ namespace RFiDGear.HIL.Tests
             var path = Find(startDirectory);
             if (path == null)
             {
-                return new HilSettings(false, false, false, null, null);
+                return Nothing(null, null);
             }
 
             try
@@ -135,15 +180,17 @@ namespace RFiDGear.HIL.Tests
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                return new HilSettings(false, false, false, path, "the file cannot be read: " + ex.Message);
+                return Nothing(path, "the file cannot be read: " + ex.Message);
             }
         }
 
         /// <summary>
         /// Reads the settings from the text of a file: one JSON object with the boolean settings <c>readerScan</c>,
-        /// <c>interactive</c> and <c>secureKeys</c> (names in any case; comments and trailing commas are allowed; a setting
-        /// that is left out is off). Anything else is a problem (an unknown name, a value that is not true or false, a
-        /// setting that is set twice), and a file with a problem asks for nothing: a typo must not switch a test on.
+        /// <c>interactive</c>, <c>secureKeys</c> and <c>cardWrites</c>, and the text setting <c>readerKind</c> (<c>auto</c>,
+        /// <c>elatec</c> or <c>pcsc</c>); names and the kind in any case; comments and trailing commas are allowed; a setting
+        /// that is left out is off (the kind of reader: <c>auto</c>). Anything else is a problem (an unknown name, a value of
+        /// the wrong kind, a setting that is set twice), and a file with a problem asks for nothing: a typo must not switch a
+        /// test on.
         /// </summary>
         /// <param name="json">The text of the file.</param>
         /// <param name="source">The full path of the file, for the messages.</param>
@@ -160,11 +207,31 @@ namespace RFiDGear.HIL.Tests
 
                 // The value of each setting that the file names; a setting that is not in it is off.
                 var values = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                var readerKind = HilReaderKind.Auto;
+                var kindSeen = false;
                 foreach (var property in document.RootElement.EnumerateObject())
                 {
                     if (Array.FindIndex(SettingNames, name => string.Equals(name, property.Name, StringComparison.OrdinalIgnoreCase)) < 0)
                     {
-                        return Invalid(source, $"unknown setting \"{property.Name}\"; the settings are \"{ReaderScanName}\", \"{InteractiveName}\" and \"{SecureKeysName}\"");
+                        return Invalid(source, $"unknown setting \"{property.Name}\"; the settings are {SettingsInWords()}");
+                    }
+
+                    if (string.Equals(property.Name, ReaderKindName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // The dictionary below ignores the case of a name, so "readerKind" and "ReaderKind" are one setting here too.
+                        if (kindSeen)
+                        {
+                            return Invalid(source, $"\"{property.Name}\" is set twice");
+                        }
+
+                        kindSeen = true;
+
+                        if (!TryReadKind(property.Value, out readerKind))
+                        {
+                            return Invalid(source, $"\"{property.Name}\" must be \"auto\", \"elatec\" or \"pcsc\"");
+                        }
+
+                        continue;
                     }
 
                     if (property.Value.ValueKind != JsonValueKind.True && property.Value.ValueKind != JsonValueKind.False)
@@ -183,6 +250,8 @@ namespace RFiDGear.HIL.Tests
                     values.GetValueOrDefault(ReaderScanName),
                     values.GetValueOrDefault(InteractiveName),
                     values.GetValueOrDefault(SecureKeysName),
+                    values.GetValueOrDefault(CardWritesName),
+                    readerKind,
                     source,
                     null);
             }
@@ -240,6 +309,69 @@ namespace RFiDGear.HIL.Tests
                    $"Credential Manager for a moment (it removes them again). Set \"{SecureKeysName}\" to true in {Source} to run it.";
         }
 
-        private static HilSettings Invalid(string source, string problem) => new HilSettings(false, false, false, source, problem);
+        /// <summary>
+        /// Says why a case that writes to the card is skipped. These cases write one page of the user memory of a chip of the
+        /// Ultralight family and put it back, or try a write that must be refused, so the file has to ask for them, and they need
+        /// the reader-scan tests too.
+        /// </summary>
+        /// <returns>The reason, with the path of the file to edit.</returns>
+        public string CardWritesSkipReason()
+        {
+            if (Source == null)
+            {
+                return $"Switched off. There is no {FileName} in the folder of the tests or above it: copy {SampleFileName} to {FileName} " +
+                       $"(next to Run-HilTests.bat), set \"{ReaderScanName}\" and \"{CardWritesName}\" to true, and see RFiDGear.HIL.Tests/ULTRALIGHT.md.";
+            }
+
+            if (Problem != null)
+            {
+                return $"{Source} cannot be used: {Problem}. See RFiDGear.HIL.Tests/README.md.";
+            }
+
+            if (!ReaderScan)
+            {
+                return $"Switched off. It needs the reader-scan tests: set \"{ReaderScanName}\" to true in {Source}, and \"{CardWritesName}\" too to run it.";
+            }
+
+            return $"Switched off: it writes a page of the user memory of the card and puts it back (or tries a write that must be refused). " +
+                   $"Use a card you can spare. Set \"{CardWritesName}\" to true in {Source} to run it.";
+        }
+
+        // The names as the messages say them: "a", "b" and "c".
+        private static string SettingsInWords() =>
+            string.Join(", ", SettingNames.Take(SettingNames.Length - 1).Select(name => $"\"{name}\"")) + $" and \"{SettingNames[^1]}\"";
+
+        private static bool TryReadKind(JsonElement value, out HilReaderKind kind)
+        {
+            kind = HilReaderKind.Auto;
+
+            if (value.ValueKind != JsonValueKind.String)
+            {
+                return false;
+            }
+
+            switch (value.GetString()?.ToLowerInvariant())
+            {
+                case "auto":
+                    kind = HilReaderKind.Auto;
+                    return true;
+
+                case "elatec":
+                    kind = HilReaderKind.Elatec;
+                    return true;
+
+                case "pcsc":
+                    kind = HilReaderKind.Pcsc;
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        private static HilSettings Nothing(string? source, string? problem) =>
+            new HilSettings(false, false, false, false, HilReaderKind.Auto, source, problem);
+
+        private static HilSettings Invalid(string source, string problem) => Nothing(source, problem);
     }
 }

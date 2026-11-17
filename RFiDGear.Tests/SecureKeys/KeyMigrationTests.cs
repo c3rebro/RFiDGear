@@ -134,6 +134,50 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public Task The_keys_of_an_ultralight_task_are_moved_too_whatever_their_length()
+        {
+            return Sta(async () =>
+            {
+                // 16, 4 and 2 bytes: the key of an Ultralight C, and the password and the PACK of an EV1 or an NTAG.
+                var keys = new Dictionary<string, string>
+                {
+                    [SecureKeySlots.UltralightCKey] = "11AA22BB33CC44DD55EE66FF77880099",
+                    [SecureKeySlots.UltralightPassword] = "9A8B7C6D",
+                    [SecureKeySlots.UltralightPack] = "5E4F",
+                };
+                var task = new MifareUltralightSetupViewModel
+                {
+                    CurrentTaskIndex = "0",
+                    UltralightCKey = keys[SecureKeySlots.UltralightCKey],
+                    UltralightPassword = keys[SecureKeySlots.UltralightPassword],
+                    UltralightPack = keys[SecureKeySlots.UltralightPack],
+                };
+                var source = WriteProject("source", task);
+                var before = File.ReadAllBytes(source);
+
+                var report = await NewMigration().MoveAsync(source, Target("migrated"));
+
+                Assert.True(report.Succeeded, report.ToString());
+                Assert.Equal(3, report.Moved.Count);
+                Assert.Equal(3, report.DifferentKeys);
+                Assert.Empty(report.NotMoved);
+                Assert.Equal(before, File.ReadAllBytes(source));
+
+                var text = ProjectText(report.TargetPath);
+                Assert.All(keys.Values, key => Assert.DoesNotContain(key, text, StringComparison.OrdinalIgnoreCase));
+                Assert.All(report.Moved, moved => Assert.Equal(keys[moved.Slot], VaultKeyOf(moved.Reference), ignoreCase: true));
+
+                var reloaded = await _projects.ReadAsync(report.TargetPath, CancellationToken.None);
+                var host = Assert.IsAssignableFrom<IKeyMigrationHost>(Assert.Single(reloaded!.TaskCollection));
+                Assert.All(keys.Keys, slot =>
+                {
+                    Assert.True(host.IsKeyBound(slot));
+                    Assert.False(host.HasEmbeddedKey(slot));
+                });
+            });
+        }
+
+        [Fact]
         public Task A_reference_that_is_taken_is_not_overwritten()
         {
             return Sta(async () =>

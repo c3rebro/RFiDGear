@@ -10,7 +10,9 @@ namespace RFiDGear.Tests.CardCheck
     /// <summary>
     /// The engine the tests of the order store run on. It is only a stand-in for SQL Server and is not shipped, but NuGet checks it
     /// all the same: the SQLite that SQLitePCLRaw.lib.e_sqlite3 2.1.11 and older carry is older than 3.50.2, which has a flaw that
-    /// can corrupt memory (CVE-2025-6965, GHSA-2m69-gcr7-jv3q), and every restore of the test project warns about it (NU1903).
+    /// can corrupt memory (CVE-2025-6965, GHSA-2m69-gcr7-jv3q), and a restore of the test project warns about it (NU1903). The
+    /// engine that Microsoft.Data.Sqlite brings is later now; this test fails if a package change brings the old one back, and not
+    /// only a warning.
     /// </summary>
     public class TestDatabaseEngineTests
     {

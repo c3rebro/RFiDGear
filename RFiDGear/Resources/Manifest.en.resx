@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -553,7 +553,7 @@ Use a csv file to acuire default keys for authentication</value>
     <value>Remove Cards</value>
   </data>
   <data name="menuItemAddEditMifareUltralightTaskHeader" xml:space="preserve">
-    <value>Add/Edit Mifare _Ultralight Task</value>
+    <value>Add/Edit Mifare _Ultralight / NTAG Task</value>
   </data>
   <data name="menuItemAddEditMifareSAMTaskHeader" xml:space="preserve">
     <value>Add/Edit Mifare _SAM Task</value>
@@ -1678,8 +1678,14 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_8K" xml:space="preserve">
     <value>Desfire EV3 8K (Emulated - SmartMX)</value>
   </data>
-  <data name="ENUM.CARD_TYPE.MifareUltralightC_EV1" xml:space="preserve">
-    <value>Mifare Ultralight C EV1</value>
+  <data name="ENUM.CARD_TYPE.MifareUltralight_EV1" xml:space="preserve">
+    <value>Mifare Ultralight EV1</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareUltralight_EV1_MF0UL11" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL11)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareUltralight_EV1_MF0UL21" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL21)</value>
   </data>
   <data name="ENUM.CARD_TYPE.NTAG_210" xml:space="preserve">
     <value>NTAG 210</value>
@@ -1867,6 +1873,39 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusKeyUnavailable" xml:space="preserve">
     <value>{0}: The key for {1} is not available; nothing was sent to the card.</value>
   </data>
+  <data name="textBoxStatusSamAuthenticated" xml:space="preserve">
+    <value>{0}: Authenticated with a key of the SAM to AppID {1}, key {2}.</value>
+  </data>
+  <data name="textBoxStatusSamKeyChanged" xml:space="preserve">
+    <value>{0}: Changed key {2} of AppID {1} with keys of the SAM and checked it by authenticating with the new key. The card has the key version of the SAM entry.</value>
+  </data>
+  <data name="textBoxStatusSamFailed" xml:space="preserve">
+    <value>{0}: The operation with the SAM did not work: {1} (SAM {2}, card {3}).</value>
+  </data>
+  <data name="textBoxStatusSamKeyMayHaveChanged" xml:space="preserve">
+    <value>{0}: The card may hold the new key although the change was not confirmed. Authenticate again before you repeat the change.</value>
+  </data>
+  <data name="textBoxStatusSamNotSupported" xml:space="preserve">
+    <value>{0}: A key of the SAM can be used only to authenticate a PICC or application key and to change those keys.</value>
+  </data>
+  <data name="textBoxStatusSamMixedKeys" xml:space="preserve">
+    <value>{0}: A command that uses a key of the SAM needs all its keys from the SAM.</value>
+  </data>
+  <data name="textBoxStatusSamNotConfigured" xml:space="preserve">
+    <value>{0}: No reader is set for the SAM. Choose it in the reader settings.</value>
+  </data>
+  <data name="textBoxStatusSamNotFound" xml:space="preserve">
+    <value>{0}: No MIFARE SAM AV3 was found. With a PC/SC reader it must sit in the reader that is set for the SAM; a TWN4 sees it only from hardware revision G, in one of its two SAM sockets.</value>
+  </data>
+  <data name="textBoxStatusSamAmbiguous" xml:space="preserve">
+    <value>{0}: A SAM AV3 sits in each SAM socket of the reader. Take one of them out: the keys of the two SAMs are not the same, so none is chosen.</value>
+  </data>
+  <data name="labelKeyManagerSamReference" xml:space="preserve">
+    <value>Key entry and version</value>
+  </data>
+  <data name="toolTipKeySlotReferenceSam" xml:space="preserve">
+    <value>The key entry of the SAM (1 to 127) and the version of the key in it, as entry:version, for example 3:0. The project saves this reference, never a key.</value>
+  </data>
   <data name="ENUM.ERROR.KeyUnavailable" xml:space="preserve">
     <value>Key unavailable</value>
   </data>
@@ -1981,6 +2020,12 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="keySlotProviderToolTipCredentialManager" xml:space="preserve">
     <value>Keys kept in the Windows Credential Manager of this PC. The project saves only the name of the key, never the key itself.</value>
   </data>
+  <data name="keySlotProviderNameSam" xml:space="preserve">
+    <value>MIFARE SAM AV3</value>
+  </data>
+  <data name="keySlotProviderToolTipSam" xml:space="preserve">
+    <value>The key stays in a MIFARE SAM AV3 and never reaches RFiDGear. The reference is a key entry and its version, for example 3:0. PC/SC: set the reader of the SAM in the reader settings. TWN4: automatic.</value>
+  </data>
   <data name="keySlotProviderNameBridgeClient" xml:space="preserve">
     <value>Connected external application</value>
   </data>
@@ -2079,6 +2124,24 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="keySlotNameClassicMadBTarget" xml:space="preserve">
     <value>MAD key B, new</value>
+  </data>
+  <data name="keySlotNameUltralightCKey" xml:space="preserve">
+    <value>Key (Ultralight C)</value>
+  </data>
+  <data name="keySlotNameUltralightPassword" xml:space="preserve">
+    <value>Password (EV1 / NTAG)</value>
+  </data>
+  <data name="keySlotNameUltralightPack" xml:space="preserve">
+    <value>Password acknowledge (PACK)</value>
+  </data>
+  <data name="textBoxStatusUltralightRead" xml:space="preserve">
+    <value>{0}: Read {1} page(s) from page {2}.</value>
+  </data>
+  <data name="textBoxStatusUltralightWritten" xml:space="preserve">
+    <value>{0}: Wrote {1} page(s) from page {2}.</value>
+  </data>
+  <data name="textBoxStatusUltralightFailed" xml:space="preserve">
+    <value>{0}: The operation ended with {1} (pages done: {2} of {3}).</value>
   </data>
   <data name="labelKeySlotReferenceCaption" xml:space="preserve">
     <value>Reference: {0}</value>
@@ -2256,5 +2319,322 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageKeyManagerListUnreadable" xml:space="preserve">
     <value>The stored keys could not be listed (error {0}), so nothing was stored.</value>
+  </data>
+  <data name="windowCaptionAddEditMifareUltralightTask" xml:space="preserve">
+    <value>Add / Edit Mifare Ultralight / NTAG Task</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightChip" xml:space="preserve">
+    <value>Chip and authentication</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightKeys" xml:space="preserve">
+    <value>Keys</value>
+  </data>
+  <data name="tabPageHeaderMifareUltralightDataExplorer" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightChip" xml:space="preserve">
+    <value>Chip</value>
+  </data>
+  <data name="labelContentMifareUltralightExpectedChip" xml:space="preserve">
+    <value>Expected chip</value>
+  </data>
+  <data name="labelContentMifareUltralightAuthentication" xml:space="preserve">
+    <value>Authentication</value>
+  </data>
+  <data name="textBlockMifareUltralightExpectedChipHint" xml:space="preserve">
+    <value>A task that authenticates or writes protected pages has to name the chip. If another chip is on the reader, the task ends without writing.</value>
+  </data>
+  <data name="checkBoxContentMifareUltralightAllowProtectedPages" xml:space="preserve">
+    <value>Allow writing protected pages</value>
+  </data>
+  <data name="textBlockMifareUltralightProtectedPagesWarning" xml:space="preserve">
+    <value>Protected pages are pages 0 to 3 and the lock, configuration, password and key pages of the chip. A wrong write there can lock the chip or its password for good. The chip has to be named above.</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightKeyC" xml:space="preserve">
+    <value>Ultralight C</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightKeyPassword" xml:space="preserve">
+    <value>Ultralight EV1 and NTAG</value>
+  </data>
+  <data name="labelContentMifareUltralightKeyC" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="labelContentMifareUltralightPassword" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="labelContentMifareUltralightPack" xml:space="preserve">
+    <value>PACK</value>
+  </data>
+  <data name="textBlockMifareUltralightKeysHint" xml:space="preserve">
+    <value>Only the keys of the authentication that is chosen on the first tab are used. The key of an Ultralight C has 32 hexadecimal digits, a password 8 and a PACK 4.</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightPages" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="labelContentMifareUltralightStartPage" xml:space="preserve">
+    <value>First page</value>
+  </data>
+  <data name="labelContentMifareUltralightPageCount" xml:space="preserve">
+    <value>Number of pages</value>
+  </data>
+  <data name="buttonContentMifareUltralightAddPage" xml:space="preserve">
+    <value>Add page</value>
+  </data>
+  <data name="buttonContentMifareUltralightRemovePage" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="dataGridHeaderMifareUltralightPage" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="dataGridHeaderMifareUltralightData" xml:space="preserve">
+    <value>Data (8 hexadecimal digits)</value>
+  </data>
+  <data name="groupBoxHeaderMifareUltralightRunNow" xml:space="preserve">
+    <value>Run now</value>
+  </data>
+  <data name="textBlockMifareUltralightRunNowHint" xml:space="preserve">
+    <value>Runs this task on the chip that is on the reader, as it is set up here. A read shows in the pages what the chip gave.</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Auto" xml:space="preserve">
+    <value>Any chip (the one that is found)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Plain" xml:space="preserve">
+    <value>Mifare Ultralight</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.C" xml:space="preserve">
+    <value>Mifare Ultralight C</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ev1Mf0ul11" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL11)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ev1Mf0ul21" xml:space="preserve">
+    <value>Mifare Ultralight EV1 (MF0UL21)</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag213" xml:space="preserve">
+    <value>NTAG213</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag215" xml:space="preserve">
+    <value>NTAG215</value>
+  </data>
+  <data name="ENUM.UltralightExpectation.Ntag216" xml:space="preserve">
+    <value>NTAG216</value>
+  </data>
+  <data name="ENUM.UltralightAuth.None" xml:space="preserve">
+    <value>No authentication</value>
+  </data>
+  <data name="ENUM.UltralightAuth.UltralightC" xml:space="preserve">
+    <value>Key of an Ultralight C</value>
+  </data>
+  <data name="ENUM.UltralightAuth.Password" xml:space="preserve">
+    <value>Password and PACK (EV1, NTAG)</value>
+  </data>
+  <data name="menuItemSamSetup" xml:space="preserve">
+    <value>MIFARE SAM AV3 setup...</value>
+  </data>
+  <data name="windowTitleSamSetup" xml:space="preserve">
+    <value>MIFARE SAM AV3 setup</value>
+  </data>
+  <data name="labelSamSetupIntro" xml:space="preserve">
+    <value>Sets up a MIFARE SAM AV3 that sits in a PC/SC reader or in a SAM socket of a TWN4 (hardware revision G): find it, activate a new one, authenticate as host and write one key into a key entry. The search only reads the answer to reset (ATR) of the card in each reader or socket. While this window is open, it has the reader to itself.</value>
+  </data>
+  <data name="labelSamSetupReader" xml:space="preserve">
+    <value>SAM in reader</value>
+  </data>
+  <data name="buttonContentSamSetupRefresh" xml:space="preserve">
+    <value>Search again</value>
+  </data>
+  <data name="buttonContentSamSetupCheck" xml:space="preserve">
+    <value>Check SAM</value>
+  </data>
+  <data name="toolTipSamSetupCheck" xml:space="preserve">
+    <value>Connects to the SAM and asks for its version (SAM_GetVersion). No key is used and nothing is changed.</value>
+  </data>
+  <data name="labelSamSetupStateNoReader" xml:space="preserve">
+    <value>No MIFARE SAM AV3 found.</value>
+  </data>
+  <data name="labelSamSetupStateFound" xml:space="preserve">
+    <value>A SAM was found. Check it to connect.</value>
+  </data>
+  <data name="labelSamSetupStateConnected" xml:space="preserve">
+    <value>Connected. It is not known yet whether the SAM is activated.</value>
+  </data>
+  <data name="labelSamSetupStateNotActivated" xml:space="preserve">
+    <value>The SAM is not activated.</value>
+  </data>
+  <data name="labelSamSetupStateAuthenticated" xml:space="preserve">
+    <value>Authenticated as host. A key entry can be written.</value>
+  </data>
+  <data name="labelSamSetupVersion" xml:space="preserve">
+    <value>Hardware information {0}, software information {1}</value>
+  </data>
+  <data name="messageSamSetupNoVersion" xml:space="preserve">
+    <value>The SAM did not give its version.</value>
+  </data>
+  <data name="labelSamSetupMasterKey" xml:space="preserve">
+    <value>Master key (key entry 0, version 0)</value>
+  </data>
+  <data name="labelSamSetupFactoryKey" xml:space="preserve">
+    <value>Factory key (all zeros, a new SAM)</value>
+  </data>
+  <data name="toolTipSamSetupFactoryKey" xml:space="preserve">
+    <value>A new SAM has a master key of sixteen zero bytes. Clear this box to use another key.</value>
+  </data>
+  <data name="labelSamSetupStoredKey" xml:space="preserve">
+    <value>Stored key</value>
+  </data>
+  <data name="toolTipSamSetupStoredKey" xml:space="preserve">
+    <value>A key from the Windows Credential Manager. To type the key instead, choose the first entry.</value>
+  </data>
+  <data name="labelSamSetupEnterBelow" xml:space="preserve">
+    <value>(enter the key below)</value>
+  </data>
+  <data name="labelSamSetupKeyDigits" xml:space="preserve">
+    <value>Key (32 hexadecimal digits)</value>
+  </data>
+  <data name="buttonContentSamSetupAuthenticate" xml:space="preserve">
+    <value>Authenticate</value>
+  </data>
+  <data name="toolTipSamSetupAuthenticate" xml:space="preserve">
+    <value>Host authentication with the master key. A new SAM answers that it was never activated, and no key is used then. A wrong key counts as a use of the key if a usage counter is linked to the key entry.</value>
+  </data>
+  <data name="buttonContentSamSetupActivate" xml:space="preserve">
+    <value>Activate SAM...</value>
+  </data>
+  <data name="toolTipSamSetupActivate" xml:space="preserve">
+    <value>Only for a new SAM that answered 'not activated'. Asks first. No way to undo the activation is known.</value>
+  </data>
+  <data name="labelSamSetupNewKey" xml:space="preserve">
+    <value>Key to write (a PICC key of a DESFire card)</value>
+  </data>
+  <data name="labelSamSetupEntry" xml:space="preserve">
+    <value>Key entry (1 to 127)</value>
+  </data>
+  <data name="toolTipSamSetupEntry" xml:space="preserve">
+    <value>The key entry that receives the key, as version 0. Entry 0 is the master key and is never written here. The master key stays the key that can change the entry later.</value>
+  </data>
+  <data name="buttonContentSamSetupWrite" xml:space="preserve">
+    <value>Write key</value>
+  </data>
+  <data name="toolTipSamSetupWrite" xml:space="preserve">
+    <value>Writes the key into the key entry. Needs the host authentication first. A SAM never gives a key back.</value>
+  </data>
+  <data name="labelSamSetupStatus" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+  <data name="messageSamSetupConfirmActivate" xml:space="preserve">
+    <value>Activate the MIFARE SAM AV3?&#10;&#10;Do it only for a new SAM that you want to use, with its master key (a new SAM has the factory key, sixteen zero bytes).&#10;&#10;The activation worked on the one SAM AV3 it was tried on, and that SAM stayed activated after it was taken out and put back. No way to undo it is known: treat it as permanent.</value>
+  </data>
+  <data name="messageSamSetupReaderBusy" xml:space="preserve">
+    <value>The reader is in use by another part of RFiDGear. Wait until it is done and try again.</value>
+  </data>
+  <data name="messageSamSetupSearchFailed" xml:space="preserve">
+    <value>The PC/SC readers could not be listed. Is the Smart Card service running?</value>
+  </data>
+  <data name="messageSamSetupSearchNone" xml:space="preserve">
+    <value>No MIFARE SAM AV3 was found in the PC/SC readers or in the SAM sockets of the TWN4. Insert it and search again. A TWN4 is searched only while the Elatec reader is selected and connected in the reader settings, and only a TWN4 of hardware revision G sees a SAM.</value>
+  </data>
+  <data name="messageSamSetupSearchFound" xml:space="preserve">
+    <value>Found a MIFARE SAM AV3 in {0} reader(s).</value>
+  </data>
+  <data name="messageSamSetupConnected" xml:space="preserve">
+    <value>Connected to the SAM in '{0}'.</value>
+  </data>
+  <data name="messageSamSetupNoSam" xml:space="preserve">
+    <value>There is no MIFARE SAM AV3 in '{0}' (any more).</value>
+  </data>
+  <data name="messageSamSetupNotConnected" xml:space="preserve">
+    <value>There is no connection to a SAM. Check the SAM first.</value>
+  </data>
+  <data name="messageSamSetupReaderError" xml:space="preserve">
+    <value>The reader failed. The connection was closed, and the SAM may be in any state. Search again.</value>
+  </data>
+  <data name="messageSamSetupFailed" xml:space="preserve">
+    <value>The step failed unexpectedly (the log has the type of the error). The connection was closed.</value>
+  </data>
+  <data name="messageSamSetupAuthenticated" xml:space="preserve">
+    <value>Host authentication succeeded.</value>
+  </data>
+  <data name="messageSamSetupNotActivated" xml:space="preserve">
+    <value>The SAM answered 6985: it was never activated. No key was used. For a new SAM, activate it with its master key.</value>
+  </data>
+  <data name="messageSamSetupAuthFailed" xml:space="preserve">
+    <value>The SAM did not accept the authentication (status {0}). A wrong key counts as a use of the key if a usage counter is linked to the key entry.</value>
+  </data>
+  <data name="messageSamSetupActivated" xml:space="preserve">
+    <value>The SAM was activated. Authenticate now.</value>
+  </data>
+  <data name="messageSamSetupDeclined" xml:space="preserve">
+    <value>Not activated.</value>
+  </data>
+  <data name="messageSamSetupMayHaveActivated" xml:space="preserve">
+    <value>The activation ended with an error, but the SAM may be activated all the same. Check the SAM, then authenticate.</value>
+  </data>
+  <data name="messageSamSetupRefused" xml:space="preserve">
+    <value>The SAM refused the command (status {0}).</value>
+  </data>
+  <data name="messageSamSetupKeyUnavailable" xml:space="preserve">
+    <value>The key could not be read from the Credential Manager. Nothing was sent to the SAM.</value>
+  </data>
+  <data name="messageSamSetupKeyInvalid" xml:space="preserve">
+    <value>That is not a key of 16 bytes (32 hexadecimal digits). Nothing was sent to the SAM.</value>
+  </data>
+  <data name="messageSamSetupNotAuthenticated" xml:space="preserve">
+    <value>A key can only be written after the host authentication. Authenticate first.</value>
+  </data>
+  <data name="messageSamSetupEntryInvalid" xml:space="preserve">
+    <value>The key entry must be a number from 1 to 127. Entry 0 is the master key and is not written here.</value>
+  </data>
+  <data name="messageSamSetupNoKeyEntered" xml:space="preserve">
+    <value>Enter the key, or choose a stored one.</value>
+  </data>
+  <data name="messageSamSetupWritten" xml:space="preserve">
+    <value>The key was written to key entry {0}. The SAM answered with success; a key cannot be read back from it.</value>
+  </data>
+  <data name="messageSamSetupMayHaveWritten" xml:space="preserve">
+    <value>The SAM answered with success, but its answer could not be checked: the key may have been written to key entry {0}. A key cannot be read back, and an authentication cannot prove a PICC key. Authenticate again; whether to write the key again is up to you.</value>
+  </data>
+  <data name="messageSamSetupEntryVerified" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is enabled and holds an AES-128 key of the PICC key class, as written.</value>
+  </data>
+  <data name="messageSamSetupEntryDisabled" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is disabled (SET bit 9), so the key in it cannot be used. A blank entry is disabled until a write enables it. Write the key again.</value>
+  </data>
+  <data name="messageSamSetupEntryDiffers" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is not an AES-128 key of the PICC key class, as it was written. Do not use it.</value>
+  </data>
+  <data name="labelSamSetupEntryKind" xml:space="preserve">
+    <value>Key type:</value>
+  </data>
+  <data name="toolTipSamSetupEntryKind" xml:space="preserve">
+    <value>The kind of key to write, as the DESFire card holds it. AES-128: a card whose key is AES (written with SET 0x0024, "Keep IV" set). DES / 2K3DES: a card with the native key type, such as the factory key of a new card (written with SET 0x0000). Both are keys of the PICC key class and have 16 bytes (a DES key is two equal halves).</value>
+  </data>
+  <data name="textSamSetupEntryKindAes" xml:space="preserve">
+    <value>AES-128 (DESFire)</value>
+  </data>
+  <data name="textSamSetupEntryKindNative" xml:space="preserve">
+    <value>DES / 2K3DES (DESFire native)</value>
+  </data>
+  <data name="messageSamSetupEntryVerifiedNative" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is enabled and holds a DES / 2K3DES key of the PICC key class, as written.</value>
+  </data>
+  <data name="messageSamSetupEntryDiffersNative" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is not a DES / 2K3DES key of the PICC key class, as it was written. Do not use it.</value>
+  </data>
+  <data name="labelSamReader" xml:space="preserve">
+    <value>SAM reader:</value>
+  </data>
+  <data name="toolTipSamReader" xml:space="preserve">
+    <value>The reader that holds the MIFARE SAM AV3: the contact slot of a reader pair such as the OMNIKEY 5422, with the card in the other slot. A task whose key slot names a key of the SAM needs it. Leave it on "(none)" when no SAM is used.</value>
+  </data>
+  <data name="textSamReaderNone" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+  <data name="labelSamReaderIsCardReader" xml:space="preserve">
+    <value>The reader of the SAM is the reader of the card. Choose two different readers: the card is never read in the reader of the SAM.</value>
+  </data>  <data name="messageSamSetupEntryNoKeepIv" xml:space="preserve">
+    <value>Read back from the SAM: key entry {0} is enabled and holds an AES-128 key of the PICC key class, but "Keep IV" (SET bit 2) is not set. A DESFire card cannot be authenticated with it (the SAM refuses the answer of the card). Write the key again.</value>
+  </data>
+  <data name="messageSamSetupEntryUnreadable" xml:space="preserve">
+    <value>The key was written, but reading the key entry back failed, so it is not verified.</value>
   </data>
 </root>

@@ -12,7 +12,7 @@ namespace RFiDGear.Contracts
         /// </summary>
         Des = 0,
 
-        /// <summary>DESFire two-key triple DES (2K3DES). 16 bytes.</summary>
+        /// <summary>DESFire two-key triple DES (2K3DES). 16 bytes. Also the key of a MIFARE Ultralight C.</summary>
         TripleDes2K = 1,
 
         /// <summary>DESFire three-key triple DES (3K3DES). 24 bytes.</summary>
@@ -23,5 +23,14 @@ namespace RFiDGear.Contracts
 
         /// <summary>MIFARE Classic key A or key B. 6 bytes.</summary>
         Classic6Byte = 4,
+
+        /// <summary>The password (PWD) of a MIFARE Ultralight EV1 or an NTAG. 4 bytes.</summary>
+        UltralightPassword = 5,
+
+        /// <summary>
+        /// The password acknowledge (PACK) of a MIFARE Ultralight EV1 or an NTAG: the 2 bytes that the chip answers a correct
+        /// password with, and that the reader checks. 2 bytes.
+        /// </summary>
+        UltralightPack = 6,
     }
 }

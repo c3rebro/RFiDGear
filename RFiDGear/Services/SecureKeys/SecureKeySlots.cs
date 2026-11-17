@@ -54,6 +54,15 @@ namespace RFiDGear.Services.SecureKeys
         /// <summary>MIFARE Classic: key B that a write puts into the MAD sector trailer.</summary>
         internal const string ClassicMadBTarget = "classic.mad.b.target";
 
+        /// <summary>MIFARE Ultralight C: the key that authenticates (16 bytes).</summary>
+        internal const string UltralightCKey = "ultralight.c.key";
+
+        /// <summary>MIFARE Ultralight EV1 and NTAG: the password that authenticates (4 bytes).</summary>
+        internal const string UltralightPassword = "ultralight.password";
+
+        /// <summary>MIFARE Ultralight EV1 and NTAG: the PACK that the chip must answer the password with (2 bytes).</summary>
+        internal const string UltralightPack = "ultralight.pack";
+
         /// <summary>Gets every slot of a DESFire task.</summary>
         internal static IReadOnlyList<string> Desfire { get; } = new[]
         {
@@ -65,6 +74,12 @@ namespace RFiDGear.Services.SecureKeys
         {
             ClassicACurrent, ClassicBCurrent, ClassicATarget, ClassicBTarget,
             ClassicMadACurrent, ClassicMadBCurrent, ClassicMadATarget, ClassicMadBTarget,
+        };
+
+        /// <summary>Gets every slot of a MIFARE Ultralight task.</summary>
+        internal static IReadOnlyList<string> Ultralight { get; } = new[]
+        {
+            UltralightCKey, UltralightPassword, UltralightPack,
         };
     }
 }

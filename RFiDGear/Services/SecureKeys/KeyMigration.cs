@@ -596,11 +596,34 @@ namespace RFiDGear.Services.SecureKeys
             }
         }
 
-        private static SecureKeyRequest RequestFor(string reference, string slot, int keyBytes) => new SecureKeyRequest
+        // The length is all a typed key tells: 6 bytes is a Classic key, 24 a 3K3DES key, 4 the password and 2 the PACK of an
+        // Ultralight EV1 or an NTAG, and 16 a DES, AES or Ultralight C key (the built-in store does not look at the algorithm).
+        private static SecureKeyAlgorithm AlgorithmOfLength(int keyBytes)
+        {
+            switch (keyBytes)
+            {
+                case 6:
+                    return SecureKeyAlgorithm.Classic6Byte;
+
+                case 24:
+                    return SecureKeyAlgorithm.TripleDes3K;
+
+                case 4:
+                    return SecureKeyAlgorithm.UltralightPassword;
+
+                case 2:
+                    return SecureKeyAlgorithm.UltralightPack;
+
+                default:
+                    return SecureKeyAlgorithm.Aes128;
+            }
+        }
+
+        internal static SecureKeyRequest RequestFor(string reference, string slot, int keyBytes) => new SecureKeyRequest
         {
             SlotId = slot,
             Reference = reference,
-            Algorithm = keyBytes == 6 ? SecureKeyAlgorithm.Classic6Byte : keyBytes == 24 ? SecureKeyAlgorithm.TripleDes3K : SecureKeyAlgorithm.Aes128,
+            Algorithm = AlgorithmOfLength(keyBytes),
             Usage = SecureKeyUsage.Authenticate,
             Scope = SecureKeyScope.None,
             RunId = "migration",

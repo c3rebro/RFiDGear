@@ -1,4 +1,4 @@
-﻿using ByteArrayHelper.Extensions;
+using ByteArrayHelper.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -18,6 +18,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.UI.Selection.Interfaces;
@@ -397,6 +398,9 @@ namespace RFiDGear.ViewModel
                         }
                     }
 
+                    // The sector of the last read of this node, as that read handed it back (not the one that the reader shows for any call).
+                    var sector = new MifareClassicSectorModel();
+
                     foreach (var key in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys)
                     {
                         if (cnVM.Children.Where(x => x.GrandChildNodeHeader == string.Format("Key: {0}", key)).Any())
@@ -404,7 +408,11 @@ namespace RFiDGear.ViewModel
                             cnVM.Children.Remove(cnVM.Children.Where(x => x.GrandChildNodeHeader == string.Format("Key: {0}", key)).Single());
                         }
 
-                        if (await device.ReadMifareClassicSingleSector(cnVM.SectorNumber, key, key) == ERROR.NoError)
+                        var read = await device.ReadMifareClassicSectorAsync(cnVM.SectorNumber, key, key);
+
+                        sector = read.Sector;
+
+                        if (read.Error == ERROR.NoError)
                         {
                             cnVM.Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Key: {0}", key)));
                             cnVM.IsAuthenticated = true;
@@ -419,11 +427,11 @@ namespace RFiDGear.ViewModel
 
                     foreach (var gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
                     {
-                        if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
+                        if (sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
                         {
-                            if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
+                            if (sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
                             {
-                                gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data;
+                                gcVM.MifareClassicDataBlock.Data = sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data;
                                 gcVM.IsAuthenticated = true;
                             }
                             else
@@ -697,57 +705,78 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// Reads the MIFARE Ultralight pages for a quick check display.
+        /// Reads the pages of a chip of the Ultralight family for a quick check display.
         /// </summary>
         private async void MifareUltralightQuickCheck()
         {
-            if (!isTask)
+            if (isTask)
+            {
+                return;
+            }
+
+            Mouse.OverrideCursor = Cursors.AppStarting;
+
+            try
             {
                 using (var device = ReaderDevice.Instance)
                 {
-                    Mouse.OverrideCursor = Cursors.AppStarting;
-
-                    foreach (var cnVM in Children)
+                    if (device != null)
                     {
-
-                        if (await device.ReadMifareUltralightSinglePage(cnVM.PageNumber) == ERROR.NoError)
-                        {
-                            cnVM.Children.Add(
-                                new RFiDChipGrandChildLayerViewModel(
-                            string.Format("Data: {0}", null)));
-
-                            cnVM.IsAuthenticated = true;
-                        }
-                        else
-                        {
-                            cnVM.IsAuthenticated = false;
-                            continue;
-                        }
-
-                        foreach (var gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
-                        {
-                            if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
-                            {
-                                if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
-                                {
-                                    gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data;
-                                    gcVM.IsAuthenticated = true;
-                                }
-                                else
-                                {
-                                    gcVM.IsAuthenticated = false;
-                                }
-                            }
-                            else
-                            {
-                                gcVM.IsAuthenticated = false;
-                            }
-                        }
+                        await ReadUltralightPagesAsync(device);
                     }
+                }
 
-                    IsExpanded = true;
+                IsExpanded = true;
+            }
+            catch (Exception e)
+            {
+                // The type of the exception and nothing else: its text can hold what was read.
+                Serilog.Log.ForContext<RFiDChipParentLayerViewModel>().Error("The quick check of the pages failed ({ExceptionType})", e.GetType().FullName);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
 
-                    Mouse.OverrideCursor = null;
+        /// <summary>
+        /// Reads all the pages that the chip of this node can give in one call, without authenticating, and shows what came back: the
+        /// bytes of every page that was read, and no data and no mark for the pages that were not (the key pages of an Ultralight C,
+        /// pages that the chip refused, and the pages behind a read that failed).
+        /// </summary>
+        /// <param name="device">The reader.</param>
+        /// <returns>A task that ends when the pages are shown.</returns>
+        internal async Task ReadUltralightPagesAsync(ReaderDevice device)
+        {
+            if (!UltralightChipTypes.TryGetVariant(CardType, out var variant) || Children.Count == 0)
+            {
+                return;
+            }
+
+            // Only the pages that a read gives as themselves: a read that reached the key of an Ultralight C goes on at page 0.
+            var count = Math.Min(UltralightMemoryMap.For(variant).ReadablePageCount, Children.Count);
+            var result = await device.ReadMifareUltralightPagesAsync(new UltralightAccess(UltralightChipTypes.ExpectationOf(CardType)), 0, count);
+
+            for (var i = 0; i < Children.Count; i++)
+            {
+                var page = Children[i];
+                page.Children.Clear();
+
+                if (i < result.PagesDone && (i + 1) * UltralightMemoryMap.PageSize <= result.Data.Length)
+                {
+                    var bytes = new byte[UltralightMemoryMap.PageSize];
+                    Array.Copy(result.Data, i * UltralightMemoryMap.PageSize, bytes, 0, bytes.Length);
+
+                    page.PageModel.Data = bytes;
+                    page.Children.Add(new RFiDChipGrandChildLayerViewModel("Data: " + Convert.ToHexString(bytes)));
+                    page.IsAuthenticated = true;
+                }
+                else
+                {
+                    // Not read: no bytes of an earlier check, no line, and no mark. The mark is null and not false, which the tree paints
+                    // red as a failure: the key pages of an Ultralight C are left out on purpose.
+                    page.PageModel.Data = new byte[UltralightMemoryMap.PageSize];
+                    page.IsAuthenticated = null;
                 }
             }
         }
@@ -1037,6 +1066,23 @@ namespace RFiDGear.ViewModel
         /// </summary>
         private void LoadChildren()
         {
+            // A chip of the Ultralight family has the pages of its layout (an Ultralight has 16, an NTAG215 135, which the table of the
+            // layouts says); a chip of the family whose layout is not confirmed has none, and its pages are not guessed at.
+            if (UltralightChipTypes.IsOfTheFamily(CardType))
+            {
+                if (UltralightChipTypes.TryGetVariant(CardType, out var variant))
+                {
+                    for (var i = 0; i < UltralightMemoryMap.For(variant).PageCount; i++)
+                    {
+                        _children.Add(
+                            new RFiDChipChildLayerViewModel(
+                                new MifareUltralightPageModel(new byte[4], i), this, CardType, dialogs));
+                    }
+                }
+
+                return;
+            }
+
             switch (CardType)
             {
                 case CARD_TYPE.Mifare1K:
@@ -1098,17 +1144,6 @@ namespace RFiDGear.ViewModel
                             }
                         }
                     }
-                    break;
-
-                case CARD_TYPE.MifareUltralight:
-
-                    for (var i = 0; i < 15; i++)
-                    {
-                        _children.Add(
-                            new RFiDChipChildLayerViewModel(
-                                new MifareUltralightPageModel(new byte[4], i), this, CardType, dialogs));
-                    }
-
                     break;
 
                 case CARD_TYPE.MifarePlus_SL3_1K:

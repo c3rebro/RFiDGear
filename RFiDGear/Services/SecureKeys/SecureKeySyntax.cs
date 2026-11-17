@@ -42,6 +42,20 @@ namespace RFiDGear.Services.SecureKeys
         }
 
         /// <summary>
+        /// Returns whether <paramref name="reference"/> is a valid reference for the provider <paramref name="providerId"/>: the shape of
+        /// <see cref="IsValidReference"/>, and for the provider of the SAM (<see cref="RFiDGear.Services.Sam.SamKeyReference.ProviderId"/>)
+        /// also what a key entry and a key version look like (<c>entry:version</c>, the entry 1 to 127). For another provider only the
+        /// shape is checked: what a reference means is up to the provider.
+        /// </summary>
+        /// <param name="providerId">The provider the reference is for.</param>
+        /// <param name="reference">The text to check.</param>
+        /// <returns><c>true</c> when it is a valid reference for that provider.</returns>
+        internal static bool IsValidReferenceFor(string? providerId, string? reference) =>
+            IsValidReference(reference)
+            && (!string.Equals(providerId, RFiDGear.Services.Sam.SamKeyReference.ProviderId, System.StringComparison.Ordinal)
+                || RFiDGear.Services.Sam.SamKeyReference.TryParse(reference, out _));
+
+        /// <summary>
         /// Returns whether <paramref name="id"/> is a valid provider id: 1 to 64 lower-case ASCII letters, digits,
         /// <c>.</c>, <c>_</c> or <c>-</c>, compared ordinally.
         /// </summary>

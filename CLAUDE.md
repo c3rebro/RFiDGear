@@ -51,7 +51,12 @@ up. Visual Studio 2022 cannot target `net10.0`; use Visual Studio 2026 or the
 `dotnet` CLI. Tests require the
 `EnableWindowsTargeting` MSBuild property (already set in the test project) for
 non-Windows dev environments. Tests use `StaTestRunner.cs` to run on an STA
-thread — required for any WPF-touching test.
+thread — required for any WPF-touching test. The test projects run on xunit.v3
+(the package `xunit.v3.mtp-off`: the .NET 10 SDK refuses to run a project that
+is built on Microsoft.Testing.Platform through the VSTest path of `dotnet test`,
+and the commands, filters and loggers here use that path), so they are
+executables; `dotnet test` and `--filter` work as above (see
+`DEVELOPER_NOTES.md`).
 
 Setup/installer projects (`RFiDGearBundleSetup`, `RFiDGearSetup_x64/x86`) use
 WiX 3.14 and are built separately; they are not part of `dotnet build`. Build
@@ -109,6 +114,16 @@ combined with **MEF** (Managed Extensibility Framework) for ViewModel discovery.
 The active provider is selected at startup from settings and injected into the
 task system.
 
+With the PC/SC provider the MIFARE SAM AV3 sits in a reader of its own (the
+contact slot of a pair such as the OMNIKEY 5422, the card in the other slot).
+Its name is the setting `SamReaderName` (Reader setup, PC/SC only; empty for
+none; no automatic search). With it set, the PC/SC provider never takes that
+reader for the card and never falls back to the library's default unit, which
+is the first reader and so the contact slot (`PcscReaderChoice`). With the
+Elatec provider the SAM sits in a SAM socket of the same TWN4 that the card is
+on (hardware revision G only), is found by its ATR in either socket, and needs
+no setting.
+
 ### Task System
 
 Tasks are modeled as sequential, indexed items with optional dependencies (prior
@@ -125,6 +140,213 @@ Task categories:
 
 `TaskExecutionService` drives sequential execution with error handling;
 individual task VMs implement `ITaskViewModel`.
+
+### Ultralight / NTAG
+
+`MifareUltralightSetupViewModel` is the task kind for the chips of the Type 2
+family with 4-byte pages: MIFARE Ultralight, Ultralight C, Ultralight EV1
+(MF0UL11, MF0UL21) and NTAG213, NTAG215, NTAG216. It reads and writes pages.
+Lock pages, counters, signatures and changing a key or a password are not
+tasks.
+
+- `ReaderDevice` has three virtual operations (`ReadMifareUltralightPagesAsync`,
+  `WriteMifareUltralightPagesAsync`, `AuthenticateMifareUltralightAsync`; the
+  default answer is `ProtocolConstraint`) and `SupportsUltralightAccess`, which
+  a task asks before it asks a key provider for anything. A call carries an
+  `UltralightAccess` (the chip the task expects, how it authenticates, the
+  opt-in for protected pages) and answers an `UltralightResult`.
+- The layout of each chip is a table (`UltralightMemoryMap`, every row pinned
+  by a test). A chip that is not in it is refused, never guessed at. Pages 0 to
+  3 and the lock, configuration, password and key pages are written only when
+  the task opts in (`AllowProtectedPages`) **and** names the chip. That is
+  checked before a key is asked for, and again by the reader.
+- The Elatec provider reads and writes every chip of the family. The PC/SC
+  provider (LibLogicalAccess) knows only the plain Ultralight and the
+  Ultralight C: an EV1 or an NTAG answers `ProtocolConstraint` there, and
+  nothing is sent to the card.
+- Keys use the secure key slots above: the key of an Ultralight C is one slot
+  (`TripleDes2K`, 16 bytes), the password (4 bytes) and the PACK (2 bytes) of an
+  EV1 or an NTAG are two. The byte order of the C key is not verified on a card
+  and no key is offered as a default. The bridge has no wire name for a
+  password or a PACK, so a slot bound to `bridge-client` ends `KeyUnavailable`.
+  Never send the factory password `FFFFFFFF` of an NTAG to a card: a failed
+  try counts against the limit of tries.
+- One operation runs at a time per task (`IsRunning`), and while it runs the
+  dialog cannot be closed. The grid of pages in the dialog is a view of the
+  task (`PageRows`, no part of the project); while a row is not a whole page
+  the data keeps the rows apart by a mark that no run accepts.
+- Hardware cases and the checklist: `RFiDGear.HIL.Tests/ULTRALIGHT.md`. The
+  reader layers were probed with an NTAG215 on an Elatec reader (reads, writes
+  and a refused password) and a PC/SC reader (which does not know the chip);
+  the task, the dialog and the hardware cases have not run on a card, and no
+  plain Ultralight, Ultralight C or EV1 card has been tried at all.
+  `DEVELOPER_NOTES.md` has the facts that bite.
+
+### MIFARE Classic
+
+The read, write and MAD calls of both readers run on one layer,
+`Infrastructure/Classic`, and on four primitives per reader (`IClassicPort`:
+log in, read a block, write a block, wake the card). `ReaderDevice` holds the
+calls (`ReadMifareClassicSectorAsync`, `ReadMifareClassicSingleSector`,
+`WriteMifareClassicSingleSector`, `WriteMifareClassicSingleBlock`,
+`ReadMifareClassicWithMAD`, `WriteMifareClassicWithMAD`); a provider only
+overrides `OpenClassicPortAsync` and `ClassicGate` (the PC/SC session gate, the
+COM port lock of the TWN4). `ElatecClassicPort` and `LlaClassicPort` hold no
+logic; the logic is in `ClassicOperations` and `ClassicMadOperations`, which
+are tested against `SimulatedClassicChip` (tests), a chip in memory that
+enforces the access bits and halts the card after a refused access.
+
+- Pure types, each pinned by tests: `ClassicLayout` (sectors 0 to 31 have 4
+  blocks, 32 to 39 have 16), `ClassicAccessBits` (the condition of a group is
+  `C1 + 2 * C2 + 4 * C3`; the table of what a key may do; the three bytes with
+  their inverses), `ClassicMad` (CRC8, AIDs little-endian, MAD1 and MAD2, the
+  general purpose byte `ClassicMadGpb`), `ClassicSectorKeys` (an erased buffer;
+  a key that is no key never reaches a card).
+- **Key B is data while a key may read it** (the transport configuration `001`,
+  `FF078069`): it cannot log in, whatever the reader says. PC/SC readers answer
+  a login with yes and the chip judges at the next access, so a login is proved
+  by reading the trailer; a refused access halts the card, so the next command
+  fails once unless the card was woken (a throwaway login on PC/SC, a search for
+  the tag on the TWN4). The wake belongs after a refusal, never between two good
+  sessions and never as a retry of a write.
+- The TWN4 numbers the sector of a login by the first block of the sector
+  divided by four (`ElatecClassicPort.SectorNumberOf`).
+- **One attempt** (the key rule): every write is one attempt, read back, never
+  repeated. The first block that fails ends the call. A write that the chip
+  refuses is looked at once (is the card still there?) and ends as
+  `AuthFailure` or `TransportError`; a block that does not read back as written
+  is `Unknown`.
+- `ClassicWritePolicy` decides before a key is asked for: block 0 and a trailer
+  are written only on an opt-in (`AllowManufacturerBlock`, `AllowTrailer`), the
+  access bits of a trailer must be consistent, and access bits that can never
+  be changed again need a second opt-in (`AllowFinalAccessBits`). The sector
+  write is data blocks only (32 bytes for sector 0, 48 for a sector of 4 blocks,
+  240 for 16). `WriteMifareClassicSingleBlock` may write a trailer (the dialog
+  does) and never block 0.
+- **The MAD write** puts the data first, then the directory, then the trailers,
+  and never a directory entry before the data. A chip without a MAD gets one
+  (MAD2 where sector 16 exists) because the call asks for it; the sectors that
+  the data reaches get the new keys and access bits, and the others of the
+  application stay as they are. Refusals (an AID of the administration, a sector
+  of another application, no room, a missing key, final access bits) happen
+  before the first block. Sector 0 and sector 16 hold no application.
+- The legacy `Sector` property of the reader is shared by every call. A caller
+  that reads it after an `await` may get the sector of another read: use
+  `ReadMifareClassicSectorAsync`, which hands the sector back with the answer.
+  The property is set under the gate, for the old call only.
+- The dialogs take the access bits through `ClassicAccessBits`
+  (`MifareClassicSectorModel`: the text of the trailer, `SAB`, all derived from
+  the conditions). The status text says which answer failed
+  (`ClassicFailureText`: only `AuthFailure` is a refused key) and the task ends
+  with that answer.
+- Hardware cases and the checklist: `RFiDGear.HIL.Tests/CLASSIC.md`. The PC/SC
+  reader was probed with a 4K (reads, the reselect, a write experiment with the
+  old code); the layer, the writes, the MAD and the dialogs have run against
+  the chip in memory only, and the TWN4 has not been tried on a card.
+
+### MIFARE SAM AV3 setup
+
+Tools > "MIFARE SAM AV3 setup..." (`SamSetupView`, `SamSetupViewModel`) sets up
+a MIFARE SAM AV3 that sits in a PC/SC reader or in a SAM socket of a connected
+TWN4 (issue 347). It needs no project. It finds the SAM, activates a new one,
+authenticates as host and writes one key into a key entry. Using the key in a
+SAM is not part of it. The window lists the SAMs of both kinds of reader
+(`ISamFinder`: `SamReaderFinder` for PC/SC, `Twn4SamFinder` for the sockets,
+`CompositeSamFinder` for both, made by `SamFinders.Create`); the sockets only
+while the Elatec reader is the one in use and connected. A TWN4 sees a SAM AV3
+only from hardware revision G
+(TWN4 MultiTech 2, two SAM sockets); the revisions D (TWN4 Legic 45) and E
+(TWN4 MultiTech) never do, which was the cause of Elatec.NET issue 28 (Elatec
+support, 2026-11-17). The task commands use the SAM on a revision G (see the
+relay below); the record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
+
+- The code is `Services/Sam`. `SamReaderFinder` looks at the ATR of the card in
+  each PC/SC reader (historical bytes `MIFARE SAM AV3`) **without connecting to
+  any card**; only a card that is a SAM is connected to (`Open`). The finder of
+  a TWN4 takes **no** `SamPortGate`, unlike `Twn4SamConnector` of the relay: the
+  window holds that gate already, and a second `TryEnter` would answer busy.
+  `LlaSamReaderSource` is the one class that touches LibLogicalAccess, and it
+  holds no logic. `LlaSamApduChannel` is the `ISamApduChannel` that Elatec.NET's
+  `SamAv3HostSession` needs. It sits on the **data transport** of
+  LibLogicalAccess, not on the reader card adapter: the adapter throws for every
+  status word but `9000`, and the host protocol needs `90AF`, and `6985` tells a
+  new SAM. A reader that fails is a `SamReaderException`; a SAM that says no is
+  a plain `SamException` with a status word.
+- `SamSetupService` has the steps: connect (SAM_GetVersion), authenticate (key
+  entry 0, version 0), activate (SAM_LockUnlock), write a key entry (a PICC
+  key into 1 to 127, version 0: AES-128 with Keep IV, SET `0x0024`, or a DESFire
+  native DES/2K3DES key, SET `0x0000`; Elatec.NET writes AES-128 only, so the
+  native entry is built by `SamKeyEntryFrame` and sent through `ExecuteSecureAsync`).
+  Each is one attempt and never repeated.
+  **The activation worked on the one real SAM AV3 it was tried on (2026-11-15:
+  `90AF`, `90AF`, `9000`, and the SAM stayed activated after it was taken out
+  and put back). No way back is known, so it is treated as irreversible.** It
+  asks first (`ISamSetupDialogs.ConfirmActivate`, No is the default) and sends
+  nothing without a yes. A step that changes a real SAM (the activation, a key
+  write) runs only after the person has said go for that step, in a test, a
+  script or a window.
+- A key is the factory key (16 zero bytes), a stored key (the Credential
+  Manager, slots `sam.master` and `sam.newkey`) or typed into a `KeyEntryBox`.
+  It lives in a pinned buffer (`SamKeyBuffer`) for one step and is erased after
+  it. No log line of RFiDGear holds a key, a reference, a reader name, the
+  serial number of the SAM or the text of an exception. SAM_GetVersion gives the
+  serial number as well: `SamDetection` keeps the first 14 bytes (hardware and
+  software information) and drops the rest. The own trace of LibLogicalAccess
+  (`config.log.enabled` with `seecommunication`) would write the whole answer;
+  leave it off while a SAM is in a reader.
+- The window holds `MainWindowViewModel.ReaderGate` and sets `IsReaderBusy`
+  while it is open (`SamSetupGate`): a host session lives on the connection, and
+  any other connect to that reader could reset the SAM. If somebody else holds
+  the gate, the window does not open.
+- After a key entry was written the setup reads it back (`SAM_GetKeyEntry`,
+  `SamKeyEntryInfo`): a blank entry is disabled (SET bit 9), so the entry must
+  read back enabled, AES-128 and of the PICC key class (ExtSET), or the key in
+  it cannot be used. The key itself cannot be read back.
+- `SamPiccSession` authenticates a DESFire card, and changes its keys, with
+  keys that stay in the SAM (`SAM_AuthenticatePICC` INS `0A`,
+  `SAM_ChangeKeyPICC` INS `C4`): the PC relays between the SAM in the contact
+  slot and the card in the contactless slot, one attempt per step.
+  `SAM_KillAuthentication` (`80 CA 01 00`, **no Le**) comes before the first
+  step and after a part 1 that was not finished; a card that answers `91CA`
+  to the select gets the select once more (it changes nothing).
+  `SamKeyReference` (`entry:version`, provider id `sam`, entries 1 to 127)
+  names such a key and holds no secret; `SamPiccConnector` opens the SAM for
+  one operation under `SamPortGate`, which the setup window takes as well.
+  Both providers relay through `SamRelay.RunAsync` (the gate of the reader's
+  session is held, the SAM is opened first and the card second, both are let
+  go of, an exception ends as `TransportError`) and three virtual operations
+  of `ReaderDevice` (`SupportsDesfireSamKeys`,
+  `AuthenticateMifareDesfireWithSamAsync`,
+  `ChangeMifareDesfireKeyWithSamAsync`). The PC/SC reader does it in
+  `LibLogicalAccessProvider.Sam.cs` (the SAM in the reader that the setting
+  names). The TWN4 does it in `ElatecNetProvider.Sam.cs` with the classes
+  `Twn4*` of `Services/Sam`: `Twn4SamConnector` looks at both SAM sockets,
+  takes the card whose ATR says `MIFARE SAM AV3` (two of them are
+  `SamAmbiguous`, none is `SamNotFound`), sets the socket up for T=1 from the
+  ATR (`Twn4AtrReader`, no PPS) and powers it down when it is let go of; the
+  card on the antenna is searched once, after the SAM is open
+  (`Twn4CardSide`: the SAK and the first frame of GetVersion), and gets the
+  frames of the PC/SC relay as they are; the whole relay holds the lock of the
+  COM port. `ITwn4SamRelayPorts` hides the reader (`ElatecTwn4Ports` is the
+  thin class over Elatec.NET). A reader that knows nothing of the SAM keeps
+  the defaults of `ReaderDevice` (no support, `ProtocolConstraint`), and a task
+  on it ends `KeyUnavailable` before anything is sent. Four commands of the
+  DESFire task call them
+  (`MifareDesfireSetupViewModel.Sam.cs`): the task "Check: App Key", "Change
+  PICC Master Key" and "Change Application Key", and the button that
+  authenticates the PICC master key; every other command and every check task
+  refuses a key of the SAM. What the SAM and the card did:
+  `RFiDGear.HIL.Tests/SAM-PICC-FIRST-CONTACT.md`; the checklist of the
+  commands, not run on a card yet (on a TWN4 the provider ran the cases 1 to
+  6, the PICC master key and the application keys, but nothing was run
+  through the task window): `RFiDGear.HIL.Tests/SAM-PICC.md`.
+- Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (a read-only case, a case that
+  writes a key entry, and the checklist for the window).
+  `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md` is the record of the first
+  session with a real SAM: every APDU and answer (UID masked), what was found
+  (the activation, the version byte that changed, the key entry that reads
+  back) and what is still open. The window itself has not been clicked with a
+  real SAM.
 
 ### Automatic Mode
 
@@ -303,6 +525,22 @@ default of the application). Whatever fails ends the command with
 properties on the way to the card; acquire the keys first, and do not log,
 store or return the `AcquiredKeys`.
 
+A key of a MIFARE SAM AV3 is a third source for a slot: the binding names the
+provider id `sam` and a reference `entry:version` (`SamKeyReference`, entries 1
+to 127). It is no key and has no bytes, so `SamKeyProvider` (built in, which
+reserves the id and gets it listed) answers `Unsupported` to everything, and
+`KeyAcquisition` never asks the registry for it. A command that does not know
+the SAM gets `SamKeyPolicy.Refuse`, the default, and ends with
+`ERROR.KeyUnavailable` and no card call, whatever the kind of task, when it
+uses that slot (a slot that a command does not use is not asked for, from a
+provider or from the SAM). A command
+that can use one passes `AllOrNothing` and reads `AcquiredKeys.SamKey(slot)`;
+all its slots must be keys of the SAM, because the SAM builds the cryptogram of
+a key change from the old key and the new one. `AcquiredKeys.Hex` throws for
+such a slot. The key manager lists the SAM only for the slots in
+`SamKeySlots.Offered`: the keys of the authentication and of the key changes
+of the PICC and of an application, which four commands use.
+
 An extension that needs more than the contract (services, a database driver,
 a PDF engine) keeps that code in a support library named
 `RFiDGear.ExtensionLibraries.<Name>`; the first is
@@ -360,8 +598,8 @@ implements `IKeyMigrationHost` as well (see `DEVELOPER_NOTES.md`).
 | Package | Purpose |
 |---|---|
 | CommunityToolkit.Mvvm 8.4 | ObservableObject, RelayCommand |
-| Elatec.NET 0.6.1 | Elatec TWN4 reader SDK |
-| LibLogicalAccessNetCE 3.6.0 | PC/SC reader provider |
+| Elatec.NET 0.7.0-beta.2 | Elatec TWN4 reader SDK |
+| LibLogicalAccessNetCE 3.7.0 | PC/SC reader provider |
 | GemBox.Pdf 2025.x | PDF form population for reports |
 | Serilog 4.3 | Structured logging |
 | Portable.BouncyCastle 1.9 | Cryptography (MIFARE key derivation) |

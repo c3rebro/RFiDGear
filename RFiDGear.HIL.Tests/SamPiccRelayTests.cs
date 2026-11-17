@@ -1,0 +1,126 @@
+#nullable enable
+using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Models;
+using RFiDGear.Services.Sam;
+
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+using Xunit;
+using Xunit.Sdk;
+
+namespace RFiDGear.HIL.Tests
+{
+    /// <summary>
+    /// The PC/SC reader as the relay between a MIFARE SAM AV3 in one slot of a reader and a DESFire card in the other (see
+    /// <c>SAM-AV3.md</c>). It <b>authenticates only</b>: the case asks the SAM to authenticate the card with a key entry that is the last of
+    /// the SAM (127), which is blank (disabled) unless somebody used it, so the SAM refuses it and the case ends at the first answer of the
+    /// SAM. If the entry is in use, the card refuses the key or takes it; every one of the three outcomes is the relay working from the SAM
+    /// to the card and back. Nothing is written to the SAM or to the card. A card that is no DESFire card, or no card, skips the case.
+    /// <para>
+    /// It needs the reader-scan tests (<c>readerScan</c> in <c>hil.settings.json</c>) and a reader pair such as the OMNIKEY 5422, with the SAM
+    /// in the contact slot and the card on the contactless slot. The cases that use a key of the SAM on a card that was prepared for it are
+    /// the checklist of the task commands, not this case.
+    /// </para>
+    /// </summary>
+    [Collection("HILSam")]
+    public sealed class SamPiccRelayTests
+    {
+        // The last key entry that a person can write: blank (disabled) unless somebody used it.
+        private const string EntryText = "127:0";
+
+        // Status words that are no refusal of a key entry: a wrong length, an instruction or a class that the SAM does not know, and the words of
+        // success (9000) and of "more data" (90AF), which the SAM sends for an answer that was not the one that was expected (a refusal is an
+        // error). A relay that ends with one of them did not work, however it is named.
+        private static readonly ushort[] NoRefusal = { 0x6700, 0x6D00, 0x6E00, 0x6F00, 0x9000, 0x90AF };
+
+        private readonly ITestOutputHelper _output;
+
+        /// <summary>Creates the case.</summary>
+        /// <param name="output">Where the case writes what it saw.</param>
+        public SamPiccRelayTests(ITestOutputHelper output)
+        {
+            _output = output ?? throw new ArgumentNullException(nameof(output));
+        }
+
+        /// <summary>The relay with an AES key of the SAM.</summary>
+        /// <returns>The task of the test.</returns>
+        [HilReaderFact]
+        public Task TheRelay_WithAnAesKeyOfTheSam_ReachesTheSamAndTheCard() => Run(DESFireKeyType.DF_KEY_AES);
+
+        /// <summary>The relay with a DES key of the SAM: the native command of the card.</summary>
+        /// <returns>The task of the test.</returns>
+        [HilReaderFact]
+        public Task TheRelay_WithADesKeyOfTheSam_ReachesTheSamAndTheCard() => Run(DESFireKeyType.DF_KEY_DES);
+
+        private Task Run(DESFireKeyType type) =>
+            StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var source = new LlaSamReaderSource();
+                var finder = new SamReaderFinder(source);
+                var search = await Task.Run(() => finder.Find());
+
+                if (search.EnumerationFailed)
+                {
+                    throw SkipException.ForSkip("The PC/SC readers could not be listed. Is the Smart Card service running?");
+                }
+
+                if (search.Readers.Count == 0)
+                {
+                    throw SkipException.ForSkip("No MIFARE SAM AV3 was found in a PC/SC reader. Put it into the contact slot of a reader and close the programs that use it.");
+                }
+
+                var samReader = search.Readers[0].Name;
+
+                // The reader of the card: another PC/SC reader with a card in it (not the one that Windows Hello makes up).
+                var cardReader = await Task.Run(() => source.GetReaderNames().FirstOrDefault(name =>
+                    !string.Equals(name, samReader, StringComparison.OrdinalIgnoreCase)
+                    && name.IndexOf("Hello", StringComparison.OrdinalIgnoreCase) < 0
+                    && source.ReadAtr(name) != null));
+
+                if (cardReader == null)
+                {
+                    throw SkipException.ForSkip("No card in another PC/SC reader. Put a DESFire card on the contactless slot of the reader pair.");
+                }
+
+                Assert.True(SamKeyReference.TryParse(EntryText, out var key));
+
+                using var provider = await Task.Run(() => new LibLogicalAccessProvider(ReaderTypes.PCSC, cardReader, samReader));
+
+                Assert.True(provider.SupportsDesfireSamKeys);
+
+                var result = await provider.AuthenticateMifareDesfireWithSamAsync(new DesfireSamAccess(0, 0, type, key));
+
+                if (result.Failure == SamPiccFailure.NotDesfire || result.Failure == SamPiccFailure.NoCard)
+                {
+                    throw SkipException.ForSkip("The card in the reader of the card is no DESFire card, or could not be connected to (" + result.Failure + "). Put a DESFire card on it.");
+                }
+
+                // The card refused its first authentication command with an authentication failure (91AE): the relay never reached the SAM. A card
+                // that holds no key of this kind at key 0 does that (AES on a card with a DES key), and it is no reason to count the case as a
+                // pass. Any other refusal before the SAM (the select, a status word that is no authentication failure, a challenge of the wrong
+                // length) is a fault of the relay and fails the case below.
+                if (result.Failure == SamPiccFailure.CardRefusedBeforeSam && result.Error == ERROR.AuthFailure && result.CardStatus == 0x91AE)
+                {
+                    throw SkipException.ForSkip("The card refused its first authentication command (" + result.CardStatus.ToString("X4") + ") before the SAM was asked: it holds no " + type + " key at key 0 of the card. Run the other case, or use a card in the other state.");
+                }
+
+                // What was seen goes to the output, so that the status word of the SAM for a blank entry can be written down and pinned.
+                _output.WriteLine(
+                    "Relay with " + type + ": " + result.Error + " / " + result.Failure + " (SAM " + result.SamStatus.ToString("X4") + ", card " + result.CardStatus.ToString("X4") + ")");
+
+                // Three ways in which the relay worked, all after the SAM was asked: the SAM refused the entry (it is blank) with a status word of
+                // its own, the card refused the key at the second part, or the key was taken. A SAM that answers a wrong length, an unknown instruction, success or "more data" is not a refusal of an entry.
+                var worked = (result.Error == ERROR.KeyUnavailable && result.Failure == SamPiccFailure.SamRefused && result.SamStatus != 0 && !NoRefusal.Contains(result.SamStatus))
+                    || (result.Error == ERROR.AuthFailure && result.Failure == SamPiccFailure.CardRefused)
+                    || result.Succeeded;
+
+                Assert.True(
+                    worked,
+                    "The relay ended with " + result.Error + " / " + result.Failure + " (SAM " + result.SamStatus.ToString("X4") + ", card " + result.CardStatus.ToString("X4")
+                    + "). Expected the SAM to refuse the blank entry, the card to refuse the key, or the key to be taken.");
+            });
+    }
+}

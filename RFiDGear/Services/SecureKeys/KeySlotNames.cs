@@ -25,6 +25,9 @@ namespace RFiDGear.Services.SecureKeys
             [SecureKeySlots.ClassicMadBCurrent] = "keySlotNameClassicMadBCurrent",
             [SecureKeySlots.ClassicMadATarget] = "keySlotNameClassicMadATarget",
             [SecureKeySlots.ClassicMadBTarget] = "keySlotNameClassicMadBTarget",
+            [SecureKeySlots.UltralightCKey] = "keySlotNameUltralightCKey",
+            [SecureKeySlots.UltralightPassword] = "keySlotNameUltralightPassword",
+            [SecureKeySlots.UltralightPack] = "keySlotNameUltralightPack",
         };
 
         /// <summary>Gets the resource key of the name of a slot.</summary>

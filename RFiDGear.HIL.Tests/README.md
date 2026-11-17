@@ -9,18 +9,43 @@ asks for it, and so do the secure-key cases (they change keys on the card, see
 `SECURE-KEYS.md`); the older DESFire workflow tests do not wait to be asked (see
 the end).
 
+**A case that needs a SAM, not a card:**
+
+`SamDetectionTests` needs `readerScan` and a MIFARE SAM AV3 in a PC/SC reader.
+It looks for the SAM through LibLogicalAccess and reads its version. It does not
+depend on `readerKind`, it authenticates nothing and it writes nothing, and it
+is skipped when no SAM is found. `SamKeyEntryTests` also needs `cardWrites`: it
+writes a test key into a blank key entry 120 (AES-128) and one into a blank
+entry 121 (DES native) of an activated SAM with the factory master key and
+reads each entry back (once: an enabled entry is never overwritten).
+`SamPiccRelayTests` needs `readerScan` and a reader pair with a SAM in the
+contact slot and a DESFire card on the contactless slot: it authenticates the
+card through the SAM with a blank key entry, and writes nothing.
+`Twn4SamRelayTests` does the same on an Elatec TWN4 of hardware revision G
+with the SAM in one of its two sockets and the card on its antenna (it skips
+when `readerKind` asks for PC/SC only, and it needs `cardWrites` as well). Both
+cases use key entry 127 of the SAM once: use a SAM that you can spare and keep
+that entry blank, because an entry with a usage counter would count the use.
+`SAM-PICC.md`
+is the checklist for the task commands that use a key of the SAM: they change
+the keys of a card, so it is for you to run.
+`SAM-AV3.md` has the cases and the
+checklist for the setup window.
+
 **The settings file:**
 
 `hil.settings.json` sits in the folder of the solution, next to
 `Run-HilTests.bat`. It is not in git. The tests look for it in the folder of
 the test assembly and in every folder above it, so it is found from the build
-folder, from Visual Studio and from `dotnet test`. It has three settings:
+folder, from Visual Studio and from `dotnet test`. It has five settings:
 
 ```json
 {
   "readerScan": true,
   "interactive": false,
-  "secureKeys": false
+  "secureKeys": false,
+  "cardWrites": false,
+  "readerKind": "auto"
 }
 ```
 
@@ -33,6 +58,18 @@ folder, from Visual Studio and from `dotnet test`. It has three settings:
   credentials into the Windows Credential Manager for a moment. It does not
   depend on `readerScan`. `SECURE-KEYS.md` has the cases, the checklist for the
   ones that need a person, and how to clean up after an interrupted run.
+- `cardWrites`: also run the cases that write to the card
+  (`UltralightWorkflowTests`, `ClassicWorkflowTests`): on a chip of the
+  Ultralight family they write one page of the user memory and put it back, and
+  they try a write to a protected page that must be refused; on a MIFARE
+  Classic card as it left the factory they write a block, a sector and an
+  application through a MAD and put everything back. It has no effect while
+  `readerScan` is false. `ULTRALIGHT.md` and `CLASSIC.md` have the cases and
+  the checklists.
+- `readerKind`: `"auto"` (the default), `"elatec"` or `"pcsc"`. Which reader the
+  tests use. With `"auto"` an Elatec TWN4 is tried first and a PC/SC reader
+  after it, which means that a machine with both always used the Elatec reader.
+  Set it to run the cases with the other one. It is text, not true or false.
 - The file may hold `//` comment lines and trailing commas. A setting that is
   left out is off. A file that cannot be read, with a setting that does not
   exist, one that is not `true` or `false` or one that is set twice, asks for
@@ -92,6 +129,8 @@ dotnet test RFiDGear.HIL.Tests `
 
 **The reader:**
 
+Which kind is used is the setting `readerKind` (see above); with `"auto"` the
+first one that is found, an Elatec TWN4 before a PC/SC reader.
 An Elatec TWN4 is found by the reader itself, with or without a card on it.
 A PC/SC reader is found only with a card on it, because RFiDGear cannot tell
 a PC/SC reader without a card from no reader: with one, put the card on the
@@ -138,15 +177,34 @@ the hardware.
   the second card (it usually beeps, or its LED reacts): a card the reader does
   not read gives the same result with the fix and without it.
 
+**The Ultralight / NTAG cases:**
+
+`UltralightWorkflowTests` read and write pages of a chip of the Ultralight
+family on a real card: four cases, of which two write to the card and need
+`cardWrites`. `ULTRALIGHT.md` says what each does, which chips each reader
+gives, and has the checklist for the cards and steps that are not automated.
+`HilUltralightScenarioSelfCheckTests` runs the same steps against readers that
+hold a chip in memory.
+
+**The MIFARE Classic cases:**
+
+`ClassicWorkflowTests` read and write a MIFARE Classic card as it left the
+factory: five cases, of which three write to the card and need `cardWrites`.
+`CLASSIC.md` says what each does, what each reader gives, how to put a card back
+when the MAD case stopped half way, and has the checklist for the steps that are
+not automated (the TWN4 has not been tried on a card at all).
+`HilClassicScenarioSelfCheckTests` runs the same steps against a chip in memory.
+
 **The DESFire workflow tests:**
 
 `DesfireWorkflowTests` need a reader with a DESFire card and are not gated by
 `hil.settings.json`: they open the reader on every run of this project. They
-try to skip themselves when no reader is found, but xunit 2 reports the dynamic
-skip of the assert library as a failure whose message starts with
-`$XunitDynamicSkip$` and goes on with the reason ("No reader detected ...").
-`Run-HilTests.ps1` knows this and counts such a failure as skipped; a plain
-`dotnet test` shows it as failed.
+skip themselves when no reader is found ("No reader detected ..."), and xunit.v3
+reports that as a skip, in `dotnet test` and in the report of
+`Run-HilTests.ps1`.
+(xunit 2, which these tests used before, reported the dynamic skip of the assert
+library as a failure whose message starts with `$XunitDynamicSkip$`; the script
+still counts such a failure as skipped, for a report of an older build.)
 
 The reader-scan tests are gated differently. Without the settings file, or with
 `readerScan` off, they are real skips, decided when the tests are discovered.

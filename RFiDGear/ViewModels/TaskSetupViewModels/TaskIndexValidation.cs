@@ -91,8 +91,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 case IGenericTask genericTask when int.TryParse(genericTask.CurrentTaskIndex, out taskIndex):
                     return true;
-                case MifareUltralightSetupViewModel ultralightTask when int.TryParse(ultralightTask.CurrentTaskIndex, out taskIndex):
-                    return true;
                 default:
                     taskIndex = -1;
                     return false;

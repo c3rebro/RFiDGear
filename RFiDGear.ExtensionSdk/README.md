@@ -60,6 +60,21 @@ keys that open a sector and `ChangeKeyNew` for the keys written into a sector
 trailer. The sector is not part of the request: one MAD operation uses a key
 for several sectors.
 
+A MIFARE Ultralight or NTAG task asks for the keys its authentication
+needs, before the card is touched. The key of an Ultralight C is the slot
+`ultralight.c.key`: `Algorithm` is `TripleDes2K` (16 bytes). The password of
+an Ultralight EV1 or an NTAG is the slot `ultralight.password`
+(`UltralightPassword`, 4 bytes) and its PACK the slot `ultralight.pack`
+(`UltralightPack`, 2 bytes). `Usage` is `Authenticate` for all three, and the
+scope has neither an application nor a key number. The two algorithms
+`UltralightPassword` (5) and `UltralightPack` (6) are new in
+`SecureKeyAlgorithm`: the values that existed keep their numbers, and an
+extension that was built before does not know them. A provider has to answer
+`Unsupported` to an algorithm it does not know; the host checks the length of
+every answer and ends the task with `KeyUnavailable` when it does not fit, so
+a provider that answers every request with a 16-byte key gets no card call
+out of it.
+
 - The id is stored in project files, so it never changes. It has 1 to 64 of
   `a-z`, `0-9`, `.`, `_` and `-`. A provider with another id is ignored with
   a log entry. If two extensions use one id, neither is used, and the ids of

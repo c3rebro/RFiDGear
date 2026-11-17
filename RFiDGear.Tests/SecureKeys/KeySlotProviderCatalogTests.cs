@@ -70,6 +70,23 @@ namespace RFiDGear.Tests.SecureKeys
         }
 
         [Fact]
+        public void The_sam_takes_name_and_tooltip_from_the_resources_and_comes_after_the_external_application()
+        {
+            var sam = new SecureKeyProviderInfo(SamKeyProvider.ProviderId, SamKeyProvider.DisplayName);
+
+            var items = Marked().Describe(new[] { new SecureKeyProviderInfo("alpha", "alpha vault"), sam, CredentialManager, ExternalApplication });
+
+            Assert.Equal(
+                new[] { WindowsCredentialKeyProvider.ProviderId, BridgeKeyProvider.ProviderId, SamKeyProvider.ProviderId, "alpha" },
+                items.Select(item => item.Id).ToArray());
+
+            var item = items.Single(candidate => candidate.Id == SamKeyProvider.ProviderId);
+            Assert.Equal("<keySlotProviderNameSam>", item.DisplayName);
+            Assert.Equal("<keySlotProviderToolTipSam>", item.ToolTip);
+            Assert.True(item.IsBuiltIn);
+        }
+
+        [Fact]
         public void An_extension_keeps_its_own_name_and_gets_a_generic_tooltip_that_names_its_id()
         {
             var item = Assert.Single(Marked().Describe(new[] { new SecureKeyProviderInfo("acme.vault", "Acme vault") }));
@@ -109,7 +126,7 @@ namespace RFiDGear.Tests.SecureKeys
         public void Every_text_exists_in_the_language_and_a_tooltip_is_short_enough_to_read(string culture)
         {
             var catalog = InLanguage(culture);
-            var items = catalog.Describe(new[] { CredentialManager, ExternalApplication, new SecureKeyProviderInfo("acme.vault", "Acme vault") });
+            var items = catalog.Describe(new[] { CredentialManager, ExternalApplication, new SecureKeyProviderInfo(SamKeyProvider.ProviderId, SamKeyProvider.DisplayName), new SecureKeyProviderInfo("acme.vault", "Acme vault") });
 
             foreach (var item in items)
             {

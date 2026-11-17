@@ -22,6 +22,7 @@ namespace RFiDGear.Models
     [XmlInclude(typeof(MifareClassicSetupViewModel))]
     [XmlInclude(typeof(CommonTaskViewModel))]
     [XmlInclude(typeof(GenericChipTaskViewModel))]
+    [XmlInclude(typeof(MifareUltralightSetupViewModel))]
     public class ChipTaskHandlerModel : ObservableObject
     {
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
