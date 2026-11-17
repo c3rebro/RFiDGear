@@ -23,8 +23,10 @@ contact slot and a DESFire card on the contactless slot: it authenticates the
 card through the SAM with a blank key entry, and writes nothing.
 `Twn4SamRelayTests` does the same on an Elatec TWN4 of hardware revision G
 with the SAM in one of its two sockets and the card on its antenna (it skips
-when `readerKind` asks for PC/SC only, and it needs `cardWrites` as well: it
-uses key entry 127 of the SAM once, which must be blank). `SAM-PICC.md`
+when `readerKind` asks for PC/SC only, and it needs `cardWrites` as well). Both
+cases use key entry 127 of the SAM once: use a SAM that you can spare and keep
+that entry blank, because an entry with a usage counter would count the use.
+`SAM-PICC.md`
 is the checklist for the task commands that use a key of the SAM: they change
 the keys of a card, so it is for you to run.
 `SAM-AV3.md` has the cases and the
