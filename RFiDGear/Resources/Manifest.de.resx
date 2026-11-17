@@ -2457,7 +2457,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>MIFARE-SAM-AV3-Einrichtung</value>
   </data>
   <data name="labelSamSetupIntro" xml:space="preserve">
-    <value>Richtet eine MIFARE SAM AV3 ein, die in einem PC/SC-Leser steckt: finden, eine neue aktivieren, sich als Host authentifizieren und einen Schlüssel in einen Schlüsseleintrag schreiben. Die Suche liest nur die Rücksetzantwort (ATR) der Karte in jedem Leser. Solange dieses Fenster offen ist, gehört der Leser ihm allein.</value>
+    <value>Richtet eine MIFARE SAM AV3 ein, die in einem PC/SC-Leser oder in einem SAM-Steckplatz eines TWN4 (Hardware-Revision G) steckt: finden, eine neue aktivieren, sich als Host authentifizieren und einen Schlüssel in einen Schlüsseleintrag schreiben. Die Suche liest nur die Rücksetzantwort (ATR) der Karte in jedem Leser oder Steckplatz. Solange dieses Fenster offen ist, gehört der Leser ihm allein.</value>
   </data>
   <data name="labelSamSetupReader" xml:space="preserve">
     <value>SAM im Leser</value>
@@ -2553,7 +2553,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Die PC/SC-Leser konnten nicht aufgelistet werden. Läuft der Dienst für Smartcards?</value>
   </data>
   <data name="messageSamSetupSearchNone" xml:space="preserve">
-    <value>In den PC/SC-Lesern wurde keine MIFARE SAM AV3 gefunden. Stecken Sie sie ein und suchen Sie erneut.</value>
+    <value>In den PC/SC-Lesern und in den SAM-Steckplätzen des TWN4 wurde keine MIFARE SAM AV3 gefunden. Stecken Sie sie ein und suchen Sie erneut. Ein TWN4 wird nur durchsucht, solange der Elatec-Leser in den Leser-Einstellungen gewählt und verbunden ist, und nur ein TWN4 der Hardware-Revision G sieht eine SAM.</value>
   </data>
   <data name="messageSamSetupSearchFound" xml:space="preserve">
     <value>Eine MIFARE SAM AV3 in {0} Leser(n) gefunden.</value>

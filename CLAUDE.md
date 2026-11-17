@@ -247,10 +247,14 @@ enforces the access bits and halts the card after a refused access.
 ### MIFARE SAM AV3 setup
 
 Tools > "MIFARE SAM AV3 setup..." (`SamSetupView`, `SamSetupViewModel`) sets up
-a MIFARE SAM AV3 that sits in a PC/SC reader (issue 347). It needs no project.
-It finds the SAM, activates a new one, authenticates as host and writes one key
-into a key entry. Using the key in a SAM is not part of it, and the window is
-for PC/SC readers only. A TWN4 sees a SAM AV3 only from hardware revision G
+a MIFARE SAM AV3 that sits in a PC/SC reader or in a SAM socket of a connected
+TWN4 (issue 347). It needs no project. It finds the SAM, activates a new one,
+authenticates as host and writes one key into a key entry. Using the key in a
+SAM is not part of it. The window lists the SAMs of both kinds of reader
+(`ISamFinder`: `SamReaderFinder` for PC/SC, `Twn4SamFinder` for the sockets,
+`CompositeSamFinder` for both, made by `SamFinders.Create`); the sockets only
+while the Elatec reader is the one in use and connected. A TWN4 sees a SAM AV3
+only from hardware revision G
 (TWN4 MultiTech 2, two SAM sockets); the revisions D (TWN4 Legic 45) and E
 (TWN4 MultiTech) never do, which was the cause of Elatec.NET issue 28 (Elatec
 support, 2026-11-17). The task commands use the SAM on a revision G (see the
@@ -258,7 +262,9 @@ relay below); the record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
 
 - The code is `Services/Sam`. `SamReaderFinder` looks at the ATR of the card in
   each PC/SC reader (historical bytes `MIFARE SAM AV3`) **without connecting to
-  any card**; only a card that is a SAM is connected to (`Open`).
+  any card**; only a card that is a SAM is connected to (`Open`). The finder of
+  a TWN4 takes **no** `SamPortGate`, unlike `Twn4SamConnector` of the relay: the
+  window holds that gate already, and a second `TryEnter` would answer busy.
   `LlaSamReaderSource` is the one class that touches LibLogicalAccess, and it
   holds no logic. `LlaSamApduChannel` is the `ISamApduChannel` that Elatec.NET's
   `SamAv3HostSession` needs. It sits on the **data transport** of

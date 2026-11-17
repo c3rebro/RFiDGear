@@ -2435,7 +2435,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>MIFARE SAM AV3 setup</value>
   </data>
   <data name="labelSamSetupIntro" xml:space="preserve">
-    <value>Sets up a MIFARE SAM AV3 that sits in a PC/SC reader: find it, activate a new one, authenticate as host and write one key into a key entry. The search only reads the answer to reset (ATR) of the card in each reader. While this window is open, it has the reader to itself.</value>
+    <value>Sets up a MIFARE SAM AV3 that sits in a PC/SC reader or in a SAM socket of a TWN4 (hardware revision G): find it, activate a new one, authenticate as host and write one key into a key entry. The search only reads the answer to reset (ATR) of the card in each reader or socket. While this window is open, it has the reader to itself.</value>
   </data>
   <data name="labelSamSetupReader" xml:space="preserve">
     <value>SAM in reader</value>
@@ -2531,7 +2531,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>The PC/SC readers could not be listed. Is the Smart Card service running?</value>
   </data>
   <data name="messageSamSetupSearchNone" xml:space="preserve">
-    <value>No MIFARE SAM AV3 was found in the PC/SC readers. Insert it and search again.</value>
+    <value>No MIFARE SAM AV3 was found in the PC/SC readers or in the SAM sockets of the TWN4. Insert it and search again. A TWN4 is searched only while the Elatec reader is selected and connected in the reader settings, and only a TWN4 of hardware revision G sees a SAM.</value>
   </data>
   <data name="messageSamSetupSearchFound" xml:space="preserve">
     <value>Found a MIFARE SAM AV3 in {0} reader(s).</value>

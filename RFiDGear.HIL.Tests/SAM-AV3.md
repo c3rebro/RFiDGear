@@ -18,9 +18,12 @@ SAM is the window: that, and a second SAM, are what this checklist is for.
 **What it is, and what it is not:**
 
 - The SAM sits in a **PC/SC reader** (the contact slot of an OMNIKEY 5422, for
-  instance) and is reached through LibLogicalAccess. It is not the TWN4: a TWN4
-  sees a SAM AV3 only from hardware revision G (TWN4 MultiTech 2), and this
-  window does not use it; the task commands do (`SAM-PICC.md`, and the third
+  instance), reached through LibLogicalAccess, **or in a SAM socket of a
+  TWN4** of hardware revision G (TWN4 MultiTech 2), which has to be the
+  selected and connected reader of the application (Reader settings: Elatec);
+  the older revisions never see a SAM. The list of the window shows both kinds:
+  "TWN4 SAM socket 1" and "TWN4 SAM socket 2" next to the PC/SC readers. The
+  task commands use the SAM in a TWN4 as well (`SAM-PICC.md`, and the third
   session in `SAM-AV3-FIRST-CONTACT.md`).
 - It sets a SAM up: find it, activate a new one, authenticate as host, write one
   key into a key entry. **Using** that key, in the TWN4 or anywhere else, is the
@@ -78,6 +81,12 @@ log. What the window looks like, as the tests render it with a scripted SAM
 `sam-setup-found-en.png` (before the check) and `sam-setup-authenticated-en.png`
 (after the host authentication), and the same in German (`-de`).
 
+0. With the SAM in a **TWN4**: choose the Elatec reader in the reader settings
+   and connect it first, then do the steps below; the entry "TWN4 SAM socket 1"
+   (or 2) is the reader with the SAM. Searching powers the sockets up and down
+   again, and a card that is no SAM (a SIM, for instance) is left alone after
+   its power-up. Close the window before you use a task: the SAM stays powered
+   while the window holds it.
 1. Open Tools > "MIFARE SAM AV3 setup...". The reader with the SAM is in the
    list and is chosen, and the state says that a SAM was found. The box for the
    master key is not there while "Factory key" is ticked. With the window open,
