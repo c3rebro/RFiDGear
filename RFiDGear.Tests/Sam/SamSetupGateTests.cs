@@ -14,6 +14,7 @@ namespace RFiDGear.Tests.Sam
     /// load, edit or scan is admitted, and the setup is not admitted while one is in progress) and the gate of the reader. It is not
     /// opened while the main window says that it uses the reader either.
     /// </summary>
+    [Collection("SamPortGate")]
     public class SamSetupGateTests
     {
         private static bool? NotBusy() => false;

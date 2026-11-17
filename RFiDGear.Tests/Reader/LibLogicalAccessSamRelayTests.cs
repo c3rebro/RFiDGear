@@ -20,6 +20,7 @@ namespace RFiDGear.Tests.Reader
     /// it is, one operation holds the session of the reader, the SAM and the card are let go of whatever happens, and the answers are those of
     /// the session. The SAM and the card are scripts that answer as they did on the bench; no native library is touched.
     /// </summary>
+    [Collection("SamPortGate")]
     public class LibLogicalAccessSamRelayTests
     {
         private const string SamReader = "HID Global OMNIKEY 5422 Smartcard Reader 0";

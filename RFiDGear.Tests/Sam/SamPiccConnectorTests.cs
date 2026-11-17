@@ -11,6 +11,7 @@ namespace RFiDGear.Tests.Sam
     /// The SAM, opened for one operation: from the reader that is configured, never the reader of the card, never while somebody else has it,
     /// and only when the card in it says that it is a MIFARE SAM AV3. It is given back (and its state with it) when the operation is over.
     /// </summary>
+    [Collection("SamPortGate")]
     public class SamPiccConnectorTests
     {
         private const string SamReader = "HID Global OMNIKEY 5422 Smartcard Reader 0";
