@@ -266,3 +266,137 @@ the SAM and never seen by the PC. Times are local.
 02:12:06.797  RESULT 7: SAM part 1 on a new connection SW 90AF and the authe
     ntication completed: closing the connection reset the SAM
 ```
+
+**The TWN4 (2026-11-17): the SAM and the card on one reader:**
+
+The same relay on **one TWN4** instead of a pair of PC/SC readers: the SAM
+in socket 1 (SAM1) and the spare DESFire EV3 on the antenna of the same
+reader. Hardware revision G (TWN4 MultiTech 2), firmware
+`TWN4/B1.64/NCF5.07/PRS1.04/PIMBAV`, USB serial (PID 0420). The card held its
+factory DES key at key 0 (key type DES, key settings free create and delete
+without the master key). **Authentication only: no key was changed, nothing
+was written to the SAM or to the card.** First with a throwaway console
+(spike, the second run is traced below), then with the classes of the
+application (`ElatecTwn4Ports`, `Twn4SamRelay.Parts`, `SamRelay.RunAsync`) on
+the same reader and card.
+
+What was found:
+
+- **The frames of the PC/SC relay go to the card unchanged** through
+  `ISO14443_4_Tdx` of Elatec.NET: `90 5A` (select) gives `9100`, `90 0A`
+  (native authentication, part 1) gives `91AF` and the eight bytes of the
+  challenge, `90 AF` (part 2) gives `9100`. The reader does the framing of
+  ISO 14443-4. The first frame of GetVersion is nine bytes and ends with
+  `91AF`.
+- **`Twn4SamApduChannel` sends no Le for a command that has none:**
+  `80 CA 01 00` (SAM_KillAuthentication) gives `9000`, and so does the second
+  part of the authentication (`80 0A 00 00 08 ...`).
+- **The SAM stays `PresentAndActive` across a search for a card** on the same
+  reader: nothing in the search resets it.
+- **A blank key entry (127) is refused by the SAM with `6985`** after the card
+  accepted part 1; the kill that follows gives `9000`, and the next
+  authentication starts clean.
+- **PICC master key 0 authenticates through SAM entry 2** (native DES, the
+  factory key of the card): the card and the SAM accepted each other, in about
+  200 ms (350 ms for a whole relay of the application, which includes the
+  search, the look at the card and the power cycle of the SAM). The first
+  select after the refusal above answered `91CA`, the card's answer to a
+  command after an unfinished authentication; the session sent it once more,
+  as designed.
+- **The library's own DESFire calls work afterwards:** a new search for a
+  card, then GetKeySettings through Elatec.NET gives the key settings of the
+  card as before (the key type is DES).
+- An AES authentication on this card is refused by the card at once (`91AE`,
+  the card holds a DES key): the case ends as `CardRefusedBeforeSam`.
+
+What has not been tried on a TWN4: a key change, AES keys and application
+keys (the spare card holds a DES key), and the task commands in the
+application window. `SAM-PICC.md` has the cases.
+
+The trace (the second run of the spike, then the two runs of the classes of
+the application; the SAM is entry 2 for the card key and entry 127 for the
+blank one, nothing here is secret):
+```text
+19:55:17.419  ##### stage: twn4-relay  (trace file C:\tmp\sam-session\trace-
+    20261117.txt)
+19:55:17.432  ##### twn4-relay on COM8 (authentication only, no key change,
+    nothing is written)
+19:55:17.500  connect: True
+19:55:17.543  ATR 3BDF18FF81F1FE43003F07834D49464152452053414D204156333011 A
+    V3=True
+19:55:17.555  === H2: SAM_KillAuthentication without Le (80 CA 01 00)
+19:55:17.558  -> 80CA0100
+19:55:17.597  <- SW=9000
+19:55:17.598  H2 RESULT SW=9000 (no Le was sent)
+19:55:17.599  === H3: a tag search on the same reader, with the SAM powered
+19:55:17.606  slot status before: IccStatus PresentAndActive, CommandStatus
+    0, Error 0, ClockStatus Running
+19:55:17.706  tag: chip type MIFARE, id bits 56 (UID not shown)
+19:55:17.710  slot status after: IccStatus PresentAndActive, CommandStatus 0
+    , Error 0, ClockStatus Running
+19:55:17.711  === card key settings BEFORE (library, after a fresh select of
+     the PICC level)
+19:55:17.810  tag: MIFARE
+19:55:17.836  key settings through the library: AccessRights=KS_FREE_CREATE_
+    DELETE_WITHOUT_MK, KS_DEFAULT, NumberOfKeys=1, KeyType=DF_KEY_DES
+19:55:17.838  === H4a: blank key entry 127 (native): the card accepts part 1
+    , the SAM is expected to refuse (kill frame follows)
+19:55:17.844  -> 80CA0100
+19:55:17.870  <- SW=9000
+19:55:17.874  CARD -> 905A00000300000000
+19:55:17.886  CARD <- 9100
+19:55:17.889  CARD -> 900A0000010000
+19:55:17.905  CARD <- 97F64C437DF25D3691AF
+19:55:17.908  -> 800A00000A7F0097F64C437DF25D3600
+19:55:17.950  <- SW=6985
+19:55:17.952  -> 80CA0100
+19:55:17.980  <- SW=9000
+19:55:17.983  H4a RESULT Error=KeyUnavailable Failure=SamRefused SAM=6985 ca
+    rd=0000 keyMayHaveChanged=False  (271 ms)
+19:55:17.984  === H4b: PICC master key 0 with SAM entry 2 (native DES, the f
+    actory key of the card)
+19:55:17.985  -> 80CA0100
+19:55:18.010  <- SW=9000
+19:55:18.011  CARD -> 905A00000300000000
+19:55:18.024  CARD <- 91CA
+19:55:18.026  CARD -> 905A00000300000000
+19:55:18.035  CARD <- 9100
+19:55:18.036  CARD -> 900A0000010000
+19:55:18.050  CARD <- 3971593AC97A9FDE91AF
+19:55:18.051  -> 800A00000A02003971593AC97A9FDE00
+19:55:18.120  <- 8F06E47C4AB1E2805FAFA082E9AF4AC5 SW=90AF
+19:55:18.123  CARD -> 90AF0000108F06E47C4AB1E2805FAFA082E9AF4AC500
+19:55:18.140  CARD <- 08EB5BEC296D93AE9100
+19:55:18.141  -> 800A00000808EB5BEC296D93AE
+19:55:18.185  <- SW=9000
+19:55:18.186  H4b RESULT Error=NoError Failure=None SAM=0000 card=0000 keyMa
+    yHaveChanged=False  (202 ms)
+19:55:18.187  === H5: the library's own DESFire calls after a raw relay (a f
+    resh tag search first)
+19:55:18.285  tag: MIFARE
+19:55:18.310  key settings through the library: AccessRights=KS_FREE_CREATE_
+    DELETE_WITHOUT_MK, KS_DEFAULT, NumberOfKeys=1, KeyType=DF_KEY_DES
+19:55:18.315  power off SAM1
+20:29:49.397  ##### stage: twn4-prod  (trace file C:\tmp\sam-session\trace-2
+    0261117.txt)
+20:29:49.410  ##### twn4-prod on COM8 (production relay, authentication only
+    )
+20:29:49.474  connect: True
+20:29:49.832  PROD blank entry 127: Error=KeyUnavailable Failure=SamRefused
+    SAM=6985 card=0000 keyMayHaveChanged=False  (355 ms)
+20:29:50.204  PROD entry 2, native DES: Error=NoError Failure=None SAM=0000
+    card=0000 keyMayHaveChanged=False  (370 ms)
+20:29:50.210  slot status after: IccStatus PresentAndInactive, CommandStatus
+     0, Error 0, ClockStatus Running
+21:06:30.478  ##### stage: twn4-prod  (trace file C:\tmp\sam-session\trace-2
+    0261117.txt)
+21:06:30.491  ##### twn4-prod on COM8 (production relay, authentication only
+    )
+21:06:30.555  connect: True
+21:06:30.906  PROD blank entry 127: Error=KeyUnavailable Failure=SamRefused
+    SAM=6985 card=0000 keyMayHaveChanged=False  (348 ms)
+21:06:31.264  PROD entry 2, native DES: Error=NoError Failure=None SAM=0000
+    card=0000 keyMayHaveChanged=False  (356 ms)
+21:06:31.274  slot status after: IccStatus PresentAndInactive, CommandStatus
+     0, Error 0, ClockStatus Running
+```

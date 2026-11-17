@@ -114,12 +114,15 @@ combined with **MEF** (Managed Extensibility Framework) for ViewModel discovery.
 The active provider is selected at startup from settings and injected into the
 task system.
 
-The MIFARE SAM AV3 sits in a reader of its own (the contact slot of a pair such
-as the OMNIKEY 5422, the card in the other slot). Its name is the setting
-`SamReaderName` (Reader setup, PC/SC only; empty for none; no automatic search).
-With it set, the PC/SC provider never takes that reader for the card and never
-falls back to the library's default unit, which is the first reader and so the
-contact slot (`PcscReaderChoice`).
+With the PC/SC provider the MIFARE SAM AV3 sits in a reader of its own (the
+contact slot of a pair such as the OMNIKEY 5422, the card in the other slot).
+Its name is the setting `SamReaderName` (Reader setup, PC/SC only; empty for
+none; no automatic search). With it set, the PC/SC provider never takes that
+reader for the card and never falls back to the library's default unit, which
+is the first reader and so the contact slot (`PcscReaderChoice`). With the
+Elatec provider the SAM sits in a SAM socket of the same TWN4 that the card is
+on (hardware revision G only), is found by its ATR in either socket, and needs
+no setting.
 
 ### Task System
 
@@ -246,14 +249,12 @@ enforces the access bits and halts the card after a refused access.
 Tools > "MIFARE SAM AV3 setup..." (`SamSetupView`, `SamSetupViewModel`) sets up
 a MIFARE SAM AV3 that sits in a PC/SC reader (issue 347). It needs no project.
 It finds the SAM, activates a new one, authenticates as host and writes one key
-into a key entry. Using the key in a SAM is not part of it, and neither is the
-TWN4. A TWN4 sees a SAM AV3 only from hardware revision G (TWN4 MultiTech 2,
-two SAM slots); the revisions D (TWN4 Legic 45) and E (TWN4 MultiTech) never
-do, which was the cause of Elatec.NET issue 28 (Elatec support, 2026-11-17).
-On a revision G a probe got the ATR of the SAM in SAM1, `SAM_GetVersion`, the
-host authentication and the key entries through Elatec.NET's
-`Twn4SamApduChannel` (T=1 from the ATR, no PPS); RFiDGear does not use that
-yet. The record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
+into a key entry. Using the key in a SAM is not part of it, and the window is
+for PC/SC readers only. A TWN4 sees a SAM AV3 only from hardware revision G
+(TWN4 MultiTech 2, two SAM sockets); the revisions D (TWN4 Legic 45) and E
+(TWN4 MultiTech) never do, which was the cause of Elatec.NET issue 28 (Elatec
+support, 2026-11-17). The task commands use the SAM on a revision G (see the
+relay below); the record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
 
 - The code is `Services/Sam`. `SamReaderFinder` looks at the ATR of the card in
   each PC/SC reader (historical bytes `MIFARE SAM AV3`) **without connecting to
@@ -304,20 +305,34 @@ yet. The record is `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md`.
   to the select gets the select once more (it changes nothing).
   `SamKeyReference` (`entry:version`, provider id `sam`, entries 1 to 127)
   names such a key and holds no secret; `SamPiccConnector` opens the SAM for
-  one operation under `SamPortGate`, which the setup window takes as well. The
-  PC/SC reader relays it (`LibLogicalAccessProvider.Sam.cs`, under the session
-  gate of the provider: the SAM is opened first, the card second, both are let
-  go of) through three virtual operations of `ReaderDevice`
-  (`SupportsDesfireSamKeys`, `AuthenticateMifareDesfireWithSamAsync`,
-  `ChangeMifareDesfireKeyWithSamAsync`); the TWN4 keeps the defaults, so
-  a task there ends `KeyUnavailable` before anything is sent (the operations
-  answer `ProtocolConstraint`). Four commands of the DESFire task call them
+  one operation under `SamPortGate`, which the setup window takes as well.
+  Both providers relay through `SamRelay.RunAsync` (the gate of the reader's
+  session is held, the SAM is opened first and the card second, both are let
+  go of, an exception ends as `TransportError`) and three virtual operations
+  of `ReaderDevice` (`SupportsDesfireSamKeys`,
+  `AuthenticateMifareDesfireWithSamAsync`,
+  `ChangeMifareDesfireKeyWithSamAsync`). The PC/SC reader does it in
+  `LibLogicalAccessProvider.Sam.cs` (the SAM in the reader that the setting
+  names). The TWN4 does it in `ElatecNetProvider.Sam.cs` with the classes
+  `Twn4*` of `Services/Sam`: `Twn4SamConnector` looks at both SAM sockets,
+  takes the card whose ATR says `MIFARE SAM AV3` (two of them are
+  `SamAmbiguous`, none is `SamNotFound`), sets the socket up for T=1 from the
+  ATR (`Twn4AtrReader`, no PPS) and powers it down when it is let go of; the
+  card on the antenna is searched once, after the SAM is open
+  (`Twn4CardSide`: the SAK and the first frame of GetVersion), and gets the
+  frames of the PC/SC relay as they are; the whole relay holds the lock of the
+  COM port. `ITwn4SamRelayPorts` hides the reader (`ElatecTwn4Ports` is the
+  thin class over Elatec.NET). A reader that knows nothing of the SAM keeps
+  the defaults of `ReaderDevice` (no support, `ProtocolConstraint`), and a task
+  on it ends `KeyUnavailable` before anything is sent. Four commands of the
+  DESFire task call them
   (`MifareDesfireSetupViewModel.Sam.cs`): the task "Check: App Key", "Change
   PICC Master Key" and "Change Application Key", and the button that
   authenticates the PICC master key; every other command and every check task
   refuses a key of the SAM. What the SAM and the card did:
   `RFiDGear.HIL.Tests/SAM-PICC-FIRST-CONTACT.md`; the checklist of the
-  commands, not run on a card yet: `RFiDGear.HIL.Tests/SAM-PICC.md`.
+  commands, not run on a card yet (on a TWN4 only an authentication was
+  seen): `RFiDGear.HIL.Tests/SAM-PICC.md`.
 - Hardware: `RFiDGear.HIL.Tests/SAM-AV3.md` (a read-only case, a case that
   writes a key entry, and the checklist for the window).
   `RFiDGear.HIL.Tests/SAM-AV3-FIRST-CONTACT.md` is the record of the first
