@@ -317,11 +317,30 @@ What was found:
   key authenticates and the DES key is refused (`91AE`). The change **back,
   AES (entry 1) to DES (entry 2), which had never been tried on a card on any
   reader,** took 677 ms, and the card holds its factory DES key again.
+- **Case 3 fails as it should.** With the card holding the AES key, the same
+  change, DES (entry 2) to AES (entry 1), is refused by the card at once
+  (`91AE`, before the SAM is asked): the answer is `AuthFailure`, the key
+  "may have changed" is false, and the card still holds the AES key (the AES
+  key authenticates and the DES key is refused). The change back (case 4) then
+  put the factory key on the card.
+- **The application keys work too** (the cases 5a, 5b and 6 of `SAM-PICC.md`).
+  A third AES key entry was written into the SAM for them (entry 3, version 0,
+  SET `0x0024`; the SAM was authenticated as host with its factory master key,
+  and the entry was blank before: the dump of the entries 0 to 127 showed
+  three enabled entries, 0, 1 and 2). On a fresh application of the spare
+  card (AID `00AB01`, AES, two keys) whose keys 0 and 1 were set to the key of
+  entry 1 with the typed calls of the library, the SAM changed key 0 with key
+  0 authenticating, entry 1 to entry 3 (5a), and then key 1 with key 0
+  authenticating, its old key entry 1 and its new key entry 3 (5b, a key other
+  than the one that authenticates). After each change the new key
+  authenticated and the old one was refused (`91AE`), and the key that was not
+  changed still held its old key. Each of the three steps took about 700 ms.
+  The application was deleted afterwards with the PICC master key (the card
+  answers `91A0`, no such application), and the card holds its factory DES key
+  and no application.
 
-What has not been tried on a TWN4: the application keys (they need a third
-key entry in the SAM, an AES key other than entry 1, and an application on
-the card), and the task commands in the application window. `SAM-PICC.md`
-has the cases.
+What has not been tried on a TWN4: the task commands in the application
+window (`SAM-PICC.md` has the cases).
 
 The trace (the second run of the spike, then the two runs of the classes of
 the application; the SAM is entry 2 for the card key and entry 127 for the
@@ -440,4 +459,111 @@ entry 1 as AES):
     re=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False
 22:01:04.720  RESULT: the card holds the factory DES key again (as at the st
     art)
+```
+
+The trace of the dump of the key entries (settings only, no key), of the
+write of entry 3 and of the application keys:
+
+```text
+22:25:17.545  ##### stage: twn4-samdump  (trace file C:\tmp\sam-session\trac
+    e-20261117.txt)
+22:25:17.563  ##### twn4-samdump on COM8 (read-only: the settings of the key
+     entries 0 to 127, no key, nothing written)
+22:25:17.622  connect: True
+22:25:17.952  host authentication with the factory master key: True
+22:25:27.742  enabled (non-blank) entries: 3
+22:25:27.744  entry 0: ENABLED, AES-128, key class 0, KeepIV False, versions
+     00/00/00, SET 0x0020, ExtSET 0x00, RefNoKUC 0xFF, raw 00000000000000000
+    0FF200000
+22:25:27.746  entry 1: ENABLED, AES-128, key class 1 (PICC), KeepIV True, ve
+    rsions 00/00/00, SET 0x0024, ExtSET 0x01, RefNoKUC 0xFF, raw 00000000000
+    0000000FF240001
+22:25:27.747  entry 2: ENABLED, native DES/2K3DES, key class 1 (PICC), KeepI
+    V False, versions 00/00/00, SET 0x0000, ExtSET 0x01, RefNoKUC 0xFF, raw
+    000000000000000000FF000001
+22:25:50.913  ##### stage: twn4-writeentry3  (trace file C:\tmp\sam-session\
+    trace-20261117.txt)
+22:25:50.931  ##### twn4-writeentry3 on COM8 (writes key entry 3: AES-128 PI
+    CC key, Keep IV, version 0; refuses an enabled entry)
+22:25:50.994  connect: True
+22:25:51.333  host authentication with the factory master key: True
+22:25:51.419  entry 3 before: enabled=False, SET 0x0220, ExtSET 0x00
+22:25:51.592  write: done without an exception
+22:25:51.671  entry 3 after: enabled=True, AES-128=True, PICC class=True, Ke
+    epIV=True, SET 0x0024, ExtSET 0x01, versions 00
+22:28:00.762  ##### stage: twn4-appkeys  (trace file C:\tmp\sam-session\trac
+    e-20261117.txt)
+22:28:00.776  ##### twn4-appkeys (cases 5a, 5b, 6 on a fresh application 00A
+    B01 of the spare card; entries 1 and 3)
+22:28:00.864  connect: NoError
+22:28:01.272  PICC master key with entry 2 (DES): Error=NoError Failure=None
+     SAM=0000 card=0000 keyMayHaveChanged=False
+22:28:01.447  CREATE application 00AB01 (AES, 2 keys): NoError
+22:28:01.616  PREPARE (typed) key 0 zeros -> entry 1 key: NoError
+22:28:01.776  PREPARE (typed) key 1 zeros -> entry 1 key: NoError
+22:28:02.181  AUTH prepared key 0 with entry 1: Error=NoError Failure=None S
+    AM=0000 card=0000 keyMayHaveChanged=False
+22:28:02.576  AUTH prepared key 1 with entry 1: Error=NoError Failure=None S
+    AM=0000 card=0000 keyMayHaveChanged=False
+22:28:03.296  CASE 5a key 0: entry 1 -> entry 3: Error=NoError Failure=None
+    SAM=0000 card=0000 keyMayHaveChanged=False
+22:28:03.691  AUTH after 5a key 0 with entry 3: Error=NoError Failure=None S
+    AM=0000 card=0000 keyMayHaveChanged=False
+22:28:04.081  AUTH after 5a (must be refused) key 0 with entry 1: Error=Auth
+    Failure Failure=CardRefused SAM=0000 card=91AE keyMayHaveChanged=False
+22:28:04.481  AUTH after 5a (key 1 untouched) key 1 with entry 1: Error=NoEr
+    ror Failure=None SAM=0000 card=0000 keyMayHaveChanged=False
+22:28:05.191  CASE 5b key 1 (authenticated by key 0): entry 1 -> entry 3: Er
+    ror=NoError Failure=None SAM=0000 card=0000 keyMayHaveChanged=False
+22:28:05.601  AUTH after 5b key 1 with entry 3: Error=NoError Failure=None S
+    AM=0000 card=0000 keyMayHaveChanged=False
+22:28:05.971  AUTH after 5b (must be refused) key 1 with entry 1: Error=Auth
+    Failure Failure=CardRefused SAM=0000 card=91AE keyMayHaveChanged=False
+22:28:06.376  AUTH after 5b (key 0 untouched) key 0 with entry 3: Error=NoEr
+    ror Failure=None SAM=0000 card=0000 keyMayHaveChanged=False
+22:28:06.377  CASE 6 (check: app key with the key of entry 3): key 1 True, k
+    ey 0 True
+22:28:06.621  CLEANUP delete application 00AB01 with the PICC master key: No
+    Error
+22:28:06.976  PICC master key with entry 2 (DES) at the end: Error=NoError F
+    ailure=None SAM=0000 card=0000 keyMayHaveChanged=False
+22:28:07.196  the application must be gone (authentication with entry 3 must
+     fail): Error=ProtocolConstraint Failure=CardRefusedBeforeSam SAM=0000 c
+    ard=91A0 keyMayHaveChanged=False
+22:28:07.198  RESULT exit 0
+```
+
+The trace of case 3 (the same change twice, then the way back):
+
+```text
+22:37:09.642  ##### stage: twn4-case3  (trace file C:\tmp\sam-session\trace-
+    20261117.txt)
+22:37:09.657  ##### twn4-case3 (case 3: the same change twice, the second mu
+    st fail and change nothing; the card is put back at the end)
+22:37:09.748  connect: NoError
+22:37:10.406  PROBE before: DES entry 2 -> Error=NoError Failure=None SAM=00
+    00 card=0000 keyMayHaveChanged=False | AES entry 1 -> Error=AuthFailure
+    Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False
+22:37:11.096  CASE 1 DES entry 2 -> AES entry 1: Error=NoError Failure=None
+    SAM=0000 card=0000 keyMayHaveChanged=False
+22:37:11.351  CASE 3 the same change again (the card holds AES now): Error=A
+    uthFailure Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveCha
+    nged=False
+22:37:11.995  PROBE after the failed second change: DES entry 2 -> Error=Aut
+    hFailure Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChang
+    ed=False | AES entry 1 -> Error=NoError Failure=None SAM=0000 card=0000
+    keyMayHaveChanged=False
+22:37:11.997  CASE 3 as expected: AuthFailure, nothing may have changed, the
+     card still holds the AES key
+22:37:12.631  PROBE before the way back: DES entry 2 -> Error=AuthFailure Fa
+    ilure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=False |
+    AES entry 1 -> Error=NoError Failure=None SAM=0000 card=0000 keyMayHaveC
+    hanged=False
+22:37:13.315  CASE 4 AES entry 1 -> DES entry 2: Error=NoError Failure=None
+    SAM=0000 card=0000 keyMayHaveChanged=False
+22:37:13.895  PROBE at the end: DES entry 2 -> Error=NoError Failure=None SA
+    M=0000 card=0000 keyMayHaveChanged=False | AES entry 1 -> Error=AuthFail
+    ure Failure=CardRefusedBeforeSam SAM=0000 card=91AE keyMayHaveChanged=Fa
+    lse
+22:37:13.898  RESULT: the card holds the factory DES key again
 ```

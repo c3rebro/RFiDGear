@@ -73,13 +73,14 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
    2), say so in the status line with the reason and the status words, and
    leave the card as it was (check with the typed AES key).
 4. Change the key back: the current key AES bound to `1:0`, the new key DES
-   bound to `2:0`. **This direction (AES to DES) has not been tried on a
-   card.** Expect success and the factory key on the card; if it fails, write
-   down the status words of the line and check which key the card holds.
+   bound to `2:0`. **This direction (AES to DES) was seen on a TWN4 (the TWN4
+   section of `SAM-PICC-FIRST-CONTACT.md`), not yet with a PC/SC reader.**
+   Expect success and the factory key on the card; if it fails, write down
+   the status words of the line and check which key the card holds.
 5. Create an application with AES keys that you know: its keys 0 and 1 both
    hold the test key of the SAM entry `1:0`. **The change of an application
-   key through the SAM has not been tried on a card**; the two cases below are
-   what it needs.
+   key through the SAM was seen on a TWN4, not yet with a PC/SC reader**; the
+   two cases below are what it needs.
    a. Key number 0, so that the key that authenticates is the key that is
       replaced: run "Change Application Key" with the application key bound
       to the SAM `1:0` and the new key bound to `3:0` (another AES entry).
@@ -115,10 +116,10 @@ anything; `Twn4SamRelayTests` does the same on a TWN4.
     (only the reader changes; case 4 puts the card back into the factory
     state). Then run the cases 5 and 6 with a **fresh application**: the one
     of the first run is still on the card, so create another one (another
-    AID) whose keys 0 and 1 hold the key `1:0`. **The cases 1 to 4 have been
+    AID) whose keys 0 and 1 hold the key `1:0`. **The cases 1 to 6 have been
     seen on a TWN4 and a card** through the provider of the application (the
-    TWN4 section of `SAM-PICC-FIRST-CONTACT.md`); the application keys (the
-    cases 5 and 6) and the task window have not.
+    TWN4 section of `SAM-PICC-FIRST-CONTACT.md`); only the task window has
+    not.
 12. With the TWN4 and both sockets empty, or a TWN4 of an older revision (D or
     E): run case 2. Expect "key not available", the line "No MIFARE SAM AV3
     was found" with the hint on the hardware revision, and nothing sent to
