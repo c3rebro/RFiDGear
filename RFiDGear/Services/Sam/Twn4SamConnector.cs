@@ -89,7 +89,14 @@ namespace RFiDGear.Services.Sam
 
                 return new SamPiccOpen(new SamPiccConnection(channel, () => PowerOffNow(samSlot)), SamPiccFailure.None);
             }
-            catch (Exception e) when (e is not OperationCanceledException)
+            catch (OperationCanceledException)
+            {
+                // Passed on, but not before the sockets that were powered up are let go of: nothing is handed out to dispose them.
+                await PowerOffAllQuietlyAsync(poweredUp).ConfigureAwait(false);
+
+                throw;
+            }
+            catch (Exception e)
             {
                 Log.ForContext<Twn4SamConnector>().Warning("TWN4: the SAM could not be opened ({ExceptionType}).", e.GetType().Name);
                 await PowerOffAllQuietlyAsync(poweredUp).ConfigureAwait(false);

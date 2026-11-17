@@ -41,6 +41,41 @@ namespace RFiDGear.Tests.Sam
             Assert.False(Twn4CardSide.IsDesfireVersion(null));
         }
 
+        [Fact]
+        public void No_answer_to_get_version_is_a_fault_of_the_reader_and_not_a_card_that_is_no_desfire_card()
+        {
+            // A card that stops answering after the search would otherwise be reported as an unsupported card.
+            Assert.Throws<SamReaderException>(() => Twn4CardSide.SightingOfVersion(null));
+        }
+
+        [Theory]
+        [InlineData("04010133001A0591AF", "Desfire")]
+        [InlineData("04020133001A0591AF", "NotDesfire")]
+        [InlineData("6D00", "NotDesfire")]
+        public void The_answer_to_get_version_says_what_the_card_is(string hex, string sighting)
+        {
+            Assert.Equal(Enum.Parse<Twn4CardSighting>(sighting), Twn4CardSide.SightingOfVersion(Convert.FromHexString(hex)));
+        }
+
+        [Fact]
+        public async Task A_reader_that_fails_in_the_search_ends_the_relay_as_a_transport_error_and_powers_the_sam_down()
+        {
+            var rig = new PiccRig();
+            var ports = Ports(rig);
+            ports.SearchThrows = new SamReaderException("The reader gave no answer from the card.");
+
+            var result = await SamRelay.RunAsync(
+                Twn4SamRelay.Parts(ports, new SemaphoreSlim(1, 1)),
+                "authenticate",
+                session => session.AuthenticateAsync(0, 0, SamPiccKeyType.NativeTdea, Entry2));
+
+            Assert.Equal(ERROR.TransportError, result.Error);
+            Assert.Equal(SamPiccFailure.ReaderFailure, result.Failure);
+            Assert.Empty(rig.Frames);
+            Assert.Equal("power off Sam1", ports.Events.Last());
+            Assert.False(SamPortGate.IsHeld);
+        }
+
         [Theory]
         [InlineData("Desfire", SamPiccFailure.None, true)]
         [InlineData("NotDesfire", SamPiccFailure.NotDesfire, false)]

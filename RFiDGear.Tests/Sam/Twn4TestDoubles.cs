@@ -36,6 +36,9 @@ namespace RFiDGear.Tests.Sam
         /// <summary>Gets or sets the channel that is handed out for a SAM.</summary>
         internal ISamApduChannel Channel { get; set; } = new ScriptedSamChannel(_ => new Elatec.NET.Sam.SamApduResponse(Array.Empty<byte>(), 0x9000));
 
+        /// <summary>Gets or sets what the search for the card throws (a reader that fails).</summary>
+        internal Exception? SearchThrows { get; set; }
+
         /// <summary>Gets or sets what setting the socket up for T=1 throws.</summary>
         internal Exception? SetT1Throws { get; set; }
 
@@ -85,7 +88,7 @@ namespace RFiDGear.Tests.Sam
         {
             Events.Add("search card");
 
-            return Task.FromResult(Sighting);
+            return SearchThrows == null ? Task.FromResult(Sighting) : Task.FromException<Twn4CardSighting>(SearchThrows);
         }
 
         public Task<byte[]?> ExchangeWithCardAsync(byte[] apdu)

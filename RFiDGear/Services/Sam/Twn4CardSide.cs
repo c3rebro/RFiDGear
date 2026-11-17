@@ -18,6 +18,19 @@ namespace RFiDGear.Services.Sam
             answer != null && answer.Length >= 4 && answer[0] == 0x04 && answer[1] == 0x01
             && answer[^2] == 0x91 && (answer[^1] == 0xAF || answer[^1] == 0x00);
 
+        /// <summary>Says from the answer to GetVersion what the card is. No answer is a fault of the reader and not a card that is no DESFire card.</summary>
+        /// <param name="answer">The answer with its status word, or <see langword="null"/> when the reader gave none.</param>
+        /// <returns>A DESFire card, or not.</returns>
+        internal static Twn4CardSighting SightingOfVersion(byte[]? answer)
+        {
+            if (answer == null)
+            {
+                throw new SamReaderException("The reader gave no answer from the card.");
+            }
+
+            return IsDesfireVersion(answer) ? Twn4CardSighting.Desfire : Twn4CardSighting.NotDesfire;
+        }
+
         /// <summary>Looks for the card (one search) and says what it is and how to reach it.</summary>
         /// <param name="ports">The reader.</param>
         /// <returns>The transport to the card, or why there is none.</returns>

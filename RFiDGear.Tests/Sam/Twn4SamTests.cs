@@ -56,9 +56,49 @@ namespace RFiDGear.Tests.Sam
         [InlineData(8)]
         [InlineData(12)]
         [InlineData(20)]
+        [InlineData(27)]
         public void An_atr_that_is_cut_off_gives_no_settings(int length)
         {
+            // 27 is every byte but the check byte, which a card that offers T=1 must send.
             Assert.Null(Twn4AtrReader.SettingsOf(SamTestData.SamAtr.Take(length).ToArray()));
+        }
+
+        [Fact]
+        public void An_atr_with_a_wrong_check_byte_gives_no_settings()
+        {
+            var corrupt = (byte[])SamTestData.SamAtr.Clone();
+            corrupt[^1] ^= 0x01;
+
+            Assert.Null(Twn4AtrReader.SettingsOf(corrupt));
+        }
+
+        [Fact]
+        public void The_check_byte_of_the_atr_of_the_sam_is_the_xor_of_the_bytes_between_the_first_and_itself()
+        {
+            // The vector of the bench is a valid ATR: T0 to the check byte give zero.
+            var xor = SamTestData.SamAtr.Skip(1).Aggregate((byte)0, (sum, next) => (byte)(sum ^ next));
+
+            Assert.Equal(0, xor);
+        }
+
+        // ── what the reader says about a socket ──
+
+        [Theory]
+        [InlineData("PresentAndActive", true)]
+        [InlineData("PresentAndInactive", true)]
+        [InlineData("NoIccPresent", false)]
+        public void A_socket_has_a_card_unless_the_reader_says_that_it_has_none(string status, bool hasCard)
+        {
+            Assert.Equal(hasCard, Twn4Slots.HasCard(Enum.Parse<Elatec.NET.Iso7816IccStatus>(status)));
+        }
+
+        [Fact]
+        public void A_reader_that_gives_no_status_is_a_fault_and_not_an_empty_socket()
+        {
+            // An empty socket in a reader that failed to answer would let a second SAM go unseen.
+            var fault = Assert.Throws<SamReaderException>(() => Twn4Slots.HasCard(null));
+
+            Assert.DoesNotContain("PRIVATE", fault.Message, StringComparison.Ordinal);
         }
 
         // ── finding the SAM in the sockets ──
@@ -170,6 +210,18 @@ namespace RFiDGear.Tests.Sam
             Assert.Equal("power off Sam1", ports.Events.Last());
             Assert.False(SamPortGate.IsHeld);
             Assert.All(logs.All().Select(CapturedLogs.EverythingWrittenFor), text => Assert.DoesNotContain("PRIVATE-READER-TEXT", text, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task A_cancellation_is_passed_on_and_the_sockets_are_powered_down_and_the_gate_is_given_back()
+        {
+            var ports = new FakeTwn4Ports { SetT1Throws = new OperationCanceledException() };
+            ports.Cards[Twn4SamSlot.Sam1] = SamTestData.SamAtr;
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => new Twn4SamConnector(ports).OpenAsync());
+
+            Assert.Equal("power off Sam1", ports.Events.Last());
+            Assert.False(SamPortGate.IsHeld);
         }
 
         [Fact]

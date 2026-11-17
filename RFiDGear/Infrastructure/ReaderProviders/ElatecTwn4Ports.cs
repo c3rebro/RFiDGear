@@ -39,7 +39,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             var status = await _reader.ISO7816_GetSlotStatusAsync(ChannelOf(slot)).ConfigureAwait(false);
 
-            return status != null && status.IccStatus != Iso7816IccStatus.NoIccPresent;
+            return Twn4Slots.HasCard(status?.IccStatus);
         }
 
         /// <inheritdoc />
@@ -101,7 +101,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             var version = await _reader.ISO14443_4_TdxAsync(Twn4CardSide.GetVersionApdu).ConfigureAwait(false);
 
-            return Twn4CardSide.IsDesfireVersion(version) ? Twn4CardSighting.Desfire : Twn4CardSighting.NotDesfire;
+            return Twn4CardSide.SightingOfVersion(version);
         }
 
         /// <inheritdoc />

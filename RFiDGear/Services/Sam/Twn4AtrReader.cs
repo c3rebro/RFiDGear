@@ -68,13 +68,28 @@ namespace RFiDGear.Services.Sam
                 group++;
             }
 
-            // What is left must hold the historical bytes (and the check byte, which a card that offers T=1 has).
-            if (!offersT1 || atr.Length < index + historicalBytes)
+            // The historical bytes follow, and then the check byte, which a card that offers T=1 must send: the XOR of everything from T0 to
+            // and including it is zero. A cut-off or damaged ATR is refused here and never reaches the reader as settings.
+            var checkIndex = index + historicalBytes;
+
+            if (!offersT1 || atr.Length <= checkIndex || !HasValidCheckByte(atr, checkIndex))
             {
                 return null;
             }
 
             return new Twn4SamSettings(guardTime ?? 0, waitingIntegers ?? DefaultWaitingIntegers, ifsc ?? DefaultIfsc);
+        }
+
+        private static bool HasValidCheckByte(byte[] atr, int checkIndex)
+        {
+            byte sum = 0;
+
+            for (var i = 1; i <= checkIndex; i++)
+            {
+                sum ^= atr[i];
+            }
+
+            return sum == 0;
         }
 
         private static bool TakeIf(byte[] atr, int present, int bit, ref int index, ref byte? value)
