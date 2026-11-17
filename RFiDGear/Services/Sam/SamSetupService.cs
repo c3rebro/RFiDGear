@@ -111,7 +111,7 @@ namespace RFiDGear.Services.Sam
         private const ushort NotActivatedStatus = 0x6985;
         private const ushort SuccessStatus = 0x9000;
 
-        private readonly SamReaderFinder _finder;
+        private readonly ISamFinder _finder;
         private readonly Func<ISamApduChannel, ISamHostSession> _createSession;
         private readonly ISamSetupDialogs _dialogs;
         private readonly SamKeyReader _keys;
@@ -120,11 +120,11 @@ namespace RFiDGear.Services.Sam
         private ISamHostSession? _session;
 
         /// <summary>Creates the setup.</summary>
-        /// <param name="finder">Finds and opens the SAM in a PC/SC reader.</param>
+        /// <param name="finder">Finds and opens the SAM in a PC/SC reader or a socket of a TWN4.</param>
         /// <param name="createSession">Makes the host session for a channel to the SAM.</param>
         /// <param name="dialogs">The questions to the person.</param>
         /// <param name="keys">Turns a named key into bytes.</param>
-        internal SamSetupService(SamReaderFinder finder, Func<ISamApduChannel, ISamHostSession> createSession, ISamSetupDialogs dialogs, SamKeyReader keys)
+        internal SamSetupService(ISamFinder finder, Func<ISamApduChannel, ISamHostSession> createSession, ISamSetupDialogs dialogs, SamKeyReader keys)
         {
             _finder = finder ?? throw new ArgumentNullException(nameof(finder));
             _createSession = createSession ?? throw new ArgumentNullException(nameof(createSession));
