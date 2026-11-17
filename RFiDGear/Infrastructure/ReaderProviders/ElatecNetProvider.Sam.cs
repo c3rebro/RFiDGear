@@ -48,16 +48,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         // and it waits for them, because the SAM and the card are reached through the same port. The SAM is opened first and found in
         // whichever socket it is in, and the card is searched once, afterwards. The library's own DESFire calls are not used, because they
         // repeat steps. The reader is taken before the lock is waited for, which is safe because the monitor replaces it only when it is
-        // not connected, and the ports ask the reader on every call.        private Task<SamPiccResult> RunWithSamAsync(string operation, Func<SamPiccSession, Task<SamPiccResult>> run)
-        {
-            var ports = CreateTwn4Ports();
-
-            if (ports == null)
-            {
-                return Task.FromResult(new SamPiccResult(ERROR.TransportError, SamPiccFailure.ReaderFailure));
-            }
-
-            return SamRelay.RunAsync(Twn4SamRelay.Parts(ports, _comPortLock), operation, run);
-        }
+        // not connected, and the ports ask the reader on every call.
+        private Task<SamPiccResult> RunWithSamAsync(string operation, Func<SamPiccSession, Task<SamPiccResult>> run) =>
+            CreateTwn4Ports() is { } reader
+                ? SamRelay.RunAsync(Twn4SamRelay.Parts(reader, _comPortLock), operation, run)
+                : Task.FromResult(new SamPiccResult(ERROR.TransportError, SamPiccFailure.ReaderFailure));
     }
 }
