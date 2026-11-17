@@ -53,7 +53,14 @@ namespace RFiDGear.Services.Sam
                         found.Add(new SamReaderInfo(NameOf(slot), atr));
                     }
                 }
-                catch (Exception e) when (e is not OperationCanceledException)
+                catch (OperationCanceledException)
+                {
+                    // Passed on, but not before the socket is let go of: no connection is handed out to do that.
+                    PowerOffQuietly(slot);
+
+                    throw;
+                }
+                catch (Exception e)
                 {
                     // This socket is skipped; the other one is still looked at.
                     Log.ForContext<Twn4SamFinder>().Warning("SAM search: a SAM socket of the TWN4 could not be looked at ({ExceptionType}).", e.GetType().Name);
@@ -94,7 +101,14 @@ namespace RFiDGear.Services.Sam
 
                 return new SamConnection(new SamReaderInfo(readerName, atr), _ports.SamChannel(slot), () => PowerOffQuietly(slot));
             }
-            catch (Exception e) when (e is not OperationCanceledException)
+            catch (OperationCanceledException)
+            {
+                // Passed on, but not before the socket is let go of: no connection is handed out to do that.
+                PowerOffQuietly(slot);
+
+                throw;
+            }
+            catch (Exception e)
             {
                 // The socket is not left powered; the fault goes on to the setup, which reports it as a fault of the reader.
                 PowerOffQuietly(slot);

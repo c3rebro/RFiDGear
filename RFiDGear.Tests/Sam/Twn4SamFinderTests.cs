@@ -188,6 +188,26 @@ namespace RFiDGear.Tests.Sam
         }
 
         [Fact]
+        public void A_cancellation_while_opening_powers_the_socket_down_and_is_passed_on()
+        {
+            var ports = Ports(sam1: SamTestData.SamAtr);
+            ports.SetT1Throws = new OperationCanceledException();
+
+            Assert.ThrowsAny<OperationCanceledException>(() => new Twn4SamFinder(ports).Open("TWN4 SAM socket 1"));
+            Assert.Equal("power off Sam1", ports.Events.Last());
+        }
+
+        [Fact]
+        public void A_cancellation_while_looking_powers_the_socket_down_and_is_passed_on()
+        {
+            var ports = Ports(sam1: SamTestData.SamAtr);
+            ports.PowerOnThrows = new OperationCanceledException();
+
+            Assert.ThrowsAny<OperationCanceledException>(() => new Twn4SamFinder(ports).Find());
+            Assert.Equal("power off Sam1", ports.Events.Last());
+        }
+
+        [Fact]
         public void The_gate_of_the_sam_is_not_taken_because_the_window_holds_it_already()
         {
             var ports = Ports(sam1: SamTestData.SamAtr);
