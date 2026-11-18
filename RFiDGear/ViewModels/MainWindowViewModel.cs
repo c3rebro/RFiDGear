@@ -1311,7 +1311,8 @@ namespace RFiDGear.ViewModel
             {
                 case CARD_TYPE.MifareClassic:
                 case CARD_TYPE.MifarePlus:
-                    return new RFiDChipParentLayerViewModel(new MifareClassicChipModel(chip as MifareClassicChipModel), dialogs, false);
+                    // From the chip itself: a Plus that a reader reported as a plain GenericChipModel was null here (an `as` cast), and the copy threw.
+                    return new RFiDChipParentLayerViewModel(new MifareClassicChipModel(chip), dialogs, false);
 
                 case CARD_TYPE.DESFireEV0:
                 case CARD_TYPE.DESFireEV1:
