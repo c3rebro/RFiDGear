@@ -170,7 +170,7 @@ namespace RedCell.Diagnostics.Update
         /// Asks for the manifest and decides whether there is an update. Nothing is thrown: what goes wrong is logged.
         /// </summary>
         /// <returns>A task that completes when the check is through.</returns>
-        private async Task CheckAsync()
+        internal async Task CheckAsync()
         {
             try
             {
@@ -198,7 +198,8 @@ namespace RedCell.Diagnostics.Update
                             Logger.Information("Fetch error: Unknown http Err");
                         }
 
-                        _remoteConfig = null;
+                        // A request that fails keeps what an earlier check found: the manifest and the update that it offers go
+                        // together. (Checks overlap: the one of the constructor and the one of the monitoring both run at the start.)
                         return;
                     }
                 }

@@ -69,6 +69,30 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task AFailedCheck_KeepsWhatAnEarlierCheckFound()
+        {
+            // At the start the window's updater has two checks that overlap (the constructor's and the one of the monitoring), and
+            // a later one can fail: the update that was found must not be offered with its manifest gone.
+            using var server = new ManifestServer();
+            var updater = await Task.Run(() => new Updater(UpdateManifestTexts.WriteLocalManifest(_folder, server.Url)));
+            server.Answer("200 OK", UpdateManifestTexts.ManifestText(UpdateManifestTexts.NewerVersion, server.Url));
+            await updater.InitialCheck.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(updater.UpdateAvailable);
+            Assert.True(HasManifest(updater));
+
+            var second = updater.CheckAsync();
+            await server.RequestReceivedNumber(1).WaitAsync(TimeSpan.FromSeconds(30));
+            server.Drop(1);   // an answer that is no HTTP: the request fails
+            await second.WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.True(updater.UpdateAvailable);
+            Assert.True(HasManifest(updater));
+        }
+
+        private static bool HasManifest(Updater updater) =>
+            typeof(Updater).GetField("_remoteConfig", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(updater) != null;
+
+        [Fact]
         public async Task TheInitialCheck_OfAnUpdaterWithoutAManifest_IsThroughAtOnce()
         {
             var updater = await Task.Run(() => new Updater(new FileInfo(Path.Combine(_folder, "missing", "update.xml"))));
