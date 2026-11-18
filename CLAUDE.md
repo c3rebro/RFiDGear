@@ -562,6 +562,16 @@ next to the extension that uses it: .NET finds it there, the host needs no
 change for that. `CardCheckCoreBoundaryTests` pin the rules, including the
 name, against the host's own scan.
 
+What such a library needs beside it that the host does not have is the
+extension's **payload**: for `CardCheck` the SQL driver, the real
+`System.Data.SqlClient.dll` and the `sni.dll` of the platform. The library names
+the files (`SqlDriverPayload.targets`, target `GetSqlDriverPayload`), the
+extension build copies them into its output folder and lists them as
+`ExtensionPayloadFile` items, and from there the deploy step and the installers
+take them along; an installer build stops without them. A new payload file goes
+through the same three places, and `SqlDriverPayloadTests` load it in a process
+of its own, because the test project's own `deps.json` hides a missing file.
+
 ### UI Structure
 
 Views are organized under `Views/` by task category: `CommonTask/`,

@@ -204,6 +204,13 @@
 			<Feature Id="Plugins" Title="!(loc.FeaturePluginsTitle)" Description="!(loc.FeaturePluginsDescription)" Level="2" Display="expand">
 				<ComponentGroupRef Id="RFiDGear.Extensions.ReleaseFiles" />
 			</Feature>
+
+			<!-- The Card Check Assistant extension with the database driver it needs beside it (System.Data.SqlClient.dll, sni.dll):
+			     they are one component group, so the driver is installed and removed with the extension.
+			     Level 4: not in a Typical install (WixUI_Mondo sets the install level to 3 for it), chosen in a Custom one, part of a Complete one. -->
+			<Feature Id="CardCheckAssistant" Title="!(loc.FeatureCardCheckTitle)" Description="!(loc.FeatureCardCheckDescription)" Level="4">
+				<ComponentGroupRef Id="RFiDGear.Extensions.CardCheck.ReleaseFiles" />
+			</Feature>
 		</Feature>
 		<UI>
 			<!-- Define the installer UI / WixUI_Mondo / WixUI_HK -->
