@@ -605,7 +605,7 @@ implements `IKeyMigrationHost` as well (see `DEVELOPER_NOTES.md`).
 | Package | Purpose |
 |---|---|
 | CommunityToolkit.Mvvm 8.4 | ObservableObject, RelayCommand |
-| Elatec.NET 0.7.0-beta.2 | Elatec TWN4 reader SDK |
+| Elatec.NET 0.7.0-beta.3 | Elatec TWN4 reader SDK |
 | LibLogicalAccessNetCE 3.7.0 | PC/SC reader provider |
 | GemBox.Pdf 2025.x | PDF form population for reports |
 | Serilog 4.3 | Structured logging |
