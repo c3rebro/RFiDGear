@@ -164,7 +164,10 @@ namespace RedCell.Diagnostics.Update
                 var http = new Fetch { Retries = 5, RetrySleep = 30000, Timeout = 30000 };
                 try
                 {
-                    http.Load(remoteUri.AbsoluteUri);
+                    // The request is made on a thread of the pool. This method is called by the constructor, on the thread of the
+                    // main window while it is built, and by the timer on that thread too: a server that does not answer (a
+                    // connection to an address that cannot be reached takes about 20 seconds to fail) must not hold either.
+                    await Task.Run(() => http.Load(remoteUri.AbsoluteUri));
 
                     if (!http.Success)
                     {
