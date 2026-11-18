@@ -48,7 +48,10 @@
     <MSBuild Projects="..\..\RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj" Targets="GetSqlDriverPayload">
       <Output TaskParameter="TargetOutputs" ItemName="_SqlDriverFile" />
     </MSBuild>
-    <Copy SourceFiles="@(_SqlDriverFile)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <!-- FileWrites: what the build writes, Clean removes (the list also holds files that were already there unchanged). -->
+    <Copy SourceFiles="@(_SqlDriverFile)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
     <ItemGroup>
       <ExtensionPayloadFile Include="@(_SqlDriverFile->'$(OutDir)%(Filename)%(Extension)')" />
     </ItemGroup>

@@ -140,14 +140,17 @@ namespace RFiDGear.Tests.CardCheck
 
             var (exitCode, text) = await DotNetTool.RunAsync(
                 Path.GetDirectoryName(Extension)!,
-                "msbuild", Extension, "-t:CopySqlDriverToOutput", "-nologo", "-p:Platform=x64", "-p:OutDir=" + output, "-getItem:ExtensionPayloadFile");
+                "msbuild", Extension, "-t:CopySqlDriverToOutput", "-nologo", "-p:Platform=x64", "-p:OutDir=" + output, "-getItem:ExtensionPayloadFile,FileWrites");
 
             Assert.True(exitCode == 0, text);
             var named = Identities(text, "Items", "ExtensionPayloadFile");
-            Assert.Equal(
-                new[] { Path.Combine(output, DriverFile), Path.Combine(output, NativeFile) }.Select(Path.GetFullPath).OrderBy(name => name, StringComparer.OrdinalIgnoreCase),
-                named.Select(Path.GetFullPath).OrderBy(name => name, StringComparer.OrdinalIgnoreCase));
+            var expected = new[] { Path.Combine(output, DriverFile), Path.Combine(output, NativeFile) }.Select(Path.GetFullPath).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
+            Assert.Equal(expected, named.Select(Path.GetFullPath).OrderBy(name => name, StringComparer.OrdinalIgnoreCase));
             Assert.All(named, file => Assert.True(File.Exists(file), file));
+
+            // What the build writes, it also cleans: the files are known to Clean, or they would stay behind when the extension goes.
+            var written = Identities(text, "Items", "FileWrites").Select(Path.GetFullPath).ToArray();
+            Assert.All(expected, file => Assert.Contains(file, written, StringComparer.OrdinalIgnoreCase));
         }
     }
 }
