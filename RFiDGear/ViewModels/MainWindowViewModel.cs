@@ -2414,12 +2414,18 @@ namespace RFiDGear.ViewModel
 
             await updateNotifier.TriggerUpdateCheckAsync(() => AskForUpdateNow());
 
-            // The check of this window's updater runs in the background after the start: "no update" is only true once it is through.
+            // The check of this window's updater runs in the background after the start: what it found is only known once it is
+            // through. The notifier has an updater of its own, whose answer may have come later than this one's, in which case
+            // the offer above was skipped: it is made here (it is shown once, whoever asks first).
             await updater.InitialCheck;
 
-            if (!updater.UpdateAvailable)
+            if (updater.UpdateAvailable)
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                await AskForUpdateNow();
+            }
+            else
+            {
+                await InvokeOnUiThread(new Action(() =>
                 {
                     Dialogs.Add(new MessageBoxViewModel
                     {
@@ -2779,7 +2785,14 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// How an action gets onto the thread of the window, where a dialog is added. The tests replace it: the host they run
+        /// in has no application of its own, or one whose thread is gone.
+        /// </summary>
+        internal Func<Action, Task> InvokeOnUiThread { get; set; } =
+            action => Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, action).Task;
+
+        /// <summary>
+        ///
         /// </summary>
         /// <returns></returns>
         private async Task AskForUpdateNow()
@@ -2808,7 +2821,7 @@ namespace RFiDGear.ViewModel
 
             if (!userIsNotifiedForAvailableUpdate || updateDisabled)
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                await InvokeOnUiThread(new Action(() =>
                 {
                     Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
                     {
