@@ -2414,6 +2414,9 @@ namespace RFiDGear.ViewModel
 
             await updateNotifier.TriggerUpdateCheckAsync(() => AskForUpdateNow());
 
+            // The check of this window's updater runs in the background after the start: "no update" is only true once it is through.
+            await updater.InitialCheck;
+
             if (!updater.UpdateAvailable)
             {
                 await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
@@ -2793,8 +2796,11 @@ namespace RFiDGear.ViewModel
         {
             // The update notifier has an updater of its own, and this window has another one; both ask the server for the manifest
             // in the background, so the notifier's may be through first. The dialog shows the notes of this window's updater and
-            // the download uses its manifest: until it has one, nothing is shown and nothing is consumed (the notifier asks again
-            // every few seconds).
+            // the download uses its manifest: it waits (without blocking anyone) until that updater has its answer. If that
+            // answer is that there is no update, nothing is offered and nothing is consumed; the notifier asks again every few
+            // seconds. The notes that are shown on request (updateDisabled) are shown whether there is an update or not.
+            await updater.InitialCheck;
+
             if (!updateDisabled && !updater.UpdateAvailable)
             {
                 return;

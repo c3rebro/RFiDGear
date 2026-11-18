@@ -52,6 +52,13 @@ namespace RedCell.Diagnostics.Update
         public bool IsUserNotified { get; set; }
         public string UpdateInfoText { get; private set; }
 
+        /// <summary>
+        /// Completes when the check that the constructor started has its answer: an update was found, none was, or the manifest
+        /// could not be had. The check runs in the background, so whoever shows what it found (the notes, the offer of an update,
+        /// the result of "Check for updates") waits for this first; it never makes anyone else wait.
+        /// </summary>
+        public Task InitialCheck { get; private set; } = Task.CompletedTask;
+
         #endregion
 
         #region Initialization
@@ -89,7 +96,7 @@ namespace RedCell.Diagnostics.Update
 #endif
                 if (_localConfig != null)
                 {
-                    Check(null, null);
+                    InitialCheck = CheckAsync();
                 }
                 var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
                 var rootFiles = rootDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
@@ -155,6 +162,15 @@ namespace RedCell.Diagnostics.Update
         /// <param name="state"></param>
         /// <param name="args">true = download Changelog only</param>
         public async void Check(object state, EventArgs args)
+        {
+            await CheckAsync();
+        }
+
+        /// <summary>
+        /// Asks for the manifest and decides whether there is an update. Nothing is thrown: what goes wrong is logged.
+        /// </summary>
+        /// <returns>A task that completes when the check is through.</returns>
+        private async Task CheckAsync()
         {
             try
             {

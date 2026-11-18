@@ -1,8 +1,5 @@
 using System;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 using RedCell.Diagnostics.Update;
@@ -15,17 +12,10 @@ namespace RFiDGear.Tests
     /// The program creates its updater while the main window is being built, on the thread of the window, and the updater asks
     /// the server for the update manifest. A server that answers slowly, or not at all (a machine that has no way to GitHub
     /// waits about 20 seconds for the connection), must not hold the start of the program: the manifest is asked for in the
-    /// background (issue 387).
+    /// background (issue 387), and whoever shows what it found waits for <see cref="Updater.InitialCheck"/>.
     /// </summary>
     public sealed class UpdaterStartupTests : IDisposable
     {
-        private const string Token = "11111111-2222-3333-4444-555555555555";
-
-        // Built from numbers: a text of four numbers with dots is taken for an IP address by static analysis.
-        private static readonly string OldVersion = new Version(1, 0, 0, 0).ToString();
-
-        private static readonly string NewerVersion = new Version(99, 0, 0, 0).ToString();
-
         private readonly string _folder = Path.Combine(Path.GetTempPath(), "rfidgear-updater-" + Guid.NewGuid().ToString("N"));
 
         public UpdaterStartupTests() => Directory.CreateDirectory(_folder);
@@ -38,31 +28,12 @@ namespace RFiDGear.Tests
             }
         }
 
-        private static string ManifestText(string version, string remoteUri) =>
-            "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
-            + "<Manifest version=\"" + version + "\">\n"
-            + "  <CheckInterval>900</CheckInterval>\n"
-            + "  <RemoteConfigUri>" + remoteUri + "</RemoteConfigUri>\n"
-            + "  <SecurityToken>" + Token + "</SecurityToken>\n"
-            + "  <BaseUri>http://127.0.0.1/</BaseUri>\n"
-            + "  <Payload>update.zip</Payload>\n"
-            + "  <VersionInfoText>Version " + version + "</VersionInfoText>\n"
-            + "</Manifest>";
-
-        private FileInfo WriteLocalManifest(string remoteUri)
-        {
-            var path = Path.Combine(_folder, "update.xml");
-            File.WriteAllText(path, ManifestText(OldVersion, remoteUri), new UTF8Encoding(false));
-
-            return new FileInfo(path);
-        }
-
         [Fact]
         public async Task TheConstructor_DoesNotWaitForTheServerOfTheUpdateManifest()
         {
             using var server = new ManifestServer();
 
-            var construct = Task.Run(() => new Updater(WriteLocalManifest(server.Url)));
+            var construct = Task.Run(() => new Updater(UpdateManifestTexts.WriteLocalManifest(_folder, server.Url)));
             await server.RequestReceived.WaitAsync(TimeSpan.FromSeconds(30));   // the program has asked for the manifest...
 
             // ...and the server is holding the request: the constructor, and so the start of the program, must be through.
@@ -72,93 +43,39 @@ namespace RFiDGear.Tests
             Assert.False(server.Answered);
 
             server.Answer("503 Service Unavailable", string.Empty);   // an answer without a manifest changes nothing
-            Assert.False((await construct).UpdateAvailable);
+            var updater = await construct;
+            await updater.InitialCheck.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.False(updater.UpdateAvailable);
         }
 
         [Fact]
-        public async Task ANewerManifest_IsFoundAfterTheConstructorHasReturned()
+        public async Task TheInitialCheck_IsThroughWhenTheServerHasAnswered_AndANewerManifestIsFound()
         {
             using var server = new ManifestServer();
 
-            var construct = Task.Run(() => new Updater(WriteLocalManifest(server.Url)));
+            var construct = Task.Run(() => new Updater(UpdateManifestTexts.WriteLocalManifest(_folder, server.Url)));
             await server.RequestReceived.WaitAsync(TimeSpan.FromSeconds(30));
             Assert.Same(construct, await Task.WhenAny(construct, Task.Delay(TimeSpan.FromSeconds(10))));   // not held by the server
             var updater = await construct;
-            Assert.False(updater.UpdateAvailable);   // nothing is known yet
 
-            server.Answer("200 OK", ManifestText(NewerVersion, server.Url));
+            // Nothing is known while the server holds the request, and whoever waits for the check is not let through.
+            Assert.False(updater.UpdateAvailable);
+            Assert.False(updater.InitialCheck.IsCompleted);
 
-            var deadline = DateTime.UtcNow.AddSeconds(30);
-            while (!updater.UpdateAvailable && DateTime.UtcNow < deadline)
-            {
-                await Task.Delay(50);
-            }
+            server.Answer("200 OK", UpdateManifestTexts.ManifestText(UpdateManifestTexts.NewerVersion, server.Url));
+            await updater.InitialCheck.WaitAsync(TimeSpan.FromSeconds(30));
 
             Assert.True(updater.UpdateAvailable);
         }
 
-        // A web server of one request: it reads the request, tells that it has it, holds it until it is told what to answer, and
-        // answers once.
-        private sealed class ManifestServer : IDisposable
+        [Fact]
+        public async Task TheInitialCheck_OfAnUpdaterWithoutAManifest_IsThroughAtOnce()
         {
-            private readonly TcpListener _listener = new TcpListener(IPAddress.Loopback, 0);
-            private readonly TaskCompletionSource<bool> _requested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            private readonly TaskCompletionSource<(string Status, string Body)> _answer = new TaskCompletionSource<(string Status, string Body)>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var updater = await Task.Run(() => new Updater(new FileInfo(Path.Combine(_folder, "missing", "update.xml"))));
 
-            public ManifestServer()
-            {
-                _listener.Start();
-                _ = Task.Run(ServeAsync);
-            }
+            await updater.InitialCheck.WaitAsync(TimeSpan.FromSeconds(10));
 
-            public string Url => "http://127.0.0.1:" + ((IPEndPoint)_listener.LocalEndpoint).Port + "/update.xml";
-
-            public Task RequestReceived => _requested.Task;
-
-            public bool Answered { get; private set; }
-
-            public void Answer(string status, string body) => _answer.TrySetResult((status, body));
-
-            public void Dispose()
-            {
-                _answer.TrySetCanceled();
-                _listener.Stop();
-            }
-
-            private async Task ServeAsync()
-            {
-                try
-                {
-                    using var client = await _listener.AcceptTcpClientAsync();
-                    using var stream = client.GetStream();
-
-                    var seen = new StringBuilder();
-                    var buffer = new byte[1024];
-                    while (!seen.ToString().Contains("\r\n\r\n", StringComparison.Ordinal))
-                    {
-                        var read = await stream.ReadAsync(buffer);
-                        if (read == 0)
-                        {
-                            return;
-                        }
-
-                        seen.Append(Encoding.ASCII.GetString(buffer, 0, read));
-                    }
-
-                    _requested.TrySetResult(true);
-
-                    var (status, body) = await _answer.Task;
-                    var bytes = Encoding.UTF8.GetBytes(body);
-                    var head = "HTTP/1.1 " + status + "\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: " + bytes.Length + "\r\nConnection: close\r\n\r\n";
-                    await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
-                    await stream.WriteAsync(bytes);
-                    Answered = true;
-                }
-                catch (Exception ex) when (ex is ObjectDisposedException || ex is SocketException || ex is IOException || ex is TaskCanceledException)
-                {
-                    // The test is over and the listener was stopped.
-                }
-            }
+            Assert.False(updater.UpdateAvailable);
         }
     }
 }
