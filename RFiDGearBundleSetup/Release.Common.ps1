@@ -3,6 +3,13 @@ Set-StrictMode -Version Latest
 
 $script:RepositoryRoot = Split-Path -Parent $PSScriptRoot
 
+# The full path of a path that may be relative to the folder the script is run in, and may not exist yet.
+function Resolve-FullPath {
+    param([string]$Path)
+
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+}
+
 # Runs a native command and stops the script when it ends with an error code.
 function Invoke-Step {
     param([string]$Title, [scriptblock]$Command)

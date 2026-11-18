@@ -35,6 +35,8 @@ if (-not $OutDir) {
     $OutDir = Join-Path $repo "release\$version"
 }
 
+$OutDir = Resolve-FullPath $OutDir
+
 $Bundle = (Resolve-Path -LiteralPath $Bundle).Path
 
 $signature = Get-AuthenticodeSignature -LiteralPath $Bundle

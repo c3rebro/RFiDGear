@@ -48,6 +48,8 @@ if (-not $OutDir) {
     $OutDir = Join-Path $repo "release\$version"
 }
 
+$OutDir = Resolve-FullPath $OutDir
+
 $msbuild = Get-MSBuildPath
 [void](Get-WixToolPath)
 
@@ -55,12 +57,20 @@ $msbuild = Get-MSBuildPath
 $noDeploy = '-p:DeployExtensionsToRFiDGear=false'
 
 foreach ($platform in 'x64', 'x86') {
+    # The MSI projects harvest whole output folders, so that nothing of an earlier build (a file that is not built any
+    # more, one that was copied in by hand) may be left in them.
+    foreach ($folder in "RFiDGear\bin\$platform\Release", "RFiDGear.Extensions\DesfirePluginSample\bin\$platform\Release", "RFiDGear.Extensions\CardCheckAssistant\bin\$platform\Release", "RFiDGearSetup\RFiDGear_Setup_$platform\bin\$platform\Release") {
+        Remove-Item -LiteralPath (Join-Path $repo $folder) -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     foreach ($project in 'RFiDGear\RFiDGear.csproj', 'RFiDGear.Extensions\DesfirePluginSample', 'RFiDGear.Extensions\CardCheckAssistant') {
         Invoke-Step "dotnet build $project ($platform)" { dotnet build (Join-Path $repo $project) -c Release "-p:Platform=$platform" $noDeploy --no-incremental -nologo -v:m }
     }
 
     Invoke-Step "MSI $platform (German and English)" { & $msbuild (Join-Path $repo "RFiDGearSetup\RFiDGear_Setup_$platform\RFiDGearSetup_$platform.wixproj") -t:Rebuild -p:Configuration=Release "-p:Platform=$platform" -nologo -v:m }
 }
+
+Remove-Item -LiteralPath (Join-Path $repo 'RFiDGearBundleSetup\bin\Release') -Recurse -Force -ErrorAction SilentlyContinue
 
 # The bundle project starts Windows PowerShell (Get-DotNetRuntime.ps1). Started from PowerShell 7 it would inherit the module
 # path of PowerShell 7 and could not find its own modules (Get-FileHash), so it gets the path of the system and the user.

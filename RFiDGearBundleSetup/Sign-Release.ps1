@@ -31,6 +31,8 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Release.Common.ps1')
 
+$OutFile = Resolve-FullPath $OutFile
+
 if (-not $env:RFIDGEAR_SIGN_PFX -or -not (Test-Path -LiteralPath $env:RFIDGEAR_SIGN_PFX)) {
     throw 'Set RFIDGEAR_SIGN_PFX to the path of your .pfx file, and RFIDGEAR_SIGN_PASSWORD to its password.'
 }
