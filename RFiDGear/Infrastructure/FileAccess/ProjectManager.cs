@@ -230,8 +230,10 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// <para>
         /// The manifest text is <c>major.minor.build</c>. The parts are compared as numbers one after the other, so
         /// <c>1.10.9054</c> is older than <c>2.0.10</c>, and <c>1.10.0</c> is newer than <c>1.9.9</c>. A missing
-        /// manifest counts as supported. A bare number without dots comes from the oldest layout and keeps the
-        /// original concatenated-digit meaning.
+        /// manifest counts as supported. A bare number without dots comes from the layout of the releases up to 2.0.10,
+        /// which wrote the digits run together (2.0.10 as <c>2010</c>); it keeps that meaning, and for a program of
+        /// 2.0.10 or later the newest such number is <c>2010</c>, since no later release writes one. (Run together, the
+        /// digits of 2.1.0 are <c>210</c>: they would call every project of 2.0.10 newer than the program.)
         /// </para>
         /// </summary>
         /// <param name="manifestVersion">The manifest text from the file; surrounding whitespace is ignored; may be empty.</param>
@@ -287,8 +289,18 @@ namespace RFiDGear.Infrastructure.FileAccess
             return true;
         }
 
-        private static long LegacyVersionNumber(Version appVersion) =>
-            Convert.ToInt64(string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", appVersion.Major, appVersion.Minor, appVersion.Build), CultureInfo.InvariantCulture);
+        // The last release that wrote its version as digits run together (2.0.10 as 2010); the later ones write major.minor.build.
+        private static readonly Version LastBareNumberRelease = new Version(2, 0, 10);
+
+        // The newest bare number a program can read: its own version run together, but never less than that of the last release
+        // that wrote one, because the digits of a later version run together are fewer or smaller (2.1.0 is 210, 2.0.10 is 2010).
+        private static long LegacyVersionNumber(Version appVersion)
+        {
+            var release = new Version(appVersion.Major, appVersion.Minor, Math.Max(appVersion.Build, 0));
+            var limit = release > LastBareNumberRelease ? LastBareNumberRelease : release;
+
+            return Convert.ToInt64(string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", limit.Major, limit.Minor, limit.Build), CultureInfo.InvariantCulture);
+        }
 
         /// <summary>
         /// Normalizes legacy XML values in a project payload to the currently supported ones. The old name of the error
