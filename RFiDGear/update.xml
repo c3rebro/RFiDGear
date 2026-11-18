@@ -52,6 +52,8 @@ RFiDGear now runs on .NET 10. The setup bundle installs the .NET 10 Desktop Runt
 (x64 and x86); a 10.x runtime that is already there is kept.
 
 New:
+- The setup shows the installation wizard of RFiDGear (Typical, Custom, Complete) after
+  its own first page, so that the features can be chosen.
 - Card keys can stay out of project files. A key box of a DESFire or MIFARE Classic
   task can name its key by a reference to the Windows Credential Manager instead of
   holding it (the Key manager... button at the bottom of each section of keys).
@@ -74,11 +76,12 @@ New:
   entry. Four DESFire commands (Check: App Key, Change PICC Master Key, Change
   Application Key, authenticate the PICC master key) can use keys that stay in the SAM.
   A setting names the reader of the SAM.
-- Card Check Assistant (Extensions menu, optional feature of the setup): the guided
-  check of an order - order list from the order database, check, verdict, programming
-  with the answers form, read-out, report review and final report. It has its own
-  Settings window, a test mode, and export and import of its settings. The SQL driver
-  for the order database is part of the setup.
+- Card Check Assistant (Extensions menu): the guided check of an order - order list from
+  the order database, check, verdict, programming with the answers form, read-out,
+  report review and final report. It has its own Settings window, a test mode, and
+  export and import of its settings. It is not part of the standard installation:
+  choose Custom in the setup wizard and tick Card Check Assistant (or choose Complete).
+  The SQL driver for the order database is installed with it.
 - External control: a program such as SIE Encode can drive RFiDGear over one named pipe
   (JSON-RPC 2.0). Switch it on in Settings (Enable JSON-RPC pipe server) or start RFiDGear with
   EXTERNALCONTROL=1. The protocol, a client guide and a sample client are in

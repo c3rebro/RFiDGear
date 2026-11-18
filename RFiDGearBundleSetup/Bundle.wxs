@@ -121,17 +121,19 @@
 				<Payload Name="SCL3711.inf"
 				         SourceFile="drivers\scl3711_windows_driver\X86\SCL3711.inf" />
 			</ExePackage>
-			<!-- RFiDGear MSI selection based on OS architecture and UI language (German = 1031). -->
-			<MsiPackage Id="RFiDGear_x64_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
+			<!-- RFiDGear MSI selection based on OS architecture and UI language (German = 1031). The MSI shows its own wizard
+			     (Typical, Custom, Complete), because the bundle itself has no page for the features: the Card Check Assistant
+			     is chosen there. Without it the MSI would run silently and install only the features of level 1. -->
+			<MsiPackage Id="RFiDGear_x64_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes" DisplayInternalUI="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\de-de\RFiDGear_Setup_x64.msi"
 			            InstallCondition="VersionNT64 AND (WixBundleUILanguage = 1031)" />
-			<MsiPackage Id="RFiDGear_x86_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
+			<MsiPackage Id="RFiDGear_x86_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes" DisplayInternalUI="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x86\Release\de-de\RFiDGear_Setup_x86.msi"
 			            InstallCondition="NOT VersionNT64 AND (WixBundleUILanguage = 1031)" />
-			<MsiPackage Id="RFiDGear_x64_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
+			<MsiPackage Id="RFiDGear_x64_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes" DisplayInternalUI="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\en-us\RFiDGear_Setup_x64.msi"
 			            InstallCondition="VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
-			<MsiPackage Id="RFiDGear_x86_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
+			<MsiPackage Id="RFiDGear_x86_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes" DisplayInternalUI="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x86\Release\en-us\RFiDGear_Setup_x86.msi"
 			            InstallCondition="NOT VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
 		</Chain>

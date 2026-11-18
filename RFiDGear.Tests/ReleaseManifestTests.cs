@@ -52,6 +52,19 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void TheBundle_LetsTheRFiDGearMsisShowTheirOwnWizard_SoThatTheFeaturesCanBeChosen()
+        {
+            // The bundle has no page for features. A package that does not show its own dialogs is installed silently, with the
+            // features of install level 1 only: the optional ones (Card Check Assistant, sample plugin) could not be chosen.
+            var packages = XDocument.Parse(Read("RFiDGearBundleSetup", "Bundle.wxs")).Descendants()
+                .Where(element => element.Name.LocalName == "MsiPackage" && ((string?)element.Attribute("Id") ?? string.Empty).StartsWith("RFiDGear_", StringComparison.Ordinal))
+                .ToList();
+
+            Assert.Equal(4, packages.Count);   // x64 and x86, German and English
+            Assert.All(packages, package => Assert.Equal("yes", (string?)package.Attribute("DisplayInternalUI")));
+        }
+
+        [Fact]
         public void TheNewestNotesOfTheManifest_AreThoseOfItsVersion()
         {
             var manifest = new Manifest(ManifestText);
