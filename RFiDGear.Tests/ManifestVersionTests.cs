@@ -71,6 +71,28 @@ namespace RFiDGear.Tests
             Assert.Equal(expected, _manager.ValidateManifestVersion(manifest, Version.Parse(app)));
         }
 
+        // The releases up to 2.0.10 wrote the version as digits run together (2.0.10 as 2010, so the projects and settings of every
+        // user hold such a number); the ones after write major.minor.build. Run together, 2.1.0 is 210, less than 2010: a later
+        // release must not take that for "older than the file".
+        [Theory]
+        [InlineData("2010", "2.0.10.0", true)]   // the last release that wrote a bare number
+        [InlineData("2010", "2.1.0.0", true)]
+        [InlineData("2010", "2.10.0.0", true)]
+        [InlineData("2010", "3.0.0.0", true)]
+        [InlineData("209", "2.1.0.0", true)]
+        [InlineData("205", "2.1.0.0", true)]
+        [InlineData("2011", "2.1.0.0", false)]   // no release wrote that: a newer file
+        [InlineData("1109054", "2.1.0.0", false)]
+        [InlineData("2010", "2.0.9.0", false)]   // an app older than the release that wrote it
+        [InlineData("209", "2.0.9.0", true)]
+        [InlineData("2010", "2.0.10", true)]     // an app version without a revision part
+        [InlineData("200", "2.0", true)]         // and one without a build part counts as build 0
+        [InlineData("205", "2.0", false)]
+        public void ValidateManifestVersion_ABareNumberKeepsItsMeaningForLaterReleases(string manifest, string app, bool expected)
+        {
+            Assert.Equal(expected, _manager.ValidateManifestVersion(manifest, Version.Parse(app)));
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -154,6 +176,21 @@ namespace RFiDGear.Tests
             Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
             Assert.Equal(3, host.TaskCount);
             Assert.Equal(Path.GetFullPath(file), host.CurrentPath);
+        }
+
+        [Theory]
+        [InlineData("2010")]   // what 2.0.10, the release before this one, wrote
+        [InlineData("209")]
+        public async Task LoadAsync_ProjectWrittenByAReleaseThatWroteABareNumber_Loads(string manifest)
+        {
+            // The program of these tests is the real one: whatever version it has, the projects of the earlier releases must open.
+            var file = Track(ProjectFixtures.CreateProject(2, manifestVersion: manifest));
+            var (host, _) = CreateIsolatedHost();
+
+            var result = await LoadAsync(host, file);
+
+            Assert.True(result.Success, $"manifest {manifest} should load in {AppVersion}, got {result.Error}");
+            Assert.Equal(2, host.TaskCount);
         }
 
         [Fact]
@@ -290,6 +327,23 @@ namespace RFiDGear.Tests
             File.WriteAllText(settingsPath, Regex.Replace(xml, manifestElement, $"<ManifestVersion>{manifest}</ManifestVersion>"));
 
             var result = manager.LoadSettings(settingsPath, new Version(2, 0, 10, 0));
+
+            Assert.True(result.Success);
+            Assert.Equal(expectedSupported, result.IsSupportedVersion);
+        }
+
+        [Theory]
+        [InlineData("2010", true)]   // the settings of 2.0.10 hold the number as digits run together
+        [InlineData("2011", false)]
+        public void LoadSettings_ABareNumberOfAnEarlierReleaseIsSupportedByTheRunningProgram(string manifest, bool expectedSupported)
+        {
+            var manager = new ProjectManager(_root);
+            var settingsPath = Path.Combine(_root, "settings-bare-number.xml");
+            manager.EnsureSettingsFileExists(settingsPath);
+            var xml = File.ReadAllText(settingsPath);
+            File.WriteAllText(settingsPath, Regex.Replace(xml, "<ManifestVersion>[^<]*</ManifestVersion>", $"<ManifestVersion>{manifest}</ManifestVersion>"));
+
+            var result = manager.LoadSettings(settingsPath, AppVersion);
 
             Assert.True(result.Success);
             Assert.Equal(expectedSupported, result.IsSupportedVersion);

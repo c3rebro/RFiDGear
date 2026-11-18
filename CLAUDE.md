@@ -78,6 +78,13 @@ before every build. A new runtime version means new file names in
 `dotnet-runtime.json` and in `Bundle.wxs`. Signing needs `RFIDGEAR_SIGN_PFX` and
 `RFIDGEAR_SIGN_PASSWORD`; no certificate is kept in the repository.
 
+A release (the four MSIs, the bundle, `update.zip` and `update.xml`) is made with
+`RFiDGearBundleSetup/Build-Release.ps1`, `Sign-Release.ps1` and `Pack-Release.ps1`
+in that order, from a clean checkout of the merged commit; the version is
+written by hand in `RFiDGear.csproj`, `Bundle.wxs` and `update.xml`, and
+`ReleaseManifestTests` stops a release in which they differ. See
+`DEVELOPER_NOTES.md` (Making a release).
+
 ## Architecture
 
 ### MVVM + MEF

@@ -62,3 +62,6 @@ RFiDGear/.claude/settings.local.json
 # A project holds card keys in plain text, so a real one must never be committed. The one fixture is synthetic.
 *.rfPrj
 !/RFiDGear.Tests/Fixtures/minimal.rfPrj
+
+# The files of a release (Build-Release.ps1, Pack-Release.ps1): installers, not source
+/release/
