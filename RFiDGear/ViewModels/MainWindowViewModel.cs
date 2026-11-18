@@ -2791,6 +2791,15 @@ namespace RFiDGear.ViewModel
         /// <returns></returns>
         private async Task AskForUpdateNow(bool updateDisabled)
         {
+            // The update notifier has an updater of its own, and this window has another one; both ask the server for the manifest
+            // in the background, so the notifier's may be through first. The dialog shows the notes of this window's updater and
+            // the download uses its manifest: until it has one, nothing is shown and nothing is consumed (the notifier asks again
+            // every few seconds).
+            if (!updateDisabled && !updater.UpdateAvailable)
+            {
+                return;
+            }
+
             if (!userIsNotifiedForAvailableUpdate || updateDisabled)
             {
                 await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>

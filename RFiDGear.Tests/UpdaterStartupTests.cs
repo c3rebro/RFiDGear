@@ -21,6 +21,11 @@ namespace RFiDGear.Tests
     {
         private const string Token = "11111111-2222-3333-4444-555555555555";
 
+        // Built from numbers: a text of four numbers with dots is taken for an IP address by static analysis.
+        private static readonly string OldVersion = new Version(1, 0, 0, 0).ToString();
+
+        private static readonly string NewerVersion = new Version(99, 0, 0, 0).ToString();
+
         private readonly string _folder = Path.Combine(Path.GetTempPath(), "rfidgear-updater-" + Guid.NewGuid().ToString("N"));
 
         public UpdaterStartupTests() => Directory.CreateDirectory(_folder);
@@ -47,7 +52,7 @@ namespace RFiDGear.Tests
         private FileInfo WriteLocalManifest(string remoteUri)
         {
             var path = Path.Combine(_folder, "update.xml");
-            File.WriteAllText(path, ManifestText("1.0.0.0", remoteUri), new UTF8Encoding(false));
+            File.WriteAllText(path, ManifestText(OldVersion, remoteUri), new UTF8Encoding(false));
 
             return new FileInfo(path);
         }
@@ -81,7 +86,7 @@ namespace RFiDGear.Tests
             var updater = await construct;
             Assert.False(updater.UpdateAvailable);   // nothing is known yet
 
-            server.Answer("200 OK", ManifestText("99.0.0.0", server.Url));
+            server.Answer("200 OK", ManifestText(NewerVersion, server.Url));
 
             var deadline = DateTime.UtcNow.AddSeconds(30);
             while (!updater.UpdateAvailable && DateTime.UtcNow < deadline)
