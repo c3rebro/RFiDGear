@@ -40,6 +40,22 @@
     </ItemGroup>
     <Error Condition="'@(_PrivateHostCopy)' != '' And Exists('%(_PrivateHostCopy.FullPath)')" Text="The extension's output folder holds a private copy of a host assembly: %(_PrivateHostCopy.FullPath). Extensions must reference RFiDGear.Contracts and RFiDGear.ExtensionSdk with Private=false." />
   </Target>
-  <!-- Copies the built extension and its support library to RFiDGear's extension folder when asked to (see the file). -->
+  <!-- The order database needs its driver (System.Data.SqlClient.dll and the native sni.dll of the platform being built)
+       beside the support library. Both go into the output folder, so whatever takes the output takes them with the
+       extension: the copy to RFiDGear's extension folder below and the installer, which harvests this folder. The
+       library says which files they are (SqlDriverPayload.targets there); ExtensionPayloadFile hands them to the copy. -->
+  <Target Name="CopySqlDriverToOutput" AfterTargets="CopyFilesToOutputDirectory">
+    <MSBuild Projects="..\..\RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj" Targets="GetSqlDriverPayload">
+      <Output TaskParameter="TargetOutputs" ItemName="_SqlDriverFile" />
+    </MSBuild>
+    <!-- FileWrites: what the build writes, Clean removes (the list also holds files that were already there unchanged). -->
+    <Copy SourceFiles="@(_SqlDriverFile)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
+    <ItemGroup>
+      <ExtensionPayloadFile Include="@(_SqlDriverFile->'$(OutDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+  </Target>
+  <!-- Copies the built extension, its support library and its payload to RFiDGear's extension folder when asked to (see the file). -->
   <Import Project="..\DeployToRFiDGear.targets" />
 </Project>

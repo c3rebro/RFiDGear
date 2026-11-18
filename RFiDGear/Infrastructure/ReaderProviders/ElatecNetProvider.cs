@@ -54,6 +54,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <summary>The same without LEGIC, which <see cref="ReadChipPublic"/> searches in a pass of its own.</summary>
         internal const HFTagTypes SearchedHfTagTypesWithoutLegic = SearchedHfTagTypes & ~HFTagTypes.LEGIC;
 
+        /// <summary>
+        /// Tells whether a chip of the sub type is shown as a Classic chip: MIFARE Classic (and the SmartMX Classic chips) and MIFARE Plus.
+        /// A Plus in security level 1 answers like a Classic chip and has the sectors of its size; the PC/SC provider makes a
+        /// <see cref="MifareClassicChipModel"/> of every level of a Plus, and the chip tree builds the node of the family from one.
+        /// </summary>
+        /// <param name="subType">The sub type that Elatec.NET gave the chip.</param>
+        /// <returns><c>true</c> for the sub types of the families 0x10 (Classic) and 0x30 (Plus).</returns>
+        internal static bool IsClassicFamily(MifareChipSubType subType)
+        {
+            // Masked as an int: the application is built with overflow checks, and a sub type from 0x100 up does not fit a byte.
+            var family = (int)subType & 0xF0;
+
+            return family == (int)MifareChipSubType.MifareClassic || family == (int)MifareChipSubType.MifarePlus;
+        }
+
         #region Constructor
 
         private async Task Initialize()
@@ -131,7 +146,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     if (tmpTag != null && tmpTag.ChipType == ChipType.MIFARE)
                     {
-                        if ((MifareChipSubType)((byte)(tmpTag as MifareChip).SubType & 0xF0) == MifareChipSubType.MifareClassic)
+                        if (IsClassicFamily((tmpTag as MifareChip).SubType))
                         {
                             var subType = (tmpTag as MifareChip).SubType;
 

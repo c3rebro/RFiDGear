@@ -376,7 +376,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// Whether the chip that was found is of the type the task checks for. A type that is only a family (the low byte is 0, as
         /// <c>MifareClassic</c>) is a match for every chip of the family; any other type has to be the exact type of the chip, so
-        /// that a DESFire EV1 of 2K is not a DESFire EV1 of 4K.
+        /// that a DESFire EV1 of 2K is not a DESFire EV1 of 4K. Two chips were reported as another type until Elatec.NET 0.7.0, and a
+        /// check that passed for them still does: an NTAG passes a check for MifareUltralight, and a Plus in security level 1 passes
+        /// a check for MifareClassic and for the Classic type of its size.
         /// </summary>
         /// <param name="selected">The type the task checks for.</param>
         /// <param name="found">The type of the chip on the reader.</param>
@@ -391,11 +393,26 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 // Ultralight" has been passing for the NTAGs that it works with, and what hangs on its result still does. It keeps
                 // passing for them: the NTAG family (0xA000) is a Mifare Ultralight for this check. A check for an NTAG type
                 // (the family or one chip) is exact as before, and so is a check for any exact type such as Ultralight C.
-                return family == selected || (selected == CARD_TYPE.MifareUltralight && family == CARD_TYPE.NTAG_210);
+                // The same for a Plus in security level 1: it answers like a Classic chip, and a TWN4 reported it as one (Mifare1K, 2K,
+                // 4K) until Elatec.NET 0.7.0, so a project that checks for "Mifare Classic" has been passing for it. It keeps passing.
+                return family == selected
+                    || (selected == CARD_TYPE.MifareUltralight && family == CARD_TYPE.NTAG_210)
+                    || (selected == CARD_TYPE.MifareClassic && ClassicTypeOfPlusInSecurityLevel1(found) != CARD_TYPE.NOTAG);
             }
 
-            return found == selected;
+            // A check for the Classic type of a size passes for a Plus in security level 1 of that size; a check for a Plus type is exact.
+            return found == selected
+                || (ClassicTypeOfPlusInSecurityLevel1(found) != CARD_TYPE.NOTAG && ClassicTypeOfPlusInSecurityLevel1(found) == selected);
         }
+
+        // The Classic type that a TWN4 reported for a Plus in security level 1 before Elatec.NET 0.7.0; NOTAG for any other type.
+        private static CARD_TYPE ClassicTypeOfPlusInSecurityLevel1(CARD_TYPE found) => found switch
+        {
+            CARD_TYPE.MifarePlus_SL1_1K => CARD_TYPE.Mifare1K,
+            CARD_TYPE.MifarePlus_SL1_2K => CARD_TYPE.Mifare2K,
+            CARD_TYPE.MifarePlus_SL1_4K => CARD_TYPE.Mifare4K,
+            _ => CARD_TYPE.NOTAG,
+        };
 
         private async Task<ERROR> OnNewCheckChipTypeCommand(GenericChipModel chipList)
         {

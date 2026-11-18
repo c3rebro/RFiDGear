@@ -29,7 +29,12 @@ namespace RFiDGear.Tests.CardCheck
         private static readonly Assembly Core = typeof(CardCheckServices).Assembly;
 
         /// <summary>Packages the library may reference; a new one is a decision, not an accident.</summary>
-        private static readonly string[] AllowedPackages = { "Serilog", "GemBox.Pdf", "System.Data.SqlClient" };
+        private static readonly string[] AllowedPackages = new[] { "Serilog", "GemBox.Pdf", "System.Data.SqlClient" }.Concat(NativeDriverPackages()).ToArray();
+
+        // The native half of the driver, one package per platform. They are named so that SqlDriverPayload.targets can find the
+        // sni.dll of each; the library neither compiles against them nor lets the build copy them.
+        private static string[] NativeDriverPackages() =>
+            new[] { "runtime.win-x64.runtime.native.System.Data.SqlClient.sni", "runtime.win-x86.runtime.native.System.Data.SqlClient.sni" };
 
         /// <summary>Packages the host loads itself: the library compiles against them and never ships a copy.</summary>
         private static readonly string[] HostOwnedPackages = { "Serilog", "GemBox.Pdf" };
@@ -97,6 +102,20 @@ namespace RFiDGear.Tests.CardCheck
                 Assert.Contains("runtime", excluded);
                 Assert.Contains("native", excluded);
                 Assert.Equal("all", (string?)reference.Attribute("PrivateAssets"));
+            }
+        }
+
+        [Fact]
+        public void Project_NamesTheNativeDriverPackagesOnlyForTheirPath_NeverForTheBuildToCopy()
+        {
+            var native = PackageReferences(LibraryProject()).Where(r => NativeDriverPackages().Contains(PackageName(r))).ToList();
+
+            Assert.Equal(NativeDriverPackages().Length, native.Count);
+            foreach (var reference in native)
+            {
+                Assert.Equal("true", (string?)reference.Attribute("GeneratePathProperty"));
+                Assert.Equal("all", (string?)reference.Attribute("PrivateAssets"));
+                Assert.Contains("native", ((string?)reference.Attribute("ExcludeAssets") ?? string.Empty).Split(';'));
             }
         }
 

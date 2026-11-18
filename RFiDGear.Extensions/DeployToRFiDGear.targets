@@ -14,9 +14,11 @@
     RFiDGearExtensionsFolder replaces the target folder (the default is the one RFiDGear reads,
     %ProgramData%\RFiDGear\Extensions).
 
-    Only the project's own assembly and RFiDGear.ExtensionLibraries.* are copied, with their symbols. Never the contract, the
-    SDK or the host: their names match the host's RFiDGear.Extensions*.dll scan too (RFiDGear.ExtensionSdk.dll does), and a
-    second copy of them in that folder would be loaded as an extension and would load the contract types twice.
+    Only the project's own assembly and RFiDGear.ExtensionLibraries.* are copied, with their symbols, and the files that the
+    project names as its payload: ExtensionPayloadFile items that point into its output folder (what a support library needs
+    beside it and the host does not have, such as a database driver and its native file). Never the contract, the SDK or the
+    host: their names match the host's RFiDGear.Extensions*.dll scan too (RFiDGear.ExtensionSdk.dll does), and a second copy
+    of them in that folder would be loaded as an extension and would load the contract types twice.
 
     Whatever is built last replaces what is there, even an older build from another checkout. A file is left alone only if it
     has the same size and time stamp as the one already there (the Copy task's rule; a copy keeps the source's time stamp and
@@ -40,6 +42,7 @@
       <_ExtensionMain Include="$(OutDir)$(TargetName).dll" />
       <_ExtensionRest Include="$(OutDir)$(TargetName).pdb" Condition="Exists('$(OutDir)$(TargetName).pdb')" />
       <_ExtensionRest Include="$(OutDir)RFiDGear.ExtensionLibraries.*.dll;$(OutDir)RFiDGear.ExtensionLibraries.*.pdb" />
+      <_ExtensionRest Include="@(ExtensionPayloadFile)" />
     </ItemGroup>
 
     <!-- The extension first: RFiDGear holds it while it runs. If it cannot be replaced, nothing else is copied. -->

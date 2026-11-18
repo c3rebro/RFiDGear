@@ -10,12 +10,17 @@ system. It appears in the Extensions menu of the main window.
 
 **Install:**
 
-- Copy `RFiDGear.Extensions.CardCheckAssistant.dll` and its support library
-  `RFiDGear.ExtensionLibraries.CardCheck.dll`, and nothing else, to
-  `%ProgramData%\RFiDGear\Extensions`. Both come out of the build folder of
-  the extension, for the same platform (x64 or x86) as RFiDGear. The host
-  already has the contract, the SDK, Serilog and GemBox.Pdf; a second copy of
-  any of them next to the extension would load its types twice.
+- Copy `RFiDGear.Extensions.CardCheckAssistant.dll`, its support library
+  `RFiDGear.ExtensionLibraries.CardCheck.dll` and the driver of the order
+  database, `System.Data.SqlClient.dll` and `sni.dll`, and nothing else, to
+  `%ProgramData%\RFiDGear\Extensions`. All four come out of the build folder of
+  the extension, for the same platform (x64 or x86) as RFiDGear: the build puts
+  the driver there (the real one, not the stub of the package, and the
+  `sni.dll` of that platform). The installer takes the same folder, so the
+  feature "Card Check Assistant" brings the driver with it. The host already
+  has the contract, the SDK, Serilog and GemBox.Pdf; a second copy of any of
+  them next to the extension would load its types twice. Without the driver
+  the window opens, and the order system answers that its driver is missing.
 - Restart RFiDGear. Extensions are discovered once at start-up, so there is no
   hot loading.
 - While developing, a build can do the copying: see `DeployToRFiDGear.targets`

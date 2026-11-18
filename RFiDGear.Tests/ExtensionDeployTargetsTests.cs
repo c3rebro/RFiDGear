@@ -78,23 +78,13 @@ namespace RFiDGear.Tests
                 "<Project>"
                 + "<PropertyGroup><TargetName>RFiDGear.Extensions.Fake</TargetName><OutDir>" + SecurityElement.Escape(MsBuildEscape(Out + Path.DirectorySeparatorChar)) + "</OutDir>"
                 + "<Configuration>Debug</Configuration><Platform>AnyCPU</Platform></PropertyGroup>"
+                + "<ItemGroup Condition=\"'$(FakePayload)' == 'true'\"><ExtensionPayloadFile Include=\"$(OutDir)System.Data.SqlClient.dll;$(OutDir)sni.dll\" /></ItemGroup>"
                 + "<Import Project=\"DeployToRFiDGear.targets\" /><Target Name=\"Build\" /></Project>");
 
             return project;
         }
 
-        // The dotnet that has the SDK: the one that started the test run if it says so, else the one next to this runtime. Not
-        // found by searching the path (a 32-bit test host would also find a 32-bit install that has no SDK).
-        private static string DotNet()
-        {
-            var host = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
-            if (!string.IsNullOrEmpty(host) && File.Exists(host))
-            {
-                return host;
-            }
-
-            return Path.GetFullPath(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", "dotnet.exe"));
-        }
+        private static string DotNet() => DotNetTool.Executable();
 
         private Task<(int ExitCode, string Output)> Build(params string[] properties) => BuildWithSwitch(string.Empty, properties);
 
@@ -174,6 +164,23 @@ namespace RFiDGear.Tests
             Assert.True(exitCode == 0, output);
             Assert.Equal(Sorted(Wanted), Deployed());
             Assert.Contains("all 4 file(s) are in place", output, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task Deploy_AlsoCopiesTheFilesTheProjectNamesAsItsPayload_AndNothingElseOfTheOutput()
+        {
+            WriteOutput("build 1");
+            var payload = new[] { "System.Data.SqlClient.dll", "sni.dll" };
+            foreach (var name in payload.Append("Unrelated.dll"))
+            {
+                File.WriteAllText(Path.Combine(Out, name), name + " build 1");
+            }
+
+            var (exitCode, output) = await Build("-p:DeployExtensionsToRFiDGear=true", "-p:FakePayload=true");
+
+            Assert.True(exitCode == 0, output);
+            Assert.Equal(Sorted(Wanted.Concat(payload).ToArray()), Deployed());
+            Assert.Contains("all 6 file(s) are in place", output, StringComparison.Ordinal);
         }
 
         [Fact]
