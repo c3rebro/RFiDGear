@@ -2823,6 +2823,15 @@ namespace RFiDGear.ViewModel
             {
                 await InvokeOnUiThread(new Action(() =>
                 {
+                    // Decided again here, on the thread of the window: two asks that were let through together (a tick of the
+                    // notifier and "Check for updates") must not both put a dialog up.
+                    if (userIsNotifiedForAvailableUpdate && !updateDisabled)
+                    {
+                        return;
+                    }
+
+                    userIsNotifiedForAvailableUpdate = true;
+
                     Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
                     {
                         Caption = updateDisabled ? "Changelog" : "Update Available",

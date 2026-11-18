@@ -129,6 +129,65 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task TheOfferOfAnUpdate_IsShownOnce_WhenTwoAsksAreLetThroughTogether()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var server = new ManifestServer();
+                var viewModel = await WindowWithUpdaterAsync(server);
+
+                // The thread of the window is busy: what the two asks put on it runs later, one after the other (as a tick of the
+                // notifier and "Check for updates" can come together), and each ask goes on when its action has run.
+                var queued = new System.Collections.Generic.List<(Action Action, TaskCompletionSource Done)>();
+                viewModel.InvokeOnUiThread = action =>
+                {
+                    var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    lock (queued)
+                    {
+                        queued.Add((action, done));
+                    }
+
+                    return done.Task;
+                };
+
+                var first = Call(viewModel, "AskForUpdateNow", false);
+                var second = Call(viewModel, "AskForUpdateNow", false);
+                server.Answer("200 OK", NewerManifest(server));
+
+                var deadline = DateTime.UtcNow + Limit;
+                while (true)
+                {
+                    lock (queued)
+                    {
+                        if (queued.Count >= 2)
+                        {
+                            break;
+                        }
+                    }
+
+                    Assert.True(DateTime.UtcNow < deadline, "both asks should have put their dialog on the thread of the window");
+                    await Task.Delay(20);
+                }
+
+                (Action Action, TaskCompletionSource Done)[] actions;
+                lock (queued)
+                {
+                    actions = queued.ToArray();
+                }
+
+                foreach (var (action, done) in actions)
+                {
+                    action();
+                    done.SetResult();
+                }
+
+                await Task.WhenAll(first, second).WaitAsync(Limit);
+
+                Assert.IsType<UpdateNotifierViewModel>(Assert.Single(viewModel.Dialogs));
+            });
+        }
+
+        [Fact]
         public async Task TheChangelog_WaitsForTheCheckOfTheWindow_AndIsShownWithItsNotesWhetherThereIsAnUpdateOrNot()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
