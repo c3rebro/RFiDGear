@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Elatec.NET;
 using Elatec.NET.Cards.Mifare;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
@@ -11,6 +12,26 @@ namespace RFiDGear.Tests
 {
     public class ElatecNetProviderTests
     {
+        // A TWN4 with iCLASS in the mask answers SearchTag with "no tag" for a SmartMX that presents itself as DESFire (found with
+        // one on a TWN4/B1.64/NCF5.07: null 5 of 5 times, found 15 of 15 times without iCLASS). The two values are pinned bit for bit.
+        [Fact]
+        public void SearchedHfTagTypes_LeaveOutIclassAndNothingElse()
+        {
+            Assert.Equal((HFTagTypes)0xFFFFFFEF, ElatecNetProvider.SearchedHfTagTypes);
+            Assert.Equal((HFTagTypes)0xFFFFFFE7, ElatecNetProvider.SearchedHfTagTypesWithoutLegic);
+        }
+
+        [Fact]
+        public void SearchedHfTagTypes_KeepMifareAndLeaveLegicToItsOwnPass()
+        {
+            Assert.Equal(HFTagTypes.MIFARE, ElatecNetProvider.SearchedHfTagTypes & HFTagTypes.MIFARE);
+            Assert.Equal(HFTagTypes.MIFARE, ElatecNetProvider.SearchedHfTagTypesWithoutLegic & HFTagTypes.MIFARE);
+            Assert.Equal(HFTagTypes.LEGIC, ElatecNetProvider.SearchedHfTagTypes & HFTagTypes.LEGIC);
+            Assert.Equal(HFTagTypes.NOTAG, ElatecNetProvider.SearchedHfTagTypesWithoutLegic & HFTagTypes.LEGIC);
+            Assert.Equal(HFTagTypes.NOTAG, ElatecNetProvider.SearchedHfTagTypes & HFTagTypes.HIDICLASS);
+            Assert.Equal(HFTagTypes.NOTAG, ElatecNetProvider.SearchedHfTagTypesWithoutLegic & HFTagTypes.HIDICLASS);
+        }
+
         [Fact]
         public void ResolveKeyTypeForChange_PiccUsesTargetKeyType()
         {

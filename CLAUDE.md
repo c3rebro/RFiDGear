@@ -124,6 +124,13 @@ Elatec provider the SAM sits in a SAM socket of the same TWN4 that the card is
 on (hardware revision G only), is found by its ATR in either socket, and needs
 no setting.
 
+The Elatec provider searches with `ElatecNetProvider.SearchedHfTagTypes`: every
+high-frequency tag type but HID iCLASS. A TWN4 with iCLASS in the mask answers
+SearchTag with "no tag" for a SmartMX that presents itself as DESFire (SAK
+`20`, GetVersion type `81`), although the card is activated, so RFiDGear saw no
+card at all; never set `HFTagTypes.AllHFTags` in that provider. The facts are in
+`DEVELOPER_NOTES.md` (The TWN4 search mask).
+
 ### Task System
 
 Tasks are modeled as sequential, indexed items with optional dependencies (prior
