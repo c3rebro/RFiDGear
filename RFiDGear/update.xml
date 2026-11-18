@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Manifest version="2.0.10.0">
+<Manifest version="2.1.0.0">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
@@ -45,6 +45,73 @@ Available internal Variables
   + %EXIT will immediatly exit rfidgear application
 
 ################# END OF GENERAL INFORMATION ####################
+
+Version 2.1.0.0
+-----------------------------------------------------------------
+RFiDGear now runs on .NET 10. The setup bundle installs the .NET 10 Desktop Runtime
+(x64 and x86); a 10.x runtime that is already there is kept.
+
+New:
+- Card keys can stay out of project files. A key box of a DESFire or MIFARE Classic
+  task can name its key by a reference to the Windows Credential Manager instead of
+  holding it (the Key manager... button at the bottom of each section of keys).
+  File > Key manager... lists, stores and removes the stored keys. File > Move keys of
+  a project to the Credential Manager... turns an existing project into a new one that
+  holds references; the old project is not changed. A key that cannot be obtained
+  stops the task before the card is touched
+  (result KeyUnavailable). The keys stay with the Windows user who stored them, on that
+  computer; older versions open such a project without the keys. Extensions can add
+  other key providers.
+- MIFARE Ultralight, Ultralight C, Ultralight EV1 and NTAG213/215/216: a new task type
+  reads and writes pages, with keys from the key slots. The Elatec reader supports the
+  whole family, the PC/SC reader only plain Ultralight and Ultralight C.
+- MIFARE Classic: reading, writing and the MAD run on one new layer for both readers.
+  Every write is one attempt that is read back, the key comes from the access bits,
+  sectors with 16 blocks are handled, and the error that stopped a task is the one
+  that is shown.
+- MIFARE SAM AV3: Tools > MIFARE SAM AV3 setup... finds a SAM in a PC/SC reader or in a
+  SAM socket of a TWN4 (hardware revision G), activates it and writes a key into a key
+  entry. Four DESFire commands (Check: App Key, Change PICC Master Key, Change
+  Application Key, authenticate the PICC master key) can use keys that stay in the SAM.
+  A setting names the reader of the SAM.
+- Card Check Assistant (Extensions menu, optional feature of the setup): the guided
+  check of an order - order list from the order database, check, verdict, programming
+  with the answers form, read-out, report review and final report. It has its own
+  Settings window, a test mode, and export and import of its settings. The SQL driver
+  for the order database is part of the setup.
+- External control: a program such as SIE Encode can drive RFiDGear over one named pipe
+  (JSON-RPC 2.0). Switch it on in Settings (Enable JSON-RPC pipe server) or start RFiDGear with
+  EXTERNALCONTROL=1. The protocol, a client guide and a sample client are in
+  RFiDGear.Bridge.Contracts.
+- Automatic mode is one state machine and reports every card run to extensions; the
+  result of a run carries the UID of the card.
+- DESFire: the read-only task Check: File Settings (compares only the settings you
+  select), three compare modes for Check: App Config and Check: App Key Count.
+- The status bar shows INIT until the reader has been looked at. Extension windows open
+  on the monitor of the main window; the Extensions menu is localized.
+
+Fixed:
+- DESFire: a command could use the key of an earlier key check when its own key was
+  invalid; Format card checked one key and authenticated with another; the new
+  application key was checked against the type of the current key instead of its own;
+  saving a project left a plain copy of it, with its keys, in %LocalAppData%\RFiDGear.
+- A SmartMX card that presents itself as DESFire was not found on a TWN4. Every MIFARE
+  Plus is shown with a Classic-style model on the Elatec reader.
+- Saving a project or a chip export no longer loses the existing file; Save As only
+  takes .xml and .rfPrj. Projects with a manifest like 1.10.x were rejected; versions are
+  compared part by part now. The XML handling of project and settings files is stricter.
+- A reader whose COM port is held by another program is reported as busy and is not left
+  busy. The main window's reset, remove-all and delete-task commands wait for a running
+  task run. A task kind that no handler runs ends the run with an error instead of
+  hanging. A check that answers no does not fail the run. The Check: App Config and
+  Check: App Key Count dialogs work again. The DESFire task type Change default values
+  is removed.
+
+Please note:
+- The external control protocol is not frozen yet and may still change.
+- Ultralight/NTAG, the new Classic layer with the TWN4, the SAM AV3 window and the secure
+  key workflow have been developed against simulated chips and a few cards; the
+  hardware cases are in RFiDGear.HIL.Tests (Run-HilTests.bat).
 
 Version 2.0.10.0
 -----------------------------------------------------------------
@@ -299,7 +366,7 @@ Version 2.0.0
 - Bind row header status to task item by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/107
 - Validate task indices before adding tasks by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/108
 - Highlight invalid task indices in task dialogs by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/109
-- Task index validation: add helper, wire UI & dialogs, and fix duplicate helper name by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/110
+- Task index validation: add helper, wire UI &amp; dialogs, and fix duplicate helper name by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/110
 - Preserve task index validation in edit mode by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/111
 - Use task-specific create commands for empty-space context menu and add tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/112
 - Clear DataGrid selection when empty space is clicked by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/113
