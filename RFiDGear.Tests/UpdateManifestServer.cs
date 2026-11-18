@@ -62,6 +62,8 @@ namespace RFiDGear.Tests
 
         internal bool Answered { get; private set; }
 
+        private volatile bool _stopped;
+
         internal Task RequestReceivedNumber(int number) => Requested(number).Task;
 
         internal void Answer(string status, string body, int number = 0) => Answers(number).TrySetResult((status, body));
@@ -71,6 +73,8 @@ namespace RFiDGear.Tests
 
         public void Dispose()
         {
+            _stopped = true;
+
             lock (_requested)
             {
                 foreach (var answer in _answers)
@@ -112,7 +116,8 @@ namespace RFiDGear.Tests
         {
             try
             {
-                for (var number = 0; ; number++)
+                var number = 0;   // the number of the request that is waiting for its answer
+                while (!_stopped)
                 {
                     using var client = await _listener.AcceptTcpClientAsync();
                     using var stream = client.GetStream();
@@ -134,13 +139,14 @@ namespace RFiDGear.Tests
 
                     if (!complete)
                     {
-                        number--;   // a connection that never sent a request is not one
-                        continue;
+                        continue;   // a connection that never sent a request is not one
                     }
 
                     Requested(number).TrySetResult(true);
 
                     var (status, body) = await Answers(number).Task;
+                    number++;
+
                     if (status.Length == 0)
                     {
                         // Garbled: something that is no HTTP, and the connection is closed. (A connection that is closed with no
