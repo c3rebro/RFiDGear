@@ -40,6 +40,20 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         private bool IsMultiTechReader => ReaderUnitVersion?.Contains("CCF") == true;
 
+        /// <summary>
+        /// The high-frequency tag types that a search asks the TWN4 for: all of them but HID iCLASS. With iCLASS in the mask a TWN4
+        /// (seen on TWN4/B1.64/NCF5.07) answers SearchTag with "no tag" for a SmartMX that presents itself as DESFire (SAK <c>20</c>,
+        /// GetVersion type <c>81</c>), after about 350 ms, although the card is activated and answers GetVersion; without iCLASS the same card
+        /// is found in about 50 ms and Elatec.NET names it a SmartMX DESFire. The application has no model for an iCLASS chip (a search
+        /// that finds one shows nothing), so no card is lost. The reader keeps the mask until the next call, and every DESFire or Classic
+        /// call starts with a SearchTag under it, which is why the mask that is restored at the end of <see cref="ReadChipPublic"/> is this
+        /// one and not "all".
+        /// </summary>
+        internal const HFTagTypes SearchedHfTagTypes = HFTagTypes.AllHFTags & ~HFTagTypes.HIDICLASS;
+
+        /// <summary>The same without LEGIC, which <see cref="ReadChipPublic"/> searches in a pass of its own.</summary>
+        internal const HFTagTypes SearchedHfTagTypesWithoutLegic = SearchedHfTagTypes & ~HFTagTypes.LEGIC;
+
         #region Constructor
 
         private async Task Initialize()
@@ -112,7 +126,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         await readerDevice.ConnectAsync();
                     }
 
-                    await readerDevice.SetTagTypesAsync(LFTagTypes.NOTAG, HFTagTypes.AllHFTags & ~HFTagTypes.LEGIC);
+                    await readerDevice.SetTagTypesAsync(LFTagTypes.NOTAG, SearchedHfTagTypesWithoutLegic);
                     var tmpTag = await readerDevice.GetSingleChipAsync();
 
                     if (tmpTag != null && tmpTag.ChipType == ChipType.MIFARE)
@@ -173,7 +187,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     tmpTag = await readerDevice.GetSingleChipAsync();
                     legicTag = tmpTag != null ? new GenericChipModel(tmpTag.UIDHexString, (CARD_TYPE)tmpTag.ChipType) : null;
 
-                    await readerDevice.SetTagTypesAsync(LFTagTypes.NOTAG, HFTagTypes.AllHFTags);
+                    await readerDevice.SetTagTypesAsync(LFTagTypes.NOTAG, SearchedHfTagTypes);
 
                     if (!string.IsNullOrWhiteSpace(hfTag?.UID) && GenericChip.UID == hfTag.UID)
                     {
