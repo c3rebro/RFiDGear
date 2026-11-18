@@ -547,7 +547,9 @@ namespace RFiDGear.ViewModel
                 // 0x8000 up (an Ultralight is 0x9000, a chip of the NTAG family 0xA000 and up) does not fit a short.
                 switch ((CARD_TYPE)((int)_cardType & 0xF000))
                 {
+                    // A Plus has the sectors of a Classic chip in security level 1, and the one node that the readers show in level 3.
                     case CARD_TYPE.MifareClassic:
+                    case CARD_TYPE.MifarePlus:
                         childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
                         break;
                     case CARD_TYPE.MifareUltralight:

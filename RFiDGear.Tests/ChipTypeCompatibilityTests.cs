@@ -119,6 +119,38 @@ namespace RFiDGear.Tests
             Assert.Equal(expected, GenericChipTaskViewModel.ChipTypeMatches(selected, found));
         }
 
+        // ── The same for a MIFARE Plus in security level 1, which a TWN4 reported as a Classic chip until Elatec.NET 0.7.0 ──
+
+        [Theory]
+        // A project that checks for "Mifare Classic", or for the Classic type of the size, has been passing for it, and still does.
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.MifarePlus_SL1_1K, true)]
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.MifarePlus_SL1_2K, true)]
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.MifarePlus_SL1_4K, true)]
+        [InlineData(CARD_TYPE.Mifare1K, CARD_TYPE.MifarePlus_SL1_1K, true)]
+        [InlineData(CARD_TYPE.Mifare2K, CARD_TYPE.MifarePlus_SL1_2K, true)]
+        [InlineData(CARD_TYPE.Mifare4K, CARD_TYPE.MifarePlus_SL1_4K, true)]
+        // The size still counts, and a Plus in another level has no Classic commands.
+        [InlineData(CARD_TYPE.Mifare1K, CARD_TYPE.MifarePlus_SL1_4K, false)]
+        [InlineData(CARD_TYPE.Mifare4K, CARD_TYPE.MifarePlus_SL1_2K, false)]
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.MifarePlus_SL3_4K, false)]
+        [InlineData(CARD_TYPE.Mifare4K, CARD_TYPE.MifarePlus_SL3_4K, false)]
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.MifarePlus_SL2_4K, false)]
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.MifarePlus_SL0_1K, false)]
+        // A check for a Plus type is exact (the family is the family), and a Classic chip is not a Plus.
+        [InlineData(CARD_TYPE.MifarePlus_SL1_4K, CARD_TYPE.MifarePlus_SL1_4K, true)]
+        [InlineData(CARD_TYPE.MifarePlus_SL1_4K, CARD_TYPE.MifarePlus_SL1_2K, false)]
+        [InlineData(CARD_TYPE.MifarePlus_SL1_4K, CARD_TYPE.Mifare4K, false)]
+        [InlineData(CARD_TYPE.MifarePlus, CARD_TYPE.MifarePlus_SL1_4K, true)]
+        [InlineData(CARD_TYPE.MifarePlus, CARD_TYPE.MifarePlus_SL3_2K, true)]
+        [InlineData(CARD_TYPE.MifarePlus, CARD_TYPE.Mifare4K, false)]
+        // Nothing else passes for a Classic chip.
+        [InlineData(CARD_TYPE.MifareClassic, CARD_TYPE.DESFireEV1, false)]
+        [InlineData(CARD_TYPE.Mifare4K, CARD_TYPE.NOTAG, false)]
+        public void AChipTypeCheck_StillPassesAPlusInSecurityLevel1ForTheClassicChipOfItsSize(CARD_TYPE selected, CARD_TYPE found, bool expected)
+        {
+            Assert.Equal(expected, GenericChipTaskViewModel.ChipTypeMatches(selected, found));
+        }
+
         [Theory]
         [InlineData(CARD_TYPE.NTAG_215, ERROR.NoError)]
         [InlineData(CARD_TYPE.MifareUltralight_EV1_MF0UL21, ERROR.NoError)]
