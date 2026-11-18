@@ -2414,9 +2414,18 @@ namespace RFiDGear.ViewModel
 
             await updateNotifier.TriggerUpdateCheckAsync(() => AskForUpdateNow());
 
-            if (!updater.UpdateAvailable)
+            // The check of this window's updater runs in the background after the start: what it found is only known once it is
+            // through. The notifier has an updater of its own, whose answer may have come later than this one's, in which case
+            // the offer above was skipped: it is made here (it is shown once, whoever asks first).
+            await updater.InitialCheck;
+
+            if (updater.UpdateAvailable)
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                await AskForUpdateNow();
+            }
+            else
+            {
+                await InvokeOnUiThread(new Action(() =>
                 {
                     Dialogs.Add(new MessageBoxViewModel
                     {
@@ -2776,7 +2785,14 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// How an action gets onto the thread of the window, where a dialog is added. The tests replace it: the host they run
+        /// in has no application of its own, or one whose thread is gone.
+        /// </summary>
+        internal Func<Action, Task> InvokeOnUiThread { get; set; } =
+            action => Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, action).Task;
+
+        /// <summary>
+        ///
         /// </summary>
         /// <returns></returns>
         private async Task AskForUpdateNow()
@@ -2791,10 +2807,31 @@ namespace RFiDGear.ViewModel
         /// <returns></returns>
         private async Task AskForUpdateNow(bool updateDisabled)
         {
+            // The update notifier has an updater of its own, and this window has another one; both ask the server for the manifest
+            // in the background, so the notifier's may be through first. The dialog shows the notes of this window's updater and
+            // the download uses its manifest: it waits (without blocking anyone) until that updater has its answer. If that
+            // answer is that there is no update, nothing is offered and nothing is consumed; the notifier asks again every few
+            // seconds. The notes that are shown on request (updateDisabled) are shown whether there is an update or not.
+            await updater.InitialCheck;
+
+            if (!updateDisabled && !updater.UpdateAvailable)
+            {
+                return;
+            }
+
             if (!userIsNotifiedForAvailableUpdate || updateDisabled)
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                await InvokeOnUiThread(new Action(() =>
                 {
+                    // Decided again here, on the thread of the window: two asks that were let through together (a tick of the
+                    // notifier and "Check for updates") must not both put a dialog up.
+                    if (userIsNotifiedForAvailableUpdate && !updateDisabled)
+                    {
+                        return;
+                    }
+
+                    userIsNotifiedForAvailableUpdate = true;
+
                     Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
                     {
                         Caption = updateDisabled ? "Changelog" : "Update Available",

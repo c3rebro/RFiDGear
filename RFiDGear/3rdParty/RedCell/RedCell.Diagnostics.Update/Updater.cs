@@ -52,6 +52,13 @@ namespace RedCell.Diagnostics.Update
         public bool IsUserNotified { get; set; }
         public string UpdateInfoText { get; private set; }
 
+        /// <summary>
+        /// Completes when the check that the constructor started has its answer: an update was found, none was, or the manifest
+        /// could not be had. The check runs in the background, so whoever shows what it found (the notes, the offer of an update,
+        /// the result of "Check for updates") waits for this first; it never makes anyone else wait.
+        /// </summary>
+        public Task InitialCheck { get; private set; } = Task.CompletedTask;
+
         #endregion
 
         #region Initialization
@@ -89,7 +96,7 @@ namespace RedCell.Diagnostics.Update
 #endif
                 if (_localConfig != null)
                 {
-                    Check(null, null);
+                    InitialCheck = CheckAsync();
                 }
                 var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
                 var rootFiles = rootDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
@@ -156,6 +163,15 @@ namespace RedCell.Diagnostics.Update
         /// <param name="args">true = download Changelog only</param>
         public async void Check(object state, EventArgs args)
         {
+            await CheckAsync();
+        }
+
+        /// <summary>
+        /// Asks for the manifest and decides whether there is an update. Nothing is thrown: what goes wrong is logged.
+        /// </summary>
+        /// <returns>A task that completes when the check is through.</returns>
+        internal async Task CheckAsync()
+        {
             try
             {
                 var remoteUri = new Uri(_localConfig.RemoteConfigUri);
@@ -164,7 +180,10 @@ namespace RedCell.Diagnostics.Update
                 var http = new Fetch { Retries = 5, RetrySleep = 30000, Timeout = 30000 };
                 try
                 {
-                    http.Load(remoteUri.AbsoluteUri);
+                    // The request is made on a thread of the pool. This method is called by the constructor, on the thread of the
+                    // main window while it is built, and by the timer on that thread too: a server that does not answer (a
+                    // connection to an address that cannot be reached takes about 20 seconds to fail) must not hold either.
+                    await Task.Run(() => http.Load(remoteUri.AbsoluteUri));
 
                     if (!http.Success)
                     {
@@ -179,7 +198,8 @@ namespace RedCell.Diagnostics.Update
                             Logger.Information("Fetch error: Unknown http Err");
                         }
 
-                        _remoteConfig = null;
+                        // A request that fails keeps what an earlier check found: the manifest and the update that it offers go
+                        // together. (Checks overlap: the one of the constructor and the one of the monitoring both run at the start.)
                         return;
                     }
                 }
