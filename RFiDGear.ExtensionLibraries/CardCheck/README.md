@@ -345,14 +345,26 @@ and no backward compatibility is wanted (the extension has one switch for it):
   the first use of the library inside a try block when a window opens
   (`ComponentCheck`) and shows a "component missing" page if that fails.
 - By hand, for a trial: build the extension (Release, x64 or x86 to match
-  RFiDGear) and copy `RFiDGear.Extensions.CardCheckAssistant.dll` and
-  `RFiDGear.ExtensionLibraries.CardCheck.dll` from its build folder. Nothing
-  in the extension opens the order database yet, so the database driver is not
-  needed for that. When it is: the real `System.Data.SqlClient.dll` is the one
-  under `runtimes\win\lib` of the package (the one under `lib` is a stub), and
-  `sni.dll` has the same name for x86 and x64, so a flat folder holds only the
-  one that matches RFiDGear. The installer step derives this from the resolved
-  assets instead of listing files by hand.
+  RFiDGear) and copy `RFiDGear.Extensions.CardCheckAssistant.dll`,
+  `RFiDGear.ExtensionLibraries.CardCheck.dll`, `System.Data.SqlClient.dll` and
+  `sni.dll` from its build folder. The last two are the database driver, and
+  the build puts them there; the order database cannot be reached without
+  them.
+- The driver is named in `SqlDriverPayload.targets` (target
+  `GetSqlDriverPayload`, which the extension project calls). The real
+  `System.Data.SqlClient.dll` is the one under `runtimes\win\lib` of the
+  package (the one under `lib` is a stub). `sni.dll` has the same name for x86
+  and x64, so a flat folder holds only the one that matches RFiDGear: the
+  build takes the one of its platform, a build for any CPU the one of the
+  operating system, and `RFiDGearSqlNativePlatform` (x86 or x64) overrides
+  that. The files come from the packages in the project file
+  (`System.Data.SqlClient` and one native package for each platform, which are
+  there only so that their folders are known), so a new version there changes
+  the payload by itself, and a file that is not where it is expected fails the
+  build. The extension copies the files into its output folder; the copy to
+  RFiDGear's extension folder (`DeployToRFiDGear.targets`) and the installers,
+  which take that folder, carry them along. `SqlDriverPayloadTests` ask MSBuild
+  what the payload is and load exactly those files in a process of their own.
 
 **What was measured before this library was built** (scratch harness with the
 host's package versions and MEF 10.0.1, x64 and x86, every negative control

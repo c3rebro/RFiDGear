@@ -28,10 +28,11 @@
     <RFiDGearExePath Condition=" '$(RFiDGearExePath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.exe</RFiDGearExePath>
     <RFiDGearDllPath Condition=" '$(RFiDGearDllPath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.dll</RFiDGearDllPath>
     <RFiDGearExtensionsReleaseDir Condition=" '$(RFiDGearExtensionsReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear.Extensions\DesfirePluginSample\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearExtensionsReleaseDir>
+    <RFiDGearCardCheckReleaseDir Condition=" '$(RFiDGearCardCheckReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear.Extensions\CardCheckAssistant\bin\x64\Release\net10.0-windows7.0</RFiDGearCardCheckReleaseDir>
     <RFiDGearProjectDir>$(ProjectDir)..\..\RFiDGear\</RFiDGearProjectDir>
     <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
     <RFiDGearVersion Condition=" '$(RFiDGearVersion)' == '' ">0.0.0.0</RFiDGearVersion>
-    <DefineConstants>$(DefineConstants);RFiDGearReleaseDir=$(RFiDGearReleaseDir);RFiDGearExtensionsReleaseDir=$(RFiDGearExtensionsReleaseDir);RFiDGear.ProjectDir=$(RFiDGearProjectDir);RFiDGear.ProjectName=$(RFiDGearProjectName)</DefineConstants>
+    <DefineConstants>$(DefineConstants);RFiDGearReleaseDir=$(RFiDGearReleaseDir);RFiDGearExtensionsReleaseDir=$(RFiDGearExtensionsReleaseDir);RFiDGearCardCheckReleaseDir=$(RFiDGearCardCheckReleaseDir);RFiDGear.ProjectDir=$(RFiDGearProjectDir);RFiDGear.ProjectName=$(RFiDGearProjectName)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LicenseAgreementDlg_HK.wxs" />
@@ -69,6 +70,9 @@
     <Error Condition="!Exists('$(RFiDGearReleaseDir)')" Text="Release output directory '$(RFiDGearReleaseDir)' not found. Build the RFiDGear project for the x64 Release configuration before packaging." />
     <Error Condition="!Exists('$(RFiDGearExePath)')" Text="RFiDGear.exe not found at '$(RFiDGearExePath)'. Build the RFiDGear project for the x64 Release configuration before packaging." />
     <Error Condition="!Exists('$(RFiDGearExtensionsReleaseDir)')" Text="Extensions output directory '$(RFiDGearExtensionsReleaseDir)' not found. Build the DesfirePluginSample extensions project before packaging." />
+    <Error Condition="!Exists('$(RFiDGearCardCheckReleaseDir)')" Text="Card Check Assistant output directory '$(RFiDGearCardCheckReleaseDir)' not found. Build it for the x64 Release configuration before packaging: dotnet build RFiDGear.Extensions\CardCheckAssistant -c Release -p:Platform=x64" />
+    <!-- The extension is never packaged without its database driver: its build copies System.Data.SqlClient.dll and the sni.dll of its platform beside it. -->
+    <Error Condition="!Exists('$(RFiDGearCardCheckReleaseDir)\System.Data.SqlClient.dll') Or !Exists('$(RFiDGearCardCheckReleaseDir)\sni.dll')" Text="The Card Check Assistant output '$(RFiDGearCardCheckReleaseDir)' holds no database driver (System.Data.SqlClient.dll and sni.dll). Build the extension again; do not package it without them." />
   </Target>
 
   <Target Name="SetRFiDGearVersion" BeforeTargets="BeforeBuild" DependsOnTargets="ValidateReleaseOutputs">
@@ -99,9 +103,11 @@
     <Exec Command='"$(WixToolPath)heat.exe" dir "$(RFiDGearReleaseDir)" -ag -cg RFiDGear.ReleaseFiles.x64 -dr INSTALLDIR -gg -nologo -out "$(HarvestOutputDir)RFiDGear.Release.x64.wxs" -sw5150 -sw5151 -srd -var var.RFiDGearReleaseDir -x "$(RFiDGearReleaseDir)\runtimes\linux-arm" -x "$(RFiDGearReleaseDir)\runtimes\linux-arm64" -x "$(RFiDGearReleaseDir)\runtimes\linux-x64" -x "$(RFiDGearReleaseDir)\runtimes\osx" -x "$(RFiDGearReleaseDir)\runtimes\osx-arm64" -x "$(RFiDGearReleaseDir)\runtimes\osx-x64" -x "$(RFiDGearReleaseDir)\runtimes\unix"'
          Condition="Exists('$(RFiDGearReleaseDir)')" />
     <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.Extensions.ReleaseFiles" Directory="$(RFiDGearExtensionsReleaseDir)" DirectoryRefId="RFiDGearExtensionsFolder" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" PreprocessorVariable="var.RFiDGearExtensionsReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearExtensionsReleaseDir)')" />
+    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.Extensions.CardCheck.ReleaseFiles" Directory="$(RFiDGearCardCheckReleaseDir)" DirectoryRefId="RFiDGearExtensionsFolder" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Extensions.CardCheck.Release.wxs" PreprocessorVariable="var.RFiDGearCardCheckReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearCardCheckReleaseDir)')" />
     <ItemGroup>
       <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x64.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x64.wxs')" />
       <Compile Include="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs')" />
+      <Compile Include="$(HarvestOutputDir)RFiDGear.Extensions.CardCheck.Release.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Extensions.CardCheck.Release.wxs')" />
     </ItemGroup>
   </Target>
 </Project>

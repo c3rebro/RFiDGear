@@ -27,4 +27,6 @@
 	
 	<String Id="FeaturePluginsTitle">Plugins</String>
 	<String Id="FeaturePluginsDescription">Available Extensions</String>
+	<String Id="FeatureCardCheckTitle">Card Check Assistant</String>
+	<String Id="FeatureCardCheckDescription">Guided card check with report and order handling (extension). Includes the database driver for the order system.</String>
 </WixLocalization>

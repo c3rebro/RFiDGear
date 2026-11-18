@@ -20,9 +20,17 @@
     <PackageReference Include="GemBox.Pdf" Version="2025.12.101" ExcludeAssets="runtime;native" PrivateAssets="all" />
     <!-- The one driver for the order database (SQL Server, Windows authentication). It is the library's own: the
          host does not carry it, so it is deployed beside the extension. -->
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" GeneratePathProperty="true" />
+    <!-- The native half of the driver (sni.dll), one package per platform. A build without a runtime identifier does not
+         resolve them from the driver's own dependencies, and the payload step needs the file of exactly one platform, so
+         they are named here; GeneratePathProperty gives the folder of each to SqlDriverPayload.targets. Nothing of them
+         is compiled against or copied by the build itself. Keep the version at the one the driver asks for. -->
+    <PackageReference Include="runtime.win-x64.runtime.native.System.Data.SqlClient.sni" Version="4.4.0" GeneratePathProperty="true" ExcludeAssets="runtime;native" PrivateAssets="all" />
+    <PackageReference Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni" Version="4.4.0" GeneratePathProperty="true" ExcludeAssets="runtime;native" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="RFiDGear.Tests" />
   </ItemGroup>
+  <!-- The files of the driver for the platform being built, for the extension that carries this library. -->
+  <Import Project="SqlDriverPayload.targets" />
 </Project>

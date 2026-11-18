@@ -27,4 +27,6 @@
 
 	<String Id="FeaturePluginsTitle">Plugins</String>
 	<String Id="FeaturePluginsDescription">Verfügbare Programmerweiterungen</String>
+	<String Id="FeatureCardCheckTitle">Card Check Assistant</String>
+	<String Id="FeatureCardCheckDescription">Geführte Kartenprüfung mit Bericht und Auftragsabschluss (Erweiterung). Enthält den Datenbanktreiber für das Auftragssystem.</String>
 </WixLocalization>

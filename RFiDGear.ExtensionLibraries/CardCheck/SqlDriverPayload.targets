@@ -1,0 +1,39 @@
+<Project>
+  <!--
+    The files the order database needs beside the extension at run time, for the platform that is being built:
+      - System.Data.SqlClient.dll, the real implementation. The one under lib\ in the package is a stub that throws
+        PlatformNotSupported; the real one is under runtimes\win\lib.
+      - sni.dll, the native half. It has the same file name for x86 and x64, so a flat folder can hold only the one
+        that matches RFiDGear.
+
+    The target returns them as SqlDriverPayload items; the extension that is installed copies them into its output (and from
+    there into RFiDGear's extension folder and into the installer). Nothing here copies a file itself, so the library's
+    own output stays what it was.
+
+    Which sni.dll: the platform of the build (x86 or x64); a build for AnyCPU takes the one of the operating system
+    (x64 unless the system is 32-bit). RFiDGearSqlNativePlatform (x86 or x64) overrides that, for a build whose output goes
+    to an RFiDGear of the other bitness.
+
+    A file that is not where it is expected fails the build here with the name of the file, not at the first connection of
+    an operator.
+  -->
+  <Target Name="GetSqlDriverPayload" Returns="@(SqlDriverPayload)">
+    <PropertyGroup>
+      <_SqlNativePlatform>$(RFiDGearSqlNativePlatform)</_SqlNativePlatform>
+      <_SqlNativePlatform Condition="'$(_SqlNativePlatform)' == ''">$(PlatformTarget)</_SqlNativePlatform>
+      <_SqlNativePlatform Condition="'$(_SqlNativePlatform)' != 'x86' And '$(_SqlNativePlatform)' != 'x64' And !$([System.Environment]::Is64BitOperatingSystem)">x86</_SqlNativePlatform>
+      <_SqlNativePlatform Condition="'$(_SqlNativePlatform)' != 'x86' And '$(_SqlNativePlatform)' != 'x64'">x64</_SqlNativePlatform>
+      <_SqlNativeFolder Condition="'$(_SqlNativePlatform)' == 'x64'">$(Pkgruntime_win-x64_runtime_native_System_Data_SqlClient_sni)</_SqlNativeFolder>
+      <_SqlNativeFolder Condition="'$(_SqlNativePlatform)' == 'x86'">$(Pkgruntime_win-x86_runtime_native_System_Data_SqlClient_sni)</_SqlNativeFolder>
+    </PropertyGroup>
+
+    <Error Condition="'$(PkgSystem_Data_SqlClient)' == '' Or '$(_SqlNativeFolder)' == ''" Text="The folders of the SQL driver packages are not known (System.Data.SqlClient: '$(PkgSystem_Data_SqlClient)', sni.dll for $(_SqlNativePlatform): '$(_SqlNativeFolder)'). Restore the project." />
+
+    <ItemGroup>
+      <SqlDriverPayload Include="$(PkgSystem_Data_SqlClient)\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
+      <SqlDriverPayload Include="$(_SqlNativeFolder)\runtimes\win-$(_SqlNativePlatform)\native\sni.dll" />
+    </ItemGroup>
+
+    <Error Condition="!Exists('%(SqlDriverPayload.FullPath)')" Text="A file of the SQL driver is missing: %(SqlDriverPayload.FullPath). The package may have changed its layout." />
+  </Target>
+</Project>
