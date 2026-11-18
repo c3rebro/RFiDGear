@@ -1188,6 +1188,21 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         public IAsyncRelayCommand ExecuteQuickCheckCommand => new AsyncRelayCommand(OnNewExecuteQuickCheckCommand);
+
+        /// <summary>
+        /// Tells whether the quick check of the main window is the Classic quick check for a chip of the type: a MIFARE Classic chip (the
+        /// SmartMX Classic chips included), and a MIFARE Plus in security level 1, which answers like one and has the sectors of its
+        /// size (a TWN4 reported it as a Classic chip until Elatec.NET 0.7.0, and the quick check was for it). A Plus in another level has
+        /// no Classic commands.
+        /// </summary>
+        /// <param name="type">The type of the selected chip.</param>
+        /// <returns><c>true</c> when the Classic quick check is the one to run.</returns>
+        internal static bool IsClassicQuickCheckable(CARD_TYPE type) =>
+            ((int)type & 0xF000) == (int)CARD_TYPE.MifareClassic
+            || type == CARD_TYPE.MifarePlus_SL1_1K
+            || type == CARD_TYPE.MifarePlus_SL1_2K
+            || type == CARD_TYPE.MifarePlus_SL1_4K;
+
         private async Task OnNewExecuteQuickCheckCommand()
         {
             try
@@ -1203,7 +1218,7 @@ namespace RFiDGear.ViewModel
                 {
                     treeViewParentNodes.FirstOrDefault(x => x.IsSelected).IsExpanded = true;
 
-                    if (((int)treeViewParentNodes.Single(x => x.IsSelected == true).CardType & 0xF000) == (int)CARD_TYPE.MifareClassic)
+                    if (IsClassicQuickCheckable(treeViewParentNodes.Single(x => x.IsSelected == true).CardType))
                     {
                         await treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.ExecuteAsync(null);
                     } // Mifare Classic

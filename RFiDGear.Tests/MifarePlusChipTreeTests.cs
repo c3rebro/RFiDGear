@@ -43,6 +43,41 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData(CARD_TYPE.MifarePlus_SL1_1K, 16)]
+        [InlineData(CARD_TYPE.MifarePlus_SL1_4K, 40)]
+        [InlineData(CARD_TYPE.Mifare4K, 40)]
+        [InlineData(CARD_TYPE.MifarePlus_SL3_2K, 1)]
+        public async Task TheSectorsOfAPlusChip_AreNumberedLikeThoseOfAClassicChip(CARD_TYPE type, int sectors)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var node = MainWindowViewModel.CreateParentNode(new MifareClassicChipModel(Uid, type), new ObservableCollection<IDialogViewModel>());
+
+                // Blank rows (the header of a Plus was left out) cannot be told apart.
+                Assert.Equal(Enumerable.Range(0, sectors).Select(i => $"Sector: [{i}]"), node.Children.Select(child => child.ChildNodeHeader));
+            });
+        }
+
+        [Theory]
+        [InlineData(CARD_TYPE.Mifare1K, true)]
+        [InlineData(CARD_TYPE.Mifare4K, true)]
+        [InlineData(CARD_TYPE.SmartMX_Mifare_4K, true)] // the family of the Classic chips, as before
+        [InlineData(CARD_TYPE.MifarePlus_SL1_1K, true)] // a TWN4 reported these as Mifare1K, 2K and 4K, and the quick check was for them
+        [InlineData(CARD_TYPE.MifarePlus_SL1_2K, true)]
+        [InlineData(CARD_TYPE.MifarePlus_SL1_4K, true)]
+        [InlineData(CARD_TYPE.MifarePlus_SL3_4K, false)] // no Classic commands
+        [InlineData(CARD_TYPE.MifarePlus_SL2_4K, false)]
+        [InlineData(CARD_TYPE.MifarePlus_SL0_1K, false)]
+        [InlineData(CARD_TYPE.DESFireEV1_4K, false)]
+        [InlineData(CARD_TYPE.MifareUltralight, false)]
+        [InlineData(CARD_TYPE.NTAG_215, false)]
+        [InlineData(CARD_TYPE.NOTAG, false)]
+        public void TheQuickCheckOfTheMainWindow_IsTheClassicOneForClassicAndPlusInSecurityLevel1(CARD_TYPE type, bool expected)
+        {
+            Assert.Equal(expected, MainWindowViewModel.IsClassicQuickCheckable(type));
+        }
+
+        [Theory]
         [InlineData(CARD_TYPE.MifarePlus_SL1_4K, 40)]
         [InlineData(CARD_TYPE.Mifare4K, 40)]
         [InlineData(CARD_TYPE.Mifare1K, 16)]
