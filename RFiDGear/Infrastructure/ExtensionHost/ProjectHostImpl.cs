@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -139,7 +140,22 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public event EventHandler? ProjectChanged;
 
         /// <inheritdoc/>
-        public async Task<Contracts.ProjectOpenResult> LoadAsync(string path, CancellationToken ct = default)
+        public Task<Contracts.ProjectOpenResult> LoadAsync(string path, CancellationToken ct = default) =>
+            LoadCoreAsync(path, ct, null);
+
+        /// <inheritdoc/>
+        public async Task<(Contracts.ProjectOpenResult Result, string? Revision)> LoadWithRevisionAsync(string path, CancellationToken ct = default)
+        {
+            var revision = new StrongBox<string?>();
+            var result = await LoadCoreAsync(path, ct, revision).ConfigureAwait(false);
+
+            return (result, result.Success ? revision.Value : null);
+        }
+
+        // The revision, when it is wanted, is taken inside the commit, in the same action on the thread of the window that puts the
+        // project in place: a task that is changed a moment later is a change of the project that was loaded, and cannot slip
+        // into the answer of the load as if it had been in the file.
+        private async Task<Contracts.ProjectOpenResult> LoadCoreAsync(string path, CancellationToken ct, StrongBox<string?>? revision)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -225,6 +241,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 {
                     ApplyModel(model);
                     _currentPath = canonicalPath;
+
+                    if (revision != null)
+                    {
+                        revision.Value = GetProjectRevision();
+                    }
+
                     RaiseProjectChanged();
                 }).ConfigureAwait(false);
 

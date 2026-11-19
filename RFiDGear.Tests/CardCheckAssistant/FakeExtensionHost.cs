@@ -89,6 +89,13 @@ namespace RFiDGear.Tests.CardCheckAssistant
             return Revision;
         }
 
+        public async Task<(ProjectOpenResult Result, string? Revision)> LoadWithRevisionAsync(string path, CancellationToken ct = default)
+        {
+            var result = await LoadAsync(path, ct).ConfigureAwait(true);
+
+            return (result, result.Success ? Revision : null);
+        }
+
         /// <summary>What <see cref="LoadAsync"/> answers when nothing holds it open.</summary>
         public Func<string, ProjectOpenResult> LoadAnswer { get; set; } = path => ProjectOpenResult.Ok(path, 3);
 

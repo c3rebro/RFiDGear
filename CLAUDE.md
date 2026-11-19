@@ -414,11 +414,17 @@ passed with a real reader; until then a snapshot may be re-baselined.
   and the result carries `projectRevision`. It is a keyed hash
   (`ProjectRevision`, key made at process start, never written) of the text a
   save would write (`XmlSerializer` of `ChipTaskHandlerModel`), so unsaved
-  changes count, run results do not (they are `[XmlIgnore]`), and a typed key
-  in a task is not recoverable from it; it is valid for one process only. The
-  project host gives it through the internal `IProjectRevisionSource` (a host
-  without it does not offer the capability and refuses a run that expects a
-  revision). It is read on the main window's thread.
+  changes count, and a typed key in a task is not recoverable from it; it is
+  valid for one process only. What a run writes into the tasks is left out:
+  results are `[XmlIgnore]`, and `ProjectRevision` removes the elements that
+  a read fills (`ChildNodeViewModelFromChip` always, `ChildNodeViewModelTemp`
+  unless the task is `WriteData` that does not refresh from a file) and the
+  focus (`IsFocused`); tests run a DESFire read and write and a real loop to
+  prove it, so a serialized member that a task type starts to write needs
+  the same treatment. The project host gives it through the internal
+  `IProjectRevisionSource` (a host without it does not offer the capability
+  and refuses a run that expects a revision); `LoadWithRevisionAsync` takes it
+  inside the commit of a load. It is read on the main window's thread.
 - **The bridge never retries a card operation, and never repeats a request.**
   `startRun` is idempotent by the client's request id (`RunRegistry`,
   `RunSupervisor`: admission by compare-and-swap, the window's callback must win

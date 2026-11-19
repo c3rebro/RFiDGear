@@ -127,7 +127,16 @@ namespace RFiDGear.Bridge.SampleClient
                 // path and the count do not; it is only there when this RFiDGear offers it.
                 expectedPath = loaded.Path;
                 expectedTasks = loaded.TaskCount;
-                expectedRevision ??= client.Offers(BridgeCapabilities.ProjectRevision) ? loaded.Revision : null;
+
+                try
+                {
+                    expectedRevision ??= client.RevisionToExpect(loaded);
+                }
+                catch (InvalidOperationException e)
+                {
+                    // Offered but not given: starting anyway would run whatever is loaded.
+                    return Fail(e.Message);
+                }
             }
             else
             {

@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 using RFiDGear.Bridge;
@@ -9,6 +11,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Models;
+using RFiDGear.ViewModel;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using Xunit;
@@ -95,6 +98,74 @@ namespace RFiDGear.Tests.ExternalControl
             }
 
             Assert.Equal(before, ProjectRevision.Compute(model));
+        }
+
+        [Fact]
+        public async Task TheFocusOfATask_IsAStateOfTheWindow_AndNotPartOfTheRevision()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var model = new ChipTaskHandlerModel();
+                var task = new GenericChipTaskViewModel { CurrentTaskIndex = "0", SelectedTaskType = TaskType_GenericChipTask.ChipIsOfType };
+                model.TaskCollection.Add(task);
+                var before = ProjectRevision.Compute(model);
+
+                // The loop focuses the task it is working on.
+                task.IsFocused = true;
+
+                Assert.Equal(before, ProjectRevision.Compute(model));
+            });
+        }
+
+        [Fact]
+        public async Task TheDataOfAWriteTaskThatTakesItFromAFile_IsNoPartOfTheRevision_ItIsReplacedBeforeTheWrite()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var model = new ChipTaskHandlerModel();
+                var fromProject = new MifareDesfireSetupViewModel { CurrentTaskIndex = "0", SelectedTaskType = TaskType_MifareDesfireTask.WriteData, RefreshDesfireDataFromFileBeforeWrite = false };
+                var fromFile = new MifareDesfireSetupViewModel { CurrentTaskIndex = "1", SelectedTaskType = TaskType_MifareDesfireTask.WriteData, RefreshDesfireDataFromFileBeforeWrite = true };
+                model.TaskCollection.Add(fromProject);
+                model.TaskCollection.Add(fromFile);
+                fromProject.ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[] { 1, 2, 3, 4 }, 0), fromProject.ChildNodeViewModelTemp));
+                fromFile.ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[] { 1, 2, 3, 4 }, 0), fromFile.ChildNodeViewModelTemp));
+                var before = ProjectRevision.Compute(model);
+
+                // The write of the second task puts the content of its file here before it writes: what is in the buffer is not its input.
+                fromFile.ChildNodeViewModelTemp.Children[0].DesfireFile = new MifareDesfireFileModel(new byte[] { 9, 9, 9, 9 }, 0);
+                var afterTheFile = ProjectRevision.Compute(model);
+                fromProject.ChildNodeViewModelTemp.Children[0].DesfireFile = new MifareDesfireFileModel(new byte[] { 9, 9, 9, 9 }, 0);
+                var afterTheEdit = ProjectRevision.Compute(model);
+
+                Assert.Equal(before, afterTheFile);
+                Assert.NotEqual(before, afterTheEdit);
+            });
+        }
+
+        [Fact]
+        public async Task TheDataOfAClassicTask_IsPartOfTheRevisionForAWriteTask_AndNotForOneThatReads()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var model = new ChipTaskHandlerModel();
+                var write = new MifareClassicSetupViewModel { CurrentTaskIndex = "0", SelectedTaskType = TaskType_MifareClassicTask.WriteData };
+                var read = new MifareClassicSetupViewModel { CurrentTaskIndex = "1", SelectedTaskType = TaskType_MifareClassicTask.ReadData };
+                model.TaskCollection.Add(write);
+                model.TaskCollection.Add(read);
+                var all = ProjectRevision.Compute(model);
+
+                // What a read puts into the task: the data of the card, in both buffers.
+                read.ChildNodeViewModelTemp.Children[0].MifareClassicDataBlock.Data = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+                read.ChildNodeViewModelFromChip.Children[0].MifareClassicDataBlock.Data = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+                var afterTheRead = ProjectRevision.Compute(model);
+
+                // What a person types into the task that writes.
+                write.ChildNodeViewModelTemp.Children[0].MifareClassicDataBlock.Data = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+                var afterTheEdit = ProjectRevision.Compute(model);
+
+                Assert.Equal(all, afterTheRead);
+                Assert.NotEqual(all, afterTheEdit);
+            });
         }
 
         [Fact]

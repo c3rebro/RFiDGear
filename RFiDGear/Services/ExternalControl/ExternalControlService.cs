@@ -131,7 +131,7 @@ namespace RFiDGear.Services.ExternalControl
                 () => supervisor?.LastResultSeq ?? 0,
                 () => supervisor?.ActiveRun,
                 () => autoMode?.GetStatus());
-            var operations = new BridgeHostOperations(host, busyActivity, dispatchToUi, uiTimeout);
+            var operations = new BridgeHostOperations(host, busyActivity);
 
             // What the host offers in this version of the bridge; a capability appears only when everything behind it is there.
             var capabilities = new HashSet<string>(StringComparer.Ordinal)

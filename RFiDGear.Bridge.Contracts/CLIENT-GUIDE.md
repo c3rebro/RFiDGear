@@ -96,11 +96,17 @@ either.
 text that says in which state the project is in RFiDGear now. It covers what a
 save would write, so a change that was made in the window and not saved is
 part of it, and it does not change when a run only leaves its results on the
-tasks. `startRun` with `expectProjectRevision` is refused before anything is
-touched (`projectMismatch`, field `expectProjectRevision`, `neverStarted`) when
-the project is in another state. The result of the run carries
-`projectRevision`: the state it started with, which is what you note down as
-what was run.
+tasks: the data that a task read from a card is no part of it, nor is what a
+task that reads holds in its data buffer, nor which task has the focus. The
+data that a write task is going to write is part of it. (A write task that is
+set to take its data from a file just before it writes does not: the revision
+says what is in the project, not what is in a file on the disk.) A load gives
+the revision of the project as it was put in place, so an edit that follows is
+a change of it. `startRun` with `expectProjectRevision` is refused before
+anything is touched (`projectMismatch`, field `expectProjectRevision`,
+`neverStarted`) when the project is in another state. The result of the run
+carries `projectRevision`: the state it started with, which is what you note
+down as what was run.
 
 - Take the revision from `loadProject`, or from `getStatus` after you decided
   to approve that state, and pass it to `startRun`. Compare nothing else about
@@ -114,7 +120,10 @@ what was run.
   later.
 - A RFiDGear that cannot tell a revision refuses a run that expects one, and
   does not offer the capability. A run never starts on a revision it cannot
-  check.
+  check. If it offers the capability and the answer to `loadProject` has no
+  `revision` (it could not make one for this project), do not start: a run
+  without the revision is only held back by the path and the task count, which
+  cannot tell a task that was changed in the window.
 - The result of automatic mode does not carry a revision yet.
 
 **After a doubt, a lost connection or a restart:**

@@ -180,6 +180,25 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheRevisionToExpect_IsTheOneOfTheLoad_AndAMissingOneIsRefusedWhenTheServerOffersRevisions()
+        {
+            var (_, pipe, host, _) = Start();
+            var client = await ConnectAsync(pipe);
+            host.ProjectHost.Revision = "aaaa1111";
+            var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\projects\two.rfPrj" });
+
+            Assert.Equal("aaaa1111", client.RevisionToExpect(loaded));
+
+            // The server offers the capability and could not make a revision for this project: a client that went on would run
+            // whatever is loaded, with only the path and the count to hold it back.
+            host.ProjectHost.Revision = null;
+            var withoutRevision = await client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\projects\two.rfPrj" });
+
+            Assert.Null(withoutRevision.Revision);
+            Assert.Throws<InvalidOperationException>(() => client.RevisionToExpect(withoutRevision));
+        }
+
+        [Fact]
         public async Task AServerThatNeverAnswersTheHandshake_EndsInATimeout_AndInACancellationWhenTheCallerGivesUp()
         {
             var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");

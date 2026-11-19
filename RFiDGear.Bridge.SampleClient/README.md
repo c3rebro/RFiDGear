@@ -30,7 +30,8 @@ number of tasks, and the revision of the project when RFiDGear offers
 `project.revision`) with the start, so that a project that was replaced or
 changed in the window in between is refused instead of run.
 `--expect-revision=<revision>` passes a revision you noted from `status`
-instead, to see such a refusal by hand.
+instead, to see such a refusal by hand. When RFiDGear offers the capability but
+gives no revision for the project it loaded, `run` does not start.
 
 `run` prints the request id before it calls, so that you can ask about the run
 with `result` even if the program is killed on the way; a result that cannot be

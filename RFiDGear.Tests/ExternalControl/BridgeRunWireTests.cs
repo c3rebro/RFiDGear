@@ -350,6 +350,7 @@ namespace RFiDGear.Tests.ExternalControl
                     action =>
                     {
                         action();
+                        AfterCommit?.Invoke();
 
                         return Task.CompletedTask;
                     },
@@ -375,6 +376,9 @@ namespace RFiDGear.Tests.ExternalControl
             public CapturingExecService Exec { get; } = new CapturingExecService();
 
             public ExtensionOperationCoordinator Coordinator { get; }
+
+            /// <summary>What happens right after the window has done what the host asked it to: the moment an edit can get in.</summary>
+            public Action? AfterCommit { get; set; }
 
             public void Dispose() => Host.Dispose();
         }
@@ -492,6 +496,43 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheRevisionOfALoad_IsTheStateThatWasCommitted_NotWhatAnEditLeftAMomentLater()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+
+            try
+            {
+                var (client, _, real) = await ConnectToRealHostAsync();
+                var edited = false;
+
+                // A task is changed in the window right after the project was put in place, before the answer is made.
+                real.AfterCommit = () =>
+                {
+                    if (!edited && real.Live.TaskCollection!.Count > 0)
+                    {
+                        edited = true;
+                        ((CommonTaskViewModel)real.Live.TaskCollection[0]).SelectedTaskDescription = "changed right after the commit";
+                    }
+                };
+
+                var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = path });
+                var now = (await client.Service.GetStatus(new GetStatusRequest())).Project.Revision;
+
+                // The load answers with the project as it was loaded; the edit is a change of it, which a run that expects the
+                // answer of the load is refused for. Were the revision read a moment after the commit, the edit would be inside it.
+                Assert.True(edited);
+                Assert.NotEqual(loaded.Revision, now);
+
+                var refused = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.StartRun(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = loaded.Revision }));
+                Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.ErrorCode);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
         public async Task ARevisionIsOfferedAsACapability_OnlyByAHostThatCanTellOne_AndWithoutItARunThatExpectsOneIsRefused()
         {
             var withRevisions = Start();
@@ -576,15 +617,18 @@ namespace RFiDGear.Tests.ExternalControl
             public Task<ProjectOpenResult> LoadAsync(string path, System.Threading.CancellationToken ct = default) => _inner.LoadAsync(path, ct);
 
             [Obsolete("The synchronous load is not part of what the bridge uses.")]
-            public void Load(string path) => throw new NotSupportedException();
+            public void Load(string path) => throw Unsupported(path);
 
-            public void New() => throw new NotSupportedException();
+            public void New() => throw Unsupported();
 
-            public void Save() => throw new NotSupportedException();
+            public void Save() => throw Unsupported();
 
-            public void SaveAs(string path) => throw new NotSupportedException();
+            public void SaveAs(string path) => throw Unsupported(path);
 
-            public void ReplaceTaskCollection(IEnumerable<object> tasks) => throw new NotSupportedException();
+            public void ReplaceTaskCollection(IEnumerable<object> tasks) => throw Unsupported(tasks);
+
+            private static NotSupportedException Unsupported(params object[] arguments) =>
+                new NotSupportedException("The bridge does not use this (" + arguments.Length + " arguments).");
         }
 
         [Fact]
