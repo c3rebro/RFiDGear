@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -318,7 +320,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 {
                     ApplyGrouping();
                     PruneCollapsedGroups();
-                    SaveViewState();
+                    RememberGrouping();
                 }
             }
         }
@@ -335,7 +337,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 if (value != null && SetProperty(ref _selectedSort, value))
                 {
                     ApplySort();
-                    SaveViewState();
+                    RememberSort();
                 }
             }
         }
@@ -370,16 +372,34 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="expanded">Whether it shows its orders now.</param>
         public void SetGroupExpanded(string? name, bool expanded)
         {
-            var changed = expanded ? _collapsedGroups.Remove(GroupKey(name)) : _collapsedGroups.Add(GroupKey(name));
+            var key = GroupKey(name);
+            var changed = expanded ? _collapsedGroups.Remove(key) : _collapsedGroups.Add(key);
             if (changed)
             {
-                SaveViewState();
+                RememberClosedGroups(expanded ? Array.Empty<string>() : new[] { key }, expanded ? new[] { key } : Array.Empty<string>());
             }
         }
 
         private string GroupKey(string? name) => GroupKey(_selectedGrouping.Grouping, name);
 
-        private static string GroupKey(OrderGrouping grouping, string? name) => grouping + ":" + name;
+        // The key of a closed group: the grouping, a colon and the name. The store keeps keys up to a length, and a customer's name
+        // can be longer than that (the order system does not limit it), so a key that would be too long is made from a hash of the
+        // name, with a tilde where the colon is: the same name always has the same key, two names have not, and no name can make
+        // the key of another, because every key of a name has the colon and none of a hash has.
+        private static string GroupKey(OrderGrouping grouping, string? name)
+        {
+            var key = grouping + ":" + name;
+            if (key.Length <= FileGuidedViewState.MaxGroupKeyLength)
+            {
+                return key;
+            }
+
+            return grouping + "~" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name ?? string.Empty)));
+        }
+
+        // Whether a key of a closed group is one of the grouping (of a name or of a hash).
+        private static bool BelongsTo(string key, OrderGrouping grouping) =>
+            key.StartsWith(grouping + ":", StringComparison.Ordinal) || key.StartsWith(grouping + "~", StringComparison.Ordinal);
 
         // The names of the groups the orders are in now, for the grouping in use.
         private HashSet<string> CurrentGroupNames()
@@ -396,52 +416,66 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         }
 
         // A group that is not in the list any more (a month long ago, a customer who has no order) is forgotten, so the
-        // closed groups of the grouping in use do not pile up. Nothing is forgotten while the list is empty: that may be
-        // a read that failed, and the groups come back with the next one.
+        // closed groups of the grouping in use do not pile up. Nothing is forgotten while the list is empty (that may be
+        // a read that failed, and the groups come back with the next one) or while it shows made-up orders (the test mode:
+        // the customers of the real list are not in it, and are back when the test mode is switched off).
         private void PruneCollapsedGroups()
         {
-            if (_orders.Count == 0)
+            if (_orders.Count == 0 || IsTestMode)
             {
                 return;
             }
 
-            var current = CurrentGroupNames();
-            var prefix = GroupKey(_selectedGrouping.Grouping, null);
-            var gone = _collapsedGroups.Where(key => key.StartsWith(prefix, StringComparison.Ordinal) && !current.Contains(key.Substring(prefix.Length))).ToList();
+            var current = CurrentGroupNames().Select(name => GroupKey(_selectedGrouping.Grouping, name)).ToHashSet(StringComparer.Ordinal);
+            var gone = _collapsedGroups.Where(key => BelongsTo(key, _selectedGrouping.Grouping) && !current.Contains(key)).ToList();
             if (gone.Count == 0)
             {
                 return;
             }
 
             _collapsedGroups.ExceptWith(gone);
-            SaveViewState();
+            RememberClosedGroups(Array.Empty<string>(), gone);
         }
 
-        // What the operator arranged is kept for the next window. The closed groups of the grouping in use come first, so
-        // that the limit of the file cuts the old ones of the others.
-        private void SaveViewState()
+        // What the operator arranged is kept for the next window, as a change to what is kept: two windows of the assistant can
+        // be open, and each of them only says what it changed, so one does not undo what the other did.
+        private void RememberGrouping() =>
+            UpdateViewState(state => Rebuilt(state, grouping: _selectedGrouping.Grouping.ToString()));
+
+        private void RememberSort() =>
+            UpdateViewState(state => Rebuilt(state, sort: _selectedSort.Sort.ToString()));
+
+        // The closed groups of the grouping in use come first, so that the limit of the file cuts the old ones of the others.
+        private void RememberClosedGroups(IEnumerable<string> closed, IEnumerable<string> opened) =>
+            UpdateViewState(state => Rebuilt(
+                state,
+                closedGroups: state.CollapsedGroups
+                    .Except(opened, StringComparer.Ordinal)
+                    .Concat(closed)
+                    .Distinct(StringComparer.Ordinal)
+                    .OrderBy(key => BelongsTo(key, _selectedGrouping.Grouping) ? 0 : 1)
+                    .ThenBy(key => key, StringComparer.Ordinal)
+                    .Take(FileGuidedViewState.MaxCollapsedGroups)
+                    .ToList()));
+
+        private static GuidedViewStateData Rebuilt(GuidedViewStateData state, string? grouping = null, string? sort = null, IReadOnlyList<string>? closedGroups = null) =>
+            new GuidedViewStateData
+            {
+                Grouping = grouping ?? state.Grouping,
+                Sort = sort ?? state.Sort,
+                CollapsedGroups = closedGroups ?? state.CollapsedGroups,
+            };
+
+        private void UpdateViewState(Func<GuidedViewStateData, GuidedViewStateData> change)
         {
             if (_viewState == null)
             {
                 return;
             }
 
-            var prefix = GroupKey(_selectedGrouping.Grouping, null);
-            var closed = _collapsedGroups
-                .OrderBy(key => key.StartsWith(prefix, StringComparison.Ordinal) ? 0 : 1)
-                .ThenBy(key => key, StringComparer.Ordinal)
-                .Take(FileGuidedViewState.MaxCollapsedGroups)
-                .ToList();
-            var state = new GuidedViewStateData
-            {
-                Grouping = _selectedGrouping.Grouping.ToString(),
-                Sort = _selectedSort.Sort.ToString(),
-                CollapsedGroups = closed,
-            };
-
             try
             {
-                _viewState.Save(state);
+                _viewState.Save(change(_viewState.Load()));
             }
             catch (Exception)
             {

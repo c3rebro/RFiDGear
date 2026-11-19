@@ -70,6 +70,25 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
+        public void TheLargestStateThatIsKept_IsReadBack_EvenWhenEveryNameIsWrittenAsEscapes()
+        {
+            // 200 names of 200 characters outside ASCII are written as escapes of six characters each: well over the 64 KiB that a
+            // modest file takes, and still a state that this version saved itself.
+            var store = new FileGuidedViewState(_folder);
+            var keys = Enumerable.Range(0, FileGuidedViewState.MaxCollapsedGroups)
+                .Select(i => "Customer:" + i.ToString("D3", System.Globalization.CultureInfo.InvariantCulture) + new string('ü', 188))
+                .ToList();
+            Assert.All(keys, key => Assert.Equal(200, key.Length));
+
+            store.Save(new GuidedViewStateData { Grouping = "Customer", Sort = "JobNumber", CollapsedGroups = keys });
+
+            Assert.True(new FileInfo(Path.Combine(_folder, FileGuidedViewState.FileName)).Length > 64 * 1024);
+            var loaded = store.Load();
+            Assert.Equal("Customer", loaded.Grouping);
+            Assert.Equal(keys, loaded.CollapsedGroups);
+        }
+
+        [Fact]
         public void AFolderThatCannotBeWritten_LosesWhatWasToBeSaved_WithoutAnError()
         {
             // The folder name is a file, so nothing can be made in it.

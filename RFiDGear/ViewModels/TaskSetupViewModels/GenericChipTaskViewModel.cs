@@ -373,9 +373,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             return await OnNewCheckChipTypeCommand(null);
         }
+
         /// <summary>
-        /// Whether the chip that was found is of the type the task checks for. A type that is only a family (the low byte is 0, as
-        /// <c>MifareClassic</c>) is a match for every chip of the family; any other type has to be the exact type of the chip, so
+        /// The bits of a chip type that say "a DESFire type" (0b01xx xxxx) and "a SmartMX" (0b01xx 1xxx); a type with these two
+        /// bits equal to those of <c>SmartMX_DESFire</c> is a SmartMX that presents itself as DESFire.
+        /// </summary>
+        private const int SmartMxDesfireMask = 0xC800;
+
+        /// <summary>
+        /// Whether the chip that was found is of the type the task checks for. A type that is only a family (the low 12 bits are 0, as
+        /// <c>MifareClassic</c>) is a match for every chip of the family; <c>SmartMX_DESFire</c> is the family of every SmartMX that
+        /// presents itself as DESFire (the SmartMX bit of the DESFire types, whatever the generation and the size: a reader names
+        /// the chip by its GetVersion answer, as <c>SmartMX_DESFireEV1_4K</c>); any other type has to be the exact type of the chip, so
         /// that a DESFire EV1 of 2K is not a DESFire EV1 of 4K. Two chips were reported as another type until Elatec.NET 0.7.0, and a
         /// check that passed for them still does: an NTAG passes a check for MifareUltralight, and a Plus in security level 1 passes
         /// a check for MifareClassic and for the Classic type of its size.
@@ -398,6 +407,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 return family == selected
                     || (selected == CARD_TYPE.MifareUltralight && family == CARD_TYPE.NTAG_210)
                     || (selected == CARD_TYPE.MifareClassic && ClassicTypeOfPlusInSecurityLevel1(found) != CARD_TYPE.NOTAG);
+            }
+
+            // A check for a SmartMX DESFire passes for every SmartMX DESFire chip: the DESFire types are 0b01xx xxxx, and the SmartMX
+            // ones have bit 3 of the high byte set (0b01xx 1xxx, see CARD_TYPE). The generic type 0x4800 is the one with the
+            // generation and the size left out, so it cannot be an exact match for a chip whose GetVersion answer is known.
+            if (selected == CARD_TYPE.SmartMX_DESFire)
+            {
+                return ((int)found & SmartMxDesfireMask) == (int)CARD_TYPE.SmartMX_DESFire;
             }
 
             // A check for the Classic type of a size passes for a Plus in security level 1 of that size; a check for a Plus type is exact.

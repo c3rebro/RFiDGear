@@ -47,9 +47,16 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         /// <summary>How many closed groups are kept. The page lists those of the grouping in use first, so a long tail of old ones cannot push them out.</summary>
         internal const int MaxCollapsedGroups = 200;
 
+        /// <summary>The longest key of a closed group that is kept (the grouping, a colon and the name); the page makes a longer one from a hash.</summary>
+        internal const int MaxGroupKeyLength = 200;
+
         private const int CurrentSchema = 1;
-        private const int MaxFileBytes = 64 * 1024;
-        private const int MaxGroupKeyLength = 200;
+
+        // What the largest state that is kept takes in the file: every key at its longest, every character written as an
+        // escape of six characters (\uXXXX, which is what the serializer does for a character outside ASCII), the quotes and the
+        // comma of each key, and room for the rest of the document. A file above this is not ours.
+        private const int MaxEscapedCharacterLength = 6;
+        private const int MaxFileBytes = (MaxCollapsedGroups * ((MaxGroupKeyLength * MaxEscapedCharacterLength) + 4)) + 4096;
 
         private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
         {

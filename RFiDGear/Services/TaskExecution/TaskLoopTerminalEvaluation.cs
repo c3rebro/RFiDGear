@@ -265,9 +265,26 @@ namespace RFiDGear.Services.TaskExecution
 
         private static bool IsPermittedConditionalSkip(
             TaskExecutionObservation skippedTask,
-            IReadOnlyCollection<TaskExecutionObservation> observations)
+            IReadOnlyCollection<TaskExecutionObservation> observations) =>
+            IsPermittedConditionalSkip(skippedTask, observations, new HashSet<TaskExecutionObservation>());
+
+        /// <summary>
+        /// Whether a skipped task was skipped because its condition does not hold. That is the case when the task it
+        /// depends on ran and ended with another error level than the condition asks for, or when that task was itself
+        /// skipped for the same reason: a task that never ran has no error level, so the condition of a task behind it
+        /// cannot hold either. A chain of such conditions (a task that runs only when the previous check said "no", for
+        /// each EV generation of a card) therefore ends at its first link that ran.
+        /// </summary>
+        /// <param name="skippedTask">The skipped task.</param>
+        /// <param name="observations">Every observation of the run.</param>
+        /// <param name="chain">The skipped tasks already looked at on this path, so that a loop of conditions ends.</param>
+        private static bool IsPermittedConditionalSkip(
+            TaskExecutionObservation skippedTask,
+            IReadOnlyCollection<TaskExecutionObservation> observations,
+            ISet<TaskExecutionObservation> chain)
         {
-            if (!string.Equals(
+            if (!chain.Add(skippedTask) ||
+                !string.Equals(
                     skippedTask.SkipReason,
                     Contracts.TaskSkipReasons.ExecuteConditionNotMet,
                     StringComparison.Ordinal) ||
@@ -280,8 +297,17 @@ namespace RFiDGear.Services.TaskExecution
             var conditionSource = observations.FirstOrDefault(candidate =>
                 string.Equals(candidate.TaskId, skippedTask.Task.SelectedExecuteConditionTaskIndex, StringComparison.Ordinal));
 
-            return conditionSource != null &&
-                string.Equals(conditionSource.Decision, ExecutedDecision, StringComparison.Ordinal) &&
+            if (conditionSource == null)
+            {
+                return false;
+            }
+
+            if (string.Equals(conditionSource.Decision, SkippedDecision, StringComparison.Ordinal))
+            {
+                return IsPermittedConditionalSkip(conditionSource, observations, chain);
+            }
+
+            return string.Equals(conditionSource.Decision, ExecutedDecision, StringComparison.Ordinal) &&
                 conditionSource.ErrorLevel != ERROR.Empty &&
                 conditionSource.ErrorLevel != skippedTask.Task.SelectedExecuteConditionErrorLevel;
         }
