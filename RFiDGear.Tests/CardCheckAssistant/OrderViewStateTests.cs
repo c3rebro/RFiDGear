@@ -131,7 +131,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var rows = new[]
             {
                 Row("1", customer: "zeta", created: "2026-01-01 08:00:00"),
-                Row("2", customer: ""),
+                Row("2"),
                 Row("3", customer: "Acme", created: "2026-01-01 08:00:00"),
                 Row("4", customer: "acme", created: "2026-05-01 08:00:00"),
             };
