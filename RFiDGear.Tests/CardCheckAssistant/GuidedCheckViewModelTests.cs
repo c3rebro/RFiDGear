@@ -403,6 +403,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     Assert.True(kept.Length <= FileGuidedViewState.MaxGroupKeyLength, "the key fits the store");
                     Assert.False(vm.IsGroupExpanded(longName));
                     Assert.True(vm.IsGroupExpanded(otherName));
+
+                    // A customer whose name looks like the hash of the long one is another group: no name makes the key of a hash.
+                    var hash = kept.Substring(kept.IndexOf('~') + 1);
+                    Assert.True(vm.IsGroupExpanded(hash));
+                    Assert.True(vm.IsGroupExpanded("#" + hash));
+                    Assert.True(vm.IsGroupExpanded("~" + hash));
                 },
                 viewState: memory);
 
@@ -422,6 +428,26 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 },
                 viewState: memory);
         }
+
+        [Fact]
+        public Task TwoWindows_EachSayOnlyWhatTheyChanged_SoOneDoesNotUndoTheOther() => StaTestRunner.RunOnStaThreadAsync(async () =>
+        {
+            var memory = new MemoryViewState();
+            var orders = WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00"));
+            using var first = new Page(WorkflowState.Idle, true, "en-US", 1, memory);
+            using var second = new Page(WorkflowState.Idle, true, "en-US", 1, memory);
+            await first.PushAsync(WorkflowState.Idle, orders);
+            await second.PushAsync(WorkflowState.Idle, orders);
+
+            // One window closes a group; the other, which does not know of that, changes the sort and opens a group of its own.
+            first.Vm.SetGroupExpanded("Created", false);
+            second.Vm.SelectedSort = second.Vm.Sorts.Single(option => option.Sort == OrderSort.JobNumber);
+            second.Vm.SetGroupExpanded("InProgress", false);
+            second.Vm.SetGroupExpanded("InProgress", true);
+
+            Assert.Equal("JobNumber", memory.Current.Sort);
+            Assert.Equal(new[] { "Status:Created" }, memory.Current.CollapsedGroups);
+        });
 
         [Fact]
         public Task WhatIsRemembered_IsOnlyUsedWhenItIsKnown_AndAStoreThatFails_DoesNotStopThePage()
