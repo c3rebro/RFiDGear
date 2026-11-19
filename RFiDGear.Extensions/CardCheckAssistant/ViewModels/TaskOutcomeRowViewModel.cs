@@ -38,43 +38,33 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         private readonly TaskOutcome _outcome;
         private readonly LocalizedStrings _strings;
-        private readonly ExecutionOutcome _runOutcome;
 
         /// <param name="outcome">What the host reported for the task.</param>
         /// <param name="strings">The page's texts.</param>
-        /// <param name="runOutcome">How the run that the task belongs to ended; a run that failed keeps what it cannot tell apart as failed.</param>
-        public TaskOutcomeRowViewModel(TaskOutcome outcome, LocalizedStrings strings, ExecutionOutcome runOutcome = ExecutionOutcome.Failure)
+        public TaskOutcomeRowViewModel(TaskOutcome outcome, LocalizedStrings strings)
         {
             _outcome = outcome;
             _strings = strings;
-            _runOutcome = runOutcome;
         }
 
         /// <summary>
         /// Whether a task ran and gave the answer "no" of a check (<c>IsNotTrue</c> or <c>IsNotFalse</c>), which is its result and
-        /// no failure: the host does not count it against the run, and a task that depends on it takes over from there. The host
-        /// knows a program that failed to start by the type of the task and never accepts it; a result carries only the name of the
-        /// view model, and the view model that starts programs also holds the logic checks. So in a run that failed, such an
-        /// answer of that view model stays a failure (it may be the program), and in a run that did not fail it cannot be one,
-        /// because the host would have failed the run for it.
+        /// no failure: the host does not count it against the run, and a task that depends on it takes over from there.
+        /// <para>
+        /// The host does not take a program that failed to start for an answer, but it accepts one when a later task consumes its
+        /// result, and a program that cannot be started ends <c>IsNotTrue</c> as well. A result carries only the name of the view
+        /// model, and the view model that starts programs also holds the logic checks, so what that view model reports is
+        /// ambiguous and stays a failure, in a run that failed and in one that did not. Only the checks of the other view models
+        /// (the chip type, a key, a file) are told as answers.
+        /// </para>
         /// </summary>
         /// <param name="outcome">What the host reported for the task.</param>
-        /// <param name="runOutcome">How the run that the task belongs to ended.</param>
         /// <returns><c>true</c> if the task is a check that answered "no".</returns>
-        internal static bool IsAnsweredNo(TaskOutcome outcome, ExecutionOutcome runOutcome)
-        {
-            if (outcome.SkipReason != null || outcome.IsSuccess != false)
-            {
-                return false;
-            }
-
-            if (outcome.NormalizedErrorCode != IsNotTrueCode && outcome.NormalizedErrorCode != IsNotFalseCode)
-            {
-                return false;
-            }
-
-            return runOutcome != ExecutionOutcome.Failure || outcome.TaskTypeName != CommonTaskTypeName;
-        }
+        internal static bool IsAnsweredNo(TaskOutcome outcome) =>
+            outcome.SkipReason == null
+            && outcome.IsSuccess == false
+            && (outcome.NormalizedErrorCode == IsNotTrueCode || outcome.NormalizedErrorCode == IsNotFalseCode)
+            && outcome.TaskTypeName != CommonTaskTypeName;
 
         /// <summary>The task's place in the project, starting at 1.</summary>
         public int Position => _outcome.Position + 1;
@@ -98,7 +88,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     return TaskRowKind.Skipped;
                 }
 
-                if (IsAnsweredNo(_outcome, _runOutcome))
+                if (IsAnsweredNo(_outcome))
                 {
                     return TaskRowKind.AnsweredNo;
                 }
@@ -122,7 +112,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     return SkipText(_outcome.SkipReason);
                 }
 
-                if (IsAnsweredNo(_outcome, _runOutcome))
+                if (IsAnsweredNo(_outcome))
                 {
                     return _strings[ExtensionStrings.Keys.RowAnsweredNo];
                 }

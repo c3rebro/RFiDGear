@@ -916,36 +916,46 @@ namespace RFiDGear.Tests.CardCheckAssistant
             return new ExecResult("run", outcome, 6, 4, now, now, outcomes);
         }
 
-        [Fact]
-        public Task ACheckThatAnsweredNo_IsNotShownAsFailed_WhenTheRunDidNotFail() => Run(async page =>
+        [Theory]
+        [InlineData(ExecutionOutcome.CompletedWithIntentionalFailures)]
+        [InlineData(ExecutionOutcome.Failure)]
+        public Task ACheckThatAnsweredNo_IsNotShownAsFailed_WhateverTheRunCameTo(ExecutionOutcome runOutcome) => Run(async page =>
         {
             var vm = page.Vm;
-            var result = AnswersOfAProject(ExecutionOutcome.CompletedWithIntentionalFailures);
+            var result = AnswersOfAProject(runOutcome);
             await page.PushAsync(WorkflowState.Assessing, s => s with { Check = new CheckRunResult(CheckRunStatus.Finished, null, result, null, null) });
 
+            // Task 13 is of the view model that also starts programs and stays a failure (see the next test).
             Assert.Equal(
-                new[] { TaskRowKind.AnsweredNo, TaskRowKind.AnsweredNo, TaskRowKind.Success, TaskRowKind.AnsweredNo, TaskRowKind.Failure, TaskRowKind.Skipped },
+                new[] { TaskRowKind.AnsweredNo, TaskRowKind.AnsweredNo, TaskRowKind.Success, TaskRowKind.Failure, TaskRowKind.Failure, TaskRowKind.Skipped },
                 vm.Rows.Select(row => row.Kind));
             Assert.Equal(vm.Strings[Keys.RowAnsweredNo], vm.Rows[0].ResultText);
             Assert.Equal("IsNotTrue", vm.Rows[0].ErrorCode);   // what the host said stays visible
             Assert.Equal(vm.Strings[Keys.RowFailed], vm.Rows[4].ResultText);   // a real error is still a failure
 
-            // One real failure; the three answers are named, not counted as failures.
-            Assert.Equal(vm.Strings.Format(Keys.SummaryFormat, 1, 6) + ", " + vm.Strings.Format(Keys.SummaryAnswersFormat, 3), vm.SummaryText);
+            // Two real failures; the two answers are named, not counted as failures.
+            Assert.Equal(vm.Strings.Format(Keys.SummaryFormat, 2, 6) + ", " + vm.Strings.Format(Keys.SummaryAnswersFormat, 2), vm.SummaryText);
         });
 
         [Fact]
-        public Task InARunThatFailed_ASingleAnswerOfTheViewModelThatAlsoStartsPrograms_StaysFailed() => Run(async page =>
+        public Task AFailedProgramStartThatALaterTaskConsumed_IsNeverToldAsAnAnswer() => Run(async page =>
         {
             var vm = page.Vm;
-            var result = AnswersOfAProject(ExecutionOutcome.Failure);
-            await page.PushAsync(WorkflowState.RunFailed, s => s with { Check = new CheckRunResult(CheckRunStatus.Failed, new Failure(FailureKind.Unexpected, "run.failed", "x"), result, null, null) });
+            var now = DateTimeOffset.UtcNow;
 
-            // Task 13 is of the view model that holds both the logic checks and the start of a program: it may be the program.
-            Assert.Equal(TaskRowKind.Failure, vm.Rows[3].Kind);
-            Assert.Equal(TaskRowKind.AnsweredNo, vm.Rows[0].Kind);
-            Assert.Equal(TaskRowKind.AnsweredNo, vm.Rows[1].Kind);
-            Assert.Equal(vm.Strings.Format(Keys.SummaryFormat, 2, 6) + ", " + vm.Strings.Format(Keys.SummaryAnswersFormat, 2), vm.SummaryText);
+            // The host accepts a program that could not be started when a later task handles it, and then the run did not fail: the
+            // task is of the view model that also holds the logic checks, and ends IsNotTrue like a check that said no.
+            var outcomes = new[]
+            {
+                new TaskOutcome(0, "7", "CommonTaskViewModel", false, "IsNotTrue"),
+                new TaskOutcome(1, "8", "GenericChipTaskViewModel", true, "NoError"),
+            };
+            var result = new ExecResult("run", ExecutionOutcome.CompletedWithIntentionalFailures, 2, 1, now, now, outcomes);
+            await page.PushAsync(WorkflowState.Assessing, s => s with { Check = new CheckRunResult(CheckRunStatus.Finished, null, result, null, null) });
+
+            Assert.Equal(TaskRowKind.Failure, vm.Rows[0].Kind);
+            Assert.Equal(vm.Strings[Keys.RowFailed], vm.Rows[0].ResultText);
+            Assert.Equal(vm.Strings.Format(Keys.SummaryFormat, 1, 2), vm.SummaryText);   // counted, and no answers are named
         });
 
         [Fact]
