@@ -14,7 +14,7 @@
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <!-- What the person is asked when the extension is installed from a package (PackExtension.targets): its name, and the oldest RFiDGear it works with. -->
     <ExtensionDisplayName>Card Check Assistant</ExtensionDisplayName>
-    <ExtensionMinHostVersion>2.1.0</ExtensionMinHostVersion>
+    <ExtensionMinHostVersion>2.1.1</ExtensionMinHostVersion>
   </PropertyGroup>
   <!-- The package is for the platform of its sni.dll. A build normally takes it from the platform of the build, but
        RFiDGearSqlNativePlatform can say another one (see SqlDriverPayload.targets), and the package must say what is in it. -->
