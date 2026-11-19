@@ -26,6 +26,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         // is the one that is used even if this type was touched before logging was configured.
         private static ILogger Logger => Log.ForContext<TaskExecHostImpl>();
 
+        // How long the end of a run waits for the window to read the revision before it lets go of the gate without one.
+        private static readonly TimeSpan RevisionReadTimeout = TimeSpan.FromSeconds(2);
+
         private readonly ITaskExecutionService _execService;
         private readonly ProjectHostImpl _project;
         private readonly ExtensionOperationCoordinator _coordinator;
@@ -69,7 +72,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ExecuteAllAsync(request, Guid.NewGuid().ToString("N"), ct);
 
         /// <inheritdoc/>
-        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct)
+        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct, Action<string?>? runEnding = null)
         {
             if (request == null)
             {
@@ -170,6 +173,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             }
             finally
             {
+                // Told while the gate is still held: until EndExecution no edit and no load can commit, so the project as it is
+                // now is what the run made of it.
+                await TellRunEndingAsync(runEnding, runId).ConfigureAwait(false);
                 _coordinator.EndExecution();
             }
 
@@ -178,6 +184,44 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             RaiseExecutionCompleted(execResult);
             NotifyRunEnded(execResult, abandoned);
             return execResult;
+        }
+
+        /// <summary>
+        /// Reads the revision of the project on the thread of the window, with a time limit, and hands it to the caller of the
+        /// run. A window that does not answer, a project that cannot be fingerprinted or a caller that throws never keep the gate
+        /// closed or turn the end of a card operation into an exception: the caller then gets <see langword="null"/>.
+        /// </summary>
+        private async Task TellRunEndingAsync(Action<string?>? runEnding, string runId)
+        {
+            if (runEnding == null)
+            {
+                return;
+            }
+
+            string? revision = null;
+
+            try
+            {
+                var read = _project.ReadRevisionOnTheWindowAsync();
+
+                if (await Task.WhenAny(read, Task.Delay(RevisionReadTimeout)).ConfigureAwait(false) == read)
+                {
+                    revision = await read.ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is OperationCanceledException)
+            {
+                Logger.Warning("The revision at the end of run {RunId} could not be read ({ExceptionType})", runId, ex.GetType().FullName);
+            }
+
+            try
+            {
+                runEnding(revision);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("The caller of run {RunId} threw when told that the run was ending ({ExceptionType})", runId, ex.GetType().FullName);
+            }
         }
 
         /// <summary>

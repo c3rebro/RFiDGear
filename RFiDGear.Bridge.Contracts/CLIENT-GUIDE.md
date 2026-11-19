@@ -127,9 +127,10 @@ down as what was run.
   after the run may show another value. What is not recognized: a change made
   in the window after the run, what a run left that was started in the window,
   by automatic mode or by an extension (the bridge did not see where it
-  started), and any run when the window did not answer right after it. Such a
-  state is refused, which is the safe way to be wrong: read the revision again
-  and approve it.
+  started), and any run for which RFiDGear could not read the state at its end
+  (the window did not answer in time). An edit that comes after the end of the
+  run is never taken for what the run did. Such a state is refused, which is the
+  safe way to be wrong: read the revision again and approve it.
 - A RFiDGear that cannot tell a revision refuses a run that expects one, and
   does not offer the capability. A run never starts on a revision it cannot
   check. If it offers the capability and the answer to `loadProject` has no

@@ -34,7 +34,6 @@ namespace RFiDGear.Services.ExternalControl
     internal sealed class RunSupervisor
     {
         private static readonly TimeSpan DefaultAdmissionTimeout = TimeSpan.FromSeconds(5);
-        private static readonly TimeSpan RevisionReadTimeout = TimeSpan.FromSeconds(2);
 
         private static ILogger Logger => Log.ForContext<RunSupervisor>();
 
@@ -516,7 +515,7 @@ namespace RFiDGear.Services.ExternalControl
             try
             {
                 MarkAdmitting(record);
-                run = _execution.ExecuteAllAsync(plan.ToExecutionRequest(), record.RunId, record.Cancellation.Token);
+                run = _execution.ExecuteAllAsync(plan.ToExecutionRequest(), record.RunId, record.Cancellation.Token, revision => record.ProjectRevisionAtEnd = revision);
             }
             catch (Exception e)
             {
@@ -657,40 +656,20 @@ namespace RFiDGear.Services.ExternalControl
                 (seq, sessionId, at) => new RunStartedEvent { Seq = seq, SessionId = sessionId, At = at, RequestId = requestId, RunId = runId, StartedAt = startedAt });
         }
 
-        // A run changes the project it runs (tasks write what they found into their own settings), and the project cannot be edited while
-        // it goes on, so the state after it is the one it started with, changed by the run alone. The revision is read on the thread of
-        // the window, with a time limit: a window that does not answer leaves the difference unrecognized, which refuses the next run
-        // that expects the old revision, the safe way to be wrong. This is not on the thread of the window itself (the run's task
-        // continues on the thread pool), so the wait does not hold it up.
+        // A run changes the project it runs (tasks write what they found into their own settings). The host told this run, while it
+        // still held its gate and before any edit or load could commit, which state it left (RunRecord.ProjectRevisionAtEnd): that
+        // is the project it started with, changed by the run alone. A host that could not tell leaves the difference unrecognized,
+        // which refuses the next run that expects the old revision, the safe way to be wrong.
         private void AbsorbWhatTheRunDidToTheProject(RunRecord record)
         {
-            if (record.ProjectRevision == null || _host.Project is not IProjectRevisionSource source)
-            {
-                return;
-            }
+            var before = record.ProjectRevision;
+            var after = record.ProjectRevisionAtEnd;
 
-            string? after = null;
-
-            try
+            if (before != null && after != null && !string.Equals(before, after, StringComparison.Ordinal))
             {
-                if (!_dispatchToUi(() => after = source.GetProjectRevision()).Wait(RevisionReadTimeout))
-                {
-                    return;
-                }
-            }
-            catch (Exception e) when (e is AggregateException || e is InvalidOperationException || e is OperationCanceledException)
-            {
-                Logger.Warning("External control: the revision after run {RunId} could not be read ({ExceptionType})", record.RunId, e.GetType().FullName);
-
-                return;
-            }
-
-            if (after != null && !string.Equals(after, record.ProjectRevision, StringComparison.Ordinal))
-            {
-                _lineage.Absorb(record.ProjectRevision, after);
+                _lineage.Absorb(before, after);
             }
         }
-
         // The one place a run of the bridge ends. It is reached from the task of the run only.
         private void Finish(RunRecord record, Task<ExecResult> task)
         {

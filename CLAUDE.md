@@ -424,9 +424,14 @@ passed with a real reader; until then a snapshot may be re-baselined.
   input and result (DESFire writes `AppNumberCurrent`, `KeyVersionCurrent`
   and `FileSizeCurrent` itself), so no list can sort them: `RevisionLineage`
   (`RunSupervisor`) records that the state after a run of the bridge is the
-  project it started with, and `CheckProject` accepts either. Runs of the
-  window, of automatic mode and of extensions are not followed. The project
-  host gives it through the internal
+  project it started with, and `CheckProject` accepts either. The state after
+  the run is read by the host itself (`TaskExecHostImpl`, the `runEnding`
+  callback of `IPreassignedRunExecution`) in the `finally` of the run, before
+  it lets go of the coordinator gate, so no edit and no load can commit between
+  the end of the run and that read; a host that could not read it (the window
+  did not answer within 2 s) leaves the difference unrecognized and the next
+  run is refused. Runs of the window, of automatic mode and of extensions are
+  not followed. The project host gives the revision through the internal
   `IProjectRevisionSource` (a host without it does not offer the capability
   and refuses a run that expects a revision); `LoadWithRevisionAsync` takes it
   inside the commit of a load. It is read on the main window's thread.

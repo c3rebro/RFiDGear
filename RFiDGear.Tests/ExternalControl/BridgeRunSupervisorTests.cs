@@ -478,40 +478,46 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
-        public async Task AWindowThatDoesNotAnswerAfterTheRun_LeavesTheDifferenceUnrecognized_ButNeverStopsTheRunFromEnding()
+        public async Task AHostThatCouldNotTellTheStateTheRunLeft_LeavesTheDifferenceUnrecognized_ButTheRunEnds()
         {
             var h = new Harness();
-            var calls = 0;
-
-            // The window takes the request for the run, and then it is busy.
-            h.Dispatch = action =>
-            {
-                if (calls++ == 0)
-                {
-                    action();
-
-                    return Task.CompletedTask;
-                }
-
-                return new TaskCompletionSource<bool>().Task;
-            };
             h.Host.ProjectHost.Revision = "r0";
             h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
             await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "r0" });
+
+            // The run changed the project, and at its end the host could not say how: the window did not answer in time.
             h.Host.ProjectHost.Revision = "r1";
+            h.Host.ExecutionHost.RevisionAtEnd = () => null;
             h.Host.ExecutionHost.RunGate.SetResult(true);
-
-            var done = await ResultOf(h, "r-1", 15_000);
-            h.Dispatch = action =>
-            {
-                action();
-
-                return Task.CompletedTask;
-            };
+            var done = await ResultOf(h, "r-1");
             var refused = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-2", ExpectProjectRevision = "r0" }));
 
             Assert.Equal(RunStates.Completed, done.State);
             Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.Code);
+        }
+
+        [Fact]
+        public async Task AnEditThatFollowsTheEndOfTheRun_IsNotTakenForWhatTheRunDid_EvenWhenItComesBeforeTheResult()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "r0";
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "r0" });
+
+            // The run leaves r1. The moment the host has let go of its gate, a person changes a task, or another project is loaded:
+            // that is before the result is final, and it is not the run's doing.
+            h.Host.ProjectHost.Revision = "r1";
+            h.Host.ExecutionHost.AfterRunEnding = () => h.Host.ProjectHost.Revision = "r9";
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            await ResultOf(h, "r-1");
+
+            var withTheOld = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-2", ExpectProjectRevision = "r0" }));
+            var withTheRunsOwn = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-3", ExpectProjectRevision = "r1" }));
+
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, withTheOld.Code);
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, withTheRunsOwn.Code);
+            Assert.True(withTheOld.NeverStarted);
+            Assert.Single(h.Host.ExecutionHost.Requests);
         }
 
         [Fact]

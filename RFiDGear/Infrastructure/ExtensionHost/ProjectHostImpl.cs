@@ -136,6 +136,19 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             }
         }
 
+        /// <summary>
+        /// Reads the revision on the thread that owns the tasks (the window's), for a caller that is not on it.
+        /// </summary>
+        /// <returns>The revision, or <see langword="null"/> (see <see cref="GetProjectRevision"/>).</returns>
+        internal async Task<string?> ReadRevisionOnTheWindowAsync()
+        {
+            string? revision = null;
+
+            await _dispatch(() => revision = GetProjectRevision()).ConfigureAwait(false);
+
+            return revision;
+        }
+
         /// <inheritdoc/>
         public event EventHandler? ProjectChanged;
 

@@ -154,6 +154,12 @@ namespace RFiDGear.Services.ExternalControl
         /// </summary>
         internal string? ProjectRevision { get; set; }
 
+        /// <summary>
+        /// Gets or sets the revision of the project right after the run, which the host reads while the run still holds its gate, or
+        /// <see langword="null"/> when it could not. What differs from <see cref="ProjectRevision"/> is what the run did to the project.
+        /// </summary>
+        internal string? ProjectRevisionAtEnd { get; set; }
+
         /// <summary>Gets or sets the final result; kept while the registry keeps results, then <see langword="null"/>.</summary>
         internal RunResultDto? Result { get; set; }
 

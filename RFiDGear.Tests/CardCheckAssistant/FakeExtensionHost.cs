@@ -22,6 +22,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
         {
             ProjectHost = new FakeProjectHost();
             ExecutionHost = new FakeExecHost();
+
+            // What the run leaves behind is what the project says its revision is when the run ends.
+            ExecutionHost.RevisionAtEnd = () => ProjectHost.Revision;
             ReaderHost = new FakeReaderHost();
             Context = new FakeAppContext(cultureName);
             AutoModeHost = new FakeAutoModeHost();
@@ -282,7 +285,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         /// waits for <see cref="RunGate"/> ends as cancelled when its token is cancelled first, at the "task boundary" that is
         /// the wait.
         /// </summary>
-        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct)
+        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct, Action<string?>? runEnding = null)
         {
             Requests.Add(request);
             RunTokens.Add(ct);
@@ -313,12 +316,24 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
             finally
             {
+                // As the real host does, while it still holds its gate: tells the caller which state the run left.
+                runEnding?.Invoke(RevisionAtEnd?.Invoke());
+
+                // The moment after: what can happen once the host has let go (a test changes the project here).
+                AfterRunEnding?.Invoke();
+
                 if (SimulateRunningState)
                 {
                     SetRunning(false);
                 }
             }
         }
+
+        /// <summary>What a run reports to the caller of <c>ExecuteAllAsync</c> as the revision it leaves behind; <see langword="null"/> says it cannot tell.</summary>
+        public Func<string?>? RevisionAtEnd { get; set; }
+
+        /// <summary>Called right after the caller was told how the project ended; a test makes an edit here, as one that follows the run.</summary>
+        public Action? AfterRunEnding { get; set; }
 
         public void ResetStatus() => throw new NotSupportedException();
     }

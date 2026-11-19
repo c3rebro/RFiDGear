@@ -525,6 +525,52 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheHostTellsTheRunWhatItLeft_WhileItStillHoldsTheGate_SoNoEditOrLoadCanBeTakenForTheRunsDoing()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+
+            try
+            {
+                using var real = new RealHost();
+                Assert.True((await real.Host.Project.LoadAsync(path)).Success);
+                var before = ((IProjectRevisionSource)real.Host.Project).GetProjectRevision();
+
+                string? told = null;
+                var holdsTheGate = false;
+                var editRefused = false;
+                var loadRefused = false;
+
+                await ((IPreassignedRunExecution)real.Host.Execution).ExecuteAllAsync(ExecutionRequest.Empty, "ends-run", default, revision =>
+                {
+                    told = revision;
+                    holdsTheGate = real.Coordinator.IsExecuting;
+
+                    // What a person or another program would do at this moment, on the thread that told the run: refused.
+                    try
+                    {
+                        real.Host.Project.ReplaceTaskCollection(Array.Empty<object>());
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        editRefused = true;
+                    }
+
+                    loadRefused = real.Host.Project.LoadAsync(path).GetAwaiter().GetResult().Error == ProjectOpenError.Busy;
+                });
+
+                Assert.True(holdsTheGate);
+                Assert.True(editRefused);
+                Assert.True(loadRefused);
+                Assert.Equal(before, told);
+                Assert.False(real.Coordinator.IsExecuting);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
         public async Task TheRevisionOfALoad_IsTheStateThatWasCommitted_NotWhatAnEditLeftAMomentLater()
         {
             var path = ProjectFixtures.CreateProject(2);
