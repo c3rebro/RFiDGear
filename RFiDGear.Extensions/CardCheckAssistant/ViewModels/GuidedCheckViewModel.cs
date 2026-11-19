@@ -511,7 +511,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     return string.Empty;
                 }
 
-                var answers = result.TaskOutcomes.Count(outcome => TaskOutcomeRowViewModel.IsAnsweredNo(outcome, result.Outcome));
+                var answers = result.TaskOutcomes.Count(outcome => TaskOutcomeRowViewModel.IsAnsweredNo(outcome));
                 var summary = Strings.Format(Keys.SummaryFormat, Math.Max(0, result.FailedTasks - answers), result.TotalTasks);
                 return answers == 0 ? summary : summary + ", " + Strings.Format(Keys.SummaryAnswersFormat, answers);
             }
@@ -1169,7 +1169,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
             foreach (var outcome in result.TaskOutcomes)
             {
-                _rows.Add(new TaskOutcomeRowViewModel(outcome, Strings, result.Outcome));
+                _rows.Add(new TaskOutcomeRowViewModel(outcome, Strings));
             }
         }
 
