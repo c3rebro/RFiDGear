@@ -540,12 +540,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public IReadOnlyDictionary<string, string> Args { get; set; }
 
         /// <summary>
-        /// Checks the UID of the card against <see cref="SelectedUIDOfChip"/>: a UID typed into the task, or a placeholder such as
-        /// <c>$EXPECTEDUID</c> for the UID that the caller of the run expects (see <see cref="ExpectedUid"/>). A run hands over
-        /// the chip it has read itself, so that the UID that is checked is the one the result of the run reports.
+        /// Checks the UID of the card that is on the reader now against <see cref="SelectedUIDOfChip"/>: a UID typed into the task,
+        /// or a placeholder such as <c>$EXPECTEDUID</c> for the UID that the caller of the run expects (see <see cref="ExpectedUid"/>).
+        /// It reads the card itself. A run does not use this, see <see cref="CheckUidOfRunAsync"/>.
         /// </summary>
-        public IAsyncRelayCommand CheckChipUID => new AsyncRelayCommand<GenericChipModel>(chip => OnNewCheckChipUIDCommand(chip));
-        private async Task<ERROR> OnNewCheckChipUIDCommand(GenericChipModel chip)
+        public ICommand CheckChipUID => new AsyncRelayCommand(OnNewCheckChipUIDCommand);
+        private async Task<ERROR> OnNewCheckChipUIDCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
@@ -553,19 +553,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 if (device != null)
                 {
-                    var chipToUse = chip;
-                    var read = ERROR.NoError;
+                    var read = await device.ReadChipPublic();
+                    var chip = device.GenericChip;
 
-                    if (chipToUse == null)
-                    {
-                        read = await device.ReadChipPublic();
-                        chipToUse = device.GenericChip;
-                    }
-
-                    // A card that could not be read is that error, not an empty answer.
+                    // A card that could not be read is that error, not an empty answer, and not the card of an earlier read.
                     CurrentTaskErrorLevel = read != ERROR.NoError
                         ? read
-                        : ExpectedUid.Check(SelectedUIDOfChip, RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.PrimaryUidOf(chipToUse) ?? chipToUse?.UID, Args);
+                        : ExpectedUid.Check(SelectedUIDOfChip, RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.PrimaryUidOf(chip) ?? chip?.UID, Args);
                 }
                 else
                 {
@@ -573,14 +567,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
+            return Conclude();
+        }
+
+        /// <summary>
+        /// The check as a run does it: against the UID of the card that the read of the run found at its start, the one the result
+        /// of the run reports, and without a read of its own. A reader may still hold the chip of an earlier card after a read that
+        /// failed (a PC/SC reader does), and that card is not the run's. A run whose read found no card passes <see langword="null"/>,
+        /// which no expected UID matches.
+        /// </summary>
+        /// <param name="cardUid">The UID of the card the run read, or <see langword="null"/>.</param>
+        /// <returns>What the check ended with.</returns>
+        internal Task<ERROR> CheckUidOfRunAsync(string cardUid)
+        {
+            CurrentTaskErrorLevel = ExpectedUid.Check(SelectedUIDOfChip, cardUid, Args);
+
+            return Task.FromResult(Conclude());
+        }
+
+        private ERROR Conclude()
+        {
+            IsTaskCompletedSuccessfully = CurrentTaskErrorLevel == ERROR.NoError;
 
             return CurrentTaskErrorLevel;
         }

@@ -1326,6 +1326,48 @@ namespace RFiDGear.Tests
             Assert.Null(tasks[0].Args);
         }
 
+        [Fact]
+        public async Task ARejectionBranchThatRuns_DoesNotMakeARefusalAnAcceptedFailure_ButItDoesForTheAnswerNo()
+        {
+            // The handler of a task that answered "no" is what makes that answer one the project asked for. A card that was not
+            // expected is a refusal: whatever the project does afterwards, the run has failed.
+            var refused = await RunProjectAsync(
+                () => CheckUid("0", "$EXPECTEDUID"),
+                () => TaskAfterTheCheck("1", ERROR.CardNotExpected));
+            var answered = await RunProjectAsync(
+                () => CheckUid("0", "ABCDEF0123"),
+                () => TaskAfterTheCheck("1", ERROR.IsNotTrue));
+
+            Assert.Equal(new[] { "Executed", "Executed" }, refused.Observations.OrderBy(o => o.TaskPosition).Select(o => o.Decision));
+            Assert.Equal(TaskLoopTerminalStatus.Failure, refused.Result.TerminalStatus);
+            Assert.Equal(new[] { "Executed", "Executed" }, answered.Observations.OrderBy(o => o.TaskPosition).Select(o => o.Decision));
+            Assert.Equal(TaskLoopTerminalStatus.CompletedWithIntentionalFailures, answered.Result.TerminalStatus);
+        }
+
+        [Fact]
+        public async Task AReadThatFailedAndLeftTheChipOfAnEarlierCard_IsNotTheCardOfTheRun()
+        {
+            // A PC/SC reader keeps the chip of the earlier card when a read fails. The UID the caller named is that old card's: the
+            // run's own read found no card, so nothing matches, and nothing that depends on the check runs.
+            var tasks = new List<GenericChipTaskViewModel>();
+
+            var (result, observations) = await RunProjectAsync(
+                new Dictionary<string, string> { ["$EXPECTEDUID"] = "0123456789" },
+                reader =>
+                {
+                    reader.Pcsc = true;
+                    reader.Card = null;
+                    reader.Script(ERROR.TransportError);
+                },
+                () => Added(tasks, CheckUid("0", "$EXPECTEDUID")),
+                () => Added(tasks, TaskAfterTheCheck("1", ERROR.NoError)));
+
+            Assert.Equal(ERROR.CardNotExpected, tasks[0].CurrentTaskErrorLevel);
+            Assert.Equal(new[] { "Executed", "Skipped" }, observations.OrderBy(o => o.TaskPosition).Select(o => o.Decision));
+            Assert.Equal(ERROR.Empty, tasks[1].CurrentTaskErrorLevel);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
         private static object Added<T>(List<T> list, T task)
         {
             list.Add(task);
@@ -1339,7 +1381,11 @@ namespace RFiDGear.Tests
             RunProjectAsync(new Dictionary<string, string>(), createTasks);
 
         // The same with the variables of the run: what a start-up argument, startRun of the bridge or an extension hands over.
-        private static async Task<(TaskExecutionResult Result, List<TaskExecutionObservation> Observations)> RunProjectAsync(Dictionary<string, string> variables, params Func<object>[] createTasks)
+        private static Task<(TaskExecutionResult Result, List<TaskExecutionObservation> Observations)> RunProjectAsync(Dictionary<string, string> variables, params Func<object>[] createTasks) =>
+            RunProjectAsync(variables, null, createTasks);
+
+        // The same with a hook for the reader of the test: what it does when it is read, for a read that fails and leaves the chip of an earlier card.
+        private static async Task<(TaskExecutionResult Result, List<TaskExecutionObservation> Observations)> RunProjectAsync(Dictionary<string, string> variables, Action<RFiDGear.Tests.Reader.ScriptedReadProvider> configureReader, params Func<object>[] createTasks)
         {
             TaskExecutionResult result = null;
             var observations = new List<TaskExecutionObservation>();
@@ -1348,6 +1394,7 @@ namespace RFiDGear.Tests
             {
                 var chip = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102);
                 var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider { GenericChip = chip, Card = chip };
+                configureReader?.Invoke(reader);
 
                 using (ReaderDeviceScope.Use(reader))
                 {

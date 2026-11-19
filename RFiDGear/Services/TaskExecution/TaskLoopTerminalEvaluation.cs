@@ -163,8 +163,10 @@ namespace RFiDGear.Services.TaskExecution
             var failed = executed.Where(item => item.WasSuccessful == false).ToList();
 
             // The task the watchdog gave up has given no answer, and no downstream task handled it: its failure is never accepted.
+            // A card that the caller did not expect is a refusal, not an answer, and no handler that ran after it makes it one: a run that
+            // has it has failed, whatever a rejection branch of the project did afterwards.
             var acceptedFailures = failed.Count(item =>
-                item.TaskPosition != abandonedAt && (IsLogicAnswer(item) || IsFailureConsumed(item, executed, errorRouting)));
+                item.TaskPosition != abandonedAt && item.ErrorLevel != ERROR.CardNotExpected && (IsLogicAnswer(item) || IsFailureConsumed(item, executed, errorRouting)));
             var skipped = items.Where(item => string.Equals(item.Decision, SkippedDecision, StringComparison.Ordinal)).ToList();
             var unknown = executed.Count(item => !item.WasSuccessful.HasValue);
             var invalidSkips = skipped.Count(item => !IsPermittedConditionalSkip(item, items));

@@ -837,7 +837,7 @@ namespace RFiDGear.Services.TaskExecution
                                     executedTask = await HandleCommonTaskAsync(commonTask, request, result, descriptors, genericChip, device);
                                     break;
                                 case GenericChipTaskViewModel genericTask:
-                                    executedTask = await HandleGenericChipTaskAsync(genericTask, request, descriptors, device);
+                                    executedTask = await HandleGenericChipTaskAsync(genericTask, request, descriptors, device, cardUid);
                                     break;
                                 case MifareClassicSetupViewModel classicTask:
                                     executedTask = await HandleClassicTaskAsync(classicTask, request, descriptors);
@@ -1560,7 +1560,7 @@ namespace RFiDGear.Services.TaskExecution
             return executed;
         }
 
-        private async Task<bool> HandleGenericChipTaskAsync(GenericChipTaskViewModel genericTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors, ReaderDevice device)
+        private async Task<bool> HandleGenericChipTaskAsync(GenericChipTaskViewModel genericTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors, ReaderDevice device, string cardUid)
         {
             switch (genericTask.SelectedTaskType)
             {
@@ -1575,7 +1575,10 @@ namespace RFiDGear.Services.TaskExecution
 
                     try
                     {
-                        return await RunGenericChipCheckAsync(genericTask, request, descriptors, () => genericTask.CheckChipUID.ExecuteAsync(device.GenericChip));
+                        // The UID is the one that the read of this run found at its start, the one its result reports: a read that
+                        // failed can leave the chip of an earlier card on the device (a PC/SC reader does), and that is not this
+                        // run's card. A run whose read found no card passes null, which no expected UID matches.
+                        return await RunGenericChipCheckAsync(genericTask, request, descriptors, () => genericTask.CheckUidOfRunAsync(cardUid));
                     }
                     finally
                     {
@@ -1595,42 +1598,37 @@ namespace RFiDGear.Services.TaskExecution
             var executed = false;
             taskTimeout.Start();
 
-            switch (genericTask.CurrentTaskErrorLevel)
+            if (genericTask.CurrentTaskErrorLevel != ERROR.Empty)
             {
-                case ERROR.Empty:
-                    genericTask.IsFocused = true;
+                genericTask.IsFocused = false;
+                CurrentTaskIndex++;
 
-                    if (genericTask.SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                    {
-                        request.UpdateReaderBusy?.Invoke(true);
-                        await check();
-                        executed = true;
-                    }
-                    else
-                    {
-                        if (TryResolveTaskIndex(descriptors, genericTask.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                        {
-                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == genericTask.SelectedExecuteConditionErrorLevel)
-                            {
-                                request.UpdateReaderBusy?.Invoke(true);
-                                await check();
-                                executed = true;
-                            }
-                            else
-                            {
-                                CurrentTaskIndex++;
-                            }
-                        }
-                    }
-
-                    request.UpdateReaderBusy?.Invoke(false);
-                    break;
-
-                default:
-                    genericTask.IsFocused = false;
-                    CurrentTaskIndex++;
-                    break;
+                return false;
             }
+
+            genericTask.IsFocused = true;
+
+            if (genericTask.SelectedExecuteConditionErrorLevel == ERROR.Empty)
+            {
+                request.UpdateReaderBusy?.Invoke(true);
+                await check();
+                executed = true;
+            }
+            else if (TryResolveTaskIndex(descriptors, genericTask.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+            {
+                if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == genericTask.SelectedExecuteConditionErrorLevel)
+                {
+                    request.UpdateReaderBusy?.Invoke(true);
+                    await check();
+                    executed = true;
+                }
+                else
+                {
+                    CurrentTaskIndex++;
+                }
+            }
+
+            request.UpdateReaderBusy?.Invoke(false);
 
             return executed;
         }
