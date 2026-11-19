@@ -20,10 +20,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Views
         internal static FrameworkElement Create(string? cultureName)
         {
             var extensionFile = typeof(MissingComponentPage).Assembly.GetName().Name + ".dll";
+            var strings = new LocalizedStrings(cultureName);
+
+            // The version of the extension file that is loaded, so a half-finished update can be told from a missing file.
+            var version = ExtensionVersionInfo.Read(typeof(MissingComponentPage).Assembly, null, null).Version;
 
             return new TextBlock
             {
-                Text = new LocalizedStrings(cultureName).Format(Keys.ComponentMissing, ComponentCheck.LibraryFileName, extensionFile),
+                Text = strings.Format(Keys.ComponentMissing, ComponentCheck.LibraryFileName, extensionFile)
+                    + (version.Length == 0 ? string.Empty : "\n\n" + strings.Format(Keys.VersionFormat, version)),
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(16),
             };

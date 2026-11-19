@@ -29,6 +29,30 @@
             </Style.Triggers>
         </Style>
 
+        <!-- the header: the headline, then a quieter line for the reader and the version -->
+        <Style x:Key="Headline" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
+
+        <Style x:Key="HeaderLine" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+        </Style>
+
+        <!-- the version of the extension; a support library of another version is a warning -->
+        <Style x:Key="VersionLine" TargetType="TextBlock" BasedOn="{StaticResource HeaderLine}">
+            <Setter Property="Margin" Value="16,0,0,0" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasVersionWarning}" Value="True">
+                    <Setter Property="Foreground" Value="#9A5B00" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="Prompt" TargetType="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="FontSize" Value="16" />
@@ -172,11 +196,22 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- what this page does, the reader, and the test mode -->
-        <Grid Grid.Row="0" Margin="0,0,0,8">
+        <!-- The header of the window, the same on every step: what this page does, the reader and the version, a line, and the
+             test mode. It is outside the area of the steps on purpose, so no step has a copy of it. -->
+        <Grid x:Name="Header" Grid.Row="0" Margin="0,0,0,8">
             <StackPanel>
-                <TextBlock Text="{Binding Strings[GuidedHint]}" TextWrapping="Wrap" Margin="0,0,0,4" />
-                <TextBlock x:Name="ReaderLine" Text="{Binding ReaderText}" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="Headline" Style="{StaticResource Headline}" Text="{Binding Strings[GuidedHint]}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="ReaderLine" Grid.Column="0" Style="{StaticResource HeaderLine}" Text="{Binding ReaderText}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="VersionLine" Grid.Column="1" Style="{StaticResource VersionLine}"
+                               Text="{Binding VersionText}" ToolTip="{Binding VersionDetails}" />
+                </Grid>
+                <Border x:Name="HeaderSeparator" Height="1" Margin="0,6,0,0"
+                        Background="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" />
                 <Border x:Name="TestModeBanner" Margin="0,6,0,0" Padding="6,3" BorderThickness="1" BorderBrush="#C9A227" Background="#FFF4CC"
                         Visibility="{Binding IsTestMode, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Foreground="Black" TextWrapping="Wrap" Text="{Binding TestModeText}" />

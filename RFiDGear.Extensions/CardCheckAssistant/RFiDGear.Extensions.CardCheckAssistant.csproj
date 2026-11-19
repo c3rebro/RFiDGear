@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- The extension is released on its own, with its support library, under one number; the library's folder holds it. -->
+  <Import Project="..\..\RFiDGear.ExtensionLibraries\CardCheck\CardCheckVersion.props" />
   <PropertyGroup>
     <TargetFramework>net10.0-windows7.0</TargetFramework>
     <OutputType>Library</OutputType>

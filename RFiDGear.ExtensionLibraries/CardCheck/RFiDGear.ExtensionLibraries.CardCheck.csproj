@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- Versioned with the extension, not with the application: one number for both (see the file). -->
+  <Import Project="CardCheckVersion.props" />
   <PropertyGroup>
     <!-- Plain net10.0 on purpose: no WPF, no windows-only API. The boundary tests pin this. -->
     <TargetFramework>net10.0</TargetFramework>
@@ -6,9 +8,6 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <AssemblyName>RFiDGear.ExtensionLibraries.CardCheck</AssemblyName>
     <RootNamespace>RFiDGear.ExtensionLibraries.CardCheck</RootNamespace>
-    <!-- Versioned with the extension, not with the application. -->
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
     <!-- Build output holds only this library; whatever it needs next to it is decided by the payload step, not by
          a build that copies the whole package closure. -->
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
