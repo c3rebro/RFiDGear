@@ -172,17 +172,34 @@ namespace RFiDGear.Tests.ExternalControl
         public void TheRevision_IsNotAPlainHashOfTheText_ThatATypedKeyIsWrittenInto()
         {
             var model = Project(1);
-            using var stream = new MemoryStream();
 
-            using (var writer = new StreamWriter(stream, new UTF8Encoding(false), 4096, leaveOpen: true))
-            {
-                new XmlSerializer(typeof(ChipTaskHandlerModel)).Serialize(writer, model);
-            }
+            // The unkeyed hash of the very text the revision is made of, in the same form: whoever sees a revision could test
+            // guesses for a key against it if the revision were that. Replacing the keyed hash by it must fail this test.
+            var text = Encoding.UTF8.GetBytes(ProjectRevision.CanonicalText(model));
+            var plain = Convert.ToHexString(SHA256.HashData(text)).ToLowerInvariant().Substring(0, 32);
+            var unkeyedWithEmptyKey = Convert.ToHexString(HMACSHA256.HashData(Array.Empty<byte>(), text)).ToLowerInvariant().Substring(0, 32);
 
-            var plain = Convert.ToHexString(SHA256.HashData(stream.ToArray())).ToLowerInvariant();
+            Assert.NotEqual(plain, ProjectRevision.Compute(model));
+            Assert.NotEqual(unkeyedWithEmptyKey, ProjectRevision.Compute(model));
+        }
 
-            // Whoever sees a revision could otherwise test guesses for a key against it. The keyed hash differs from any plain one.
-            Assert.NotEqual(plain.Substring(0, 32), ProjectRevision.Compute(model));
+        [Fact]
+        public void WhiteSpaceInATask_IsPartOfTheRevision_TwoSpacesAreNotOneSpace()
+        {
+            var model = Project(1);
+            var task = (CommonTaskViewModel)model.TaskCollection[0];
+
+            task.SelectedTaskDescription = " ";
+            var oneSpace = ProjectRevision.Compute(model);
+            task.SelectedTaskDescription = "  ";
+            var twoSpaces = ProjectRevision.Compute(model);
+            task.SelectedTaskDescription = string.Empty;
+            var empty = ProjectRevision.Compute(model);
+
+            // A text that is only white space is what a task passes on as it is: it is a different project.
+            Assert.NotEqual(oneSpace, twoSpaces);
+            Assert.NotEqual(oneSpace, empty);
+            Assert.NotEqual(twoSpaces, empty);
         }
     }
 }

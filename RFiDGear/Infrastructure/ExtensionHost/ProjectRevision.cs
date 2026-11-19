@@ -45,6 +45,20 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <returns>The revision: 32 lower-case hexadecimal digits.</returns>
         internal static string Compute(ChipTaskHandlerModel model)
         {
+            var mac = HMACSHA256.HashData(Key, Encoding.UTF8.GetBytes(CanonicalText(model)));
+
+            return Convert.ToHexString(mac, 0, RevisionBytes).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Makes the text a revision is made of: the project as a save would write it, without what a run writes into the tasks.
+        /// White space is kept: a task whose text is a space and one whose text is two spaces are different projects (a report
+        /// passes such a text on as it is). It holds typed keys, so it is never logged or handed out; it is internal for the tests.
+        /// </summary>
+        /// <param name="model">The project as it is now.</param>
+        /// <returns>The text.</returns>
+        internal static string CanonicalText(ChipTaskHandlerModel model)
+        {
             ArgumentNullException.ThrowIfNull(model);
 
             using var stream = new MemoryStream();
@@ -55,12 +69,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             }
 
             stream.Position = 0;
-            var document = XDocument.Load(stream);
+            var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
             LeaveOutWhatARunWrites(document);
 
-            var mac = HMACSHA256.HashData(Key, Encoding.UTF8.GetBytes(document.ToString(SaveOptions.DisableFormatting)));
-
-            return Convert.ToHexString(mac, 0, RevisionBytes).ToLowerInvariant();
+            return document.ToString(SaveOptions.DisableFormatting);
         }
 
         // The tasks are the elements below TaskCollection. A name that no task has is simply not found.
