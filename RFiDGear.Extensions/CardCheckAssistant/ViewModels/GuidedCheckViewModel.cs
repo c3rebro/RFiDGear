@@ -55,6 +55,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly ListCollectionView _ordersView;
         private readonly OrderGroupingOption[] _groupings;
         private readonly HashSet<string> _collapsedGroups = new HashSet<string>(StringComparer.Ordinal);
+        private readonly ExtensionVersionInfo _versionInfo;
 
         private WorkflowSnapshot _snapshot = new WorkflowSnapshot();
         private long _shownVersion = -1;
@@ -111,6 +112,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _startTimer = startTimer ?? throw new ArgumentNullException(nameof(startTimer));
 
             Strings = new LocalizedStrings(SafeRead(() => host.AppContext.UICultureName, string.Empty));
+            _versionInfo = ExtensionVersionInfo.Read(
+                typeof(GuidedCheckViewModel).Assembly,
+                typeof(CardCheckServices).Assembly,
+                SafeRead(() => host.AppContext.RFiDGearVersion, string.Empty));
             _languages = new[]
             {
                 new LanguageOption(ReportLanguage.German, Keys.LanguageGerman, Strings),
@@ -493,10 +498,43 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Gets a value indicating whether there are task results to show.</summary>
         public bool HasRows => _rows.Count > 0;
 
-        /// <summary>Gets how many tasks failed, as a sentence, or empty.</summary>
-        public string SummaryText => ShownExecution(_snapshot) is { } result
-            ? Strings.Format(Keys.SummaryFormat, result.FailedTasks, result.TotalTasks)
-            : string.Empty;
+        /// <summary>
+        /// Gets how many tasks failed, as a sentence, or empty. A check that only answered "no" has not failed (the host does
+        /// not count it as a failure of the run either): those are named after the failures, when there are any.
+        /// </summary>
+        public string SummaryText
+        {
+            get
+            {
+                if (ShownExecution(_snapshot) is not { } result)
+                {
+                    return string.Empty;
+                }
+
+                var answers = result.TaskOutcomes.Count(outcome => TaskOutcomeRowViewModel.IsAnsweredNo(outcome));
+                var summary = Strings.Format(Keys.SummaryFormat, Math.Max(0, result.FailedTasks - answers), result.TotalTasks);
+                return answers == 0 ? summary : summary + ", " + Strings.Format(Keys.SummaryAnswersFormat, answers);
+            }
+        }
+
+        /// <summary>Gets the version of the assistant, as a short line for the header; a warning when the support library does not match.</summary>
+        public string VersionText => _versionInfo.LibraryDiffers
+            ? Strings.Format(Keys.VersionMismatchFormat, _versionInfo.Version, _versionInfo.LibraryVersion)
+            : Strings.Format(Keys.VersionFormat, _versionInfo.Version);
+
+        /// <summary>Gets everything that is known about the running version, for the tooltip of the version line.</summary>
+        public string VersionDetails => Strings.Format(
+            Keys.VersionDetailsFormat,
+            OrDash(_versionInfo.Version),
+            OrDash(_versionInfo.Build),
+            OrDash(_versionInfo.LibraryVersion),
+            OrDash(_versionInfo.HostVersion),
+            OrDash(_versionInfo.Location));
+
+        /// <summary>Gets a value indicating whether the extension and its support library are of different versions.</summary>
+        public bool HasVersionWarning => _versionInfo.LibraryDiffers;
+
+        private static string OrDash(string value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
 
         // ── the verdict ──
 

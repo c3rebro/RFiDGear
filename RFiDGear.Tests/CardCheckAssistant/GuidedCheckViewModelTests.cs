@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using RFiDGear.Contracts;
 using RFiDGear.ExtensionLibraries.CardCheck;
 using RFiDGear.Extensions.CardCheckAssistant.Localization;
+using RFiDGear.Extensions.CardCheckAssistant.Services;
 using RFiDGear.Extensions.CardCheckAssistant.ViewModels;
 using RFiDGear.Extensions.CardCheckAssistant.Workflow;
 
@@ -790,6 +791,80 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             Assert.Contains("ResultText", changed);
             Assert.NotEqual(before, vm.Rows[1].ResultText);   // "Failed" becomes German; "OK" is the same in both
+        });
+
+        private static ExecResult AnswersOfAProject(ExecutionOutcome outcome)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var outcomes = new[]
+            {
+                new TaskOutcome(0, "10", "GenericChipTaskViewModel", false, "IsNotTrue"),
+                new TaskOutcome(1, "11", "GenericChipTaskViewModel", false, "IsNotFalse"),
+                new TaskOutcome(2, "12", "GenericChipTaskViewModel", true, "NoError"),
+                new TaskOutcome(3, "13", "CommonTaskViewModel", false, "IsNotTrue"),
+                new TaskOutcome(4, "14", "MifareDesfireSetupViewModel", false, "AuthFailure"),
+                new TaskOutcome(5, "15", "GenericChipTaskViewModel", null, "Empty", TaskSkipReasons.ExecuteConditionNotMet),
+            };
+
+            // The host counts every task that ran and did not succeed, answers included.
+            return new ExecResult("run", outcome, 6, 4, now, now, outcomes);
+        }
+
+        [Theory]
+        [InlineData(ExecutionOutcome.CompletedWithIntentionalFailures)]
+        [InlineData(ExecutionOutcome.Failure)]
+        public Task ACheckThatAnsweredNo_IsNotShownAsFailed_WhateverTheRunCameTo(ExecutionOutcome runOutcome) => Run(async page =>
+        {
+            var vm = page.Vm;
+            var result = AnswersOfAProject(runOutcome);
+            await page.PushAsync(WorkflowState.Assessing, s => s with { Check = new CheckRunResult(CheckRunStatus.Finished, null, result, null, null) });
+
+            // Task 13 is of the view model that also starts programs and stays a failure (see the next test).
+            Assert.Equal(
+                new[] { TaskRowKind.AnsweredNo, TaskRowKind.AnsweredNo, TaskRowKind.Success, TaskRowKind.Failure, TaskRowKind.Failure, TaskRowKind.Skipped },
+                vm.Rows.Select(row => row.Kind));
+            Assert.Equal(vm.Strings[Keys.RowAnsweredNo], vm.Rows[0].ResultText);
+            Assert.Equal("IsNotTrue", vm.Rows[0].ErrorCode);   // what the host said stays visible
+            Assert.Equal(vm.Strings[Keys.RowFailed], vm.Rows[4].ResultText);   // a real error is still a failure
+
+            // Two real failures; the two answers are named, not counted as failures.
+            Assert.Equal(vm.Strings.Format(Keys.SummaryFormat, 2, 6) + ", " + vm.Strings.Format(Keys.SummaryAnswersFormat, 2), vm.SummaryText);
+        });
+
+        [Fact]
+        public Task AFailedProgramStartThatALaterTaskConsumed_IsNeverToldAsAnAnswer() => Run(async page =>
+        {
+            var vm = page.Vm;
+            var now = DateTimeOffset.UtcNow;
+
+            // The host accepts a program that could not be started when a later task handles it, and then the run did not fail: the
+            // task is of the view model that also holds the logic checks, and ends IsNotTrue like a check that said no.
+            var outcomes = new[]
+            {
+                new TaskOutcome(0, "7", "CommonTaskViewModel", false, "IsNotTrue"),
+                new TaskOutcome(1, "8", "GenericChipTaskViewModel", true, "NoError"),
+            };
+            var result = new ExecResult("run", ExecutionOutcome.CompletedWithIntentionalFailures, 2, 1, now, now, outcomes);
+            await page.PushAsync(WorkflowState.Assessing, s => s with { Check = new CheckRunResult(CheckRunStatus.Finished, null, result, null, null) });
+
+            Assert.Equal(TaskRowKind.Failure, vm.Rows[0].Kind);
+            Assert.Equal(vm.Strings[Keys.RowFailed], vm.Rows[0].ResultText);
+            Assert.Equal(vm.Strings.Format(Keys.SummaryFormat, 1, 2), vm.SummaryText);   // counted, and no answers are named
+        });
+
+        [Fact]
+        public Task TheVersionOfTheAssistant_IsOnThePage_WithItsDetails() => Run(page =>
+        {
+            var vm = page.Vm;
+            var info = ExtensionVersionInfo.Read(typeof(GuidedCheckViewModel).Assembly, typeof(RFiDGear.ExtensionLibraries.CardCheck.CardCheckServices).Assembly, null);
+
+            Assert.NotEmpty(info.Version);
+            Assert.Equal(vm.Strings.Format(Keys.VersionFormat, info.Version), vm.VersionText);
+            Assert.False(vm.HasVersionWarning);   // both files are of one build
+            Assert.Contains(info.Version, vm.VersionDetails);
+            Assert.Contains(info.Location, vm.VersionDetails);
+            Assert.Contains(page.Host.Context.RFiDGearVersion, vm.VersionDetails);
+            return Task.CompletedTask;
         });
 
         [Fact]

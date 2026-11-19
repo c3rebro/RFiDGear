@@ -13,6 +13,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>The task ran and failed.</summary>
         Failure,
 
+        /// <summary>The task is a check that ran and answered "no": the answer of the check, not a failure.</summary>
+        AnsweredNo,
+
         /// <summary>The task did not run: its condition was not met, the run never got to it, or it was unavailable.</summary>
         Skipped,
 
@@ -26,6 +29,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
     /// </summary>
     internal sealed class TaskOutcomeRowViewModel : ObservableBase
     {
+        /// <summary>The name of the type of the tasks that hold both the logic checks and the start of a program.</summary>
+        private const string CommonTaskTypeName = "CommonTaskViewModel";
+
+        // The error codes arrive as text (the contract has no enum for them); these are the two the host calls an answer.
+        private const string IsNotTrueCode = "IsNotTrue";
+        private const string IsNotFalseCode = "IsNotFalse";
+
         private readonly TaskOutcome _outcome;
         private readonly LocalizedStrings _strings;
 
@@ -36,6 +46,25 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _outcome = outcome;
             _strings = strings;
         }
+
+        /// <summary>
+        /// Whether a task ran and gave the answer "no" of a check (<c>IsNotTrue</c> or <c>IsNotFalse</c>), which is its result and
+        /// no failure: the host does not count it against the run, and a task that depends on it takes over from there.
+        /// <para>
+        /// The host does not take a program that failed to start for an answer, but it accepts one when a later task consumes its
+        /// result, and a program that cannot be started ends <c>IsNotTrue</c> as well. A result carries only the name of the view
+        /// model, and the view model that starts programs also holds the logic checks, so what that view model reports is
+        /// ambiguous and stays a failure, in a run that failed and in one that did not. Only the checks of the other view models
+        /// (the chip type, a key, a file) are told as answers.
+        /// </para>
+        /// </summary>
+        /// <param name="outcome">What the host reported for the task.</param>
+        /// <returns><c>true</c> if the task is a check that answered "no".</returns>
+        internal static bool IsAnsweredNo(TaskOutcome outcome) =>
+            outcome.SkipReason == null
+            && outcome.IsSuccess == false
+            && (outcome.NormalizedErrorCode == IsNotTrueCode || outcome.NormalizedErrorCode == IsNotFalseCode)
+            && outcome.TaskTypeName != CommonTaskTypeName;
 
         /// <summary>The task's place in the project, starting at 1.</summary>
         public int Position => _outcome.Position + 1;
@@ -59,6 +88,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     return TaskRowKind.Skipped;
                 }
 
+                if (IsAnsweredNo(_outcome))
+                {
+                    return TaskRowKind.AnsweredNo;
+                }
+
                 return _outcome.IsSuccess switch
                 {
                     true => TaskRowKind.Success,
@@ -76,6 +110,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 if (_outcome.SkipReason != null)
                 {
                     return SkipText(_outcome.SkipReason);
+                }
+
+                if (IsAnsweredNo(_outcome))
+                {
+                    return _strings[ExtensionStrings.Keys.RowAnsweredNo];
                 }
 
                 return _outcome.IsSuccess switch

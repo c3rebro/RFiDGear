@@ -28,6 +28,17 @@ system. It appears in the Extensions menu of the main window.
   (`-p:DeployExtensionsToRFiDGear=true`), a git-ignored
   `RFiDGear.Extensions/deploy.local.props` or the environment variable
   `RFIDGEAR_DEPLOY_EXTENSIONS=true` turns it on.
+- Which version is running: the assistant is released on its own, so RFiDGear's
+  version says nothing about it. The page shows the version of the extension at
+  the right end of the reader line, on every step; the tooltip adds the build
+  (the commit), the version of the support library, the version of RFiDGear
+  and the file the extension was loaded from. If the library is of another
+  version than the extension, the text turns into a warning: an update has
+  replaced one of the two files and not the other. The number is written once,
+  by hand, in `RFiDGear.ExtensionLibraries/CardCheck/CardCheckVersion.props`,
+  which the extension and the library both import (their file versions are
+  that number; the assembly version stays 1.0.0.0, because the extension
+  binds to the library by it). A new release of the extension changes it there.
 - If the library file is missing, or is of another platform or version, the
   window opens with a short text that names the two files and the folder,
   instead of the page. The check runs each time a window opens, but a library

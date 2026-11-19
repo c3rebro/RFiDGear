@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    The version of the Card Check Assistant: the extension (RFiDGear.Extensions.CardCheckAssistant.dll) and its support
+    library (this project) are one product and carry one number, so the page can show it and can tell when the two files
+    in the extension folder do not belong together. It is written here by hand, once, and imported by both projects.
+
+    It is not the version of RFiDGear: the extension is released on its own. The host shows its own version in its
+    About window.
+
+    AssemblyVersion stays 1.0.0.0 on purpose, like the contract assemblies: the extension binds to the library by its
+    assembly version, and a library of another number next to it would not bind. FileVersion and the informational
+    version (which the SDK completes with the commit the build was made from) carry the number people see.
+  -->
+  <PropertyGroup>
+    <CardCheckVersion>1.1.0</CardCheckVersion>
+    <Version>$(CardCheckVersion)</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>$(CardCheckVersion).0</FileVersion>
+  </PropertyGroup>
+</Project>

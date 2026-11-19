@@ -275,6 +275,14 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.True(scene.Shown("ReaderLine"));
                 Assert.True(scene.Shown("TestModeBanner"));
 
+                // The header is the same on every step: the headline, the reader and the version, and a line under them.
+                Assert.True(scene.Shown("Headline"));
+                Assert.True(scene.Shown("VersionLine"));
+                Assert.True(scene.Shown("HeaderSeparator"));
+                Assert.Equal(scene.Vm.Strings[Keys.GuidedHint], scene.Named<TextBlock>("Headline").Text);
+                AssertInside(scene.View, scene.Named<TextBlock>("VersionLine"), state + " the version");
+                Assert.Equal(1, VisualDescendants<FrameworkElement>(scene.View).Count(element => element.Name == "Headline"));
+
                 // A failed step says so, with its text and its code, in every state that has one.
                 var failed = state is WorkflowState.RunFailed or WorkflowState.CompletionFailed or WorkflowState.ProgrammingFailed or WorkflowState.ReadOutFailed;
                 var messages = scene.Named<ItemsControl>("MessageList").Items;

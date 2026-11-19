@@ -24,6 +24,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string JobNumberLabel = "JobNumberLabel";
             public const string ChipNumberLabel = "ChipNumberLabel";
             public const string SummaryFormat = "SummaryFormat";
+            public const string SummaryAnswersFormat = "SummaryAnswersFormat";
+            public const string VersionFormat = "VersionFormat";
+            public const string VersionMismatchFormat = "VersionMismatchFormat";
+            public const string VersionDetailsFormat = "VersionDetailsFormat";
             public const string ColumnPosition = "ColumnPosition";
             public const string ColumnTaskIndex = "ColumnTaskIndex";
             public const string ColumnType = "ColumnType";
@@ -31,6 +35,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string ColumnErrorCode = "ColumnErrorCode";
             public const string RowOk = "RowOk";
             public const string RowFailed = "RowFailed";
+            public const string RowAnsweredNo = "RowAnsweredNo";
             public const string RowUnknown = "RowUnknown";
             public const string RowNotReached = "RowNotReached";
             public const string RowConditionNotMet = "RowConditionNotMet";
@@ -306,6 +311,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.JobNumberLabel] = "Job number",
             [Keys.ChipNumberLabel] = "Chip number",
             [Keys.SummaryFormat] = "{0} of {1} tasks failed",
+            [Keys.SummaryAnswersFormat] = "{0} checks answered \"no\"",
+            [Keys.VersionFormat] = "Extension {0}",
+            [Keys.VersionMismatchFormat] = "Extension {0}, support library {1}: the update is incomplete",
+            [Keys.VersionDetailsFormat] = "Card Check Assistant {0}\nBuild: {1}\nSupport library: {2}\nRFiDGear: {3}\nFile: {4}",
             [Keys.ColumnPosition] = "#",
             [Keys.ColumnTaskIndex] = "Task index",
             [Keys.ColumnType] = "Type",
@@ -313,6 +322,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.ColumnErrorCode] = "Error code",
             [Keys.RowOk] = "OK",
             [Keys.RowFailed] = "Failed",
+            [Keys.RowAnsweredNo] = "No",
             [Keys.RowUnknown] = "-",
             [Keys.RowNotReached] = "Not reached",
             [Keys.RowConditionNotMet] = "Skipped: condition not met",
@@ -588,6 +598,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.JobNumberLabel] = "Auftragsnummer",
             [Keys.ChipNumberLabel] = "Chipnummer",
             [Keys.SummaryFormat] = "{0} von {1} Aufgaben sind fehlgeschlagen",
+            [Keys.SummaryAnswersFormat] = "{0} Prüfungen mit der Antwort „Nein“",
+            [Keys.VersionFormat] = "Erweiterung {0}",
+            [Keys.VersionMismatchFormat] = "Erweiterung {0}, Hilfsbibliothek {1}: Die Aktualisierung ist unvollständig",
+            [Keys.VersionDetailsFormat] = "Card Check Assistant {0}\nBuild: {1}\nHilfsbibliothek: {2}\nRFiDGear: {3}\nDatei: {4}",
             [Keys.ColumnPosition] = "#",
             [Keys.ColumnTaskIndex] = "Aufgabenindex",
             [Keys.ColumnType] = "Typ",
@@ -595,6 +609,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.ColumnErrorCode] = "Fehlercode",
             [Keys.RowOk] = "OK",
             [Keys.RowFailed] = "Fehlgeschlagen",
+            [Keys.RowAnsweredNo] = "Nein",
             [Keys.RowUnknown] = "-",
             [Keys.RowNotReached] = "Nicht erreicht",
             [Keys.RowConditionNotMet] = "Übersprungen: Bedingung nicht erfüllt",
