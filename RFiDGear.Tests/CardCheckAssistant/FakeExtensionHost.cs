@@ -67,7 +67,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void Removed() => Interlocked.Decrement(ref _count);
     }
 
-    internal sealed class FakeProjectHost : IProjectHost
+    internal sealed class FakeProjectHost : IProjectHost, IProjectRevisionSource
     {
         private readonly SubscriberCounter _subscribers = new SubscriberCounter();
         private EventHandler? _projectChanged;
@@ -75,6 +75,19 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public string? CurrentPath { get; set; }
 
         public int TaskCount { get; set; }
+
+        /// <summary>What the project says its revision is; <see langword="null"/> is a project that cannot tell.</summary>
+        public string? Revision { get; set; }
+
+        /// <summary>Counts the questions for the revision, so that a test can see when the host was asked.</summary>
+        public int RevisionReads { get; private set; }
+
+        public string? GetProjectRevision()
+        {
+            RevisionReads++;
+
+            return Revision;
+        }
 
         /// <summary>What <see cref="LoadAsync"/> answers when nothing holds it open.</summary>
         public Func<string, ProjectOpenResult> LoadAnswer { get; set; } = path => ProjectOpenResult.Ok(path, 3);

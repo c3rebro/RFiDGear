@@ -17,9 +17,11 @@ namespace RFiDGear.Bridge.SampleClient
     [SupportedOSPlatform("windows")]
     internal static class Program
     {
+        private const string ExpectRevisionOption = "--expect-revision=";
+
         private const string Usage =
             "RFiDGear.Bridge.SampleClient status\n" +
-            "RFiDGear.Bridge.SampleClient run <requestId> [<project.rfPrj>] [$NAME=value ...]\n" +
+            "RFiDGear.Bridge.SampleClient run <requestId> [<project.rfPrj>] [--expect-revision=<revision>] [$NAME=value ...]\n" +
             "RFiDGear.Bridge.SampleClient result <requestId>\n" +
             "RFiDGear.Bridge.SampleClient results [<afterResultSeq>]\n" +
             "RFiDGear.Bridge.SampleClient auto\n" +
@@ -78,7 +80,8 @@ namespace RFiDGear.Bridge.SampleClient
 
             Console.WriteLine("RFiDGear " + client.Hello.AppVersion + ", protocol " + client.Hello.Protocol.Major + "." + client.Hello.Protocol.Minor + ", instance " + client.Hello.InstanceId);
             Console.WriteLine("offers: " + string.Join(", ", client.Hello.Capabilities));
-            Console.WriteLine("start-up complete: " + status.StartupComplete + ", running: " + status.IsRunning + ", project: " + status.Project.TaskCount + " tasks");
+            Console.WriteLine("start-up complete: " + status.StartupComplete + ", running: " + status.IsRunning + ", project: " + status.Project.TaskCount + " tasks"
+                + (status.Project.Revision != null ? ", revision " + status.Project.Revision : string.Empty));
             Console.WriteLine(status.UiResponsive ? "main window: answers" : "main window: DOES NOT ANSWER, the project and the reader state may be old (stale: " + status.Stale + ")");
             Console.WriteLine("reader: " + status.Reader.State + (status.Reader.HasCard ? ", card on it" : ", no card") + ", latest result: " + status.LastResultSeq);
 
@@ -90,13 +93,17 @@ namespace RFiDGear.Bridge.SampleClient
             var requestId = args[1];
             var rest = args.Skip(2).ToList();
 
+            // The revision that a person noted from `status` earlier, to see a run refused when the project has changed since.
+            var revisionArguments = rest.Where(arg => arg.StartsWith(ExpectRevisionOption, StringComparison.Ordinal)).ToList();
+            rest = rest.Where(arg => !arg.StartsWith(ExpectRevisionOption, StringComparison.Ordinal)).ToList();
+
             // A variable is written $NAME=value and nothing else starts with a dollar sign; everything else is the project, whose
             // path may well contain an equals sign.
             var variableArguments = rest.Where(arg => arg.StartsWith('$')).ToList();
             var projects = rest.Where(arg => !arg.StartsWith('$')).ToList();
             var names = variableArguments.Select(arg => arg.Split('=', 2)[0]).ToList();
 
-            if (projects.Count > 1 || variableArguments.Any(arg => !arg.Contains('=')) || names.Distinct(StringComparer.Ordinal).Count() != names.Count)
+            if (projects.Count > 1 || revisionArguments.Count > 1 || variableArguments.Any(arg => !arg.Contains('=')) || names.Distinct(StringComparer.Ordinal).Count() != names.Count)
             {
                 return Fail(Usage);
             }
@@ -108,6 +115,7 @@ namespace RFiDGear.Bridge.SampleClient
             await using var client = await BridgeSampleClient.ConnectAsync(cancellationToken: cancellationToken);
             string? expectedPath = null;
             int? expectedTasks = null;
+            string? expectedRevision = revisionArguments.Count == 1 ? revisionArguments[0][ExpectRevisionOption.Length..] : null;
 
             if (projects.Count == 1)
             {
@@ -115,9 +123,11 @@ namespace RFiDGear.Bridge.SampleClient
                 Console.WriteLine("loaded " + loaded.TaskCount + " tasks");
 
                 // The load and the start are two calls. The run says which project it expects, so that a project that is replaced in
-                // between is refused instead of run.
+                // between is refused instead of run. The revision also catches a task that was changed in the window, which the
+                // path and the count do not; it is only there when this RFiDGear offers it.
                 expectedPath = loaded.Path;
                 expectedTasks = loaded.TaskCount;
+                expectedRevision ??= client.Offers(BridgeCapabilities.ProjectRevision) ? loaded.Revision : null;
             }
             else
             {
@@ -126,7 +136,7 @@ namespace RFiDGear.Bridge.SampleClient
 
             // Written before the call, so that an operator can ask about it even if this program dies in the middle.
             Console.WriteLine("request id: " + requestId);
-            var outcome = await client.RunOnceAsync(requestId, variables, expectedPath, expectedTasks, cancellationToken);
+            var outcome = await client.RunOnceAsync(requestId, variables, expectedPath, expectedTasks, expectedRevision, cancellationToken);
 
             return Print(outcome);
         }

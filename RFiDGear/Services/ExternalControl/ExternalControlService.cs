@@ -131,7 +131,7 @@ namespace RFiDGear.Services.ExternalControl
                 () => supervisor?.LastResultSeq ?? 0,
                 () => supervisor?.ActiveRun,
                 () => autoMode?.GetStatus());
-            var operations = new BridgeHostOperations(host, busyActivity);
+            var operations = new BridgeHostOperations(host, busyActivity, dispatchToUi, uiTimeout);
 
             // What the host offers in this version of the bridge; a capability appears only when everything behind it is there.
             var capabilities = new HashSet<string>(StringComparer.Ordinal)
@@ -145,6 +145,13 @@ namespace RFiDGear.Services.ExternalControl
                 BridgeCapabilities.EventsReader,
                 BridgeCapabilities.EventsLifecycle,
             };
+
+            // A guarantee about the answers of loadProject, getStatus and startRun: only a project host that can fingerprint its
+            // project has it. A run that expects a revision is refused by a host that cannot give one, so it is never silently ignored.
+            if (host.Project is IProjectRevisionSource)
+            {
+                capabilities.Add(BridgeCapabilities.ProjectRevision);
+            }
 
             if (supervisor != null)
             {

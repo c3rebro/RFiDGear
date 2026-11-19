@@ -110,6 +110,31 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(0, RunPlan.From(new StartRunRequest { RequestId = "r-1", ExpectTaskCount = 0 }).ExpectTaskCount);
         }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData("has space")]
+        [InlineData("line\nbreak")]
+        [InlineData("a/b")]
+        [InlineData("0123456789012345678901234567890123456789012345678901234567890123456789")]
+        public void AnExpectedRevisionThatIsNotARevision_IsRefused(string revision)
+        {
+            Assert.Equal("expectProjectRevision", Refusal(() => RunPlan.From(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = revision })).Details!["field"]);
+        }
+
+        [Fact]
+        public void TheExpectedRevision_IsPartOfWhatMakesTwoRequestsTheSame()
+        {
+            var none = RunPlan.From(new StartRunRequest { RequestId = "r-1" });
+            var a = RunPlan.From(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "aaaa1111" });
+            var again = RunPlan.From(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "aaaa1111" });
+            var b = RunPlan.From(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "bbbb2222" });
+
+            Assert.Equal(a.PayloadHash, again.PayloadHash);
+            Assert.NotEqual(a.PayloadHash, b.PayloadHash);
+            Assert.NotEqual(a.PayloadHash, none.PayloadHash);
+            Assert.Equal("aaaa1111", a.ExpectProjectRevision);
+        }
+
         [Fact]
         public void TheExpectedProject_IsNormalised()
         {

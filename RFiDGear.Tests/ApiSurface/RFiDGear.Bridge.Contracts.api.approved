@@ -50,6 +50,7 @@ public static class RFiDGear.Bridge.BridgeCapabilities
     public const string ExecutionRun = "execution.run"
     public const string KeysProvider = "keys.provider"
     public const string ProjectLoad = "project.load"
+    public const string ProjectRevision = "project.revision"
     public const string ReaderScan = "reader.scan"
     public const string Session = "session"
     public const string Status = "status"
@@ -156,6 +157,7 @@ public static class RFiDGear.Bridge.BridgeProtocol
     public const int MaxMessageBytes = 1048576
     public const int MaxPathLength = 4096
     public const int MaxRequestIdLength = 64
+    public const int MaxRevisionLength = 64
     public const int MaxVariableNameLength = 128
     public const int MaxVariableValueLength = 2048
     public const int MaxVariables = 64
@@ -167,6 +169,7 @@ public static class RFiDGear.Bridge.BridgeProtocol
     public const string RequestIdPattern = "^[A-Za-z0-9._:-]{1,64}\\z"
     public const int ResultHistory = 64
     public static bool IsValidRequestId(string? requestId)
+    public static bool IsValidRevision(string? revision)
     public static string PipeNameFor(string userSid)
 
 public static class RFiDGear.Bridge.BusyActivities
@@ -302,6 +305,7 @@ public sealed record RFiDGear.Bridge.LoadProjectRequest : System.IEquatable<Load
 public sealed record RFiDGear.Bridge.LoadProjectResponse : System.IEquatable<LoadProjectResponse>
     public ctor()
     [JsonPropertyName("path")] public string Path { get; init; }
+    [JsonPropertyName("revision")] public string? Revision { get; init; }
     [JsonPropertyName("taskCount")] public int TaskCount { get; init; }
 
 public sealed record RFiDGear.Bridge.ProjectChangedEvent : BridgeEvent, System.IEquatable<ProjectChangedEvent>
@@ -313,6 +317,7 @@ public sealed record RFiDGear.Bridge.ProjectStatusDto : System.IEquatable<Projec
     public ctor()
     [JsonPropertyName("loaded")] public bool Loaded { get; init; }
     [JsonPropertyName("path")] public string? Path { get; init; }
+    [JsonPropertyName("revision")] public string? Revision { get; init; }
     [JsonPropertyName("taskCount")] public int TaskCount { get; init; }
 
 public sealed record RFiDGear.Bridge.ProtocolVersionDto : System.IEquatable<ProtocolVersionDto>
@@ -377,6 +382,7 @@ public sealed record RFiDGear.Bridge.RunResultDto : System.IEquatable<RunResultD
     [JsonPropertyName("completedAt")] public System.DateTimeOffset CompletedAt { get; init; }
     [JsonPropertyName("failedTasks")] public int FailedTasks { get; init; }
     [JsonPropertyName("failureReason")] public string FailureReason { get; init; }
+    [JsonPropertyName("projectRevision")] public string? ProjectRevision { get; init; }
     [JsonPropertyName("requestId")] public string? RequestId { get; init; }
     [JsonPropertyName("resultSeq")] public long ResultSeq { get; init; }
     [JsonPropertyName("runId")] public string RunId { get; init; }
@@ -447,6 +453,7 @@ public sealed record RFiDGear.Bridge.StartAutoModeResponse : System.IEquatable<S
 public sealed record RFiDGear.Bridge.StartRunRequest : System.IEquatable<StartRunRequest>
     public ctor()
     [JsonPropertyName("expectProjectPath")] public string? ExpectProjectPath { get; init; }
+    [JsonPropertyName("expectProjectRevision")] public string? ExpectProjectRevision { get; init; }
     [JsonPropertyName("expectTaskCount")] public int? ExpectTaskCount { get; init; }
     [JsonPropertyName("requestId")] public string RequestId { get; init; }
     [JsonPropertyName("variables")] public System.Collections.Generic.IReadOnlyList<VariablePair> Variables { get; init; }

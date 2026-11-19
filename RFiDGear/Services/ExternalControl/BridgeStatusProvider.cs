@@ -133,8 +133,12 @@ namespace RFiDGear.Services.ExternalControl
         {
             var path = _host.Project.CurrentPath;
             var taskCount = _host.Project.TaskCount;
+            var loaded = path != null || taskCount > 0;
+
+            // Made here because it reads the tasks; a host that cannot tell (or a project that is not loaded) has none.
+            var revision = loaded ? (_host.Project as RFiDGear.Infrastructure.ExtensionHost.IProjectRevisionSource)?.GetProjectRevision() : null;
             var values = new UiValues(
-                new ProjectStatusDto { Loaded = path != null || taskCount > 0, Path = path, TaskCount = taskCount },
+                new ProjectStatusDto { Loaded = loaded, Path = path, TaskCount = taskCount, Revision = revision },
                 _isReaderInitializing());
 
             lock (_gate)

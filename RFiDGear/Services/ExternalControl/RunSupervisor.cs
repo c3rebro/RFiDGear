@@ -483,7 +483,7 @@ namespace RFiDGear.Services.ExternalControl
 
             try
             {
-                refusal = CheckProject(plan);
+                refusal = CheckProject(plan, record);
             }
             catch (Exception e)
             {
@@ -572,7 +572,7 @@ namespace RFiDGear.Services.ExternalControl
         }
 
         // On the thread of the main window, because the project belongs to it.
-        private BridgeFault? CheckProject(RunPlan plan)
+        private BridgeFault? CheckProject(RunPlan plan, RunRecord record)
         {
             var taskCount = _host.Project.TaskCount;
 
@@ -586,7 +586,22 @@ namespace RFiDGear.Services.ExternalControl
                 return BridgeFault.ProjectMismatch("expectProjectPath");
             }
 
-            return plan.ExpectTaskCount.HasValue && plan.ExpectTaskCount.Value != taskCount ? BridgeFault.ProjectMismatch("expectTaskCount") : null;
+            if (plan.ExpectTaskCount.HasValue && plan.ExpectTaskCount.Value != taskCount)
+            {
+                return BridgeFault.ProjectMismatch("expectTaskCount");
+            }
+
+            // The state of the project, with what was changed in the window and not saved. It is taken here, on the thread that owns
+            // the tasks and right before the host is asked, so that it is the project the run uses: the result carries it. A client
+            // that asked for a revision never gets a run whose revision is not known or another.
+            record.ProjectRevision = (_host.Project as IProjectRevisionSource)?.GetProjectRevision();
+
+            if (plan.ExpectProjectRevision != null && !string.Equals(record.ProjectRevision, plan.ExpectProjectRevision, StringComparison.Ordinal))
+            {
+                return BridgeFault.ProjectMismatch("expectProjectRevision");
+            }
+
+            return null;
         }
 
         private static string? Normalise(string? path)
@@ -662,8 +677,8 @@ namespace RFiDGear.Services.ExternalControl
             var result = _registry.Complete(
                 record,
                 seq => hostResult != null
-                    ? BridgeMapper.ToDto(hostResult, record.RunId, record.RequestId, seq)
-                    : BridgeMapper.ToFaultedDto(record.RunId, record.RequestId, seq, startedAt));
+                    ? BridgeMapper.ToDto(hostResult, record.RunId, record.RequestId, seq, projectRevision: record.ProjectRevision)
+                    : BridgeMapper.ToFaultedDto(record.RunId, record.RequestId, seq, startedAt, record.ProjectRevision));
 
             lock (_activeGate)
             {

@@ -18,7 +18,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// <summary>
     /// <see cref="IProjectHost"/> implementation backed by <see cref="DatabaseReaderWriter"/>.
     /// </summary>
-    internal sealed class ProjectHostImpl : IProjectHost
+    internal sealed class ProjectHostImpl : IProjectHost, IProjectRevisionSource
     {
         // Resolved on each use, not cached, so the logger configured at startup (and the one tests install)
         // is the one that is used even if this type was touched before logging was configured.
@@ -111,6 +111,29 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <summary>Returns the live <see cref="ChipTaskHandlerModel"/> used by the task execution host.</summary>
         internal ChipTaskHandlerModel SetupModel =>
             _liveModelAccessor != null ? _liveModelAccessor() : _dbRW.SetupModel;
+
+        /// <inheritdoc/>
+        public string? GetProjectRevision()
+        {
+            var model = SetupModel;
+
+            if (model?.TaskCollection == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return ProjectRevision.Compute(model);
+            }
+            catch (Exception e)
+            {
+                // Only the type: what the serializer says about a task can hold what was typed into it.
+                Logger.Warning("The revision of the project could not be made ({ExceptionType})", e.GetType().FullName);
+
+                return null;
+            }
+        }
 
         /// <inheritdoc/>
         public event EventHandler? ProjectChanged;

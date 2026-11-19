@@ -405,8 +405,20 @@ passed with a real reader; until then a snapshot may be re-baselined.
   `hello` answer is generated from those attributes (`BridgeCatalog`), so a
   capability cannot be advertised without a method and a method cannot be
   called without its capability. A new request field ships only with a new
-  capability a client has seen. A guarantee (`execution.journal`) has no method
-  and is listed in `BridgeCapabilities.Guarantees`.
+  capability a client has seen. A guarantee (`execution.journal`,
+  `project.revision`) has no method and is listed in
+  `BridgeCapabilities.Guarantees`.
+- **Project revision** (`project.revision`): `loadProject` and `getStatus` give
+  a `revision` of the loaded project, `startRun` takes `expectProjectRevision`
+  and refuses (`projectMismatch`, never started) a project in another state,
+  and the result carries `projectRevision`. It is a keyed hash
+  (`ProjectRevision`, key made at process start, never written) of the text a
+  save would write (`XmlSerializer` of `ChipTaskHandlerModel`), so unsaved
+  changes count, run results do not (they are `[XmlIgnore]`), and a typed key
+  in a task is not recoverable from it; it is valid for one process only. The
+  project host gives it through the internal `IProjectRevisionSource` (a host
+  without it does not offer the capability and refuses a run that expects a
+  revision). It is read on the main window's thread.
 - **The bridge never retries a card operation, and never repeats a request.**
   `startRun` is idempotent by the client's request id (`RunRegistry`,
   `RunSupervisor`: admission by compare-and-swap, the window's callback must win

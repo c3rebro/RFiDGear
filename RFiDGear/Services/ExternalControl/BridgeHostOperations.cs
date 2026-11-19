@@ -18,6 +18,8 @@ namespace RFiDGear.Services.ExternalControl
     {
         private readonly IRFiDGearExtensionHost _host;
         private readonly Func<string?> _busyActivity;
+        private readonly Func<Action, Task> _dispatchToUi;
+        private readonly TimeSpan _uiTimeout;
 
         /// <summary>Creates the operations.</summary>
         /// <param name="host">The host service of RFiDGear.</param>
@@ -25,10 +27,22 @@ namespace RFiDGear.Services.ExternalControl
         /// Says what the application is busy with at the moment (one of <see cref="BusyActivities"/>), or <see langword="null"/>
         /// when it cannot tell; asked only after the host has refused a load as busy, as a hint for the client.
         /// </param>
-        internal BridgeHostOperations(IRFiDGearExtensionHost host, Func<string?>? busyActivity = null)
+        /// <param name="dispatchToUi">
+        /// Runs an action on the thread of the main window, which the revision of a project is read on; <see langword="null"/> runs
+        /// it on the calling thread (a host that has no window).
+        /// </param>
+        /// <param name="uiTimeout">How long to wait for the main window to read the revision; the answer has none after that.</param>
+        internal BridgeHostOperations(IRFiDGearExtensionHost host, Func<string?>? busyActivity = null, Func<Action, Task>? dispatchToUi = null, TimeSpan? uiTimeout = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _busyActivity = busyActivity ?? (() => null);
+            _dispatchToUi = dispatchToUi ?? (action =>
+            {
+                action();
+
+                return Task.CompletedTask;
+            });
+            _uiTimeout = uiTimeout ?? TimeSpan.FromSeconds(2);
         }
 
         /// <summary>Loads a project into the main window, replacing the one that is there.</summary>
@@ -56,7 +70,30 @@ namespace RFiDGear.Services.ExternalControl
                 throw Refusal(result.Error);
             }
 
-            return new LoadProjectResponse { Path = result.CanonicalPath ?? path, TaskCount = result.TaskCount };
+            return new LoadProjectResponse { Path = result.CanonicalPath ?? path, TaskCount = result.TaskCount, Revision = await ReadRevisionAsync().ConfigureAwait(false) };
+        }
+
+        // The revision of the project that was just loaded. The load is done and the answer is valid without it, so a window that
+        // does not answer in time, or a project that cannot be fingerprinted, gives no revision and no error.
+        private async Task<string?> ReadRevisionAsync()
+        {
+            if (_host.Project is not Infrastructure.ExtensionHost.IProjectRevisionSource source)
+            {
+                return null;
+            }
+
+            string? revision = null;
+
+            try
+            {
+                await _dispatchToUi(() => revision = source.GetProjectRevision()).WaitAsync(_uiTimeout).ConfigureAwait(false);
+            }
+            catch (Exception e) when (e is TimeoutException || e is OperationCanceledException || e is InvalidOperationException)
+            {
+                return null;
+            }
+
+            return revision;
         }
 
         /// <summary>Looks at the reader once.</summary>

@@ -61,6 +61,14 @@ namespace RFiDGear.Bridge
         /// <summary>Gets how many tasks the project has.</summary>
         [JsonPropertyName("taskCount")]
         public int TaskCount { get; init; }
+
+        /// <summary>
+        /// Gets the revision of the project as it is in RFiDGear now, changes that were not saved included; nothing when no project
+        /// is loaded or this RFiDGear does not offer <see cref="BridgeCapabilities.ProjectRevision"/>. Like the rest of the
+        /// project it is a value of the main window and may be old when <see cref="StatusResponse.Stale"/> is set.
+        /// </summary>
+        [JsonPropertyName("revision")]
+        public string? Revision { get; init; }
     }
 
     /// <summary>A run that is going on.</summary>

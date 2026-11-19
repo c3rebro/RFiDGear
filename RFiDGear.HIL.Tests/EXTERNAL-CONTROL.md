@@ -146,6 +146,28 @@ that provider and type the reference. The key typed into the box is a decoy
 - 29, the client leaves while a key is asked for: the task ends with
   `KeyUnavailable` at once, not after the whole time limit.
 
+**The revision of the project (`project.revision`):**
+
+Use a copy of a project with at least two tasks, and no card on the reader: the
+refusals happen before the card is touched.
+
+- 30, the revision is there: `status` prints a revision after the project line.
+  `run job-30 C:\path\copy.rfPrj` loads the copy and runs it with the revision
+  of the load (the sample passes it), and the result is a success.
+- 31, a task changed after the client looked: load the copy in RFiDGear and
+  note the revision that `status` prints. In RFiDGear, open a task, change a
+  text (the description of a task will do) and close the dialog with OK,
+  without saving the project. `status` prints another revision. Then
+  `run job-31 --expect-revision=<the noted one>` is refused with
+  `projectMismatch` and the field `expectProjectRevision`, and nothing happens
+  on the reader. `run job-31b --expect-revision=<the new one>` is run.
+- 32, a run is not a change: run the project from the window, then look at
+  `status`: the revision is the one it was before the run (the results that the
+  tasks show are not part of it).
+- 33, a restart: close RFiDGear and start it again with the same project:
+  `status` prints another revision for the same file. That is meant: a revision
+  is valid for one process.
+
 **Cleaning up:**
 
 Remove the test application from the card if you made one (`SECURE-KEYS.md`),

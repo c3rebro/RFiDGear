@@ -38,6 +38,15 @@ namespace RFiDGear.Bridge
         /// <summary>Gets the number of tasks the client expects the project to have; a different one refuses the run before anything is touched.</summary>
         [JsonPropertyName("expectTaskCount")]
         public int? ExpectTaskCount { get; init; }
+
+        /// <summary>
+        /// Gets the revision of the project the client expects (see <see cref="BridgeCapabilities.ProjectRevision"/>), as <c>loadProject</c>
+        /// or <c>getStatus</c> reported it. A project in another state, for example one whose task was changed in RFiDGear after
+        /// the client looked, refuses the run before anything is touched (<c>projectMismatch</c>, <c>neverStarted</c>). So does a
+        /// RFiDGear that cannot tell the revision: a client that asks for a revision never gets a run without one.
+        /// </summary>
+        [JsonPropertyName("expectProjectRevision")]
+        public string? ExpectProjectRevision { get; init; }
     }
 
     /// <summary>The answer to <c>startRun</c>: the run was admitted, or it is the run an earlier request with the same id started.</summary>
@@ -176,6 +185,14 @@ namespace RFiDGear.Bridge
         /// <summary>Gets the sequence number of this result among the results of this RFiDGear process, from 1.</summary>
         [JsonPropertyName("resultSeq")]
         public long ResultSeq { get; init; }
+
+        /// <summary>
+        /// Gets the revision of the project the run started with (see <see cref="BridgeCapabilities.ProjectRevision"/>), for the record
+        /// of what was run. Nothing for a run that did not start over <c>startRun</c> (the results of automatic mode do not carry
+        /// it yet), when this RFiDGear does not offer the capability, or when the revision could not be made.
+        /// </summary>
+        [JsonPropertyName("projectRevision")]
+        public string? ProjectRevision { get; init; }
 
         /// <summary>Gets the results of the tasks, in order.</summary>
         [JsonPropertyName("taskOutcomes")]

@@ -89,7 +89,7 @@ namespace RFiDGear.Tests.ExternalControl
             // the events about them. (The journal needs a folder, which this service has none of.)
             var offered = new[]
             {
-                BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.ProjectLoad, BridgeCapabilities.ReaderScan,
+                BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.ProjectLoad, BridgeCapabilities.ProjectRevision, BridgeCapabilities.ReaderScan,
                 BridgeCapabilities.ExecutionRun, BridgeCapabilities.ExecutionCancel, BridgeCapabilities.ExecutionResultLookup,
                 BridgeCapabilities.ExecutionResultLog, BridgeCapabilities.AutoMode,
                 BridgeCapabilities.EventsExecution, BridgeCapabilities.EventsRunning, BridgeCapabilities.EventsProject,
