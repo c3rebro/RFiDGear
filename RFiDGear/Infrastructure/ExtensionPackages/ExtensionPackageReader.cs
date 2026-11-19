@@ -104,7 +104,8 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 return ExtensionPackageReadResult.Fail(ExtensionPackageProblem.BadManifest);
             }
 
-            var (manifest, problem) = ExtensionPackageManifest.Parse(new UTF8Encoding(false, false).GetString(manifestBytes));
+            // A byte order mark in front of the JSON (some tools write one) is not part of the text.
+            var (manifest, problem) = ExtensionPackageManifest.Parse(new UTF8Encoding(false, false).GetString(manifestBytes).TrimStart('﻿'));
             if (manifest == null)
             {
                 return ExtensionPackageReadResult.Fail(problem ?? ExtensionPackageProblem.BadManifest);

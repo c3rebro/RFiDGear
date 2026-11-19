@@ -2155,6 +2155,64 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="menuItemMigrateProjectKeys" xml:space="preserve">
     <value>Move keys of a project to the Credential Manager...</value>
   </data>
+  <data name="menuItemInstallExtension" xml:space="preserve">
+    <value>Install extension update...</value>
+  </data>
+  <data name="captionExtensionInstall" xml:space="preserve">
+    <value>Install extension update</value>
+  </data>
+  <data name="windowCaptionExtensionPackage" xml:space="preserve">
+    <value>Extension package to install</value>
+  </data>
+  <data name="filterStringExtensionPackages" xml:space="preserve">
+    <value>RFiDGear extension packages (*.rfext)|*.rfext|All files (*.*)|*.*</value>
+  </data>
+  <data name="messageExtensionInstallConfirm" xml:space="preserve">
+    <value>Install {0} {1}?
+
+{2}
+{3}{4}
+
+An extension is a program that runs with your rights: install it only if the package comes from a source you trust.
+
+The new version is used after RFiDGear has been restarted.</value>
+  </data>
+  <data name="textExtensionInstalledNow" xml:space="preserve">
+    <value>Installed now: {0}</value>
+  </data>
+  <data name="textExtensionNotInstalled" xml:space="preserve">
+    <value>Not installed yet</value>
+  </data>
+  <data name="textExtensionNotSigned" xml:space="preserve">
+    <value>Not signed</value>
+  </data>
+  <data name="textExtensionSignedBy" xml:space="preserve">
+    <value>Signed by: {0}</value>
+  </data>
+  <data name="textExtensionSignedByUntrusted" xml:space="preserve">
+    <value>Signed by: {0} (this PC does not trust the certificate)</value>
+  </data>
+  <data name="messageExtensionInstalled" xml:space="preserve">
+    <value>{0} {1} is installed. Restart RFiDGear to use it.</value>
+  </data>
+  <data name="messageExtensionProblemNotAPackage" xml:space="preserve">
+    <value>The file is not an extension package, or it is damaged.</value>
+  </data>
+  <data name="messageExtensionProblemHostTooOld" xml:space="preserve">
+    <value>This extension needs a newer RFiDGear. Update RFiDGear first.</value>
+  </data>
+  <data name="messageExtensionProblemAlreadyInstalled" xml:space="preserve">
+    <value>This version of the extension is installed already.</value>
+  </data>
+  <data name="messageExtensionProblemNotNewer" xml:space="preserve">
+    <value>A newer version of this extension is installed already, and it is the one that is used.</value>
+  </data>
+  <data name="messageExtensionProblemCannotWrite" xml:space="preserve">
+    <value>The extension could not be installed: RFiDGear cannot write to your folder of installed extensions.</value>
+  </data>
+  <data name="messageExtensionProblemGeneric" xml:space="preserve">
+    <value>The package cannot be used. It is damaged, changed, or not made for this version of RFiDGear. (Reason: {0})</value>
+  </data>
   <data name="captionKeyMigration" xml:space="preserve">
     <value>Move keys of a project</value>
   </data>

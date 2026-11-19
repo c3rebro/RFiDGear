@@ -477,6 +477,8 @@
                     <MenuItem Command="{Binding OpenKeyManagerCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemKeyManager'}" />
                     <MenuItem Command="{Binding MigrateProjectKeysCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemMigrateProjectKeys'}" />
                     <Separator />
+                    <MenuItem Command="{Binding InstallExtensionCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemInstallExtension'}" />
+                    <Separator />
                     <MenuItem Command="{Binding CloseApplication}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemExitHeader'}" />
                 </MenuItem>
                 <!--  File  -->

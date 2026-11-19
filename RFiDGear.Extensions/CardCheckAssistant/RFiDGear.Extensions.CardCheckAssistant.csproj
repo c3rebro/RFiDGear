@@ -12,6 +12,9 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <!-- Reference nothing but the contract and the SDK, and carry no private copy of anything the host owns. -->
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- What the person is asked when the extension is installed from a package (PackExtension.targets): its name, and the oldest RFiDGear it works with. -->
+    <ExtensionDisplayName>Card Check Assistant</ExtensionDisplayName>
+    <ExtensionMinHostVersion>2.1.0</ExtensionMinHostVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DebugType>none</DebugType>
@@ -60,4 +63,6 @@
   </Target>
   <!-- Copies the built extension, its support library and its payload to RFiDGear's extension folder when asked to (see the file). -->
   <Import Project="..\DeployToRFiDGear.targets" />
+  <!-- Makes an installable package (.rfext) of the built extension when asked to (see the file). -->
+  <Import Project="..\PackExtension.targets" />
 </Project>

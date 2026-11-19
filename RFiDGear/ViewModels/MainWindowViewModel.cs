@@ -43,6 +43,7 @@ using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.Ultralight;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.ExtensionHost;
+using RFiDGear.Infrastructure.ExtensionPackages;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
@@ -2073,6 +2074,29 @@ namespace RFiDGear.ViewModel
 
                 await flow.RunAsync();
             }
+        }
+
+        /// <summary>
+        /// Installs an update of an extension from a package (<c>.rfext</c>) that the person chooses, for this user: the package is
+        /// checked, the person is asked, and the extension is put in a folder of the user's own, so neither administrator rights nor
+        /// a visit to the extensions folder are needed. A running extension is not touched; the new version is used after a restart.
+        /// </summary>
+        public IAsyncRelayCommand InstallExtensionCommand => new AsyncRelayCommand(OnInstallExtension);
+        private async Task OnInstallExtension()
+        {
+            var userRoot = ExtensionPackageLayout.DefaultUserRoot();
+            if (string.IsNullOrEmpty(userRoot))
+            {
+                return;
+            }
+
+            var installer = new ExtensionPackageInstaller(
+                userRoot,
+                MefHelper.Instance.ExtensionsPath,
+                typeof(MefHelper).Assembly.GetName().Version ?? new Version(0, 0, 0, 0));
+            var flow = new ExtensionInstallFlow(installer, new MvvmExtensionInstallDialogs(Dialogs, mw), ResourceLoader.GetResource);
+
+            await flow.RunAsync();
         }
 
         /// <summary>Gets or sets how the key manager of the menu is shown; the tests replace it.</summary>
