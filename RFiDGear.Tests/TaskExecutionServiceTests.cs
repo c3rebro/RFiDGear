@@ -599,6 +599,107 @@ namespace RFiDGear.Tests
             Assert.Equal(0, result.InvalidSkips);
         }
 
+        // A task that is skipped because the task it depends on was itself skipped for its own condition: a chain of "if the
+        // previous check said no" (one check for each generation of a chip), which ends at the first check that said yes.
+        private static TaskExecutionObservation SkippedByCondition(int position, string id, string sourceId, ERROR expected, string reason = "ExecuteConditionNotMet") =>
+            new TaskExecutionObservation(
+                position,
+                id,
+                new LoggingStubTaskModel { CurrentTaskIndex = id, SelectedExecuteConditionTaskIndex = sourceId, SelectedExecuteConditionErrorLevel = expected },
+                "Skipped",
+                null,
+                ERROR.Empty,
+                reason);
+
+        [Fact]
+        public void TerminalEvaluator_AcceptsAChainOfConditionalSkips_BehindTheCheckThatSaidYes()
+        {
+            // Check 20 says no, check 21 says yes, so 22 (only if 21 says no) is skipped, and so is 23 (only if 22 says no): 22 never ran.
+            var observations = new List<TaskExecutionObservation>
+            {
+                FailedTask(0, "20", "ChipIsOfType", ERROR.IsNotTrue),
+                ExecutedOk(1, "21"),
+                SkippedByCondition(2, "22", "21", ERROR.IsNotTrue),
+                SkippedByCondition(3, "23", "22", ERROR.IsNotTrue)
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(4, observations);
+
+            Assert.Equal(0, result.InvalidSkips);
+            Assert.Equal(2, result.Skipped);
+            Assert.Equal(TaskLoopTerminalStatus.CompletedWithIntentionalFailures, result.TerminalStatus);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_FailsAChainOfSkips_WhoseFirstLinkShouldHaveRun()
+        {
+            // 21 said no, so 22 had to run; it did not, and 23 behind it is no better.
+            var observations = new List<TaskExecutionObservation>
+            {
+                FailedTask(0, "21", "ChipIsOfType", ERROR.IsNotTrue),
+                SkippedByCondition(1, "22", "21", ERROR.IsNotTrue),
+                SkippedByCondition(2, "23", "22", ERROR.IsNotTrue)
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(3, observations);
+
+            Assert.Equal(2, result.InvalidSkips);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_FailsAChainOfSkips_WhoseFirstLinkWasSkippedForNoCondition()
+        {
+            var observations = new List<TaskExecutionObservation>
+            {
+                new TaskExecutionObservation(0, "22", new LoggingStubTaskModel { CurrentTaskIndex = "22" }, "Skipped", null, ERROR.Empty, "NotExecuted"),
+                SkippedByCondition(1, "23", "22", ERROR.IsNotTrue)
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations);
+
+            Assert.Equal(2, result.InvalidSkips);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_FailsASkip_WhoseSourceTaskWasNeverSeen()
+        {
+            var observations = new List<TaskExecutionObservation> { SkippedByCondition(0, "23", "22", ERROR.IsNotTrue) };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(1, observations);
+
+            Assert.Equal(1, result.InvalidSkips);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_EndsAtALoopOfConditions_AndFailsIt()
+        {
+            // Two skipped tasks that each wait for the other can never have run, and the evaluation ends.
+            var observations = new List<TaskExecutionObservation>
+            {
+                SkippedByCondition(0, "22", "23", ERROR.IsNotTrue),
+                SkippedByCondition(1, "23", "22", ERROR.IsNotTrue)
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations);
+
+            Assert.Equal(2, result.InvalidSkips);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_FailsATaskThatWaitsForItself()
+        {
+            var observations = new List<TaskExecutionObservation> { SkippedByCondition(0, "23", "23", ERROR.IsNotTrue) };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(1, observations);
+
+            Assert.Equal(1, result.InvalidSkips);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
         [Fact]
         public void TerminalEvaluator_AcceptsFailureHandledByExplicitErrorRoute()
         {
