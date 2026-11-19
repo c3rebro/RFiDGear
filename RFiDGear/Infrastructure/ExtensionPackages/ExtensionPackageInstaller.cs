@@ -198,13 +198,17 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         }
 
         /// <summary>
-        /// Tidies the user's root before anything in it is loaded: what a package that was cut short left in the staging
-        /// folder, and the old versions of each extension, of which the newest few are kept (the one that is used and the one
-        /// before it, to go back to by hand). It never fails; what cannot be removed stays.
+        /// Tidies the user's root before anything in it is loaded. What a package that was cut short left in the staging folder
+        /// goes, but only what is old: another RFiDGear that was started while this one shows the question about an installation
+        /// (it exits at once, but it composes first) must not take away the folder of the installation that is being asked
+        /// about. Of each extension the newest few versions that work are kept (the one that is used and the one before it, to go
+        /// back to by hand), and the versions that failed to load go, because they are not chosen again and a failed version
+        /// must not push a working one out. It never fails; what cannot be removed stays.
         /// </summary>
         /// <param name="userRoot">The user's root for installed extensions.</param>
-        /// <param name="keep">How many versions of each extension stay.</param>
-        internal static void Tidy(string? userRoot, int keep = 2)
+        /// <param name="keep">How many working versions of each extension stay.</param>
+        /// <param name="utcNow">The present time; the clock by default.</param>
+        internal static void Tidy(string? userRoot, int keep = 2, DateTime? utcNow = null)
         {
             if (string.IsNullOrWhiteSpace(userRoot) || !Directory.Exists(userRoot))
             {
@@ -213,37 +217,51 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
 
             try
             {
-                var staging = Path.Combine(userRoot, ExtensionPackageLayout.StagingFolderName);
-                if (Directory.Exists(staging))
+                TidyStaging(userRoot!, utcNow ?? DateTime.UtcNow);
+                foreach (var extensionFolder in Directory.EnumerateDirectories(userRoot!).ToList())
                 {
-                    foreach (var leftover in Directory.EnumerateDirectories(staging).ToList())
+                    if (Path.GetFileName(extensionFolder).StartsWith(ExtensionPackageLayout.ExtensionNamePrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        TryDeleteFolder(leftover);
-                    }
-                }
-
-                foreach (var extensionFolder in Directory.EnumerateDirectories(userRoot).ToList())
-                {
-                    if (!Path.GetFileName(extensionFolder).StartsWith(ExtensionPackageLayout.ExtensionNamePrefix, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    var versions = Directory.EnumerateDirectories(extensionFolder)
-                        .Select(folder => (Folder: folder, Version: Version.TryParse(Path.GetFileName(folder), out var version) ? version : null))
-                        .Where(entry => entry.Version != null)
-                        .OrderByDescending(entry => entry.Version)
-                        .ToList();
-
-                    foreach (var old in versions.Skip(Math.Max(keep, 1)))
-                    {
-                        TryDeleteFolder(old.Folder);
+                        TidyVersions(extensionFolder, Math.Max(keep, 1));
                     }
                 }
             }
             catch (Exception ex) when (IsFileProblem(ex))
             {
                 // A folder that cannot be listed stays as it is.
+            }
+        }
+
+        // The staging folders that are older than a day: nobody is still asking about those.
+        private static void TidyStaging(string userRoot, DateTime utcNow)
+        {
+            var staging = Path.Combine(userRoot, ExtensionPackageLayout.StagingFolderName);
+            if (!Directory.Exists(staging))
+            {
+                return;
+            }
+
+            foreach (var leftover in Directory.EnumerateDirectories(staging).ToList())
+            {
+                if (utcNow - Directory.GetLastWriteTimeUtc(leftover) > ExtensionPackageLayout.StagingMaxAge)
+                {
+                    TryDeleteFolder(leftover);
+                }
+            }
+        }
+
+        private static void TidyVersions(string extensionFolder, int keep)
+        {
+            var versions = Directory.EnumerateDirectories(extensionFolder)
+                .Select(folder => (Folder: folder, Version: Version.TryParse(Path.GetFileName(folder), out var version) ? version : null))
+                .Where(entry => entry.Version != null)
+                .OrderByDescending(entry => entry.Version)
+                .ToList();
+
+            var working = versions.Where(entry => !File.Exists(Path.Combine(entry.Folder, ExtensionPackageLayout.FailedMarkerFileName))).ToList();
+            foreach (var gone in versions.Except(working).Concat(working.Skip(keep)))
+            {
+                TryDeleteFolder(gone.Folder);
             }
         }
 

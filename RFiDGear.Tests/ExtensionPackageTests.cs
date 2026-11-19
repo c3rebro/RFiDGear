@@ -446,7 +446,10 @@ namespace RFiDGear.Tests
         [Fact]
         public void BeforeTheStart_WhatAnInstallLeftHalfDone_AndTheOldVersions_AreRemoved()
         {
-            Directory.CreateDirectory(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName, "half-done"));
+            var staging = Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName);
+            var leftover = Directory.CreateDirectory(Path.Combine(staging, "half-done"));
+            leftover.LastWriteTimeUtc = DateTime.UtcNow - ExtensionPackageLayout.StagingMaxAge - TimeSpan.FromHours(1);
+            Directory.CreateDirectory(Path.Combine(staging, "being-asked-about-now"));   // another RFiDGear that starts must not take this one
             foreach (var version in new[] { Ver(1, 0), Ver(1, 1), Ver(1, 2), Ver(1, 3) })
             {
                 Directory.CreateDirectory(Path.Combine(UserRoot, Id, version));
@@ -456,9 +459,25 @@ namespace RFiDGear.Tests
 
             ExtensionPackageInstaller.Tidy(UserRoot);
 
-            Assert.Empty(Directory.EnumerateDirectories(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName)));
+            Assert.Equal(new[] { "being-asked-about-now" }, Directory.EnumerateDirectories(staging).Select(Path.GetFileName).ToArray());
             Assert.Equal(new[] { Ver(1, 2), Ver(1, 3) }, Directory.EnumerateDirectories(Path.Combine(UserRoot, Id)).Select(Path.GetFileName).OrderBy(name => name).ToArray());
             Assert.True(Directory.Exists(Path.Combine(UserRoot, "CardCheckAssistant", Ver(1, 0))));
+        }
+
+        [Fact]
+        public void AVersionThatFailed_DoesNotPushAWorkingOneOut_AndIsRemovedItself()
+        {
+            // 1.2 works, 1.3 failed, 1.4 was installed after that: the two that work stay, whatever 1.3 was.
+            foreach (var version in new[] { Ver(1, 1), Ver(1, 2), Ver(1, 3), Ver(1, 4) })
+            {
+                Directory.CreateDirectory(Path.Combine(UserRoot, Id, version));
+            }
+
+            File.WriteAllText(Path.Combine(UserRoot, Id, Ver(1, 3), ExtensionPackageLayout.FailedMarkerFileName), "failed");
+
+            ExtensionPackageInstaller.Tidy(UserRoot);
+
+            Assert.Equal(new[] { Ver(1, 2), Ver(1, 4) }, Directory.EnumerateDirectories(Path.Combine(UserRoot, Id)).Select(Path.GetFileName).OrderBy(name => name).ToArray());
         }
 
         // ── which copy is loaded ──

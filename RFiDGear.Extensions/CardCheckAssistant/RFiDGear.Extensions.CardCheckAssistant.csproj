@@ -16,6 +16,11 @@
     <ExtensionDisplayName>Card Check Assistant</ExtensionDisplayName>
     <ExtensionMinHostVersion>2.1.0</ExtensionMinHostVersion>
   </PropertyGroup>
+  <!-- The package is for the platform of its sni.dll. A build normally takes it from the platform of the build, but
+       RFiDGearSqlNativePlatform can say another one (see SqlDriverPayload.targets), and the package must say what is in it. -->
+  <PropertyGroup Condition=" '$(RFiDGearSqlNativePlatform)' != '' ">
+    <ExtensionPackagePlatform>$(RFiDGearSqlNativePlatform)</ExtensionPackagePlatform>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DebugType>none</DebugType>
   </PropertyGroup>

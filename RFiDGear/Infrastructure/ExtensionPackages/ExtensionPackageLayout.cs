@@ -23,6 +23,9 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <summary>The folder inside the user's root where a package is unpacked before it is moved into place; a name that is no extension id.</summary>
         internal const string StagingFolderName = ".staging";
 
+        /// <summary>How old a staging folder has to be before the start-up tidying removes it: an installation that is asked about is minutes old.</summary>
+        internal static readonly TimeSpan StagingMaxAge = TimeSpan.FromDays(1);
+
         /// <summary>The name of the file in a package that describes it.</summary>
         internal const string ManifestFileName = "extension.json";
 

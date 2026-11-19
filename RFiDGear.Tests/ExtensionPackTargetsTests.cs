@@ -149,6 +149,25 @@ namespace RFiDGear.Tests
                 read.Package.Files.Select(file => file.Name).OrderBy(name => name, StringComparer.Ordinal).ToArray());
         }
 
+        [Fact]
+        public async Task APackageWithNativeFiles_IsNotMadeForAnyCpu_AndTheProjectCanNameThePlatformOfItsPayload()
+        {
+            WriteOutput();
+
+            // The payload (sni.dll) is native, so an AnyCPU build cannot say which platform the package is for.
+            var (anyExitCode, anyOutput) = await Build("-p:PackExtension=true", "-p:Platform=AnyCPU");
+            Assert.NotEqual(0, anyExitCode);
+            Assert.Contains("ExtensionPackagePlatform", anyOutput, StringComparison.Ordinal);
+            Assert.False(Directory.Exists(PackageFolder) && Directory.GetFiles(PackageFolder).Length > 0, "no package for a platform that is not known");
+
+            // The project says what its payload is for (as the Card Check Assistant does when RFiDGearSqlNativePlatform is set).
+            var (exitCode, output) = await Build("-p:PackExtension=true", "-p:Platform=AnyCPU", "-p:ExtensionPackagePlatform=x86");
+            Assert.True(exitCode == 0, output);
+            var path = Assert.Single(Directory.GetFiles(PackageFolder));
+            Assert.Equal("RFiDGear.Extensions.Fake-1.2.3-x86.rfext", Path.GetFileName(path));
+            Assert.Equal("x86", ExtensionPackageReader.Read(path).Package!.Manifest.Platform);
+        }
+
         [Theory]
         [InlineData("RFID \"Pro\" Suite")]
         [InlineData("Back\\slash and \"quotes\" \\\"both\\\"")]

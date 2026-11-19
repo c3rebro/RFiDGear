@@ -35,8 +35,13 @@
       <_PackName Condition="'$(ExtensionDisplayName)' != ''">$(ExtensionDisplayName)</_PackName>
       <_PackName Condition="'$(ExtensionDisplayName)' == ''">$(TargetName)</_PackName>
       <_PackStage>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)package-stage\</_PackStage>
-      <_PackFile>$(ExtensionPackageFolder)\$(TargetName)-$(Version)-$(Platform).rfext</_PackFile>
+      <!-- The platform of the package is that of its native files, which is the build's unless the project says otherwise. -->
+      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' != ''">$(ExtensionPackagePlatform)</_PackPlatform>
+      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' == ''">$(Platform)</_PackPlatform>
+      <_PackFile>$(ExtensionPackageFolder)\$(TargetName)-$(Version)-$(_PackPlatform).rfext</_PackFile>
     </PropertyGroup>
+    <Error Condition="'@(ExtensionPayloadFile)' != '' And ('$(_PackPlatform)' == '' Or '$(_PackPlatform)' == 'AnyCPU')"
+           Text="The extension has native payload files, so its package is made for one platform. Build with -p:Platform=x64 or -p:Platform=x86, or set ExtensionPackagePlatform to the platform of the payload; AnyCPU is for a package with nothing native in it." />
     <ItemGroup>
       <_PackSource Include="$(OutDir)$(TargetName).dll" />
       <_PackSource Include="$(OutDir)RFiDGear.ExtensionLibraries.*.dll" />
@@ -62,7 +67,7 @@
            and then not installed. The platform is what the build was for (x64, x86): the installer refuses a package of the
            other one, because the payload of an extension (sni.dll) is native. -->
       <_PackNameJson>$(_PackName.Replace('\', '\\').Replace('"', '\"'))</_PackNameJson>
-      <_PackManifest>{ &quot;schema&quot;: 1, &quot;id&quot;: &quot;$(TargetName)&quot;, &quot;displayName&quot;: &quot;$(_PackNameJson)&quot;, &quot;version&quot;: &quot;$(Version)&quot;, &quot;platform&quot;: &quot;$(Platform)&quot;, $(_PackMinHost)&quot;files&quot;: [ $(_PackFiles) ] }</_PackManifest>
+      <_PackManifest>{ &quot;schema&quot;: 1, &quot;id&quot;: &quot;$(TargetName)&quot;, &quot;displayName&quot;: &quot;$(_PackNameJson)&quot;, &quot;version&quot;: &quot;$(Version)&quot;, &quot;platform&quot;: &quot;$(_PackPlatform)&quot;, $(_PackMinHost)&quot;files&quot;: [ $(_PackFiles) ] }</_PackManifest>
     </PropertyGroup>
     <!-- Lines is a list that is split at semicolons: one in the name must stay in its line. -->
     <WriteLinesToFile File="$(_PackStage)extension.json" Lines="$(_PackManifest.Replace(';', '%3B'))" Overwrite="true" />
