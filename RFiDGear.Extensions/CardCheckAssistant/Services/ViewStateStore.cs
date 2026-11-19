@@ -47,7 +47,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         /// <summary>How many closed groups are kept. The page lists those of the grouping in use first, so a long tail of old ones cannot push them out.</summary>
         internal const int MaxCollapsedGroups = 200;
 
-        private const int SchemaVersion = 1;
+        private const int CurrentSchema = 1;
         private const int MaxFileBytes = 64 * 1024;
         private const int MaxGroupKeyLength = 200;
 
@@ -95,7 +95,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 }
 
                 var document = JsonSerializer.Deserialize<Document>(File.ReadAllText(_path), Options);
-                if (document == null || document.SchemaVersion != SchemaVersion)
+                if (document == null || document.SchemaVersion != CurrentSchema)
                 {
                     return new GuidedViewStateData();
                 }
@@ -127,7 +127,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
                 var document = new Document
                 {
-                    SchemaVersion = SchemaVersion,
+                    SchemaVersion = CurrentSchema,
                     Grouping = state.Grouping,
                     Sort = state.Sort,
                     CollapsedGroups = Sanitize(state.CollapsedGroups).ToList(),
