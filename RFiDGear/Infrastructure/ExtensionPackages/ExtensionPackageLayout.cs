@@ -40,6 +40,13 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// </summary>
         internal const string FailedMarkerFileName = ".failed";
 
+        /// <summary>
+        /// The file that RFiDGear leaves in a version folder whose extension was loaded without a problem. The start-up tidying
+        /// keeps the newest such version besides the newest few, so that an update that has not been tried yet (or two of them,
+        /// installed before a restart) cannot push out the last version that is known to work.
+        /// </summary>
+        internal const string LoadedMarkerFileName = ".loaded";
+
         /// <summary>The prefix of the name of an extension assembly; the host scans the machine-wide folder for it.</summary>
         internal const string ExtensionNamePrefix = "RFiDGear.Extensions";
 

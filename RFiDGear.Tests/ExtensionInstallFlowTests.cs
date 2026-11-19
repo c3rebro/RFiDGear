@@ -34,7 +34,7 @@ namespace RFiDGear.Tests
             ["textExtensionNotInstalled"] = 0,
             ["textExtensionNotSigned"] = 0,
             ["textExtensionSignedBy"] = 1,
-            ["textExtensionSignedByUntrusted"] = 1,
+            ["textExtensionSignatureNotValid"] = 1,
             ["messageExtensionProblemNotAPackage"] = 1,
             ["messageExtensionProblemHostTooOld"] = 1,
             ["messageExtensionProblemWrongPlatform"] = 1,
@@ -195,7 +195,7 @@ namespace RFiDGear.Tests
 
             var untrusted = new Dialogs { Package = WritePackage(), Answer = false };
             await Flow(Installer(_ => new SignerInfo("Somebody", false)), untrusted).RunAsync();
-            Assert.Contains("textExtensionSignedByUntrusted|Somebody", Assert.Single(untrusted.Asked), StringComparison.Ordinal);
+            Assert.Contains("textExtensionSignatureNotValid|Somebody", Assert.Single(untrusted.Asked), StringComparison.Ordinal);
         }
 
         [Fact]

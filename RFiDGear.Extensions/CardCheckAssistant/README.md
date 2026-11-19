@@ -12,9 +12,9 @@ system. It appears in the Extensions menu of the main window.
 
 - An update of the extension is a package: **File > Install extension update...**
   in RFiDGear, and choose the `.rfext` file. The package is checked, the person
-  is asked (name, the new and the installed version, and what its signature
-  names, if it has one; that is not verified), and the extension is installed
-  for the user, without administrator rights and
+  is asked (name, the new and the installed version, and who signed it and
+  whether Windows finds the signature valid, if it is signed), and the
+  extension is installed for the user, without administrator rights and
   without a visit to a folder (`%LocalAppData%\RFiDGear\InstalledExtensions`).
   The new version is used after RFiDGear has been restarted; the version that is
   shown in the header of the page tells which one runs. A package is made, in

@@ -2187,10 +2187,10 @@ The new version is used after RFiDGear has been restarted.</value>
     <value>Not signed</value>
   </data>
   <data name="textExtensionSignedBy" xml:space="preserve">
-    <value>The signature names: {0} (not verified; only the person who made the package can vouch for it)</value>
+    <value>Signed by: {0} (the signature is valid, and this PC trusts it)</value>
   </data>
-  <data name="textExtensionSignedByUntrusted" xml:space="preserve">
-    <value>The signature names: {0} (not verified, and this PC does not trust the certificate)</value>
+  <data name="textExtensionSignatureNotValid" xml:space="preserve">
+    <value>The file names {0} as its signer, but the signature is NOT valid, or this PC does not trust it. The file may have been changed; install it only if you know why.</value>
   </data>
   <data name="messageExtensionInstalled" xml:space="preserve">
     <value>{0} {1} is installed. Restart RFiDGear to use it.</value>

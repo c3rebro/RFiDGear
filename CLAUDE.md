@@ -511,8 +511,9 @@ the higher file version of the machine-wide and the user's copy (the
 machine-wide one when equal), and the resolver asks `FindExtensionAssembly` so
 the older copy is not loaded by name. A provider makes a package with
 `-p:PackExtension=true` (`RFiDGear.Extensions/PackExtension.targets`); nothing in
-a package is executed. The hash is integrity, not authenticity: the signer is
-shown, not enforced. See `DEVELOPER_NOTES.md` ("Shipping an extension update as
+a package is executed. The hash is integrity, not authenticity: the signer and
+whether Windows finds the signature valid are shown (`WinVerifyTrust`), not
+enforced. See `DEVELOPER_NOTES.md` ("Shipping an extension update as
 a package"). An extension shows its own version in its UI (the Card Check
 Assistant reads it from its file version, set once in `CardCheckVersion.props`).
 

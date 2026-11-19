@@ -2209,10 +2209,10 @@ Die neue Version wird nach einem Neustart von RFiDGear verwendet.</value>
     <value>Nicht signiert</value>
   </data>
   <data name="textExtensionSignedBy" xml:space="preserve">
-    <value>Die Signatur nennt: {0} (nicht geprüft; bürgen kann nur, wer das Paket gemacht hat)</value>
+    <value>Signiert von: {0} (die Signatur ist gültig, und dieser PC vertraut ihr)</value>
   </data>
-  <data name="textExtensionSignedByUntrusted" xml:space="preserve">
-    <value>Die Signatur nennt: {0} (nicht geprüft, und dieser PC vertraut dem Zertifikat nicht)</value>
+  <data name="textExtensionSignatureNotValid" xml:space="preserve">
+    <value>Die Datei nennt {0} als Signierer, aber die Signatur ist NICHT gültig, oder dieser PC vertraut ihr nicht. Die Datei kann verändert worden sein; installieren Sie sie nur, wenn Sie wissen, warum.</value>
   </data>
   <data name="messageExtensionInstalled" xml:space="preserve">
     <value>{0} {1} ist installiert. Starten Sie RFiDGear neu, um sie zu verwenden.</value>

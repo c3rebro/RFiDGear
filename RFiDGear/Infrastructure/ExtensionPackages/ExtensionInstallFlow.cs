@@ -107,7 +107,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 ? _text("textExtensionNotSigned")
                 : string.Format(
                     CultureInfo.CurrentCulture,
-                    _text(staged.Signer.ChainTrusted ? "textExtensionSignedBy" : "textExtensionSignedByUntrusted"),
+                    _text(staged.Signer.SignatureValid ? "textExtensionSignedBy" : "textExtensionSignatureNotValid"),
                     staged.Signer.Name);
 
             return string.Format(

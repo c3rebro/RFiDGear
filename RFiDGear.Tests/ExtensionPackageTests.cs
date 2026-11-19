@@ -465,6 +465,27 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void TheNewestVersionThatIsKnownToWork_IsKeptBesideTheNewestFew_UntilANewerOneHasLoaded()
+        {
+            // 1.1 loaded without a problem and is what runs; 1.2 and 1.3 were installed since, and nobody has tried them yet.
+            foreach (var version in new[] { Ver(1, 1), Ver(1, 2), Ver(1, 3) })
+            {
+                Directory.CreateDirectory(Path.Combine(UserRoot, Id, version));
+            }
+
+            File.WriteAllText(Path.Combine(UserRoot, Id, Ver(1, 1), ExtensionPackageLayout.LoadedMarkerFileName), "loaded");
+
+            ExtensionPackageInstaller.Tidy(UserRoot);
+            Assert.Equal(new[] { Ver(1, 1), Ver(1, 2), Ver(1, 3) }, Directory.EnumerateDirectories(Path.Combine(UserRoot, Id)).Select(Path.GetFileName).OrderBy(name => name).ToArray());
+
+            // Once 1.3 has loaded, 1.1 is no longer the one to go back to.
+            File.WriteAllText(Path.Combine(UserRoot, Id, Ver(1, 3), ExtensionPackageLayout.LoadedMarkerFileName), "loaded");
+
+            ExtensionPackageInstaller.Tidy(UserRoot);
+            Assert.Equal(new[] { Ver(1, 2), Ver(1, 3) }, Directory.EnumerateDirectories(Path.Combine(UserRoot, Id)).Select(Path.GetFileName).OrderBy(name => name).ToArray());
+        }
+
+        [Fact]
         public void AVersionThatFailed_DoesNotPushAWorkingOneOut_AndIsRemovedItself()
         {
             // 1.2 works, 1.3 failed, 1.4 was installed after that: the two that work stay, whatever 1.3 was.
@@ -588,6 +609,10 @@ namespace RFiDGear.Tests
             Assert.Equal(new[] { user }, log.Tried);
             Assert.Equal(user, helper.FindExtensionAssembly(Id));   // the resolver is told the same, so the older copy is never loaded
             Assert.NotEqual(machine, helper.FindExtensionAssembly(Id));
+
+            // It loaded, and its folder says so; the machine-wide folder, which is not ours to write in, is left alone.
+            Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(user)!, ExtensionPackageLayout.LoadedMarkerFileName)));
+            Assert.False(File.Exists(Path.Combine(MachineFolder, ExtensionPackageLayout.LoadedMarkerFileName)));
         }
 
         [Fact]

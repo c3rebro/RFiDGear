@@ -45,6 +45,9 @@ public sealed class MefHelper : IDisposable
     private readonly Dictionary<string, string> _loadedPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<SelectedExtension> _selection;
 
+    // The guard of the user's folder of installed extensions, when this process took it (and with it the right to tidy it).
+    private ExtensionFolderGuard _folderGuard;
+
     /// <summary>
     /// The assembly of the application itself, whose exports the container starts with and whose name names the extensions
     /// folder. It is this assembly and not the entry assembly of the process: the two are the same in the application, but when
@@ -97,6 +100,10 @@ public sealed class MefHelper : IDisposable
     {
         _Container?.Dispose();
         _Container = null;
+
+        // The application's helper lives until the process ends; one that is disposed earlier (a test) lets go of the folder.
+        _folderGuard?.Dispose();
+        _folderGuard = null;
     }
 
     #endregion
@@ -367,8 +374,19 @@ public sealed class MefHelper : IDisposable
 
         try
         {
-            // Before anything of the user's folder is loaded: what an install that was cut short left, and the old versions.
-            ExtensionPackageInstaller.Tidy(_userExtensionsPath);
+            // Before anything of the user's folder is loaded: what an install that was cut short left, and the old versions. Only
+            // the first RFiDGear tidies: a second one that is started meanwhile composes too, before it finds out and exits, and
+            // must not take away what the first one uses or is asking about.
+            if (Directory.Exists(_userExtensionsPath))
+            {
+                var guard = ExtensionFolderGuard.For(_userExtensionsPath);
+                if (guard.TryTake())
+                {
+                    _folderGuard = guard;
+                    ExtensionPackageInstaller.Tidy(_userExtensionsPath);
+                }
+            }
+
             selection = SelectExtensions();
         }
         catch (Exception e)
@@ -396,33 +414,40 @@ public sealed class MefHelper : IDisposable
                         _loadedPaths[Path.GetFileNameWithoutExtension(extension.FileName)] = candidate.AssemblyPath;
                     }
 
+                    if (candidate.IsUserInstalled)
+                    {
+                        // Known to work: the tidying keeps the newest such version, whatever is installed after it.
+                        MarkVersionFolder(candidate, ExtensionPackageLayout.LoadedMarkerFileName, "This version of the extension was loaded without a problem.");
+                    }
+
                     break;
                 }
 
                 if (candidate.IsUserInstalled)
                 {
-                    MarkAsFailed(candidate);
+                    MarkVersionFolder(candidate, ExtensionPackageLayout.FailedMarkerFileName, "This version of the extension could not be loaded; RFiDGear does not choose it again.");
+                    Log.ForContext<MefHelper>()
+                        .Warning("The installed extension {ExtensionAssembly} could not be loaded; this version is skipped from the next start", candidate.AssemblyPath);
                 }
             }
         }
     }
 
-    // Leaves the marker in the version folder of an installed copy that could not be loaded (see ExtensionPackageLayout).
-    private static void MarkAsFailed(ExtensionCandidate candidate)
+    // Leaves a marker file in the version folder of an installed copy (see ExtensionPackageLayout). A folder that cannot be written
+    // gets none, and is treated as before.
+    private static void MarkVersionFolder(ExtensionCandidate candidate, string markerFileName, string text)
     {
         try
         {
             var folder = Path.GetDirectoryName(candidate.AssemblyPath);
             if (!string.IsNullOrEmpty(folder))
             {
-                File.WriteAllText(Path.Combine(folder, ExtensionPackageLayout.FailedMarkerFileName), "This version of the extension could not be loaded; RFiDGear does not choose it again.");
-                Log.ForContext<MefHelper>()
-                    .Warning("The installed extension {ExtensionAssembly} could not be loaded; this version is skipped from the next start", candidate.AssemblyPath);
+                File.WriteAllText(Path.Combine(folder, markerFileName), text);
             }
         }
         catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
         {
-            Log.ForContext<MefHelper>().Warning(e, "Could not mark {ExtensionAssembly} as failed", candidate.AssemblyPath);
+            Log.ForContext<MefHelper>().Warning(e, "Could not leave {Marker} in the folder of {ExtensionAssembly}", markerFileName, candidate.AssemblyPath);
         }
     }
 

@@ -11,10 +11,13 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace RFiDGear.Infrastructure.ExtensionPackages
 {
-    /// <summary>Who the Authenticode signature of a file names.</summary>
-    /// <param name="Name">The name of the signer.</param>
-    /// <param name="ChainTrusted">Whether the certificate of the signer chains to a root that this machine trusts. The signature itself (that it belongs to this file) is not checked.</param>
-    internal sealed record SignerInfo(string Name, bool ChainTrusted);
+    /// <summary>Who the Authenticode signature of a file names, and whether the signature holds.</summary>
+    /// <param name="Name">The name of the signer, as the certificate gives it.</param>
+    /// <param name="SignatureValid">
+    /// Whether the signature was checked by the operating system and holds: it belongs to the content of the file and the
+    /// certificate chains to a root that this PC trusts. When it does not, the file may have been changed after it was signed.
+    /// </param>
+    internal sealed record SignerInfo(string Name, bool SignatureValid);
 
     /// <summary>
     /// A package that is unpacked, checked and ready to be moved into place: what the person is asked about before it is.
@@ -259,7 +262,17 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 .ToList();
 
             var working = versions.Where(entry => !File.Exists(Path.Combine(entry.Folder, ExtensionPackageLayout.FailedMarkerFileName))).ToList();
-            foreach (var gone in versions.Except(working).Concat(working.Skip(keep)))
+
+            // The newest few, and the newest that is known to have loaded: an update that was installed and not tried yet may be the
+            // newest, and two of them before a restart must not take the last version that worked with them.
+            var kept = working.Take(keep).ToList();
+            var knownToWork = working.FirstOrDefault(entry => File.Exists(Path.Combine(entry.Folder, ExtensionPackageLayout.LoadedMarkerFileName)));
+            if (knownToWork.Folder != null && !kept.Contains(knownToWork))
+            {
+                kept.Add(knownToWork);
+            }
+
+            foreach (var gone in versions.Except(kept))
             {
                 TryDeleteFolder(gone.Folder);
             }
@@ -293,21 +306,39 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             }
         }
 
-        // The signer is named for the person who is asked; the signature is not what the installation rests on.
-        private static SignerInfo? ReadSigner(string path)
+        // Who signed the file, for the person who is asked, and whether the signature holds (checked by the operating system, as it
+        // does for a signed program). The installation does not rest on it: an unsigned package can be installed after the question.
+        internal static SignerInfo? ReadSigner(string path)
+        {
+            try
+            {
+                var check = AuthenticodeVerifier.Check(path);
+                if (check == SignatureCheck.Unsigned)
+                {
+                    return null;
+                }
+
+                return new SignerInfo(NameOfSigner(path), check == SignatureCheck.Valid);
+            }
+            catch (Exception ex) when (ex is IOException or ArgumentException or NotSupportedException or DllNotFoundException or EntryPointNotFoundException)
+            {
+                // A file that cannot be checked is not shown as signed.
+                return null;
+            }
+        }
+
+        // The name in the certificate of the signature, or "?" when it cannot be read (a signature that does not hold may be one).
+        private static string NameOfSigner(string path)
         {
             try
             {
                 using var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
-                using var chain = new X509Chain();
-                var trusted = chain.Build(certificate);
                 var name = certificate.GetNameInfo(X509NameType.SimpleName, false);
-                return new SignerInfo(string.IsNullOrWhiteSpace(name) ? certificate.Subject : name, trusted);
+                return string.IsNullOrWhiteSpace(name) ? certificate.Subject : name;
             }
             catch (Exception ex) when (ex is CryptographicException or IOException or ArgumentException or NotSupportedException)
             {
-                // No signature, or one that cannot be read, is "not signed".
-                return null;
+                return "?";
             }
         }
     }
