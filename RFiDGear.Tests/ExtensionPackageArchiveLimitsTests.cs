@@ -137,27 +137,78 @@ namespace RFiDGear.Tests
             Assert.Equal(ExtensionPackageProblem.NotAPackage, ProblemOf(new byte[10]));
         }
 
+        // 60,000 empty entries: below the limit of the 16-bit count of the format, so no zip64, and still about 3 MB of directory.
+        private static byte[] ArchiveOfTensOfThousandsOfEntries() => Zip(archive =>
+        {
+            for (var i = 0; i < 60000; i++)
+            {
+                archive.CreateEntry("f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), CompressionLevel.NoCompression);
+            }
+        });
+
+        // What the reader allocates for the archive; the zip library would build an object for each of the entries (tens of megabytes).
+        private static (ExtensionPackageReadResult Result, long Allocated) ReadAndMeasure(byte[] zip)
+        {
+            using var stream = new MemoryStream(zip);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var result = ExtensionPackageReader.Read(stream);
+            return (result, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
+
         [Fact]
         public void AnArchiveThatListsTensOfThousandsOfEntries_IsRefused_WithoutBuildingThem()
         {
-            // 60,000 empty entries: below the limit of the 16-bit count of the format, so no zip64, and still about 3 MB of directory.
-            var zip = Zip(archive =>
-            {
-                for (var i = 0; i < 60000; i++)
-                {
-                    archive.CreateEntry("f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), CompressionLevel.NoCompression);
-                }
-            });
-            using var stream = new MemoryStream(zip);
-
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            var result = ExtensionPackageReader.Read(stream);
-            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            var (result, allocated) = ReadAndMeasure(ArchiveOfTensOfThousandsOfEntries());
 
             Assert.Equal(ExtensionPackageProblem.TooLarge, result.Problem);
-
-            // The zip library would build an object for each entry (tens of megabytes); the check of the end record builds none.
             Assert.True(allocated < 2 * 1024 * 1024, $"the reader allocated {allocated} bytes for an archive that it refuses");
+        }
+
+        [Theory]
+        [InlineData("count and size say 1")]
+        [InlineData("count says 1 and the size is the real one")]
+        [InlineData("count, size and offset say that the directory is the last byte")]
+        public void AnArchiveThatUnderstatesItsDirectory_IsRefused_WithoutBuildingTheEntriesItReallyHas(string lie)
+        {
+            // The zip library reads entries from the offset of the directory until the signature of an entry is not there, whatever
+            // the end record says about their number: a record that says "one entry" over a directory of 60,000 must not pass.
+            var zip = ArchiveOfTensOfThousandsOfEntries();
+            var end = EndRecord(zip);
+            switch (lie)
+            {
+                case "count and size say 1":
+                    BinaryPrimitives.WriteUInt16LittleEndian(zip.AsSpan(end + TotalEntries), 1);
+                    BinaryPrimitives.WriteUInt32LittleEndian(zip.AsSpan(end + DirectorySize), 1);
+                    break;
+                case "count says 1 and the size is the real one":
+                    BinaryPrimitives.WriteUInt16LittleEndian(zip.AsSpan(end + TotalEntries), 1);
+                    break;
+                default:
+                    BinaryPrimitives.WriteUInt16LittleEndian(zip.AsSpan(end + TotalEntries), 1);
+                    BinaryPrimitives.WriteUInt32LittleEndian(zip.AsSpan(end + DirectorySize), 1);
+                    BinaryPrimitives.WriteUInt32LittleEndian(zip.AsSpan(end + DirectoryOffset), (uint)(end - 1));
+                    break;
+            }
+
+            var (result, allocated) = ReadAndMeasure(zip);
+
+            Assert.False(result.Success);
+            Assert.True(allocated < 2 * 1024 * 1024, $"the reader allocated {allocated} bytes for an archive that it refuses");
+        }
+
+        [Fact]
+        public void TheDirectoryHasToEndWhereTheEndRecordBegins_SoItsRealSizeIsTheDeclaredOne()
+        {
+            var zip = ValidPackage();
+            var end = EndRecord(zip);
+            var size = BinaryPrimitives.ReadUInt32LittleEndian(zip.AsSpan(end + DirectorySize));
+
+            // One byte of the directory missing at the front, or one byte more before the record: not what a package is.
+            BinaryPrimitives.WriteUInt32LittleEndian(zip.AsSpan(end + DirectorySize), size - 1);
+            Assert.Equal(ExtensionPackageProblem.NotAPackage, ProblemOf(zip));
+
+            BinaryPrimitives.WriteUInt32LittleEndian(zip.AsSpan(end + DirectorySize), size + 1);
+            Assert.Equal(ExtensionPackageProblem.NotAPackage, ProblemOf(zip));
         }
     }
 }

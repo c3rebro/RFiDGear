@@ -64,7 +64,10 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         }
 
         // What the record says: only one disk, no zip64 (a package is far below what it is for), few entries, a small directory,
-        // and a directory that ends before the record does.
+        // and a directory that ends exactly where the record begins. That last one makes the declared size the real size: the
+        // zip library reads entries from the offset of the directory until the signature of an entry is not there, so a record that
+        // says "one entry, one byte" over a longer run of entries must not pass because the library happens to read only what the
+        // record says today. Archives of the tools that make packages (and of Windows) end their directory at the record.
         private static ExtensionPackageProblem? Judge(byte[] tail, int at, long recordPosition)
         {
             if (ReadUInt16(tail, at + DiskNumberAt) != 0 || ReadUInt16(tail, at + DirectoryDiskAt) != 0)
@@ -83,7 +86,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 return ExtensionPackageProblem.TooLarge;
             }
 
-            return offset + (long)size > recordPosition ? ExtensionPackageProblem.NotAPackage : null;
+            return offset + (long)size == recordPosition ? null : ExtensionPackageProblem.NotAPackage;
         }
 
         // The last bytes of the archive: the record, and the comment that may follow it (at most 64 KiB).
