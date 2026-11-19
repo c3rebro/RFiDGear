@@ -56,6 +56,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly OrderGroupingOption[] _groupings;
         private readonly HashSet<string> _collapsedGroups = new HashSet<string>(StringComparer.Ordinal);
         private readonly ExtensionVersionInfo _versionInfo;
+        private readonly IGuidedViewState? _viewState;
+        private readonly OrderSortOption[] _sorts;
 
         private WorkflowSnapshot _snapshot = new WorkflowSnapshot();
         private long _shownVersion = -1;
@@ -80,6 +82,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private OrderRowViewModel? _selectedOrder;
         private LanguageOption _selectedLanguage;
         private OrderGroupingOption _selectedGrouping;
+        private OrderSortOption _selectedSort;
         private string _orderSearch = string.Empty;
         private ReaderSnapshot? _hostCard;
         private bool _hostRunning;
@@ -93,7 +96,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="importOffer">The one-time offer to import the old assistant's settings.</param>
         /// <param name="pageServices">The questions the page asks the operator, and the viewer for a report.</param>
         /// <param name="startTimer">Starts the repeating timer of the list refresh; the action may be called on any thread.</param>
-        /// <exception cref="ArgumentNullException">An argument other than <paramref name="settingsDialog"/> is null.</exception>
+        /// <param name="viewState">Where the list of orders remembers its grouping, its sort and the groups the operator closed; <c>null</c> keeps them for this window only.</param>
+        /// <exception cref="ArgumentNullException">An argument other than <paramref name="settingsDialog"/> and <paramref name="viewState"/> is null.</exception>
         public GuidedCheckViewModel(
             IRFiDGearExtensionHost host,
             Dispatcher dispatcher,
@@ -101,8 +105,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             ISettingsDialog? settingsDialog,
             IImportOffer importOffer,
             IGuidedPageServices pageServices,
-            Func<TimeSpan, Action, IDisposable> startTimer)
+            Func<TimeSpan, Action, IDisposable> startTimer,
+            IGuidedViewState? viewState = null)
         {
+            _viewState = viewState;
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _workflow = workflow ?? throw new ArgumentNullException(nameof(workflow));
@@ -130,7 +136,24 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 new OrderGroupingOption(OrderGrouping.Month, Keys.GuidedGroupMonth, Strings),
                 new OrderGroupingOption(OrderGrouping.None, Keys.GuidedGroupNone, Strings)
             };
-            _selectedGrouping = _groupings[0];
+            _sorts = new[]
+            {
+                new OrderSortOption(OrderSort.CreatedNewest, Keys.GuidedSortCreated, Strings),
+                new OrderSortOption(OrderSort.ModifiedNewest, Keys.GuidedSortModified, Strings),
+                new OrderSortOption(OrderSort.JobNumber, Keys.JobNumberLabel, Strings),
+                new OrderSortOption(OrderSort.Customer, Keys.GuidedCustomerLabel, Strings),
+                new OrderSortOption(OrderSort.Status, Keys.GuidedOrderStatusLabel, Strings)
+            };
+
+            // What the operator arranged the last time; what is not known any more (a name from another version) is the default.
+            var remembered = SafeRead(() => viewState?.Load() ?? new GuidedViewStateData(), new GuidedViewStateData());
+            _selectedGrouping = _groupings.FirstOrDefault(option => string.Equals(option.Grouping.ToString(), remembered.Grouping, StringComparison.OrdinalIgnoreCase)) ?? _groupings[0];
+            _selectedSort = _sorts.FirstOrDefault(option => string.Equals(option.Sort.ToString(), remembered.Sort, StringComparison.OrdinalIgnoreCase)) ?? _sorts[0];
+            foreach (var key in remembered.CollapsedGroups)
+            {
+                _collapsedGroups.Add(key);
+            }
+
             _ordersView = new ListCollectionView(_orders) { Filter = row => ((OrderRowViewModel)row).Matches(_orderSearch) };
             ApplyGrouping();
             Form = new ProgrammingFormViewModel(Strings, OnFormChanged);
@@ -294,6 +317,25 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 if (value != null && SetProperty(ref _selectedGrouping, value))
                 {
                     ApplyGrouping();
+                    PruneCollapsedGroups();
+                    SaveViewState();
+                }
+            }
+        }
+
+        /// <summary>Gets the ways to sort the list.</summary>
+        public IReadOnlyList<OrderSortOption> Sorts => _sorts;
+
+        /// <summary>Gets or sets what the list is sorted by, inside each group; the newest order first at first.</summary>
+        public OrderSortOption SelectedSort
+        {
+            get => _selectedSort;
+            set
+            {
+                if (value != null && SetProperty(ref _selectedSort, value))
+                {
+                    ApplySort();
+                    SaveViewState();
                 }
             }
         }
@@ -328,17 +370,86 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="expanded">Whether it shows its orders now.</param>
         public void SetGroupExpanded(string? name, bool expanded)
         {
-            if (expanded)
+            var changed = expanded ? _collapsedGroups.Remove(GroupKey(name)) : _collapsedGroups.Add(GroupKey(name));
+            if (changed)
             {
-                _collapsedGroups.Remove(GroupKey(name));
-            }
-            else
-            {
-                _collapsedGroups.Add(GroupKey(name));
+                SaveViewState();
             }
         }
 
-        private string GroupKey(string? name) => _selectedGrouping.Grouping + ":" + name;
+        private string GroupKey(string? name) => GroupKey(_selectedGrouping.Grouping, name);
+
+        private static string GroupKey(OrderGrouping grouping, string? name) => grouping + ":" + name;
+
+        // The names of the groups the orders are in now, for the grouping in use.
+        private HashSet<string> CurrentGroupNames()
+        {
+            Func<OrderRowViewModel, string>? name = _selectedGrouping.Grouping switch
+            {
+                OrderGrouping.Status => row => row.StatusGroup,
+                OrderGrouping.Customer => row => row.CustomerGroup,
+                OrderGrouping.Month => row => row.MonthGroup,
+                _ => null
+            };
+
+            return name == null ? new HashSet<string>(StringComparer.Ordinal) : _orders.Select(name).ToHashSet(StringComparer.Ordinal);
+        }
+
+        // A group that is not in the list any more (a month long ago, a customer who has no order) is forgotten, so the
+        // closed groups of the grouping in use do not pile up. Nothing is forgotten while the list is empty: that may be
+        // a read that failed, and the groups come back with the next one.
+        private void PruneCollapsedGroups()
+        {
+            if (_orders.Count == 0)
+            {
+                return;
+            }
+
+            var current = CurrentGroupNames();
+            var prefix = GroupKey(_selectedGrouping.Grouping, null);
+            var gone = _collapsedGroups.Where(key => key.StartsWith(prefix, StringComparison.Ordinal) && !current.Contains(key.Substring(prefix.Length))).ToList();
+            if (gone.Count == 0)
+            {
+                return;
+            }
+
+            _collapsedGroups.ExceptWith(gone);
+            SaveViewState();
+        }
+
+        // What the operator arranged is kept for the next window. The closed groups of the grouping in use come first, so
+        // that the limit of the file cuts the old ones of the others.
+        private void SaveViewState()
+        {
+            if (_viewState == null)
+            {
+                return;
+            }
+
+            var prefix = GroupKey(_selectedGrouping.Grouping, null);
+            var closed = _collapsedGroups
+                .OrderBy(key => key.StartsWith(prefix, StringComparison.Ordinal) ? 0 : 1)
+                .ThenBy(key => key, StringComparer.Ordinal)
+                .Take(FileGuidedViewState.MaxCollapsedGroups)
+                .ToList();
+            var state = new GuidedViewStateData
+            {
+                Grouping = _selectedGrouping.Grouping.ToString(),
+                Sort = _selectedSort.Sort.ToString(),
+                CollapsedGroups = closed,
+            };
+
+            try
+            {
+                _viewState.Save(state);
+            }
+            catch (Exception)
+            {
+                // What the list remembers is a convenience: a store that cannot keep it does not stop the page.
+            }
+        }
+
+        private void ApplySort() => _ordersView.CustomSort = new OrderRowComparer(_selectedSort.Sort, _selectedGrouping.Grouping);
 
         private void ApplyGrouping()
         {
@@ -359,6 +470,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     default:
                         break;
                 }
+
+                // The months keep their own order whatever the sort is, so the sort depends on the grouping.
+                ApplySort();
             }
         }
 
@@ -1015,6 +1129,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 grouping.Refresh();
             }
 
+            foreach (var sort in _sorts)
+            {
+                sort.Refresh();
+            }
+
             foreach (var row in _rows)
             {
                 row.Refresh();
@@ -1141,6 +1260,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 _syncingRows = false;
             }
 
+            PruneCollapsedGroups();
             OnPropertyChanged(nameof(SelectedOrder));
         }
 

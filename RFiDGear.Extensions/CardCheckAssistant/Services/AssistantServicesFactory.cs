@@ -54,6 +54,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
                 var editor = new SettingsEditor(store, databaseSettings => CardCheckServices.CreateOrderStore(databaseSettings, log));
 
+                // What the list of orders remembers lives beside the settings, in a file of its own.
+                var viewState = new FileGuidedViewState(overridden ? Path.Combine(root!, "settings") : FileGuidedViewState.DefaultFolder());
+
                 // Each window gets its own workflow, built when the window is opened. In the test mode the orders are made
                 // up in memory and the reports go to a Test folder of their own; without a usable report folder that folder
                 // is made in the fallback, which the test run moves into its sandbox like the settings.
@@ -63,14 +66,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
                 if (!offerLegacyImport)
                 {
-                    return new AssistantServices(AssistantServices.None.ImportOffer, editor, workflow);
+                    return new AssistantServices(AssistantServices.None.ImportOffer, editor, workflow, viewState);
                 }
 
                 var importer = overridden
                     ? CardCheckServices.CreateLegacyImporter(store, root!, log)
                     : CardCheckServices.CreateLegacyImporter(store, log);
 
-                return new AssistantServices(new ImportOfferService(importer, new ImportDialogs(), dispatcher), editor, workflow);
+                return new AssistantServices(new ImportOfferService(importer, new ImportDialogs(), dispatcher), editor, workflow, viewState);
             }
             catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
             {

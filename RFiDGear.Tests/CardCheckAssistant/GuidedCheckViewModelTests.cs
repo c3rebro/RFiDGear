@@ -34,8 +34,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
             WorkflowState state = WorkflowState.Idle,
             bool settings = true,
             string culture = "en-US",
-            long firstVersion = 1) =>
-            Page.Run(body, state, settings, culture, firstVersion);
+            long firstVersion = 1,
+            IGuidedViewState? viewState = null) =>
+            Page.Run(body, state, settings, culture, firstVersion, viewState);
 
         // The mapping is written out here on purpose: a test that asks the code under test what it maps proves nothing.
         private static readonly Dictionary<WorkflowState, GuidedStep> ExpectedSteps = new Dictionary<WorkflowState, GuidedStep>
@@ -338,6 +339,111 @@ namespace RFiDGear.Tests.CardCheckAssistant
             vm.SelectedGrouping = vm.Groupings.First();
             vm.SetGroupExpanded("Created", true);
             Assert.True(vm.IsGroupExpanded("Created"));
+        });
+
+        [Fact]
+        public async Task TheGrouping_TheSort_AndTheClosedGroups_AreRememberedForTheNextWindow()
+        {
+            var memory = new MemoryViewState();
+            var orders = WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00"));
+
+            await Run(
+                async page =>
+                {
+                    var vm = page.Vm;
+                    await page.PushAsync(WorkflowState.Idle, orders);
+                    Assert.Equal(OrderSort.CreatedNewest, vm.SelectedSort.Sort);   // what a window starts with, when nothing was remembered
+
+                    vm.SelectedGrouping = vm.Groupings.Single(option => option.Grouping == OrderGrouping.Customer);
+                    vm.SelectedSort = vm.Sorts.Single(option => option.Sort == OrderSort.JobNumber);
+                    vm.SetGroupExpanded("Beta", false);
+
+                    var saved = memory.Saved[^1];
+                    Assert.Equal("Customer", saved.Grouping);
+                    Assert.Equal("JobNumber", saved.Sort);
+                    Assert.Equal(new[] { "Customer:Beta" }, saved.CollapsedGroups);
+                },
+                viewState: memory);
+
+            await Run(
+                async page =>
+                {
+                    var vm = page.Vm;
+                    Assert.Equal(OrderGrouping.Customer, vm.SelectedGrouping.Grouping);
+                    Assert.Equal(OrderSort.JobNumber, vm.SelectedSort.Sort);
+
+                    await page.PushAsync(WorkflowState.Idle, orders);
+                    Assert.False(vm.IsGroupExpanded("Beta"));
+                    Assert.True(vm.IsGroupExpanded("Acme"));
+                },
+                viewState: memory);
+        }
+
+        [Fact]
+        public Task WhatIsRemembered_IsOnlyUsedWhenItIsKnown_AndAStoreThatFails_DoesNotStopThePage()
+        {
+            var memory = new MemoryViewState(new GuidedViewStateData { Grouping = "FromAnotherVersion", Sort = "AlsoUnknown" });
+
+            return Run(
+                page =>
+                {
+                    var vm = page.Vm;
+                    Assert.Equal(OrderGrouping.Status, vm.SelectedGrouping.Grouping);   // a name of another version is the default, not an error
+                    Assert.Equal(OrderSort.CreatedNewest, vm.SelectedSort.Sort);
+
+                    memory.Throws = true;
+                    vm.SelectedSort = vm.Sorts[2];   // the page goes on although nothing can be kept
+                    Assert.Equal(vm.Sorts[2], vm.SelectedSort);
+                    return Task.CompletedTask;
+                },
+                viewState: memory);
+        }
+
+        [Fact]
+        public Task AClosedGroup_IsForgotten_WhenNoOrderIsInItAnyMore_ButNotWhileTheListIsEmpty()
+        {
+            var memory = new MemoryViewState();
+
+            return Run(
+                async page =>
+            {
+                var vm = page.Vm;
+                await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00")));
+                vm.SetGroupExpanded("Created", false);
+                vm.SetGroupExpanded("Gone", false);   // a group that the list does not have
+                Assert.False(vm.IsGroupExpanded("Gone"));
+
+                // A list that could not be read comes back empty; what was closed is not forgotten for that.
+                await page.PushAsync(WorkflowState.Idle, WithOrders());
+                Assert.False(vm.IsGroupExpanded("Gone"));
+
+                await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00")));
+                Assert.True(vm.IsGroupExpanded("Gone"));
+                Assert.False(vm.IsGroupExpanded("Created"));
+                Assert.Equal(new[] { "Status:Created" }, memory.Saved[^1].CollapsedGroups);
+            },
+                viewState: memory);
+        }
+
+        [Fact]
+        public Task TheOrdersAreSortedInsideTheirGroups_AndTheLanguageRenamesTheChoices() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(
+                WorkflowState.Idle,
+                WithOrders(Dated("A", "Zeta", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Acme", "InProgress", "2026-10-20 09:30:00"), Dated("C", "Beta", "InProgress", "2026-11-09 17:00:00")));
+            string[] Jobs() => vm.OrdersView.Cast<OrderRowViewModel>().Select(row => row.JobNumber).ToArray();
+
+            vm.SelectedSort = vm.Sorts.Single(option => option.Sort == OrderSort.Customer);
+            Assert.Equal(new[] { "JB", "JC", "JA" }, Jobs());
+
+            vm.SelectedSort = vm.Sorts.Single(option => option.Sort == OrderSort.ModifiedNewest);
+            Assert.Equal(new[] { "JC", "JA", "JB" }, Jobs());
+
+            var before = vm.Sorts[0].Name;
+            page.Host.Context.ChangeCulture("de-DE");
+            await ViewModelTestSupport.Flush();
+            Assert.NotEqual(before, vm.Sorts[0].Name);
         });
 
         [Fact]

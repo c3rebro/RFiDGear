@@ -16,7 +16,17 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         {
             Order = order ?? throw new ArgumentNullException(nameof(order));
             IsStartable = CardCheckWorkflow.IsStartable(order);
+
+            // Read once: a sort asks for them again and again.
+            CreatedAt = OrderDates.TryParse(order.DateCreated, out var created) ? created : null;
+            ModifiedAt = OrderDates.TryParse(order.DateModified, out var modified) ? modified : null;
         }
+
+        /// <summary>Gets the date the order was created, or <c>null</c> when the order system gave none that can be read.</summary>
+        public DateTime? CreatedAt { get; }
+
+        /// <summary>Gets the date the order was last changed, or <c>null</c> when the order system gave none that can be read.</summary>
+        public DateTime? ModifiedAt { get; }
 
         /// <summary>Gets the order this row shows.</summary>
         public OrderRecord Order { get; }

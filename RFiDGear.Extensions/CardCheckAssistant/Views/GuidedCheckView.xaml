@@ -248,26 +248,31 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                    <Label Content="{Binding Strings[ReportLanguageLabel]}" Target="{Binding ElementName=LanguageBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
-                    <ComboBox x:Name="LanguageBox" MinWidth="140" ItemsSource="{Binding Languages}" DisplayMemberPath="Name"
-                              SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[ReportLanguageLabel]}" />
-                </StackPanel>
-                <Grid Grid.Row="1" Margin="0,0,0,8">
+                <!-- the language of the reports, and the search -->
+                <Grid Grid.Row="0" Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Label Grid.Column="0" Content="{Binding Strings[GuidedGroupByLabel]}" Target="{Binding ElementName=GroupingBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
-                    <ComboBox x:Name="GroupingBox" Grid.Column="1" MinWidth="140" ItemsSource="{Binding Groupings}" DisplayMemberPath="Name"
-                              SelectedItem="{Binding SelectedGrouping, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[GuidedGroupByLabel]}" />
+                    <Label Grid.Column="0" Content="{Binding Strings[ReportLanguageLabel]}" Target="{Binding ElementName=LanguageBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
+                    <ComboBox x:Name="LanguageBox" Grid.Column="1" MinWidth="140" ItemsSource="{Binding Languages}" DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[ReportLanguageLabel]}" />
                     <DockPanel Grid.Column="2" Margin="16,0,0,0">
                         <Label DockPanel.Dock="Left" Content="{Binding Strings[GuidedSearchLabel]}" Target="{Binding ElementName=SearchBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
                         <TextBox x:Name="SearchBox" Text="{Binding OrderSearchText, UpdateSourceTrigger=PropertyChanged}"
                                  AutomationProperties.Name="{Binding Strings[GuidedSearchLabel]}" />
                     </DockPanel>
                 </Grid>
+                <!-- how the list is arranged: the grouping and the sort are remembered for the next window -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Label Content="{Binding Strings[GuidedGroupByLabel]}" Target="{Binding ElementName=GroupingBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
+                    <ComboBox x:Name="GroupingBox" MinWidth="140" ItemsSource="{Binding Groupings}" DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedGrouping, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[GuidedGroupByLabel]}" />
+                    <Label Margin="16,0,0,0" Content="{Binding Strings[GuidedSortByLabel]}" Target="{Binding ElementName=SortBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
+                    <ComboBox x:Name="SortBox" MinWidth="170" ItemsSource="{Binding Sorts}" DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedSort, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[GuidedSortByLabel]}" />
+                </StackPanel>
                 <Border Grid.Row="2" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
                     <Grid>
                         <Grid.ColumnDefinitions>
