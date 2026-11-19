@@ -26,7 +26,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <returns>The name.</returns>
         public static string NamedOrDash(string? text) => string.IsNullOrWhiteSpace(text) ? Dash : text!.Trim();
 
-        private static bool TryParse(string? text, out DateTime date)
+        /// <summary>Reads a date the order system gave as text: in the present culture, else in the invariant one.</summary>
+        /// <param name="text">The date as the order system gave it.</param>
+        /// <param name="date">The date; the default value when the text is no date.</param>
+        /// <returns><c>true</c> if the text is a date.</returns>
+        public static bool TryParse(string? text, out DateTime date)
         {
             if (string.IsNullOrWhiteSpace(text))
             {

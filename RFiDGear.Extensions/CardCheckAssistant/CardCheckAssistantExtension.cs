@@ -111,7 +111,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant
                 new SettingsDialog(services.Editor, dialogs),
                 services.ImportOffer,
                 new GuidedPageServices(new ShellOpener()),
-                DispatcherTimerStarter.For(dispatcher));
+                DispatcherTimerStarter.For(dispatcher),
+                services.ViewState);
 
             try
             {

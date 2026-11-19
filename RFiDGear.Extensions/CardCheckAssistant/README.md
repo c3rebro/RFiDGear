@@ -39,6 +39,15 @@ system. It appears in the Extensions menu of the main window.
   which the extension and the library both import (their file versions are
   that number; the assembly version stays 1.0.0.0, because the extension
   binds to the library by it). A new release of the extension changes it there.
+- What the list of orders remembers: how it is grouped, how it is sorted
+  ("Sort by": created or modified, the newest first; job number; customer;
+  status) and which groups the operator closed. It is kept in `view-state.json`
+  beside `settings.json` (`%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant`),
+  not in the settings, so it is not part of an exported settings file and the
+  settings keep their version. The file is only a convenience: a damaged one,
+  one of another version, or a name this version does not know is read as
+  "nothing remembered", and deleting it puts the list back to the start. A closed
+  group that has no order any more is forgotten.
 - If the library file is missing, or is of another platform or version, the
   window opens with a short text that names the two files and the folder,
   instead of the page. The check runs each time a window opens, but a library

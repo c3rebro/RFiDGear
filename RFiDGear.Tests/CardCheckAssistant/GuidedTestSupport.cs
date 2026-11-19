@@ -197,7 +197,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
     /// <summary>The page over a scripted workflow and the fakes it needs, for the tests of the view model.</summary>
     internal sealed class GuidedPage : IDisposable
     {
-        public GuidedPage(WorkflowState state, bool withSettings, string culture, long firstVersion)
+        public GuidedPage(WorkflowState state, bool withSettings, string culture, long firstVersion, IGuidedViewState? viewState = null)
         {
             Host = new FakeExtensionHost(culture);
             Workflow = new ScriptedWorkflow(state, firstVersion);
@@ -208,7 +208,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 withSettings ? Settings : null,
                 Offer,
                 Close,
-                Timer.Start);
+                Timer.Start,
+                viewState);
         }
 
         public FakeExtensionHost Host { get; }
@@ -230,10 +231,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
             WorkflowState state = WorkflowState.Idle,
             bool settings = true,
             string culture = "en-US",
-            long firstVersion = 1) =>
+            long firstVersion = 1,
+            IGuidedViewState? viewState = null) =>
             StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                using var page = new GuidedPage(state, settings, culture, firstVersion);
+                using var page = new GuidedPage(state, settings, culture, firstVersion, viewState);
                 await body(page).WaitAsync(TimeSpan.FromSeconds(30));
             });
 
@@ -244,6 +246,31 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         public void Dispose() => Vm.Dispose();
+    }
+
+    /// <summary>What the list of orders remembers, kept in memory: what it was given, and every state that was saved.</summary>
+    internal sealed class MemoryViewState : IGuidedViewState
+    {
+        public MemoryViewState(GuidedViewStateData? remembered = null) => Current = remembered ?? new GuidedViewStateData();
+
+        public GuidedViewStateData Current { get; private set; }
+
+        public List<GuidedViewStateData> Saved { get; } = new List<GuidedViewStateData>();
+
+        public bool Throws { get; set; }
+
+        public GuidedViewStateData Load() => Throws ? throw new InvalidOperationException("no") : Current;
+
+        public void Save(GuidedViewStateData state)
+        {
+            if (Throws)
+            {
+                throw new InvalidOperationException("no");
+            }
+
+            Current = state;
+            Saved.Add(state);
+        }
     }
 
     /// <summary>The refresh timer, ticked by hand.</summary>

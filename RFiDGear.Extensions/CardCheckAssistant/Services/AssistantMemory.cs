@@ -25,10 +25,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
     /// <param name="ImportOffer">The one-time import offer.</param>
     /// <param name="Editor">What the settings UI reads, saves and tests.</param>
     /// <param name="CreateWorkflow">Builds the guided workflow of a window for the host it is opened in; each window has its own.</param>
+    /// <param name="ViewState">Where the list of orders remembers its grouping, its sort and its closed groups; <c>null</c> keeps them for the window only.</param>
     internal sealed record AssistantServices(
         IImportOffer ImportOffer,
         IAssistantSettingsEditor Editor,
-        Func<IRFiDGearExtensionHost, IGuidedWorkflow> CreateWorkflow)
+        Func<IRFiDGearExtensionHost, IGuidedWorkflow> CreateWorkflow,
+        IGuidedViewState? ViewState = null)
     {
         /// <summary>
         /// Nothing offered, nothing to edit, and a workflow that says it has nothing to work from: what the page does

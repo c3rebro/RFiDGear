@@ -229,6 +229,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string GuidedCreatedLabel = "GuidedCreatedLabel";
             public const string GuidedModifiedLabel = "GuidedModifiedLabel";
             public const string GuidedGroupByLabel = "GuidedGroupByLabel";
+            public const string GuidedSortByLabel = "GuidedSortByLabel";
+            public const string GuidedSortCreated = "GuidedSortCreated";
+            public const string GuidedSortModified = "GuidedSortModified";
             public const string GuidedGroupMonth = "GuidedGroupMonth";
             public const string GuidedGroupNone = "GuidedGroupNone";
             public const string GuidedSearchLabel = "GuidedSearchLabel";
@@ -426,6 +429,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedCreatedLabel] = "Created",
             [Keys.GuidedModifiedLabel] = "Modified",
             [Keys.GuidedGroupByLabel] = "Group by",
+            [Keys.GuidedSortByLabel] = "Sort by",
+            [Keys.GuidedSortCreated] = "Created (newest first)",
+            [Keys.GuidedSortModified] = "Modified (newest first)",
             [Keys.GuidedGroupMonth] = "Month of the change",
             [Keys.GuidedGroupNone] = "No groups",
             [Keys.GuidedSearchLabel] = "Search",
@@ -713,6 +719,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedCreatedLabel] = "Erstellt",
             [Keys.GuidedModifiedLabel] = "Geändert",
             [Keys.GuidedGroupByLabel] = "Gruppieren nach",
+            [Keys.GuidedSortByLabel] = "Sortieren nach",
+            [Keys.GuidedSortCreated] = "Erstellt (neueste zuerst)",
+            [Keys.GuidedSortModified] = "Geändert (neueste zuerst)",
             [Keys.GuidedGroupMonth] = "Monat der Änderung",
             [Keys.GuidedGroupNone] = "Keine Gruppen",
             [Keys.GuidedSearchLabel] = "Suchen",
