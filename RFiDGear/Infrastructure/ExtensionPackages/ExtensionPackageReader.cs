@@ -58,6 +58,14 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         {
             try
             {
+                // Before the zip library builds an object for each entry that the archive says it has.
+                var refused = ZipDirectoryCheck.Check(stream);
+                if (refused != null)
+                {
+                    return ExtensionPackageReadResult.Fail(refused.Value);
+                }
+
+                stream.Seek(0, SeekOrigin.Begin);
                 using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
                 return Read(archive);
             }
