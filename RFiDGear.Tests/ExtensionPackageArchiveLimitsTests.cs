@@ -212,6 +212,45 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void AValidArchiveWhoseDirectoryStartsAtTheBytesOfTheSignature_IsNotMistakenForTwoRecords()
+        {
+            // The offset of the directory is written in the last bytes of the record, and an archive whose directory starts at
+            // 0x06054B50 (about 96 MB: two files of 50 MB, within what a package may be) has the bytes PK 05 06 there. They are no
+            // record: a record has its 22 bytes, and only places with room for them are looked at.
+            var path = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", "zip-offset-" + Guid.NewGuid().ToString("N") + ".zip");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            try
+            {
+                using (var file = new FileStream(path, FileMode.Create, System.IO.FileAccess.ReadWrite))
+                using (var archive = new ZipArchive(file, ZipArchiveMode.Create, leaveOpen: false))
+                {
+                    // Each local header takes 30 bytes and the name (1 byte): 62 bytes of headers and the data make the offset.
+                    foreach (var (name, size) in new[] { ("a", 50_000_000), ("b", 0x06054B50 - 62 - 50_000_000) })
+                    {
+                        using var entry = archive.CreateEntry(name, CompressionLevel.NoCompression).Open();
+                        var chunk = new byte[1024 * 1024];
+                        for (var written = 0; written < size; written += chunk.Length)
+                        {
+                            entry.Write(chunk, 0, Math.Min(chunk.Length, size - written));
+                        }
+                    }
+                }
+
+                using var check = new FileStream(path, FileMode.Open, System.IO.FileAccess.Read);
+                var tail = new byte[22];
+                check.Seek(-22, SeekOrigin.End);
+                Assert.Equal(22, check.Read(tail, 0, 22));
+                Assert.Equal(0x06054B50u, BinaryPrimitives.ReadUInt32LittleEndian(tail.AsSpan(DirectoryOffset)));   // the archive is what the test says
+
+                Assert.Null(ZipDirectoryCheck.Check(check));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
         public void TwoEndRecords_AreNoPackage_TheRecordThatIsLookedAtIsTheOneTheZipLibraryReads()
         {
             // The first record (honest: no entries) has a comment that holds a second record, the one of the 60,000 entries, and a

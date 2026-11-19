@@ -70,8 +70,8 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         // record says today. Archives of the tools that make packages (and of Windows) end their directory at the record.
         private static ExtensionPackageProblem? Judge(byte[] tail, int at, long recordPosition)
         {
-            // The record has to be whole, and its comment has to end the archive: nothing after it that the library could skip.
-            if (at + EndRecordLength > tail.Length || at + EndRecordLength + ReadUInt16(tail, at + CommentLengthAt) != tail.Length)
+            // The comment of the record has to end the archive: nothing after it that the library could skip.
+            if (at + EndRecordLength + ReadUInt16(tail, at + CommentLengthAt) != tail.Length)
             {
                 return ExtensionPackageProblem.NotAPackage;
             }
@@ -122,7 +122,9 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         // judged afterwards, and an archive where it does not is no package.
         private static int FindEndRecord(byte[] tail)
         {
-            for (var i = tail.Length - sizeof(uint); i >= 0; i--)
+            // Only a place with room for a whole record is a candidate, as in the zip library: the offset of the directory is written
+            // in the last bytes of a record, and an archive whose directory starts at 0x06054B50 has the signature there.
+            for (var i = tail.Length - EndRecordLength; i >= 0; i--)
             {
                 if (ReadUInt32(tail, i) == EndSignature)
                 {
