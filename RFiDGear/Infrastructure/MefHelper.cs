@@ -9,6 +9,7 @@ using RFiDGear.Contracts;
 using RFiDGear.ExtensionSdk;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.DI.Interfaces;
+using RFiDGear.Infrastructure.ExtensionPackages;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using Serilog;
 
@@ -35,6 +36,18 @@ public sealed class MefHelper : IDisposable
     private readonly Func<string, ComposablePartCatalog> _catalogFactory;
     private IReadOnlyList<ExtensionLoadResult> _lastLoadResults = Array.Empty<ExtensionLoadResult>();
 
+    // The folder of the extensions that were installed from a package for this user (see ExtensionPackageLayout); blank for none.
+    private readonly string _userExtensionsPath;
+
+    // What was chosen to be loaded, and the file that was loaded for each extension. Read by the thread that resolves an
+    // assembly by name, which may not be the one that composes.
+    private readonly object _selectionLock = new object();
+    private readonly Dictionary<string, string> _loadedPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<SelectedExtension> _selection;
+
+    // The guard of the user's folder of installed extensions, when this process took it (and with it the right to tidy it).
+    private ExtensionFolderGuard _folderGuard;
+
     /// <summary>
     /// The assembly of the application itself, whose exports the container starts with and whose name names the extensions
     /// folder. It is this assembly and not the entry assembly of the process: the two are the same in the application, but when
@@ -55,6 +68,7 @@ public sealed class MefHelper : IDisposable
         var applicationName = HostAssembly.GetName().Name;
 
         _ExtensionsPath = BuildExtensionsPath(programDataPath, applicationName);
+        _userExtensionsPath = ExtensionPackageLayout.DefaultUserRoot();
         _catalogFactory = CreateAssemblyCatalog;
         EnsureExtensionsDirectoryExists(_ExtensionsPath);
     }
@@ -68,11 +82,16 @@ public sealed class MefHelper : IDisposable
     /// <param name="catalogFactory">
     /// Builds the catalog for one extension file; defaults to loading the assembly from that path.
     /// </param>
-    internal MefHelper(string extensionsPath, Assembly hostAssembly, Func<string, ComposablePartCatalog> catalogFactory = null)
+    /// <param name="userExtensionsPath">
+    /// The folder of the extensions installed from a package; none by default, so a test sees only what it puts in the folder
+    /// it names.
+    /// </param>
+    internal MefHelper(string extensionsPath, Assembly hostAssembly, Func<string, ComposablePartCatalog> catalogFactory = null, string userExtensionsPath = null)
     {
         _ExtensionsPath = extensionsPath ?? string.Empty;
         _hostAssembly = hostAssembly ?? throw new ArgumentNullException(nameof(hostAssembly));
         _catalogFactory = catalogFactory ?? CreateAssemblyCatalog;
+        _userExtensionsPath = userExtensionsPath ?? string.Empty;
     }
 
     #region IDisposable Members
@@ -81,6 +100,10 @@ public sealed class MefHelper : IDisposable
     {
         _Container?.Dispose();
         _Container = null;
+
+        // The application's helper lives until the process ends; one that is disposed earlier (a test) lets go of the folder.
+        _folderGuard?.Dispose();
+        _folderGuard = null;
     }
 
     #endregion
@@ -167,15 +190,33 @@ public sealed class MefHelper : IDisposable
             Log.ForContext<MefHelper>()
                 .Error(failure, "The loaded extensions break the MEF export queries; continuing without extensions");
 
+            // The copies that the user installed were part of what broke the queries: they are not chosen again, and the next older
+            // version or the machine-wide copy comes back at the next start.
+            MarkInstalledVersions(results, ExtensionPackageLayout.FailedMarkerFileName, "This version of the extension broke the export queries of RFiDGear; RFiDGear does not choose it again.");
+
             container.Dispose();
             container = BuildContainer(hostAssembly, null);
             results = results
                 .Select(result => result.Loaded ? result with { Loaded = false, Error = failure } : result)
                 .ToList();
         }
+        else
+        {
+            // Only now is it known that they work: a version is marked as one to go back to after the whole composition held.
+            MarkInstalledVersions(results, ExtensionPackageLayout.LoadedMarkerFileName, "This version of the extension was loaded without a problem.");
+        }
 
         _lastLoadResults = results;
         _Container = container;
+    }
+
+    // Leaves a marker in the version folder of each installed copy that was loaded (see ExtensionPackageLayout).
+    private static void MarkInstalledVersions(IEnumerable<ExtensionLoadResult> results, string markerFileName, string text)
+    {
+        foreach (var result in results.Where(result => result.Loaded && result.IsUserInstalled))
+        {
+            MarkVersionFolder(result.AssemblyPath, markerFileName, text);
+        }
     }
 
     /// <summary>
@@ -339,36 +380,143 @@ public sealed class MefHelper : IDisposable
 
         if (results != null)
         {
-            TryAddDirectoryCatalog(catalog, ExtensionsPath, results);
+            TryAddExtensions(catalog, results);
         }
 
         return new CompositionContainer(catalog);
     }
 
-    private void TryAddDirectoryCatalog(AggregateCatalog catalog, string catalogPath, List<ExtensionLoadResult> results)
+    private void TryAddExtensions(AggregateCatalog catalog, List<ExtensionLoadResult> results)
     {
-        IReadOnlyList<string> assemblyPaths;
+        IReadOnlyList<SelectedExtension> selection;
 
         try
         {
-            assemblyPaths = GetExtensionAssemblyPaths(catalogPath);
+            // Before anything of the user's folder is loaded: what an install that was cut short left, and the old versions. Only
+            // the first RFiDGear tidies: a second one that is started meanwhile composes too, before it finds out and exits, and
+            // must not take away what the first one uses or is asking about.
+            if (Directory.Exists(_userExtensionsPath))
+            {
+                var guard = ExtensionFolderGuard.For(_userExtensionsPath);
+                if (guard.TryTake())
+                {
+                    _folderGuard = guard;
+                    ExtensionPackageInstaller.Tidy(_userExtensionsPath);
+                }
+            }
+
+            selection = SelectExtensions();
         }
         catch (Exception e)
         {
             Log.ForContext<MefHelper>()
-                .Error(e, "Failed to compose extensions from {ExtensionsPath}", catalogPath);
+                .Error(e, "Failed to compose extensions from {ExtensionsPath}", ExtensionsPath);
             return;
         }
 
-        // One try/catch per file: a bad extension must not stop the ones after it.
-        foreach (var assemblyPath in assemblyPaths)
+        // One try/catch per file: a bad extension must not stop the ones after it. An extension that is installed twice is
+        // loaded once: the copy that is chosen, and only if that one cannot be loaded the other. That works when the file could
+        // not be read at all; an assembly that was loaded and whose parts then failed stays loaded in this run, and another copy
+        // of the same assembly cannot take its place. So a copy that the user installed and that failed is marked, and the next
+        // start does not choose it again.
+        foreach (var extension in selection)
         {
-            results.Add(TryAddExtensionCatalog(catalog, assemblyPath));
+            foreach (var candidate in extension.Candidates)
+            {
+                var result = TryAddExtensionCatalog(catalog, candidate);
+                results.Add(result);
+                if (result.Loaded)
+                {
+                    lock (_selectionLock)
+                    {
+                        _loadedPaths[Path.GetFileNameWithoutExtension(extension.FileName)] = candidate.AssemblyPath;
+                    }
+
+                    break;
+                }
+
+                if (candidate.IsUserInstalled)
+                {
+                    MarkVersionFolder(candidate.AssemblyPath, ExtensionPackageLayout.FailedMarkerFileName, "This version of the extension could not be loaded; RFiDGear does not choose it again.");
+                    Log.ForContext<MefHelper>()
+                        .Warning("The installed extension {ExtensionAssembly} could not be loaded; this version is skipped from the next start", candidate.AssemblyPath);
+                }
+            }
         }
     }
 
-    private ExtensionLoadResult TryAddExtensionCatalog(AggregateCatalog catalog, string assemblyPath)
+    // Leaves a marker file in the version folder of an installed copy (see ExtensionPackageLayout). A folder that cannot be written
+    // gets none, and is treated as before.
+    private static void MarkVersionFolder(string assemblyPath, string markerFileName, string text)
     {
+        try
+        {
+            var folder = Path.GetDirectoryName(assemblyPath);
+            if (!string.IsNullOrEmpty(folder))
+            {
+                File.WriteAllText(Path.Combine(folder, markerFileName), text);
+            }
+        }
+        catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+        {
+            Log.ForContext<MefHelper>().Warning(e, "Could not leave {Marker} in the folder of {ExtensionAssembly}", markerFileName, assemblyPath);
+        }
+    }
+
+    // What to load: the extensions of the machine-wide folder and the ones installed for the user, one file for each.
+    private IReadOnlyList<SelectedExtension> SelectExtensions()
+    {
+        var selection = ExtensionSelector.Select(GetExtensionAssemblyPaths(ExtensionsPath), _userExtensionsPath, ExtensionPackageLayout.FileVersionOf);
+        lock (_selectionLock)
+        {
+            _selection = selection;
+        }
+
+        return selection;
+    }
+
+    /// <summary>
+    /// Gets the file of an extension assembly by its name: the one that is loaded, or if nothing is loaded yet the one that is
+    /// chosen, whether it is in the machine-wide folder or in the user's. The resolver of assemblies asks, so that an extension
+    /// that was loaded from the user's folder is not loaded a second time from the machine-wide one.
+    /// </summary>
+    /// <param name="assemblyName">The simple name of the assembly, for example <c>RFiDGear.Extensions.CardCheckAssistant</c>.</param>
+    /// <returns>The full path; <c>null</c> when no such extension is installed.</returns>
+    internal string FindExtensionAssembly(string assemblyName)
+    {
+        if (string.IsNullOrWhiteSpace(assemblyName))
+        {
+            return null;
+        }
+
+        IReadOnlyList<SelectedExtension> selection;
+        lock (_selectionLock)
+        {
+            if (_loadedPaths.TryGetValue(assemblyName, out var loaded))
+            {
+                return loaded;
+            }
+
+            selection = _selection;
+        }
+
+        try
+        {
+            selection ??= SelectExtensions();
+        }
+        catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+        {
+            return null;
+        }
+
+        return selection
+            .FirstOrDefault(extension => string.Equals(Path.GetFileNameWithoutExtension(extension.FileName), assemblyName, StringComparison.OrdinalIgnoreCase))
+            ?.Candidates[0].AssemblyPath;
+    }
+
+    private ExtensionLoadResult TryAddExtensionCatalog(AggregateCatalog catalog, ExtensionCandidate extension)
+    {
+        var assemblyPath = extension.AssemblyPath;
         ComposablePartCatalog candidate = null;
 
         try
@@ -381,9 +529,14 @@ public sealed class MefHelper : IDisposable
 
             catalog.Catalogs.Add(candidate);
             Log.ForContext<MefHelper>()
-                .Information("Loaded extension {ExtensionAssembly} with {PartCount} MEF parts", assemblyPath, partCount);
+                .Information(
+                    "Loaded extension {ExtensionAssembly} {ExtensionVersion} ({ExtensionSource}) with {PartCount} MEF parts",
+                    assemblyPath,
+                    extension.Version?.ToString() ?? "unknown",
+                    extension.IsUserInstalled ? "installed for this user" : "machine-wide",
+                    partCount);
 
-            return new ExtensionLoadResult(assemblyPath, true, partCount, null);
+            return new ExtensionLoadResult(assemblyPath, true, partCount, null, extension.IsUserInstalled, extension.Version);
         }
         catch (Exception e)
         {
@@ -391,7 +544,7 @@ public sealed class MefHelper : IDisposable
             Log.ForContext<MefHelper>()
                 .Error(e, "Extension {ExtensionAssembly} could not be loaded and was skipped", assemblyPath);
 
-            return new ExtensionLoadResult(assemblyPath, false, 0, e);
+            return new ExtensionLoadResult(assemblyPath, false, 0, e, extension.IsUserInstalled, extension.Version);
         }
     }
 

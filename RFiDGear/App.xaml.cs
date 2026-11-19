@@ -93,7 +93,11 @@ namespace RFiDGear
             }
 
             var assemblyName = new AssemblyName(args.Name);
-            var candidatePath = GetExtensionAssemblyPath(MefHelper.Instance.ExtensionsPath, assemblyName);
+
+            // The copy that was chosen at the start (or already loaded) comes first, so an extension that was installed from a
+            // package for this user is not loaded a second time from the machine-wide folder, where an older one may be.
+            var candidatePath = GetChosenExtensionAssemblyPath(assemblyName)
+                ?? GetExtensionAssemblyPath(MefHelper.Instance.ExtensionsPath, assemblyName);
             if (candidatePath == null)
             {
                 return null;
@@ -113,6 +117,17 @@ namespace RFiDGear
                 return null;
             }
         }
+
+        /// <summary>
+        /// Gets the file of an extension assembly that was chosen to be loaded, from the machine-wide folder or from the
+        /// folder of the extensions installed for the user.
+        /// </summary>
+        /// <param name="assemblyName">The assembly name to resolve.</param>
+        /// <returns>The full path to the extension assembly, or null if it is not an extension that is installed.</returns>
+        private static string GetChosenExtensionAssemblyPath(AssemblyName assemblyName) =>
+            assemblyName?.Name != null && assemblyName.Name.StartsWith("RFiDGear.Extensions", StringComparison.OrdinalIgnoreCase)
+                ? MefHelper.Instance.FindExtensionAssembly(assemblyName.Name)
+                : null;
 
         /// <summary>
         /// Gets the extension assembly path for a requested assembly name.
@@ -217,7 +232,9 @@ namespace RFiDGear
                 }
             }
 
-            return false;
+            // An extension that was installed from a package is in the user's folder, not in this one.
+            return assemblyName.StartsWith("RFiDGear.Extensions", StringComparison.OrdinalIgnoreCase)
+                && MefHelper.Instance.FindExtensionAssembly(assemblyName) != null;
         }
     }
 }

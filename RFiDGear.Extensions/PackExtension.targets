@@ -1,0 +1,79 @@
+<Project>
+  <!--
+    Makes an extension package (.rfext) of a built extension, for the person who runs the extension to install from RFiDGear's
+    menu "File > Install extension update..." without browsing into %ProgramData%\RFiDGear\Extensions. This is the way an
+    extension provider ships an update: the provider decides which files make the extension, and this step writes them, with
+    the SHA-256 of each, into one archive. Nothing is executed when a package is installed, and nothing but the files listed is
+    put on the machine. Imported by each extension project that wants to be shipped as a package.
+
+    Off unless asked for, like DeployToRFiDGear.targets, because it writes a file that is not part of the build output:
+      dotnet build RFiDGear.Extensions\CardCheckAssistant -c Release -p:Platform=x64 -p:PackExtension=true
+
+    A package is made for one platform (the payload of an extension, such as the native sni.dll of the SQL driver, is of the
+    platform that was built); the file name says which: <id>-<version>-<platform>.rfext in bin\package of the project, or in
+    ExtensionPackageFolder when that is set.
+
+    What goes in, the same files that DeployToRFiDGear.targets copies and the installers carry:
+      - the project's own assembly (its name is the id of the extension),
+      - RFiDGear.ExtensionLibraries.*.dll, the support libraries next to it,
+      - the ExtensionPayloadFile items of the project (what a support library needs beside it and the host does not have).
+    Never the contract, the SDK or the host, and no symbols: a package that holds one of the host's assemblies is refused when it
+    is installed (see ExtensionPackageManifest).
+
+    What the project sets, besides what it builds:
+      - Version               the version of the extension; the assembly's file version has to be the same number, or the
+                              package is refused when it is installed (the version file of the Card Check Assistant sets both),
+      - ExtensionDisplayName  the name the person sees when asked whether to install it (default: the assembly's name),
+      - ExtensionMinHostVersion  the oldest RFiDGear it works with (optional).
+  -->
+  <PropertyGroup>
+    <ExtensionPackageFolder Condition="'$(ExtensionPackageFolder)' == ''">$(MSBuildProjectDirectory)\bin\package</ExtensionPackageFolder>
+  </PropertyGroup>
+
+  <Target Name="PackExtensionPackage" AfterTargets="Build" Condition="'$(PackExtension.Trim())' == 'true' And '$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_PackName Condition="'$(ExtensionDisplayName)' != ''">$(ExtensionDisplayName)</_PackName>
+      <_PackName Condition="'$(ExtensionDisplayName)' == ''">$(TargetName)</_PackName>
+      <_PackStage>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)package-stage\</_PackStage>
+      <!-- The platform of the package is that of its native files, which is the build's unless the project says otherwise. -->
+      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' != ''">$(ExtensionPackagePlatform)</_PackPlatform>
+      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' == ''">$(Platform)</_PackPlatform>
+      <_PackFile>$(ExtensionPackageFolder)\$(TargetName)-$(Version)-$(_PackPlatform).rfext</_PackFile>
+    </PropertyGroup>
+    <Error Condition="'@(ExtensionPayloadFile)' != '' And ('$(_PackPlatform)' == '' Or '$(_PackPlatform)' == 'AnyCPU')"
+           Text="The extension has native payload files, so its package is made for one platform. Build with -p:Platform=x64 or -p:Platform=x86, or set ExtensionPackagePlatform to the platform of the payload; AnyCPU is for a package with nothing native in it." />
+    <ItemGroup>
+      <_PackSource Include="$(OutDir)$(TargetName).dll" />
+      <_PackSource Include="$(OutDir)RFiDGear.ExtensionLibraries.*.dll" />
+      <_PackSource Include="@(ExtensionPayloadFile)" />
+    </ItemGroup>
+
+    <!-- A folder of its own and new each time: nothing of an earlier build is in the package. -->
+    <RemoveDir Directories="$(_PackStage)" />
+    <MakeDir Directories="$(_PackStage);$(ExtensionPackageFolder)" />
+    <Copy SourceFiles="@(_PackSource)" DestinationFolder="$(_PackStage)" />
+
+    <ItemGroup>
+      <_PackStaged Include="$(_PackStage)*.dll" />
+    </ItemGroup>
+    <GetFileHash Files="@(_PackStaged)" Algorithm="SHA256" HashEncoding="hex">
+      <Output TaskParameter="Items" ItemName="_PackHashed" />
+    </GetFileHash>
+
+    <PropertyGroup>
+      <_PackFiles>@(_PackHashed->'{ &quot;name&quot;: &quot;%(Filename)%(Extension)&quot;, &quot;sha256&quot;: &quot;%(FileHash)&quot; }', ', ')</_PackFiles>
+      <_PackMinHost Condition="'$(ExtensionMinHostVersion)' != ''">&quot;minHostVersion&quot;: &quot;$(ExtensionMinHostVersion)&quot;, </_PackMinHost>
+      <!-- The name is text of the provider's: a backslash and a quote in it are escaped for JSON, or the package could be made
+           and then not installed. The platform is what the build was for (x64, x86): the installer refuses a package of the
+           other one, because the payload of an extension (sni.dll) is native. -->
+      <_PackNameJson>$(_PackName.Replace('\', '\\').Replace('"', '\"'))</_PackNameJson>
+      <_PackManifest>{ &quot;schema&quot;: 1, &quot;id&quot;: &quot;$(TargetName)&quot;, &quot;displayName&quot;: &quot;$(_PackNameJson)&quot;, &quot;version&quot;: &quot;$(Version)&quot;, &quot;platform&quot;: &quot;$(_PackPlatform)&quot;, $(_PackMinHost)&quot;files&quot;: [ $(_PackFiles) ] }</_PackManifest>
+    </PropertyGroup>
+    <!-- Lines is a list that is split at semicolons: one in the name must stay in its line. -->
+    <WriteLinesToFile File="$(_PackStage)extension.json" Lines="$(_PackManifest.Replace(';', '%3B'))" Overwrite="true" />
+
+    <Delete Files="$(_PackFile)" />
+    <ZipDirectory SourceDirectory="$(_PackStage)" DestinationFile="$(_PackFile)" Overwrite="true" />
+    <Message Importance="high" Text="Extension package: $(_PackFile)" />
+  </Target>
+</Project>

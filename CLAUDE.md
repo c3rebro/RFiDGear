@@ -492,8 +492,30 @@ only these, never `RFiDGear.exe`:
 Both public surfaces are frozen by approved snapshots under
 `RFiDGear.Tests/ApiSurface/`; a change fails the test and is accepted by
 regenerating the snapshot (`RFIDGEAR_UPDATE_API_SNAPSHOT=1`). Extensions are
-discovered once at start-up from `%ProgramData%\RFiDGear\Extensions`, so
-adding one needs an app restart.
+discovered once at start-up from `%ProgramData%\RFiDGear\Extensions` and from
+the user's own folder of installed packages (below), so adding one needs an app
+restart.
+
+An extension is released on its own and ships an update as a **package**
+(`.rfext`, a zip with an `extension.json` of the id, the version, the oldest
+RFiDGear and the SHA-256 of each file), which a person installs with File >
+"Install extension update..." for their own user: no administrator and no
+folder to browse to, because `%ProgramData%\RFiDGear\Extensions` is not
+writable for a normal user and a loaded DLL is locked.
+`Infrastructure/ExtensionPackages` has the reader (limits, flat plain names of
+dlls and pdbs, none of the host's assemblies, exactly the listed files, every
+hash), the installer (stage, check the file version, ask, then one rename to
+`%LocalAppData%\RFiDGear\InstalledExtensions\<id>\<version>`, never over an
+existing folder) and the selector: `MefHelper` loads each extension **once**,
+the higher file version of the machine-wide and the user's copy (the
+machine-wide one when equal), and the resolver asks `FindExtensionAssembly` so
+the older copy is not loaded by name. A provider makes a package with
+`-p:PackExtension=true` (`RFiDGear.Extensions/PackExtension.targets`); nothing in
+a package is executed. The hash is integrity, not authenticity: the signer and
+whether Windows finds the signature valid are shown (`WinVerifyTrust`), not
+enforced. See `DEVELOPER_NOTES.md` ("Shipping an extension update as
+a package"). An extension shows its own version in its UI (the Card Check
+Assistant reads it from its file version, set once in `CardCheckVersion.props`).
 
 An application extension (`HostPlacement.Application`) implements
 `IApplicationUIExtension` from the SDK. RFiDGear creates the exported class on

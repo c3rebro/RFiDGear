@@ -13,5 +13,7 @@ namespace RFiDGear.Infrastructure
     /// </param>
     /// <param name="PartCount">The number of MEF parts found in the assembly (0 when it was skipped).</param>
     /// <param name="Error">Why the assembly was skipped, or null when it was loaded.</param>
-    internal sealed record ExtensionLoadResult(string AssemblyPath, bool Loaded, int PartCount, Exception? Error);
+    /// <param name="IsUserInstalled">True when the file is in the user's folder of installed packages, false for the machine-wide folder.</param>
+    /// <param name="Version">The file version of the assembly, or null when it has none.</param>
+    internal sealed record ExtensionLoadResult(string AssemblyPath, bool Loaded, int PartCount, Exception? Error, bool IsUserInstalled = false, Version? Version = null);
 }
