@@ -210,5 +210,29 @@ namespace RFiDGear.Tests
             BinaryPrimitives.WriteUInt32LittleEndian(zip.AsSpan(end + DirectorySize), size + 1);
             Assert.Equal(ExtensionPackageProblem.NotAPackage, ProblemOf(zip));
         }
+
+        [Fact]
+        public void TwoEndRecords_AreNoPackage_TheRecordThatIsLookedAtIsTheOneTheZipLibraryReads()
+        {
+            // The first record (honest: no entries) has a comment that holds a second record, the one of the 60,000 entries, and a
+            // byte of padding after it. A reader that takes "the first record whose comment ends at the end of the file" looks at the
+            // honest one; a zip library that takes the last signature it finds and lets the comment end early reads the second.
+            var big = ArchiveOfTensOfThousandsOfEntries();
+            var bigEnd = EndRecord(big);
+            var twoRecords = new byte[bigEnd + 22 + 22 + 1];
+            Array.Copy(big, twoRecords, bigEnd);                    // the data and the directory of the 60,000 entries
+            Array.Copy(big, bigEnd, twoRecords, bigEnd + 22, 22);   // the second record, as it was: 60,000 entries
+            twoRecords[bigEnd] = 0x50;                              // the first record: PK 05 06, no disks, no entries,
+            twoRecords[bigEnd + 1] = 0x4B;                          // a directory of no bytes that ends where it begins,
+            twoRecords[bigEnd + 2] = 0x05;                          // and a comment that reaches to the end of the file
+            twoRecords[bigEnd + 3] = 0x06;
+            BinaryPrimitives.WriteUInt32LittleEndian(twoRecords.AsSpan(bigEnd + DirectoryOffset), (uint)bigEnd);
+            BinaryPrimitives.WriteUInt16LittleEndian(twoRecords.AsSpan(bigEnd + 20), 22 + 1);
+
+            var (result, allocated) = ReadAndMeasure(twoRecords);
+
+            Assert.False(result.Success);
+            Assert.True(allocated < 2 * 1024 * 1024, $"the reader allocated {allocated} bytes for an archive that it refuses");
+        }
     }
 }

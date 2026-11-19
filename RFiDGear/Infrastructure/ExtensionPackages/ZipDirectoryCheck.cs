@@ -70,6 +70,12 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         // record says today. Archives of the tools that make packages (and of Windows) end their directory at the record.
         private static ExtensionPackageProblem? Judge(byte[] tail, int at, long recordPosition)
         {
+            // The record has to be whole, and its comment has to end the archive: nothing after it that the library could skip.
+            if (at + EndRecordLength > tail.Length || at + EndRecordLength + ReadUInt16(tail, at + CommentLengthAt) != tail.Length)
+            {
+                return ExtensionPackageProblem.NotAPackage;
+            }
+
             if (ReadUInt16(tail, at + DiskNumberAt) != 0 || ReadUInt16(tail, at + DirectoryDiskAt) != 0)
             {
                 return ExtensionPackageProblem.NotAPackage;
@@ -109,13 +115,16 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             return tail;
         }
 
-        // The record is at the place where its signature stands and the comment that its own length field names ends the archive: a
-        // signature inside a comment, or inside the data of a file, is not it.
+        // The record is the last signature of the end record that there is, which is the one that the zip library looks for too, from
+        // the end of the archive backwards. Not "the first one whose comment fits": an archive can hold an honest record in front
+        // of a second one that its comment contains (and a byte of padding after that), and a library that takes the last signature
+        // and lets the comment end early would then read the second one. Whether the comment of this record ends the archive is
+        // judged afterwards, and an archive where it does not is no package.
         private static int FindEndRecord(byte[] tail)
         {
-            for (var i = tail.Length - EndRecordLength; i >= 0; i--)
+            for (var i = tail.Length - sizeof(uint); i >= 0; i--)
             {
-                if (ReadUInt32(tail, i) == EndSignature && i + EndRecordLength + ReadUInt16(tail, i + CommentLengthAt) == tail.Length)
+                if (ReadUInt32(tail, i) == EndSignature)
                 {
                     return i;
                 }
