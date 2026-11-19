@@ -370,6 +370,174 @@ namespace RFiDGear.Tests.ExternalControl
             await ResultOf(h, "r-1");
         }
 
+        // ── The revision of the project ──
+
+        [Fact]
+        public async Task ARunThatExpectsTheRevisionOfTheProject_IsAdmitted_AndItsResultSaysWhichRevisionItStartedWith()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "aaaa1111";
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+
+            await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "aaaa1111" });
+
+            // The project is edited while the run goes on: the result still says what the run started with.
+            h.Host.ProjectHost.Revision = "bbbb2222";
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            var done = await ResultOf(h, "r-1");
+
+            Assert.Equal("aaaa1111", done.Result!.ProjectRevision);
+            Assert.Single(h.Host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task ARunThatExpectsAnotherRevision_IsRefusedBeforeTheHostIsAsked()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "bbbb2222";
+
+            var fault = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectPath = ProjectPath, ExpectTaskCount = 2, ExpectProjectRevision = "aaaa1111" }));
+
+            // Path and count agree, and the run is refused all the same: that is the case a changed task leaves.
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, fault.Code);
+            Assert.Equal("expectProjectRevision", fault.Details!["field"]);
+            Assert.True(fault.NeverStarted);
+            Assert.Empty(h.Host.ExecutionHost.Requests);
+            Assert.False(h.Supervisor.HasActiveRun);
+        }
+
+        [Fact]
+        public async Task ARunThatExpectsARevision_IsRefused_WhenTheHostCannotTellOne()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = null;
+
+            var fault = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "aaaa1111" }));
+
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, fault.Code);
+            Assert.True(fault.NeverStarted);
+            Assert.Empty(h.Host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task ARunThatExpectsNoRevision_IsNotHeldBackByOne_AndItsResultHasNoneWhenTheHostCannotTell()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = null;
+
+            await h.Supervisor.StartAsync(Request("r-1"));
+            var done = await ResultOf(h, "r-1");
+
+            Assert.Equal(RunStatuses.Success, done.Result!.Status);
+            Assert.Null(done.Result.ProjectRevision);
+        }
+
+        // A run changes the project it runs: DESFire tasks write the application they created and the key version they found into their
+        // own settings. That is no edit, so the revision the client approved goes on being the project for the next card.
+        [Fact]
+        public async Task TheStateARunLeftBehind_IsTheProjectTheClientApproved_TheNextRunIsAdmitted()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "r0";
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "r0" });
+
+            h.Host.ProjectHost.Revision = "r1";   // what the run wrote into the tasks
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            await ResultOf(h, "r-1");
+
+            var next = await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-2", ExpectProjectRevision = "r0" });
+            var again = await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-3", ExpectProjectRevision = "r1" });
+
+            Assert.Equal(RunStates.Running, next.State);
+            Assert.NotEqual(next.RunId, again.RunId);
+            Assert.Equal("r1", (await ResultOf(h, "r-2")).Result!.ProjectRevision);
+        }
+
+        [Fact]
+        public async Task AnEditAfterTheRun_IsNotThatProject_NeitherTheOldRevisionNorTheRunsOwnIsAdmitted()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "r0";
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "r0" });
+            h.Host.ProjectHost.Revision = "r1";
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            await ResultOf(h, "r-1");
+
+            // A person changes a task in the window after the run.
+            h.Host.ProjectHost.Revision = "r2";
+            var old = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-2", ExpectProjectRevision = "r0" }));
+            var ownState = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-3", ExpectProjectRevision = "r1" }));
+            var current = await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-4", ExpectProjectRevision = "r2" });
+
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, old.Code);
+            Assert.True(old.NeverStarted);
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, ownState.Code);
+            Assert.Equal(RunStates.Running, current.State);
+        }
+
+        [Fact]
+        public async Task AHostThatCouldNotTellTheStateTheRunLeft_LeavesTheDifferenceUnrecognized_ButTheRunEnds()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "r0";
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "r0" });
+
+            // The run changed the project, and at its end the host could not say how: the window did not answer in time.
+            h.Host.ProjectHost.Revision = "r1";
+            h.Host.ExecutionHost.RevisionAtEnd = () => null;
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            var done = await ResultOf(h, "r-1");
+            var refused = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-2", ExpectProjectRevision = "r0" }));
+
+            Assert.Equal(RunStates.Completed, done.State);
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.Code);
+        }
+
+        [Fact]
+        public async Task AnEditThatFollowsTheEndOfTheRun_IsNotTakenForWhatTheRunDid_EvenWhenItComesBeforeTheResult()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "r0";
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "r0" });
+
+            // The run leaves r1. The moment the host has let go of its gate, a person changes a task, or another project is loaded:
+            // that is before the result is final, and it is not the run's doing.
+            h.Host.ProjectHost.Revision = "r1";
+            h.Host.ExecutionHost.AfterRunEnding = () => h.Host.ProjectHost.Revision = "r9";
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            await ResultOf(h, "r-1");
+
+            var withTheOld = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-2", ExpectProjectRevision = "r0" }));
+            var withTheRunsOwn = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-3", ExpectProjectRevision = "r1" }));
+
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, withTheOld.Code);
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, withTheRunsOwn.Code);
+            Assert.True(withTheOld.NeverStarted);
+            Assert.Single(h.Host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task TheSameIdWithAnotherExpectedRevision_IsAConflict_AndStartsNothing()
+        {
+            var h = new Harness();
+            h.Host.ProjectHost.Revision = "aaaa1111";
+            h.Host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            await h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "aaaa1111" });
+
+            var other = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "bbbb2222" }));
+            var none = await RefusalOf(() => h.Supervisor.StartAsync(new StartRunRequest { RequestId = "r-1" }));
+
+            Assert.Equal(BridgeErrorCodes.RequestIdConflict, other.Code);
+            Assert.Equal(BridgeErrorCodes.RequestIdConflict, none.Code);
+            Assert.Single(h.Host.ExecutionHost.Requests);
+            h.Host.ExecutionHost.RunGate.SetResult(true);
+            await ResultOf(h, "r-1");
+        }
+
         [Fact]
         public async Task WhenRFiDGearIsClosing_NothingIsStarted()
         {

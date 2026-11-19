@@ -49,14 +49,26 @@ namespace RFiDGear.Services.ExternalControl
                 throw BridgeFault.AutoModeActive();
             }
 
-            var result = await _host.Project.LoadAsync(path).ConfigureAwait(false);
+            // The revision comes with the load: it is the one of the project as it was committed, taken in the same action, and not a
+            // second look that an edit in the window could have got in front of. A project that cannot be fingerprinted has none.
+            ProjectOpenResult result;
+            string? revision = null;
+
+            if (_host.Project is Infrastructure.ExtensionHost.IProjectRevisionSource source)
+            {
+                (result, revision) = await source.LoadWithRevisionAsync(path).ConfigureAwait(false);
+            }
+            else
+            {
+                result = await _host.Project.LoadAsync(path).ConfigureAwait(false);
+            }
 
             if (!result.Success)
             {
                 throw Refusal(result.Error);
             }
 
-            return new LoadProjectResponse { Path = result.CanonicalPath ?? path, TaskCount = result.TaskCount };
+            return new LoadProjectResponse { Path = result.CanonicalPath ?? path, TaskCount = result.TaskCount, Revision = revision };
         }
 
         /// <summary>Looks at the reader once.</summary>

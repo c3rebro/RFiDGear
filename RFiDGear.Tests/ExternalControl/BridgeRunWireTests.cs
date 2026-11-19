@@ -13,6 +13,7 @@ using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
 using RFiDGear.Services.ExternalControl;
 using RFiDGear.Tests.CardCheckAssistant;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using StreamJsonRpc;
 
@@ -340,15 +341,16 @@ namespace RFiDGear.Tests.ExternalControl
         {
             public RealHost()
             {
-                var live = new ChipTaskHandlerModel { TaskCollection = new ObservableCollection<object>() };
+                var live = Live;
                 Coordinator = new ExtensionOperationCoordinator();
                 Host = new HeadlessExtensionHost(
                     new DatabaseReaderWriter(),
-                    new CapturingExecService(),
+                    Exec,
                     () => live,
                     action =>
                     {
                         action();
+                        AfterCommit?.Invoke();
 
                         return Task.CompletedTask;
                     },
@@ -367,7 +369,16 @@ namespace RFiDGear.Tests.ExternalControl
 
             public HeadlessExtensionHost Host { get; }
 
+            /// <summary>The live project, which the window would edit.</summary>
+            public ChipTaskHandlerModel Live { get; } = new ChipTaskHandlerModel { TaskCollection = new ObservableCollection<object>() };
+
+            /// <summary>The service the host's runs go through; it has been asked only for runs that were admitted.</summary>
+            public CapturingExecService Exec { get; } = new CapturingExecService();
+
             public ExtensionOperationCoordinator Coordinator { get; }
+
+            /// <summary>What happens right after the window has done what the host asked it to: the moment an edit can get in.</summary>
+            public Action? AfterCommit { get; set; }
 
             public void Dispose() => Host.Dispose();
         }
@@ -434,6 +445,265 @@ namespace RFiDGear.Tests.ExternalControl
             {
                 TryDelete(path);
             }
+        }
+
+        [Fact]
+        public async Task ATaskChangedInTheWindowAfterTheClientLooked_RefusesTheRunBeforeTheHost_ButTheRevisionAsItIsNowIsAdmitted()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+
+            try
+            {
+                var (client, _, real) = await ConnectToRealHostAsync();
+                var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = path });
+
+                // What the client sees after the load: the revision of the load and the one of the status are the same.
+                Assert.Matches("^[0-9a-f]{32}$", loaded.Revision);
+                Assert.Equal(loaded.Revision, (await client.Service.GetStatus(new GetStatusRequest())).Project.Revision);
+
+                // The client approved that state. Then a task is changed in the window: the path and the count are as they were.
+                ((CommonTaskViewModel)real.Live.TaskCollection[0]).SelectedTaskDescription = "changed after the approval";
+                var changed = (await client.Service.GetStatus(new GetStatusRequest())).Project.Revision;
+
+                var refused = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.StartRun(new StartRunRequest
+                {
+                    RequestId = "r-1",
+                    ExpectProjectPath = loaded.Path,
+                    ExpectTaskCount = loaded.TaskCount,
+                    ExpectProjectRevision = loaded.Revision,
+                }));
+
+                Assert.NotEqual(loaded.Revision, changed);
+                Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.ErrorCode);
+                Assert.True(BridgeTestClient.DataOf(refused)!.NeverStarted);
+                Assert.Equal("expectProjectRevision", BridgeTestClient.DataOf(refused)!.Details!["field"]);
+                Assert.Null(real.Exec.CapturedRequest);
+
+                // The same job with the revision as it is now is admitted, and its result says what it started with. What the run
+                // leaves on the tasks is no change of the project.
+                await client.Service.StartRun(new StartRunRequest { RequestId = "r-2", ExpectProjectRevision = changed });
+                var done = await client.Service.GetRunResult(new GetRunResultRequest { RequestId = "r-2", WaitMs = 10_000 });
+
+                Assert.Equal(RunStatuses.Success, done.Result!.Status);
+                Assert.Equal(changed, done.Result.ProjectRevision);
+                Assert.NotNull(real.Exec.CapturedRequest);
+                Assert.Equal(changed, (await client.Service.GetStatus(new GetStatusRequest())).Project.Revision);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public async Task CardAfterCard_TheApprovedRevisionStaysTheProject_AfterARunThatRewroteSettingsOfItsTasks_ButNotAfterAnEdit()
+        {
+            var (_, pipe, host) = Start();
+            host.ProjectHost.Revision = "r0";
+            host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            var client = await ConnectAsync(pipe);
+
+            // The first card: the run writes what it found (the application it created, the key version) into its tasks.
+            await client.Service.StartRun(new StartRunRequest { RequestId = "card-1", ExpectProjectRevision = "r0" });
+            host.ProjectHost.Revision = "r1";
+            host.ExecutionHost.RunGate.SetResult(true);
+            await client.Service.GetRunResult(new GetRunResultRequest { RequestId = "card-1", WaitMs = 10_000 });
+            host.ExecutionHost.RunGate = null;
+
+            // The second card, with the revision that was approved before the first: admitted, and it ran what the first left.
+            await client.Service.StartRun(new StartRunRequest { RequestId = "card-2", ExpectProjectRevision = "r0" });
+            var second = await client.Service.GetRunResult(new GetRunResultRequest { RequestId = "card-2", WaitMs = 10_000 });
+
+            // A person changes a task in the window: this is no state that a run led to.
+            host.ProjectHost.Revision = "r9";
+            var refused = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.StartRun(new StartRunRequest { RequestId = "card-3", ExpectProjectRevision = "r0" }));
+
+            Assert.Equal("r1", second.Result!.ProjectRevision);
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.ErrorCode);
+            Assert.True(BridgeTestClient.DataOf(refused)!.NeverStarted);
+            Assert.Equal(2, host.ExecutionHost.Requests.Count);
+        }
+
+        [Fact]
+        public async Task TheHostTellsTheRunWhatItLeft_WhileItStillHoldsTheGate_SoNoEditOrLoadCanBeTakenForTheRunsDoing()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+
+            try
+            {
+                using var real = new RealHost();
+                Assert.True((await real.Host.Project.LoadAsync(path)).Success);
+                var before = ((IProjectRevisionSource)real.Host.Project).GetProjectRevision();
+
+                string? told = null;
+                var holdsTheGate = false;
+                var editRefused = false;
+                var loadRefused = false;
+
+                await ((IPreassignedRunExecution)real.Host.Execution).ExecuteAllAsync(ExecutionRequest.Empty, "ends-run", default, revision =>
+                {
+                    told = revision;
+                    holdsTheGate = real.Coordinator.IsExecuting;
+
+                    // What a person or another program would do at this moment, on the thread that told the run: refused.
+                    try
+                    {
+                        real.Host.Project.ReplaceTaskCollection(Array.Empty<object>());
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        editRefused = true;
+                    }
+
+                    loadRefused = real.Host.Project.LoadAsync(path).GetAwaiter().GetResult().Error == ProjectOpenError.Busy;
+                });
+
+                Assert.True(holdsTheGate);
+                Assert.True(editRefused);
+                Assert.True(loadRefused);
+                Assert.Equal(before, told);
+                Assert.False(real.Coordinator.IsExecuting);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public async Task TheRevisionOfALoad_IsTheStateThatWasCommitted_NotWhatAnEditLeftAMomentLater()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+
+            try
+            {
+                var (client, _, real) = await ConnectToRealHostAsync();
+                var edited = false;
+
+                // A task is changed in the window right after the project was put in place, before the answer is made.
+                real.AfterCommit = () =>
+                {
+                    if (!edited && real.Live.TaskCollection!.Count > 0)
+                    {
+                        edited = true;
+                        ((CommonTaskViewModel)real.Live.TaskCollection[0]).SelectedTaskDescription = "changed right after the commit";
+                    }
+                };
+
+                var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = path });
+                var now = (await client.Service.GetStatus(new GetStatusRequest())).Project.Revision;
+
+                // The load answers with the project as it was loaded; the edit is a change of it, which a run that expects the
+                // answer of the load is refused for. Were the revision read a moment after the commit, the edit would be inside it.
+                Assert.True(edited);
+                Assert.NotEqual(loaded.Revision, now);
+
+                var refused = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.StartRun(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = loaded.Revision }));
+                Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.ErrorCode);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public async Task ARevisionIsOfferedAsACapability_OnlyByAHostThatCanTellOne_AndWithoutItARunThatExpectsOneIsRefused()
+        {
+            var withRevisions = Start();
+            var withoutRevisions = new FakeExtensionHost();
+            withoutRevisions.ProjectHost.CurrentPath = @"C:\projects\one.rfPrj";
+            withoutRevisions.ProjectHost.TaskCount = 2;
+            var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+            var service = new ExternalControlService(new HostWithoutRevisions(withoutRevisions), RunAtOnce, () => false, "2.0.10", name);
+            _disposables.Add(service);
+            Assert.True(service.Start());
+            service.MarkStartupComplete();
+
+            var offered = await BridgeTestClient.ConnectAsync(withRevisions.PipeName, 5000);
+            _disposables.Add(offered);
+            var notOffered = await BridgeTestClient.ConnectAsync(name, 5000);
+            _disposables.Add(notOffered);
+
+            Assert.Contains(BridgeCapabilities.ProjectRevision, (await offered.HelloAsync()).Capabilities);
+            Assert.DoesNotContain(BridgeCapabilities.ProjectRevision, (await notOffered.HelloAsync()).Capabilities);
+
+            // A client that asks for a revision never gets a run without one: it is refused, not ignored.
+            var refused = await Assert.ThrowsAsync<RemoteInvocationException>(() => notOffered.Service.StartRun(new StartRunRequest { RequestId = "r-1", ExpectProjectRevision = "aaaa1111" }));
+
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.ErrorCode);
+            Assert.True(BridgeTestClient.DataOf(refused)!.NeverStarted);
+            Assert.Empty(withoutRevisions.ExecutionHost.Requests);
+            Assert.Null((await notOffered.Service.GetStatus(new GetStatusRequest())).Project.Revision);
+        }
+
+        [Fact]
+        public async Task TheRevisionOfTheHost_IsReportedByTheLoadAndByTheStatus()
+        {
+            var (_, pipe, host) = Start();
+            host.ProjectHost.Revision = "aaaa1111";
+            var client = await ConnectAsync(pipe);
+
+            var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\projects\two.rfPrj" });
+            var status = await client.Service.GetStatus(new GetStatusRequest());
+
+            Assert.Equal("aaaa1111", loaded.Revision);
+            Assert.Equal("aaaa1111", status.Project.Revision);
+        }
+
+        // A host whose project cannot tell a revision: everything else is the fake's.
+        private sealed class HostWithoutRevisions : IRFiDGearExtensionHost
+        {
+            private readonly FakeExtensionHost _inner;
+
+            public HostWithoutRevisions(FakeExtensionHost inner)
+            {
+                _inner = inner;
+                Project = new ProjectWithoutRevisions(inner.ProjectHost);
+            }
+
+            public IProjectHost Project { get; }
+
+            public ITaskExecHost Execution => _inner.Execution;
+
+            public IReaderHost Reader => _inner.Reader;
+
+            public IAutoModeHost AutoMode => _inner.AutoMode;
+
+            public IAppContext AppContext => _inner.AppContext;
+        }
+
+        private sealed class ProjectWithoutRevisions : IProjectHost
+        {
+            private readonly IProjectHost _inner;
+
+            public ProjectWithoutRevisions(IProjectHost inner) => _inner = inner;
+
+            public string? CurrentPath => _inner.CurrentPath;
+
+            public int TaskCount => _inner.TaskCount;
+
+            public event EventHandler ProjectChanged
+            {
+                add => _inner.ProjectChanged += value;
+                remove => _inner.ProjectChanged -= value;
+            }
+
+            public Task<ProjectOpenResult> LoadAsync(string path, System.Threading.CancellationToken ct = default) => _inner.LoadAsync(path, ct);
+
+            [Obsolete("The synchronous load is not part of what the bridge uses.")]
+            public void Load(string path) => throw Unsupported(path);
+
+            public void New() => throw Unsupported();
+
+            public void Save() => throw Unsupported();
+
+            public void SaveAs(string path) => throw Unsupported(path);
+
+            public void ReplaceTaskCollection(IEnumerable<object> tasks) => throw Unsupported(tasks);
+
+            private static NotSupportedException Unsupported(params object[] arguments) =>
+                new NotSupportedException("The bridge does not use this (" + arguments.Length + " arguments).");
         }
 
         [Fact]

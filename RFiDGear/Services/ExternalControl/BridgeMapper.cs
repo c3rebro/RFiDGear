@@ -71,8 +71,9 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="requestId">The request id of the client that started it.</param>
         /// <param name="resultSeq">The number of the result in the order in which results were completed.</param>
         /// <param name="source">Who started the run, one of <see cref="RunSources"/>.</param>
+        /// <param name="projectRevision">The revision of the project the run started with, when the host could tell.</param>
         /// <returns>The result as the wire has it.</returns>
-        internal static RunResultDto ToDto(ExecResult result, string runId, string? requestId, long resultSeq, string source = RunSources.Bridge)
+        internal static RunResultDto ToDto(ExecResult result, string runId, string? requestId, long resultSeq, string source = RunSources.Bridge, string? projectRevision = null)
         {
             System.ArgumentNullException.ThrowIfNull(result);
 
@@ -110,6 +111,7 @@ namespace RFiDGear.Services.ExternalControl
                 CompletedAt = result.CompletedAt,
                 CardUid = result.CardUid,
                 ResultSeq = resultSeq,
+                ProjectRevision = projectRevision,
                 TaskOutcomes = outcomes,
             };
         }
@@ -123,8 +125,9 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="requestId">The request id of the client that started it.</param>
         /// <param name="resultSeq">The number of the result.</param>
         /// <param name="startedAt">When the run was admitted.</param>
+        /// <param name="projectRevision">The revision of the project the run started with, when the host could tell.</param>
         /// <returns>The result as the wire has it.</returns>
-        internal static RunResultDto ToFaultedDto(string runId, string? requestId, long resultSeq, System.DateTimeOffset startedAt) => new RunResultDto
+        internal static RunResultDto ToFaultedDto(string runId, string? requestId, long resultSeq, System.DateTimeOffset startedAt, string? projectRevision = null) => new RunResultDto
         {
             RequestId = requestId,
             RunId = runId,
@@ -136,6 +139,7 @@ namespace RFiDGear.Services.ExternalControl
             StartedAt = startedAt,
             CompletedAt = System.DateTimeOffset.UtcNow,
             ResultSeq = resultSeq,
+            ProjectRevision = projectRevision,
             TaskOutcomes = System.Array.Empty<TaskOutcomeDto>(),
         };
 

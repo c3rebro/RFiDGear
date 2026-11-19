@@ -23,6 +23,13 @@ namespace RFiDGear.Bridge
         /// <summary>Gets how many tasks the project has.</summary>
         [JsonPropertyName("taskCount")]
         public int TaskCount { get; init; }
+
+        /// <summary>
+        /// Gets the revision of the project as it is in RFiDGear after the load, to pass as <see cref="StartRunRequest.ExpectProjectRevision"/>;
+        /// nothing when this RFiDGear does not offer <see cref="BridgeCapabilities.ProjectRevision"/>.
+        /// </summary>
+        [JsonPropertyName("revision")]
+        public string? Revision { get; init; }
     }
 
     /// <summary>The parameters of <c>scanReader</c>. There are none yet; the type exists so that an optional field can be added later.</summary>

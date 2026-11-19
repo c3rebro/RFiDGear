@@ -405,8 +405,36 @@ passed with a real reader; until then a snapshot may be re-baselined.
   `hello` answer is generated from those attributes (`BridgeCatalog`), so a
   capability cannot be advertised without a method and a method cannot be
   called without its capability. A new request field ships only with a new
-  capability a client has seen. A guarantee (`execution.journal`) has no method
-  and is listed in `BridgeCapabilities.Guarantees`.
+  capability a client has seen. A guarantee (`execution.journal`,
+  `project.revision`) has no method and is listed in
+  `BridgeCapabilities.Guarantees`.
+- **Project revision** (`project.revision`): `loadProject` and `getStatus` give
+  a `revision` of the loaded project, `startRun` takes `expectProjectRevision`
+  and refuses (`projectMismatch`, never started) a project in another state,
+  and the result carries `projectRevision`. It is a keyed hash
+  (`ProjectRevision`, key made at process start, never written) of the text a
+  save would write (`XmlSerializer` of `ChipTaskHandlerModel`), so unsaved
+  changes count, and a typed key in a task is not recoverable from it; it is
+  valid for one process only. What a run writes into the tasks is left out:
+  results are `[XmlIgnore]`, and `ProjectRevision` removes the elements that
+  a read fills (`ChildNodeViewModelFromChip` always, `ChildNodeViewModelTemp`
+  unless the task is `WriteData` that does not refresh from a file) and the
+  focus (`IsFocused`); the bytes a DESFire write would send (a selection that
+  is not saved, `TryGetDesfireWritePayload`) are added. Some fields are both
+  input and result (DESFire writes `AppNumberCurrent`, `KeyVersionCurrent`
+  and `FileSizeCurrent` itself), so no list can sort them: `RevisionLineage`
+  (`RunSupervisor`) records that the state after a run of the bridge is the
+  project it started with, and `CheckProject` accepts either. The state after
+  the run is read by the host itself (`TaskExecHostImpl`, the `runEnding`
+  callback of `IPreassignedRunExecution`) in the `finally` of the run, before
+  it lets go of the coordinator gate, so no edit and no load can commit between
+  the end of the run and that read; a host that could not read it (the window
+  did not answer within 2 s) leaves the difference unrecognized and the next
+  run is refused. Runs of the window, of automatic mode and of extensions are
+  not followed. The project host gives the revision through the internal
+  `IProjectRevisionSource` (a host without it does not offer the capability
+  and refuses a run that expects a revision); `LoadWithRevisionAsync` takes it
+  inside the commit of a load. It is read on the main window's thread.
 - **The bridge never retries a card operation, and never repeats a request.**
   `startRun` is idempotent by the client's request id (`RunRegistry`,
   `RunSupervisor`: admission by compare-and-swap, the window's callback must win

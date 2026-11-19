@@ -146,6 +146,13 @@ namespace RFiDGear.Services.ExternalControl
                 BridgeCapabilities.EventsLifecycle,
             };
 
+            // A guarantee about the answers of loadProject, getStatus and startRun: only a project host that can fingerprint its
+            // project has it. A run that expects a revision is refused by a host that cannot give one, so it is never silently ignored.
+            if (host.Project is IProjectRevisionSource)
+            {
+                capabilities.Add(BridgeCapabilities.ProjectRevision);
+            }
+
             if (supervisor != null)
             {
                 capabilities.Add(BridgeCapabilities.ExecutionRun);

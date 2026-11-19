@@ -147,6 +147,19 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets or sets when the host admitted the run.</summary>
         internal DateTimeOffset? StartedAt { get; set; }
 
+        /// <summary>
+        /// Gets or sets the revision of the project at the moment the run was admitted (see <see cref="BridgeCapabilities.ProjectRevision"/>),
+        /// or <see langword="null"/> when the host cannot tell. It is taken on the thread of the main window, right before the host is
+        /// asked, so it is the project the run uses.
+        /// </summary>
+        internal string? ProjectRevision { get; set; }
+
+        /// <summary>
+        /// Gets or sets the revision of the project right after the run, which the host reads while the run still holds its gate, or
+        /// <see langword="null"/> when it could not. What differs from <see cref="ProjectRevision"/> is what the run did to the project.
+        /// </summary>
+        internal string? ProjectRevisionAtEnd { get; set; }
+
         /// <summary>Gets or sets the final result; kept while the registry keeps results, then <see langword="null"/>.</summary>
         internal RunResultDto? Result { get; set; }
 

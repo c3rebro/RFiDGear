@@ -157,6 +157,48 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task ARunThatExpectsTheStateItWasApprovedWith_IsRefusedWhenATaskWasChanged_AndTheHostIsNeverAsked()
+        {
+            // The case that the path and the count cannot see: the same project, and a task changed in the window after the client
+            // looked. A run that expects the revision it approved is refused before the host is asked; one with the current revision runs.
+            var (_, pipe, host, _) = Start();
+            host.ProjectHost.Revision = "aaaa1111";
+            var client = await ConnectAsync(pipe);
+            var approved = (await client.Service.GetStatus(new GetStatusRequest())).Project.Revision;
+            host.ProjectHost.Revision = "bbbb2222";
+
+            var stale = await client.RunOnceAsync("job-1", NoVariables, expectProjectPath: @"C:\projects\one.rfPrj", expectTaskCount: 2, expectProjectRevision: approved);
+            var current = await client.RunOnceAsync("job-2", NoVariables, expectProjectPath: @"C:\projects\one.rfPrj", expectTaskCount: 2, expectProjectRevision: "bbbb2222");
+
+            Assert.True(client.Offers(BridgeCapabilities.ProjectRevision));
+            Assert.Equal("aaaa1111", approved);
+            Assert.Equal(RunOutcomeKind.NotStarted, stale.Kind);
+            Assert.Contains(BridgeErrorKinds.ProjectMismatch, stale.Detail, StringComparison.Ordinal);
+            Assert.Equal(RunOutcomeKind.Completed, current.Kind);
+            Assert.Equal("bbbb2222", current.Result!.ProjectRevision);
+            Assert.Single(host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task TheRevisionToExpect_IsTheOneOfTheLoad_AndAMissingOneIsRefusedWhenTheServerOffersRevisions()
+        {
+            var (_, pipe, host, _) = Start();
+            var client = await ConnectAsync(pipe);
+            host.ProjectHost.Revision = "aaaa1111";
+            var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\projects\two.rfPrj" });
+
+            Assert.Equal("aaaa1111", client.RevisionToExpect(loaded));
+
+            // The server offers the capability and could not make a revision for this project: a client that went on would run
+            // whatever is loaded, with only the path and the count to hold it back.
+            host.ProjectHost.Revision = null;
+            var withoutRevision = await client.Service.LoadProject(new LoadProjectRequest { Path = @"C:\projects\two.rfPrj" });
+
+            Assert.Null(withoutRevision.Revision);
+            Assert.Throws<InvalidOperationException>(() => client.RevisionToExpect(withoutRevision));
+        }
+
+        [Fact]
         public async Task AServerThatNeverAnswersTheHandshake_EndsInATimeout_AndInACancellationWhenTheCallerGivesUp()
         {
             var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");

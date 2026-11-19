@@ -861,6 +861,99 @@ namespace RFiDGear.Tests
             });
         }
 
+        // What a read or a write leaves on the task is no change of the project: the revision the external control bridge reports is
+        // the same before and after, so that a client that approved a revision can run the same project for the next card.
+        private static async Task<(string Before, string After)> RevisionAcrossAsync(TaskType_MifareDesfireTask type, byte[] stored, Func<MifareDesfireSetupViewModel, Task> run)
+        {
+            string before = null;
+            string after = null;
+
+            await RunOnStaThreadAsync(async () =>
+            {
+                var fakeProvider = new FakeElatecNetProvider();
+                var viewModel = new MifareDesfireSetupViewModel
+                {
+                    CurrentTaskIndex = "0",
+                    SelectedTaskType = type,
+                    AppNumberCurrent = "1",
+                    AppNumberNew = "1",
+                    FileNumberCurrent = "1",
+                    FileSizeCurrent = stored.Length.ToString(),
+                    DesfireReadKeyCurrent = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                    SelectedDesfireReadKeyEncryptionType = DESFireKeyType.DF_KEY_AES,
+                    SelectedDesfireReadKeyNumber = "1",
+                    DesfireWriteKeyCurrent = "22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22",
+                    SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_DES,
+                    SelectedDesfireWriteKeyNumber = "3"
+                };
+
+                viewModel.ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(
+                    new MifareDesfireFileModel(stored, 0),
+                    viewModel.ChildNodeViewModelTemp));
+
+                var model = new ChipTaskHandlerModel();
+                model.TaskCollection.Add(viewModel);
+
+                var originalReader = ReaderDevice.Reader;
+                var originalInstance = GetReaderDeviceInstance();
+                try
+                {
+                    ReaderDevice.Reader = ReaderTypes.Elatec;
+                    SetReaderDeviceInstance(fakeProvider);
+
+                    before = RFiDGear.Infrastructure.ExtensionHost.ProjectRevision.Compute(model);
+                    await run(viewModel);
+                    after = RFiDGear.Infrastructure.ExtensionHost.ProjectRevision.Compute(model);
+                }
+                finally
+                {
+                    ReaderDevice.Reader = originalReader;
+                    SetReaderDeviceInstance(originalInstance);
+                }
+            });
+
+            return (before, after);
+        }
+
+        [Fact]
+        public async Task ReadingFileData_DoesNotChangeTheRevisionOfTheProject_AlthoughItReplacesTheDataOfTheTask()
+        {
+            // The card has other bytes than the task holds: the read replaces both buffers of the task.
+            var (before, after) = await RevisionAcrossAsync(TaskType_MifareDesfireTask.ReadData, new byte[] { 1, 2, 3, 4 }, vm => vm.ReadDataCommand.ExecuteAsync(null));
+
+            Assert.Equal(before, after);
+        }
+
+        [Fact]
+        public async Task WritingFileData_DoesNotChangeTheRevisionOfTheProject()
+        {
+            var (before, after) = await RevisionAcrossAsync(TaskType_MifareDesfireTask.WriteData, new byte[] { 1, 2, 3, 4 }, vm => vm.WriteDataCommand.ExecuteAsync(null));
+
+            Assert.Equal(before, after);
+        }
+
+        [Fact]
+        public async Task TheDataAWriteTaskWrites_IsPartOfTheRevision_TheDataAReadTaskReadsIsNot()
+        {
+            var write = await RevisionAcrossAsync(TaskType_MifareDesfireTask.WriteData, new byte[] { 1, 2, 3, 4 }, vm =>
+            {
+                vm.ChildNodeViewModelTemp.Children[0].DesfireFile = new MifareDesfireFileModel(new byte[] { 9, 9, 9, 9 }, 0);
+
+                return Task.CompletedTask;
+            });
+            var read = await RevisionAcrossAsync(TaskType_MifareDesfireTask.ReadData, new byte[] { 1, 2, 3, 4 }, vm =>
+            {
+                vm.ChildNodeViewModelTemp.Children[0].DesfireFile = new MifareDesfireFileModel(new byte[] { 9, 9, 9, 9 }, 0);
+                vm.ChildNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[] { 7, 7, 7, 7 }, 0), vm.ChildNodeViewModelFromChip));
+
+                return Task.CompletedTask;
+            });
+
+            // A change of the payload that is going to be written is a change of the project; of what a read holds, it is not.
+            Assert.NotEqual(write.Before, write.After);
+            Assert.Equal(read.Before, read.After);
+        }
+
         [Fact]
         public async Task CreateFileCommand_UsesProviderOwnedAuthentication()
         {

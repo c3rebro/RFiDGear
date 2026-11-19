@@ -67,7 +67,11 @@ either.
    why a client asks about an id after a doubt and does not send it again.
 2. Check `getStatus` if you like (a project is loaded, the reader sees the
    card), and pass `expectProjectPath` and `expectTaskCount` so that a project
-   that was replaced meanwhile is refused instead of run.
+   that was replaced meanwhile is refused instead of run. They cannot tell a
+   project whose task was changed in RFiDGear's window after you looked: the
+   path and the count are the same. With the capability `project.revision`,
+   pass `expectProjectRevision` as well, the `revision` that `loadProject` or
+   `getStatus` gave you for the state you approved (see below).
 3. Call `startRun`. It answers when the host has admitted the run (`running`),
    not when it ends. If it answers with an error:
    - `neverStarted: true` (`busy`, `noProjectLoaded`, `noReader`,
@@ -85,6 +89,55 @@ either.
    `taskOutcomes`: one per task, `isSuccess` is missing for a task that was not
    reached. `bridgeFault` as the reason means that RFiDGear could not give you a
    complete result and that the card may have been touched.
+
+**The revision of the project (`project.revision`):**
+
+`loadProject` and the `project` of `getStatus` carry a `revision`: an opaque
+text that says in which state the project is in RFiDGear now. It covers what a
+save would write, so a change that was made in the window and not saved is
+part of it, and it does not change when a run only leaves its results on the
+tasks: the data that a task read from a card is no part of it, nor is what a
+task that reads holds in its data buffer, nor which task has the focus. The
+data that a write task is going to write is part of it, the bytes that would go
+to the card, a selected part of its buffer included. (A write task that is
+set to take its data from a file just before it writes does not: the revision
+says what is in the project, not what is in a file on the disk.) A load gives
+the revision of the project as it was put in place, so an edit that follows is
+a change of it. `startRun` with `expectProjectRevision` is refused before
+anything is touched (`projectMismatch`, field `expectProjectRevision`,
+`neverStarted`) when the project is in another state. The result of the run
+carries `projectRevision`: the state it started with, which is what you note
+down as what was run.
+
+- Take the revision from `loadProject`, or from `getStatus` after you decided
+  to approve that state, and pass it to `startRun`. Compare nothing else about
+  it: do not parse it, and do not try to derive it from the file.
+- A revision is valid for **one RFiDGear process**. It is made with a key that
+  RFiDGear picks when it starts (the text of a project can hold typed card
+  keys, and a plain hash of it would let anybody who sees a revision test
+  guesses for one). After a restart, and in another RFiDGear process, the same
+  project has another revision, and the `instanceId` tells the processes apart.
+  Read the revision again after you loaded the project; do not store one for
+  later.
+- A run changes the project it runs: tasks write what they found into their
+  own settings (the application a task created, the key version it read, the
+  size of a file). That is no edit. The state a run that was started with
+  `startRun` leaves behind is recognized as the project it started with, so the
+  revision you approved is still the project for the next card, and `getStatus`
+  after the run may show another value. What is not recognized: a change made
+  in the window after the run, what a run left that was started in the window,
+  by automatic mode or by an extension (the bridge did not see where it
+  started), and any run for which RFiDGear could not read the state at its end
+  (the window did not answer in time). An edit that comes after the end of the
+  run is never taken for what the run did. Such a state is refused, which is the
+  safe way to be wrong: read the revision again and approve it.
+- A RFiDGear that cannot tell a revision refuses a run that expects one, and
+  does not offer the capability. A run never starts on a revision it cannot
+  check. If it offers the capability and the answer to `loadProject` has no
+  `revision` (it could not make one for this project), do not start: a run
+  without the revision is only held back by the path and the task count, which
+  cannot tell a task that was changed in the window.
+- The result of automatic mode does not carry a revision yet.
 
 **After a doubt, a lost connection or a restart:**
 

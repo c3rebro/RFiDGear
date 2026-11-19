@@ -68,15 +68,18 @@ one response):
   the events that are on, the id of this RFiDGear process (`instanceId`) and
   the limits.
 - `getStatus` [status]: what is possible right now: start-up complete, reader,
-  project, whether a run is going on, the latest result number, and what
-  automatic mode is doing. It answers within two seconds even when the main
-  window does not (then `stale` is set).
+  project (with its `revision`), whether a run is going on, the latest result
+  number, and what automatic mode is doing. It answers within two seconds even
+  when the main window does not (then `stale` is set).
 - `loadProject` [project.load]: replaces the loaded project with a file. Unsaved
-  changes in the window are lost. The path has to be a full path.
+  changes in the window are lost. The path has to be a full path. The answer
+  carries the `revision` of the project as it is loaded.
 - `startRun` [execution.run]: runs the task list once and answers as soon as the
   run is admitted, not when it ends. The request carries an id of the client's
   choosing (1 to 64 of `A-Z a-z 0-9 . _ : -`), up to 64 variables as name and
-  value pairs, and optionally the project path and the task count it expects.
+  value pairs, and optionally the project path, the task count and the
+  revision of the project it expects (`expectProjectRevision`): a project in
+  another state is refused before anything is touched.
 - `cancelRun` [execution.cancel]: asks a run to stop between two tasks.
 - `getRunResult` [execution.resultLookup]: the state and the result of a run
   by request id or run id, optionally waiting up to 30 seconds for the end.
@@ -109,13 +112,18 @@ Events are hints. Nothing is replayed after a reconnect; the truth is
 `resolveKey` [keys.provider], on `IBridgeClientKeys`: RFiDGear asks a client
 that registered for a card key. See the client guide for the rules.
 
-**Capabilities:** `session`, `status`, `project.load`, `execution.run`,
-`execution.cancel`, `execution.resultLookup`, `execution.resultLog`,
-`execution.journal`, `autoMode`, `keys.provider`, `reader.scan`, and the event
-groups `events.execution`, `events.running`, `events.reader`,
-`events.project`, `events.autoMode`, `events.lifecycle`. `execution.journal` is
-a guarantee and not a method: RFiDGear writes a run down before it starts it,
-so that after a restart a request id it had admitted is still known.
+**Capabilities:** `session`, `status`, `project.load`, `project.revision`,
+`execution.run`, `execution.cancel`, `execution.resultLookup`,
+`execution.resultLog`, `execution.journal`, `autoMode`, `keys.provider`,
+`reader.scan`, and the event groups `events.execution`, `events.running`,
+`events.reader`, `events.project`, `events.autoMode`, `events.lifecycle`.
+`execution.journal` and `project.revision` are guarantees and not methods.
+`execution.journal`: RFiDGear writes a run down before it starts it, so that
+after a restart a request id it had admitted is still known.
+`project.revision`: `loadProject` and `getStatus` say in which state the loaded
+project is (changes that were not saved included), `startRun` can insist on
+that state, and the result says which state the run started with. The revision
+is opaque and valid for one RFiDGear process only.
 
 **What a run reports:**
 

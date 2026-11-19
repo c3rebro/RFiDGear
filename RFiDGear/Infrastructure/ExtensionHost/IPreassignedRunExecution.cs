@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +23,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="request">The variables of the run.</param>
         /// <param name="runId">The id the run has in its result and in the log.</param>
         /// <param name="ct">Cancels the run at a task boundary.</param>
+        /// <param name="runEnding">
+        /// Called once, when the tasks are done and the run still holds the gate of the host (no edit and no load can commit until
+        /// it has returned), with the revision of the project as the run leaves it, read on the thread of the window; with
+        /// <see langword="null"/> when the host cannot tell it or the window did not answer in time. It is what the run itself did
+        /// to the project, and nothing else can have: it is the only moment at which that can be said for certain.
+        /// </param>
         /// <returns>The result of the run.</returns>
-        Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct);
+        Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, string runId, CancellationToken ct, Action<string?>? runEnding = null);
     }
 }

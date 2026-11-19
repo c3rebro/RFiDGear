@@ -161,6 +161,29 @@ namespace RFiDGear.Bridge.SampleClient
         public bool Offers(string capability) => Hello.Capabilities.Contains(capability, StringComparer.Ordinal);
 
         /// <summary>
+        /// Says which revision a run of the project that <c>loadProject</c> answered about should expect. A RFiDGear that does not
+        /// offer <see cref="BridgeCapabilities.ProjectRevision"/> has none to give, and a run then has only the path and the task count.
+        /// One that offers it but gave no revision for this project (it could not make one) leaves a client without the protection
+        /// it relies on: the client does not go on without it, because a run that is started anyway would run whatever is loaded.
+        /// </summary>
+        /// <param name="loaded">What <c>loadProject</c> answered.</param>
+        /// <returns>The revision to pass as <c>expectProjectRevision</c>, or <see langword="null"/> when RFiDGear does not offer revisions.</returns>
+        /// <exception cref="InvalidOperationException">RFiDGear offers revisions and gave none for this project.</exception>
+        public string? RevisionToExpect(LoadProjectResponse loaded)
+        {
+            ArgumentNullException.ThrowIfNull(loaded);
+
+            if (!Offers(BridgeCapabilities.ProjectRevision))
+            {
+                return null;
+            }
+
+            return string.IsNullOrEmpty(loaded.Revision)
+                ? throw new InvalidOperationException("RFiDGear offers project.revision but gave no revision for the project it loaded: nothing was started.")
+                : loaded.Revision;
+        }
+
+        /// <summary>
         /// Starts one run of the loaded project and waits for its result. The rule it keeps: <b>a request that may have reached
         /// RFiDGear is never repeated as a new request</b>. If the answer does not come (a timeout, a lost connection, an error
         /// that does not say "never started"), the client asks about the same request id instead, which only looks and never
@@ -172,6 +195,11 @@ namespace RFiDGear.Bridge.SampleClient
         /// <param name="variables">The variables of the run (names as the project writes them, with the leading dollar sign).</param>
         /// <param name="expectProjectPath">The project the job is for (the path <c>loadProject</c> answered with), or <see langword="null"/> to run whichever is loaded. A project that was replaced since is refused, and nothing is started.</param>
         /// <param name="expectTaskCount">The number of tasks the project has, or <see langword="null"/>.</param>
+        /// <param name="expectProjectRevision">
+        /// The revision of the project as <c>loadProject</c> or <c>getStatus</c> answered it, or <see langword="null"/> (also when
+        /// <see cref="BridgeCapabilities.ProjectRevision"/> is not offered). A project in another state, a task that was changed in the
+        /// window after you looked, is refused, and nothing is started. Path and task count cannot tell that.
+        /// </param>
         /// <param name="cancellationToken">Stops waiting; it does not stop the run (use <c>cancelRun</c> for that).</param>
         /// <returns>How it ended.</returns>
         public async Task<RunOutcome> RunOnceAsync(
@@ -179,6 +207,7 @@ namespace RFiDGear.Bridge.SampleClient
             IReadOnlyDictionary<string, string> variables,
             string? expectProjectPath = null,
             int? expectTaskCount = null,
+            string? expectProjectRevision = null,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(variables);
@@ -189,6 +218,7 @@ namespace RFiDGear.Bridge.SampleClient
                 Variables = variables.Select(pair => new VariablePair { Name = pair.Key, Value = pair.Value }).ToList(),
                 ExpectProjectPath = expectProjectPath,
                 ExpectTaskCount = expectTaskCount,
+                ExpectProjectRevision = expectProjectRevision,
             };
 
             try

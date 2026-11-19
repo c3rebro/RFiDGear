@@ -20,13 +20,14 @@ namespace RFiDGear.Services.ExternalControl
     /// </summary>
     internal sealed class RunPlan
     {
-        internal RunPlan(string requestId, IReadOnlyList<KeyValuePair<string, string>> variables, string? expectProjectPath, int? expectTaskCount)
+        internal RunPlan(string requestId, IReadOnlyList<KeyValuePair<string, string>> variables, string? expectProjectPath, int? expectTaskCount, string? expectProjectRevision = null)
         {
             RequestId = requestId;
             Variables = variables;
             ExpectProjectPath = expectProjectPath;
             ExpectTaskCount = expectTaskCount;
-            PayloadHash = Hash(variables, expectProjectPath, expectTaskCount);
+            ExpectProjectRevision = expectProjectRevision;
+            PayloadHash = Hash(variables, expectProjectPath, expectTaskCount, expectProjectRevision);
         }
 
         /// <summary>Gets the request id.</summary>
@@ -40,6 +41,9 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets the number of tasks the client expects, or <see langword="null"/>.</summary>
         internal int? ExpectTaskCount { get; }
+
+        /// <summary>Gets the revision of the project the client expects, or <see langword="null"/>.</summary>
+        internal string? ExpectProjectRevision { get; }
 
         /// <summary>Gets the hash by which two requests with one id are told to be the same or not.</summary>
         internal string PayloadHash { get; }
@@ -67,7 +71,12 @@ namespace RFiDGear.Services.ExternalControl
                 throw BridgeFault.InvalidRequest("expectTaskCount");
             }
 
-            return new RunPlan(request.RequestId, variables, expectedPath, request.ExpectTaskCount);
+            if (request.ExpectProjectRevision != null && !BridgeProtocol.IsValidRevision(request.ExpectProjectRevision))
+            {
+                throw BridgeFault.InvalidRequest("expectProjectRevision");
+            }
+
+            return new RunPlan(request.RequestId, variables, expectedPath, request.ExpectTaskCount, request.ExpectProjectRevision);
         }
 
         /// <summary>Makes the request the host is given.</summary>
@@ -139,7 +148,7 @@ namespace RFiDGear.Services.ExternalControl
 
         // SHA-256 over length-prefixed UTF-8, so no two different plans can write the same bytes: the variables sorted by their
         // names (as spelled), then the expectations, each with a marker for "not given".
-        private static string Hash(IReadOnlyList<KeyValuePair<string, string>> variables, string? expectProjectPath, int? expectTaskCount)
+        private static string Hash(IReadOnlyList<KeyValuePair<string, string>> variables, string? expectProjectPath, int? expectTaskCount, string? expectProjectRevision)
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -156,6 +165,8 @@ namespace RFiDGear.Services.ExternalControl
             writer.Write(expectProjectPath?.ToUpperInvariant() ?? string.Empty);
             writer.Write(expectTaskCount.HasValue);
             writer.Write(expectTaskCount ?? 0);
+            writer.Write(expectProjectRevision != null);
+            writer.Write(expectProjectRevision ?? string.Empty);
             writer.Flush();
 
             return Convert.ToHexString(SHA256.HashData(stream.ToArray()));

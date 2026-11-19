@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +19,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// <summary>
     /// <see cref="IProjectHost"/> implementation backed by <see cref="DatabaseReaderWriter"/>.
     /// </summary>
-    internal sealed class ProjectHostImpl : IProjectHost
+    internal sealed class ProjectHostImpl : IProjectHost, IProjectRevisionSource
     {
         // Resolved on each use, not cached, so the logger configured at startup (and the one tests install)
         // is the one that is used even if this type was touched before logging was configured.
@@ -113,10 +114,61 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             _liveModelAccessor != null ? _liveModelAccessor() : _dbRW.SetupModel;
 
         /// <inheritdoc/>
+        public string? GetProjectRevision()
+        {
+            var model = SetupModel;
+
+            if (model?.TaskCollection == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return ProjectRevision.Compute(model);
+            }
+            catch (Exception e)
+            {
+                // Only the type: what the serializer says about a task can hold what was typed into it.
+                Logger.Warning("The revision of the project could not be made ({ExceptionType})", e.GetType().FullName);
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Reads the revision on the thread that owns the tasks (the window's), for a caller that is not on it.
+        /// </summary>
+        /// <returns>The revision, or <see langword="null"/> (see <see cref="GetProjectRevision"/>).</returns>
+        internal async Task<string?> ReadRevisionOnTheWindowAsync()
+        {
+            string? revision = null;
+
+            await _dispatch(() => revision = GetProjectRevision()).ConfigureAwait(false);
+
+            return revision;
+        }
+
+        /// <inheritdoc/>
         public event EventHandler? ProjectChanged;
 
         /// <inheritdoc/>
-        public async Task<Contracts.ProjectOpenResult> LoadAsync(string path, CancellationToken ct = default)
+        public Task<Contracts.ProjectOpenResult> LoadAsync(string path, CancellationToken ct = default) =>
+            LoadCoreAsync(path, ct, null);
+
+        /// <inheritdoc/>
+        public async Task<(Contracts.ProjectOpenResult Result, string? Revision)> LoadWithRevisionAsync(string path, CancellationToken ct = default)
+        {
+            var revision = new StrongBox<string?>();
+            var result = await LoadCoreAsync(path, ct, revision).ConfigureAwait(false);
+
+            return (result, result.Success ? revision.Value : null);
+        }
+
+        // The revision, when it is wanted, is taken inside the commit, in the same action on the thread of the window that puts the
+        // project in place: a task that is changed a moment later is a change of the project that was loaded, and cannot slip
+        // into the answer of the load as if it had been in the file.
+        private async Task<Contracts.ProjectOpenResult> LoadCoreAsync(string path, CancellationToken ct, StrongBox<string?>? revision)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -202,6 +254,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 {
                     ApplyModel(model);
                     _currentPath = canonicalPath;
+
+                    if (revision != null)
+                    {
+                        revision.Value = GetProjectRevision();
+                    }
+
                     RaiseProjectChanged();
                 }).ConfigureAwait(false);
 

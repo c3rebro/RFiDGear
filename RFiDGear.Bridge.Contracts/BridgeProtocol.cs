@@ -57,6 +57,9 @@ namespace RFiDGear.Bridge
         /// <summary>The characters a request id may have; it is logged, so the alphabet is small.</summary>
         public const string RequestIdPattern = @"^[A-Za-z0-9._:-]{1,64}\z";
 
+        /// <summary>The longest project revision, in characters. A revision is opaque to a client: it only compares it with another.</summary>
+        public const int MaxRevisionLength = 64;
+
         private static readonly Regex RequestIdExpression = new Regex(RequestIdPattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
 
         /// <summary>Makes the name of the pipe a given Windows user's RFiDGear listens on. The pipe namespace is machine-wide, so the user is part of the name.</summary>
@@ -78,5 +81,11 @@ namespace RFiDGear.Bridge
         /// <returns><c>true</c> when it has 1 to 64 characters from <c>A-Z a-z 0-9 . _ : -</c>.</returns>
         public static bool IsValidRequestId(string? requestId) =>
             requestId != null && RequestIdExpression.IsMatch(requestId);
+
+        /// <summary>Says whether a text can be a project revision the host would make: the alphabet and the length limit of a request id, which is what the host logs.</summary>
+        /// <param name="revision">The text to check.</param>
+        /// <returns><c>true</c> when it has 1 to <see cref="MaxRevisionLength"/> characters from <c>A-Z a-z 0-9 . _ : -</c>.</returns>
+        public static bool IsValidRevision(string? revision) =>
+            revision != null && RequestIdExpression.IsMatch(revision);
     }
 }

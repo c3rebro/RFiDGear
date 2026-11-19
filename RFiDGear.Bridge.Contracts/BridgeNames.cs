@@ -32,6 +32,19 @@ namespace RFiDGear.Bridge
         /// <summary>Loading a project file.</summary>
         public const string ProjectLoad = "project.load";
 
+        /// <summary>
+        /// A guarantee, not a method: RFiDGear can say which state of the loaded project a run was started with. <c>loadProject</c>
+        /// and <c>getStatus</c> carry a <c>revision</c> of the project as it is in RFiDGear now (what a save would write, so
+        /// unsaved changes count as well), <c>startRun</c> accepts <c>expectProjectRevision</c> and refuses a run whose project is
+        /// in another state before anything is touched, and the result of a run says which revision it started with.
+        /// <para>
+        /// A revision is opaque: it is only ever compared. It is valid for the process that made it (see
+        /// <see cref="HelloResponse.InstanceId"/>): another RFiDGear process, or a restart, makes other values for the same project.
+        /// It does not change when a run changes the results that the tasks show.
+        /// </para>
+        /// </summary>
+        public const string ProjectRevision = "project.revision";
+
         /// <summary>Starting a run of the task list and getting one final result for it. Starting is idempotent: every request carries an id that makes a repeated request recognizable.</summary>
         public const string ExecutionRun = "execution.run";
 
@@ -101,6 +114,7 @@ namespace RFiDGear.Bridge
             Session,
             Status,
             ProjectLoad,
+            ProjectRevision,
             ExecutionRun,
             ExecutionCancel,
             ExecutionResultLookup,
@@ -123,6 +137,7 @@ namespace RFiDGear.Bridge
         /// </summary>
         public static IReadOnlyList<string> Guarantees { get; } = new[]
         {
+            ProjectRevision,
             ExecutionJournal,
         };
     }
