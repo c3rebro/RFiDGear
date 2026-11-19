@@ -634,6 +634,44 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void AnInstalledCopyThatBreaksTheExportQueries_IsMarkedAsFailed_AndNeverAsKnownToWork()
+        {
+            var machine = MakeMachine();
+            var user = MakeInstalled(Ver(9, 0));
+
+            // The copy passes its own probe (the first read of its parts) and then breaks the queries that RFiDGear makes of the
+            // whole composition: the host goes on without extensions, and this version must not be the one that is kept as good.
+            using (var first = new Disposer(new MefHelper(
+                MachineFolder,
+                typeof(IRFiDGearExtensionHost).Assembly,
+                path => path == user ? new ProbeOnceCatalog() : new TypeCatalog(),
+                UserRoot)))
+            {
+                first.Helper.Compose();
+                Assert.All(first.Helper.LastLoadResults, result => Assert.False(result.Loaded));
+            }
+
+            var folder = Path.GetDirectoryName(user)!;
+            Assert.True(File.Exists(Path.Combine(folder, ExtensionPackageLayout.FailedMarkerFileName)));
+            Assert.False(File.Exists(Path.Combine(folder, ExtensionPackageLayout.LoadedMarkerFileName)));
+
+            // The next start chooses the machine-wide copy.
+            var next = new CatalogLog();
+            using var second = new Disposer(Helper(next, _ => false));
+            second.Helper.Compose();
+            Assert.Equal(new[] { machine }, next.Tried);
+        }
+
+        // A catalog that passes the first read of its parts (the probe of the host) and fails every later one.
+        private sealed class ProbeOnceCatalog : ComposablePartCatalog
+        {
+            private int _reads;
+
+            public override IQueryable<ComposablePartDefinition> Parts =>
+                ++_reads == 1 ? new TypeCatalog().Parts : throw new InvalidOperationException("The catalog changed after it was probed.");
+        }
+
+        [Fact]
         public void AnInstalledCopyThatFailed_IsMarked_AndTheNextStartDoesNotChooseItAgain()
         {
             var machine = MakeMachine();

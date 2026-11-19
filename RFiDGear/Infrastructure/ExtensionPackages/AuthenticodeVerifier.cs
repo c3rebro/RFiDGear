@@ -56,19 +56,19 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             try
             {
                 pathText = Marshal.StringToHGlobalUni(path);
-                var fileInfo = new FileInfoStruct
+                var fileInfo = new FileInfoBlock
                 {
-                    Size = (uint)Marshal.SizeOf<FileInfoStruct>(),
+                    Size = (uint)Marshal.SizeOf<FileInfoBlock>(),
                     FilePath = pathText,
                     FileHandle = IntPtr.Zero,
                     KnownSubject = IntPtr.Zero,
                 };
-                fileInfoBlock = Marshal.AllocHGlobal(Marshal.SizeOf<FileInfoStruct>());
+                fileInfoBlock = Marshal.AllocHGlobal(Marshal.SizeOf<FileInfoBlock>());
                 Marshal.StructureToPtr(fileInfo, fileInfoBlock, false);
 
-                var data = new DataStruct
+                var data = new DataBlock
                 {
-                    Size = (uint)Marshal.SizeOf<DataStruct>(),
+                    Size = (uint)Marshal.SizeOf<DataBlock>(),
                     PolicyCallbackData = IntPtr.Zero,
                     SipClientData = IntPtr.Zero,
                     UiChoice = UiNone,
@@ -82,7 +82,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                     UiContext = 0,
                     SignatureSettings = IntPtr.Zero,
                 };
-                dataBlock = Marshal.AllocHGlobal(Marshal.SizeOf<DataStruct>());
+                dataBlock = Marshal.AllocHGlobal(Marshal.SizeOf<DataBlock>());
                 Marshal.StructureToPtr(data, dataBlock, false);
 
                 // A window handle of -1 says "no window".
@@ -119,9 +119,9 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         [DllImport("wintrust.dll", ExactSpelling = true, SetLastError = false)]
         private static extern int WinVerifyTrust(IntPtr window, ref Guid action, IntPtr data);
 
-        // WINTRUST_FILE_INFO
+        // WINTRUST_FILE_INFO (a formatted class: the layout is that of the structure, and a class needs no equality of its own)
         [StructLayout(LayoutKind.Sequential)]
-        private struct FileInfoStruct
+        private sealed class FileInfoBlock
         {
             internal uint Size;
             internal IntPtr FilePath;
@@ -129,9 +129,9 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             internal IntPtr KnownSubject;
         }
 
-        // WINTRUST_DATA
+        // WINTRUST_DATA (as above)
         [StructLayout(LayoutKind.Sequential)]
-        private struct DataStruct
+        private sealed class DataBlock
         {
             internal uint Size;
             internal IntPtr PolicyCallbackData;

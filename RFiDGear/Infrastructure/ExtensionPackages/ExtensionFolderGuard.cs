@@ -20,6 +20,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
 
         private static readonly Dictionary<string, ExtensionFolderGuard> Guards = new Dictionary<string, ExtensionFolderGuard>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly object _sync = new object();
         private readonly string _lockFile;
         private FileStream? _held;
 
@@ -54,7 +55,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <returns><c>true</c> if this process may tidy.</returns>
         public bool TryTake()
         {
-            lock (_lockFile)
+            lock (_sync)
             {
                 if (_held != null)
                 {
@@ -77,7 +78,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <summary>Lets go of the lock file, if this guard has it open.</summary>
         public void Dispose()
         {
-            lock (_lockFile)
+            lock (_sync)
             {
                 _held?.Dispose();
                 _held = null;

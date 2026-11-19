@@ -190,15 +190,33 @@ public sealed class MefHelper : IDisposable
             Log.ForContext<MefHelper>()
                 .Error(failure, "The loaded extensions break the MEF export queries; continuing without extensions");
 
+            // The copies that the user installed were part of what broke the queries: they are not chosen again, and the next older
+            // version or the machine-wide copy comes back at the next start.
+            MarkInstalledVersions(results, ExtensionPackageLayout.FailedMarkerFileName, "This version of the extension broke the export queries of RFiDGear; RFiDGear does not choose it again.");
+
             container.Dispose();
             container = BuildContainer(hostAssembly, null);
             results = results
                 .Select(result => result.Loaded ? result with { Loaded = false, Error = failure } : result)
                 .ToList();
         }
+        else
+        {
+            // Only now is it known that they work: a version is marked as one to go back to after the whole composition held.
+            MarkInstalledVersions(results, ExtensionPackageLayout.LoadedMarkerFileName, "This version of the extension was loaded without a problem.");
+        }
 
         _lastLoadResults = results;
         _Container = container;
+    }
+
+    // Leaves a marker in the version folder of each installed copy that was loaded (see ExtensionPackageLayout).
+    private static void MarkInstalledVersions(IEnumerable<ExtensionLoadResult> results, string markerFileName, string text)
+    {
+        foreach (var result in results.Where(result => result.Loaded && result.IsUserInstalled))
+        {
+            MarkVersionFolder(result.AssemblyPath, markerFileName, text);
+        }
     }
 
     /// <summary>
@@ -414,18 +432,12 @@ public sealed class MefHelper : IDisposable
                         _loadedPaths[Path.GetFileNameWithoutExtension(extension.FileName)] = candidate.AssemblyPath;
                     }
 
-                    if (candidate.IsUserInstalled)
-                    {
-                        // Known to work: the tidying keeps the newest such version, whatever is installed after it.
-                        MarkVersionFolder(candidate, ExtensionPackageLayout.LoadedMarkerFileName, "This version of the extension was loaded without a problem.");
-                    }
-
                     break;
                 }
 
                 if (candidate.IsUserInstalled)
                 {
-                    MarkVersionFolder(candidate, ExtensionPackageLayout.FailedMarkerFileName, "This version of the extension could not be loaded; RFiDGear does not choose it again.");
+                    MarkVersionFolder(candidate.AssemblyPath, ExtensionPackageLayout.FailedMarkerFileName, "This version of the extension could not be loaded; RFiDGear does not choose it again.");
                     Log.ForContext<MefHelper>()
                         .Warning("The installed extension {ExtensionAssembly} could not be loaded; this version is skipped from the next start", candidate.AssemblyPath);
                 }
@@ -435,11 +447,11 @@ public sealed class MefHelper : IDisposable
 
     // Leaves a marker file in the version folder of an installed copy (see ExtensionPackageLayout). A folder that cannot be written
     // gets none, and is treated as before.
-    private static void MarkVersionFolder(ExtensionCandidate candidate, string markerFileName, string text)
+    private static void MarkVersionFolder(string assemblyPath, string markerFileName, string text)
     {
         try
         {
-            var folder = Path.GetDirectoryName(candidate.AssemblyPath);
+            var folder = Path.GetDirectoryName(assemblyPath);
             if (!string.IsNullOrEmpty(folder))
             {
                 File.WriteAllText(Path.Combine(folder, markerFileName), text);
@@ -447,7 +459,7 @@ public sealed class MefHelper : IDisposable
         }
         catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
         {
-            Log.ForContext<MefHelper>().Warning(e, "Could not leave {Marker} in the folder of {ExtensionAssembly}", markerFileName, candidate.AssemblyPath);
+            Log.ForContext<MefHelper>().Warning(e, "Could not leave {Marker} in the folder of {ExtensionAssembly}", markerFileName, assemblyPath);
         }
     }
 
