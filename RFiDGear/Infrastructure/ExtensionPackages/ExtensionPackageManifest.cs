@@ -218,28 +218,17 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             return true;
         }
 
-        private sealed class Document
-        {
-            public int Schema { get; set; }
+        // What the JSON says, read through the constructor: a name that is missing is null (or 0 for the format), and the checks above
+        // decide what a missing or wrong value means. Nothing here is trusted before it was looked at.
+        private sealed record Document(
+            int Schema,
+            string? Id,
+            string? DisplayName,
+            string? Version,
+            string? MinHostVersion,
+            string? Notes,
+            List<FileEntry?>? Files);
 
-            public string? Id { get; set; }
-
-            public string? DisplayName { get; set; }
-
-            public string? Version { get; set; }
-
-            public string? MinHostVersion { get; set; }
-
-            public string? Notes { get; set; }
-
-            public List<FileEntry?>? Files { get; set; }
-        }
-
-        private sealed class FileEntry
-        {
-            public string? Name { get; set; }
-
-            public string? Sha256 { get; set; }
-        }
+        private sealed record FileEntry(string? Name, string? Sha256);
     }
 }

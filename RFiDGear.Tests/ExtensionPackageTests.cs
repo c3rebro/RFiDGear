@@ -443,8 +443,9 @@ namespace RFiDGear.Tests
             return path;
         }
 
-        private static Func<string, Version?> Versions(params (string Path, string Version)[] versions) =>
-            path => versions.Where(entry => entry.Path == path).Select(entry => (Version?)System.Version.Parse(entry.Version)).FirstOrDefault();
+        // The file version that each given file has; any other file has none.
+        private static Func<string, Version?> Versions(params (string Path, string Version)[] known) =>
+            path => known.Where(entry => entry.Path == path).Select(entry => System.Version.Parse(entry.Version)).FirstOrDefault();
 
         [Fact]
         public void TheHigherVersionIsTheOneThatIsUsed_AndTheOtherIsOnlyAFallback()
@@ -571,7 +572,12 @@ namespace RFiDGear.Tests
 
             public MefHelper Helper { get; }
 
-            public void Dispose() => ((IDisposable)Helper).Dispose();
+            public void Dispose()
+            {
+                // MefHelper implements IDisposable explicitly, so it is only reachable through the interface.
+                IDisposable helper = Helper;
+                helper.Dispose();
+            }
         }
     }
 }
