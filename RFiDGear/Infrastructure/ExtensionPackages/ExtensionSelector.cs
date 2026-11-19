@@ -101,6 +101,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                     var main = Path.Combine(versionFolder, id + ".dll");
                     if (Version.TryParse(Path.GetFileName(versionFolder), out var folderVersion) &&
                         File.Exists(main) &&
+                        !File.Exists(Path.Combine(versionFolder, ExtensionPackageLayout.FailedMarkerFileName)) &&
                         (bestFolderVersion == null || folderVersion > bestFolderVersion))
                     {
                         best = main;

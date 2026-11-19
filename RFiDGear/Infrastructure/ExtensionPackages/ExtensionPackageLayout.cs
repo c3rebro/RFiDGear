@@ -29,6 +29,14 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <summary>The file extension of a package.</summary>
         internal const string PackageExtension = ".rfext";
 
+        /// <summary>
+        /// The file that RFiDGear leaves in a version folder whose extension could not be loaded. The version is skipped from the next
+        /// start on (the next older version that is installed, or the machine-wide copy, is used instead), because an assembly that
+        /// was loaded and then failed cannot be replaced by another copy in the same run, and nobody should have to browse into the
+        /// folder to get the extension back. A newer version, installed later, is not affected.
+        /// </summary>
+        internal const string FailedMarkerFileName = ".failed";
+
         /// <summary>The prefix of the name of an extension assembly; the host scans the machine-wide folder for it.</summary>
         internal const string ExtensionNamePrefix = "RFiDGear.Extensions";
 

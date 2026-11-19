@@ -58,9 +58,14 @@
     <PropertyGroup>
       <_PackFiles>@(_PackHashed->'{ &quot;name&quot;: &quot;%(Filename)%(Extension)&quot;, &quot;sha256&quot;: &quot;%(FileHash)&quot; }', ', ')</_PackFiles>
       <_PackMinHost Condition="'$(ExtensionMinHostVersion)' != ''">&quot;minHostVersion&quot;: &quot;$(ExtensionMinHostVersion)&quot;, </_PackMinHost>
-      <_PackManifest>{ &quot;schema&quot;: 1, &quot;id&quot;: &quot;$(TargetName)&quot;, &quot;displayName&quot;: &quot;$(_PackName)&quot;, &quot;version&quot;: &quot;$(Version)&quot;, $(_PackMinHost)&quot;files&quot;: [ $(_PackFiles) ] }</_PackManifest>
+      <!-- The name is text of the provider's: a backslash and a quote in it are escaped for JSON, or the package could be made
+           and then not installed. The platform is what the build was for (x64, x86): the installer refuses a package of the
+           other one, because the payload of an extension (sni.dll) is native. -->
+      <_PackNameJson>$(_PackName.Replace('\', '\\').Replace('"', '\"'))</_PackNameJson>
+      <_PackManifest>{ &quot;schema&quot;: 1, &quot;id&quot;: &quot;$(TargetName)&quot;, &quot;displayName&quot;: &quot;$(_PackNameJson)&quot;, &quot;version&quot;: &quot;$(Version)&quot;, &quot;platform&quot;: &quot;$(Platform)&quot;, $(_PackMinHost)&quot;files&quot;: [ $(_PackFiles) ] }</_PackManifest>
     </PropertyGroup>
-    <WriteLinesToFile File="$(_PackStage)extension.json" Lines="$(_PackManifest)" Overwrite="true" />
+    <!-- Lines is a list that is split at semicolons: one in the name must stay in its line. -->
+    <WriteLinesToFile File="$(_PackStage)extension.json" Lines="$(_PackManifest.Replace(';', '%3B'))" Overwrite="true" />
 
     <Delete Files="$(_PackFile)" />
     <ZipDirectory SourceDirectory="$(_PackStage)" DestinationFile="$(_PackFile)" Overwrite="true" />

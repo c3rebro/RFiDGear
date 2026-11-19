@@ -33,6 +33,9 @@ namespace RFiDGear.Tests
 
         private string PackageFolder => Path.Combine(Project, "bin", "package");
 
+        // The name that the person is asked about; a test may give one that is full of what JSON and MSBuild take for syntax.
+        private string DisplayName { get; set; } = "Fake Extension";
+
         private void WriteOutput()
         {
             Directory.CreateDirectory(Out);
@@ -58,7 +61,7 @@ namespace RFiDGear.Tests
                 "<Project>"
                 + "<PropertyGroup><TargetName>RFiDGear.Extensions.Fake</TargetName><OutDir>" + Out + Path.DirectorySeparatorChar + "</OutDir>"
                 + "<IntermediateOutputPath>obj\\</IntermediateOutputPath><Version>1.2.3</Version><Platform>x64</Platform>"
-                + "<ExtensionDisplayName>Fake Extension</ExtensionDisplayName><ExtensionMinHostVersion>2.1.0</ExtensionMinHostVersion></PropertyGroup>"
+                + "<ExtensionDisplayName>" + System.Security.SecurityElement.Escape(DisplayName) + "</ExtensionDisplayName><ExtensionMinHostVersion>2.1.0</ExtensionMinHostVersion></PropertyGroup>"
                 + "<ItemGroup>"
                 + "<ExtensionPayloadFile Include=\"$(OutDir)sni.dll\" Condition=\"Exists('$(OutDir)sni.dll')\" />"
                 + "<ExtensionPayloadFile Include=\"$(OutDir)System.Data.SqlClient.dll\" Condition=\"Exists('$(OutDir)System.Data.SqlClient.dll')\" />"
@@ -140,9 +143,27 @@ namespace RFiDGear.Tests
             Assert.Equal("Fake Extension", manifest.DisplayName);
             Assert.Equal(new Version(1, 2, 3, 0), manifest.Version);
             Assert.Equal(new Version(2, 1, 0, 0), manifest.MinHostVersion);
+            Assert.Equal("x64", manifest.Platform);   // what the build was for: the payload is native
             Assert.Equal(
                 new[] { "RFiDGear.ExtensionLibraries.Fake.dll", "RFiDGear.Extensions.Fake.dll", "System.Data.SqlClient.dll", "sni.dll" },
                 read.Package.Files.Select(file => file.Name).OrderBy(name => name, StringComparer.Ordinal).ToArray());
+        }
+
+        [Theory]
+        [InlineData("RFID \"Pro\" Suite")]
+        [InlineData("Back\\slash and \"quotes\" \\\"both\\\"")]
+        [InlineData("Muster; GmbH & Co. <KG>")]
+        public async Task ANameWithQuotesBackslashesOrSemicolons_IsWrittenIntoTheManifestAsItIs(string displayName)
+        {
+            WriteOutput();
+            DisplayName = displayName;
+
+            var (exitCode, output) = await Build("-p:PackExtension=true");
+
+            Assert.True(exitCode == 0, output);
+            var read = ExtensionPackageReader.Read(Assert.Single(Directory.GetFiles(PackageFolder)));
+            Assert.True(read.Success, read.Problem?.ToString());
+            Assert.Equal(displayName, read.Package!.Manifest.DisplayName);
         }
 
         [Fact]

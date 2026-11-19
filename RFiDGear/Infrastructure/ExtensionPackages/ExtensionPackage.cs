@@ -44,6 +44,9 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <summary>The package needs a newer RFiDGear.</summary>
         HostTooOld,
 
+        /// <summary>The package is made for the other platform (x64 or x86) than this RFiDGear, and its native files would not load.</summary>
+        WrongPlatform,
+
         /// <summary>The same version of the extension is installed already.</summary>
         AlreadyInstalled,
 

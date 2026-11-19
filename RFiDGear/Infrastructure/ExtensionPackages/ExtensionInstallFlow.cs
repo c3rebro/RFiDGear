@@ -126,6 +126,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             {
                 ExtensionPackageProblem.NotAPackage => "messageExtensionProblemNotAPackage",
                 ExtensionPackageProblem.HostTooOld => "messageExtensionProblemHostTooOld",
+                ExtensionPackageProblem.WrongPlatform => "messageExtensionProblemWrongPlatform",
                 ExtensionPackageProblem.AlreadyInstalled => "messageExtensionProblemAlreadyInstalled",
                 ExtensionPackageProblem.NotNewer => "messageExtensionProblemNotNewer",
                 ExtensionPackageProblem.CannotWrite => "messageExtensionProblemCannotWrite",

@@ -43,11 +43,12 @@ namespace RFiDGear.Tests
         // The name of a version folder, such as 1.1.0.0, written as what it is: a version with four parts.
         private static string Ver(int major, int minor) => new Version(major, minor, 0, 0).ToString();
 
-        private static string ManifestJson(IEnumerable<KeyValuePair<string, byte[]>> files, string id = Id, string version = "1.1.0", string? minHost = null, int schema = 1)
+        private static string ManifestJson(IEnumerable<KeyValuePair<string, byte[]>> files, string id = Id, string version = "1.1.0", string? minHost = null, int schema = 1, string? platform = null)
         {
             var list = string.Join(",", files.Select(file => $"{{\"name\":\"{file.Key}\",\"sha256\":\"{Hash(file.Value)}\"}}"));
             var min = minHost == null ? string.Empty : $"\"minHostVersion\":\"{minHost}\",";
-            return $"{{\"schema\":{schema},\"id\":\"{id}\",\"displayName\":\"Sample\",\"version\":\"{version}\",{min}\"files\":[{list}]}}";
+            var target = platform == null ? string.Empty : $"\"platform\":\"{platform}\",";
+            return $"{{\"schema\":{schema},\"id\":\"{id}\",\"displayName\":\"Sample\",\"version\":\"{version}\",{target}{min}\"files\":[{list}]}}";
         }
 
         // Zip entries are written as given, so a test can put any name into the archive.
@@ -270,7 +271,7 @@ namespace RFiDGear.Tests
         // The installer reads the version of the main file; the content of a test package is no real assembly. A file that was
         // just unpacked (it is in the staging folder) has the version a test gives, any other file the one it was given in
         // InstalledVersions (none: the file has no version, as a text file has none).
-        private ExtensionPackageInstaller Installer(Version? fileVersion = null, Version? host = null, Func<string, SignerInfo?>? signer = null) =>
+        private ExtensionPackageInstaller Installer(Version? fileVersion = null, Version? host = null, Func<string, SignerInfo?>? signer = null, string hostPlatform = "x64") =>
             new ExtensionPackageInstaller(
                 UserRoot,
                 MachineFolder,
@@ -278,7 +279,8 @@ namespace RFiDGear.Tests
                 path => path.Contains(ExtensionPackageLayout.StagingFolderName, StringComparison.Ordinal)
                     ? fileVersion ?? new Version(1, 1, 0, 0)
                     : InstalledVersions.GetValueOrDefault(path),
-                signer ?? (_ => null));
+                signer ?? (_ => null),
+                hostPlatform);
 
         private Dictionary<string, Version?> InstalledVersions { get; } = new Dictionary<string, Version?>(StringComparer.OrdinalIgnoreCase);
 
@@ -339,6 +341,41 @@ namespace RFiDGear.Tests
 
             Assert.Equal(ExtensionPackageProblem.HostTooOld, prepared.Problem);
             Assert.False(Directory.Exists(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName)));
+        }
+
+        [Theory]
+        [InlineData("x86", "x64", false)]
+        [InlineData("x64", "x86", false)]
+        [InlineData("x64", "x64", true)]
+        [InlineData("X64", "x64", true)]
+        [InlineData("AnyCPU", "x86", true)]   // nothing native in it: it works in both
+        [InlineData(null, "x86", true)]       // a package that does not say (an older maker) is not refused
+        public void APackageOfTheOtherPlatform_IsNotInstalled_BecauseItsNativeFilesWouldNotLoad(string? made, string host, bool installed)
+        {
+            var files = Files(Main, "sni.dll");
+            var installer = Installer(hostPlatform: host);
+
+            var prepared = installer.Prepare(WritePackage(files, ManifestJson(files, platform: made)));
+
+            Assert.Equal(installed ? null : ExtensionPackageProblem.WrongPlatform, prepared.Problem);
+            if (prepared.Staged != null)
+            {
+                installer.Discard(prepared.Staged);
+            }
+            else
+            {
+                // The wrong one leaves nothing, and so the right one is not refused as "installed already".
+                Assert.False(Directory.Exists(Path.Combine(UserRoot, Id)));
+            }
+        }
+
+        [Fact]
+        public void APlatformThatIsNoName_IsABadManifest()
+        {
+            var files = Files(Main);
+
+            Assert.Equal(ExtensionPackageProblem.BadManifest, ProblemOf(Package(files, ManifestJson(files, platform: "x 64!"))));
+            Assert.True(ExtensionPackageReader.Read(Package(files, ManifestJson(files, platform: "x64"))).Success);
         }
 
         [Fact]
@@ -550,6 +587,44 @@ namespace RFiDGear.Tests
             Assert.NotNull(helper.LastLoadResults[0].Error);
             Assert.True(helper.LastLoadResults[1].Loaded);
             Assert.Equal(machine, helper.FindExtensionAssembly(Id));
+        }
+
+        [Fact]
+        public void AnInstalledCopyThatFailed_IsMarked_AndTheNextStartDoesNotChooseItAgain()
+        {
+            var machine = MakeMachine();
+            var user = MakeInstalled(Ver(9, 0));
+            var log = new CatalogLog();
+            using (var first = new Disposer(Helper(log, path => path == user)))
+            {
+                first.Helper.Compose();
+            }
+
+            // The version folder says it failed, and the machine-wide copy was used meanwhile.
+            Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(user)!, ExtensionPackageLayout.FailedMarkerFileName)));
+            Assert.False(File.Exists(Path.Combine(MachineFolder, ExtensionPackageLayout.FailedMarkerFileName)));
+
+            // The next start: only the machine-wide copy is chosen, and the failed one is not even tried.
+            var next = new CatalogLog();
+            using var second = new Disposer(Helper(next, _ => false));
+            second.Helper.Compose();
+
+            Assert.Equal(new[] { machine }, next.Tried);
+            Assert.True(Assert.Single(second.Helper.LastLoadResults).Loaded);
+        }
+
+        [Fact]
+        public void AVersionFolderThatFailed_IsSkipped_AndTheNextOlderOneIsUsed_ANewerOneIsNotAffected()
+        {
+            var older = MakeInstalled(Ver(1, 2));
+            var failed = MakeInstalled(Ver(1, 3));
+            File.WriteAllText(Path.Combine(Path.GetDirectoryName(failed)!, ExtensionPackageLayout.FailedMarkerFileName), "failed");
+
+            var selected = Assert.Single(ExtensionSelector.Select(Array.Empty<string>(), UserRoot, _ => null));
+            Assert.Equal(older, Assert.Single(selected.Candidates).AssemblyPath);
+
+            var newer = MakeInstalled(Ver(1, 4));
+            Assert.Equal(newer, Assert.Single(Assert.Single(ExtensionSelector.Select(Array.Empty<string>(), UserRoot, _ => null)).Candidates).AssemblyPath);
         }
 
         [Fact]

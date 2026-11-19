@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -45,6 +46,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         private readonly Version _hostVersion;
         private readonly Func<string, Version?> _versionOf;
         private readonly Func<string, SignerInfo?> _signerOf;
+        private readonly string _hostPlatform;
 
         /// <summary>Creates the installer.</summary>
         /// <param name="userRoot">The user's root for installed extensions.</param>
@@ -52,13 +54,15 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <param name="hostVersion">The version of this RFiDGear.</param>
         /// <param name="versionOf">Reads the file version of an assembly; the file's own by default.</param>
         /// <param name="signerOf">Reads who signed a file; the Authenticode signature of the file by default.</param>
+        /// <param name="hostPlatform">The platform of this RFiDGear (<c>x64</c>, <c>x86</c>); that of the running process by default.</param>
         /// <exception cref="ArgumentException"><paramref name="userRoot"/> is blank.</exception>
         public ExtensionPackageInstaller(
             string userRoot,
             string machineFolder,
             Version hostVersion,
             Func<string, Version?>? versionOf = null,
-            Func<string, SignerInfo?>? signerOf = null)
+            Func<string, SignerInfo?>? signerOf = null,
+            string? hostPlatform = null)
         {
             if (string.IsNullOrWhiteSpace(userRoot))
             {
@@ -70,6 +74,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             _hostVersion = hostVersion ?? throw new ArgumentNullException(nameof(hostVersion));
             _versionOf = versionOf ?? ExtensionPackageLayout.FileVersionOf;
             _signerOf = signerOf ?? ReadSigner;
+            _hostPlatform = string.IsNullOrWhiteSpace(hostPlatform) ? RuntimeInformation.ProcessArchitecture.ToString() : hostPlatform!;
         }
 
         /// <summary>Reads a package from a file and prepares it.</summary>
@@ -95,6 +100,11 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             if (manifest.MinHostVersion != null && Normalized(manifest.MinHostVersion) > Normalized(_hostVersion))
             {
                 return new PrepareResult(null, ExtensionPackageProblem.HostTooOld);
+            }
+
+            if (!FitsThisPlatform(manifest.Platform))
+            {
+                return new PrepareResult(null, ExtensionPackageProblem.WrongPlatform);
             }
 
             var installed = InstalledVersion(manifest.Id);
@@ -236,6 +246,14 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 // A folder that cannot be listed stays as it is.
             }
         }
+
+        // A package made for no platform or for AnyCPU has nothing native in it and works in both; one made for x64 or x86 carries
+        // native files (the SQL driver's sni.dll) that load only into a process of that platform. The version check would let the
+        // wrong one in and then refuse the right one as "installed already".
+        private bool FitsThisPlatform(string platform) =>
+            string.IsNullOrWhiteSpace(platform)
+            || string.Equals(platform, "AnyCPU", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(platform, _hostPlatform, StringComparison.OrdinalIgnoreCase);
 
         private static Version Normalized(Version version) => ExtensionPackageLayout.Normalize(version);
 

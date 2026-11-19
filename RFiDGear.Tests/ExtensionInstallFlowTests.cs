@@ -37,6 +37,7 @@ namespace RFiDGear.Tests
             ["textExtensionSignedByUntrusted"] = 1,
             ["messageExtensionProblemNotAPackage"] = 1,
             ["messageExtensionProblemHostTooOld"] = 1,
+            ["messageExtensionProblemWrongPlatform"] = 1,
             ["messageExtensionProblemAlreadyInstalled"] = 1,
             ["messageExtensionProblemNotNewer"] = 1,
             ["messageExtensionProblemCannotWrite"] = 1,
@@ -103,11 +104,12 @@ namespace RFiDGear.Tests
         // The name of a version folder, such as 1.1.0.0, written as what it is: a version with four parts.
         private static string Ver(int major, int minor) => new Version(major, minor, 0, 0).ToString();
 
-        private string WritePackage(string version = "1.1.0", string? notes = null, string? minHost = null)
+        private string WritePackage(string version = "1.1.0", string? notes = null, string? minHost = null, string? platform = null)
         {
             Directory.CreateDirectory(_folder.Path);
             var main = Encoding.UTF8.GetBytes("main");
             var json = $"{{\"schema\":1,\"id\":\"{Id}\",\"displayName\":\"Sample Extension\",\"version\":\"{version}\"," +
+                (platform == null ? string.Empty : $"\"platform\":\"{platform}\",") +
                 (notes == null ? string.Empty : $"\"notes\":\"{notes}\",") +
                 (minHost == null ? string.Empty : $"\"minHostVersion\":\"{minHost}\",") +
                 $"\"files\":[{{\"name\":\"{Id}.dll\",\"sha256\":\"{Convert.ToHexString(SHA256.HashData(main))}\"}}]}}";
@@ -131,7 +133,8 @@ namespace RFiDGear.Tests
                 Path.Combine(_folder.Path, "machine"),
                 new Version(2, 1, 0, 0),
                 path => path.Contains(ExtensionPackageLayout.StagingFolderName, StringComparison.Ordinal) ? new Version(1, 1, 0, 0) : null,
-                signer ?? (_ => null));
+                signer ?? (_ => null),
+                "x64");
 
         private static ExtensionInstallFlow Flow(ExtensionPackageInstaller installer, Dialogs dialogs) =>
             new ExtensionInstallFlow(installer, dialogs, Text);
@@ -210,6 +213,18 @@ namespace RFiDGear.Tests
             Assert.True(told.IsError);
             Assert.StartsWith("messageExtensionProblemNotAPackage", told.Text, StringComparison.Ordinal);
             Assert.DoesNotContain(_folder.Path, told.Text, StringComparison.OrdinalIgnoreCase);   // no path of the person's in a message
+        }
+
+        [Fact]
+        public async Task APackageOfTheOtherPlatform_SaysSo_AndInstallsNothing()
+        {
+            var dialogs = new Dialogs { Package = WritePackage(platform: "x86") };
+
+            await Flow(Installer(), dialogs).RunAsync();   // this RFiDGear is x64
+
+            Assert.StartsWith("messageExtensionProblemWrongPlatform", Assert.Single(dialogs.Told).Text, StringComparison.Ordinal);
+            Assert.Empty(dialogs.Asked);
+            Assert.False(Directory.Exists(Path.Combine(UserRoot, Id)));
         }
 
         [Fact]

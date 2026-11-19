@@ -379,7 +379,10 @@ public sealed class MefHelper : IDisposable
         }
 
         // One try/catch per file: a bad extension must not stop the ones after it. An extension that is installed twice is
-        // loaded once: the copy that is chosen, and only if that one cannot be loaded the other.
+        // loaded once: the copy that is chosen, and only if that one cannot be loaded the other. That works when the file could
+        // not be read at all; an assembly that was loaded and whose parts then failed stays loaded in this run, and another copy
+        // of the same assembly cannot take its place. So a copy that the user installed and that failed is marked, and the next
+        // start does not choose it again.
         foreach (var extension in selection)
         {
             foreach (var candidate in extension.Candidates)
@@ -395,7 +398,31 @@ public sealed class MefHelper : IDisposable
 
                     break;
                 }
+
+                if (candidate.IsUserInstalled)
+                {
+                    MarkAsFailed(candidate);
+                }
             }
+        }
+    }
+
+    // Leaves the marker in the version folder of an installed copy that could not be loaded (see ExtensionPackageLayout).
+    private static void MarkAsFailed(ExtensionCandidate candidate)
+    {
+        try
+        {
+            var folder = Path.GetDirectoryName(candidate.AssemblyPath);
+            if (!string.IsNullOrEmpty(folder))
+            {
+                File.WriteAllText(Path.Combine(folder, ExtensionPackageLayout.FailedMarkerFileName), "This version of the extension could not be loaded; RFiDGear does not choose it again.");
+                Log.ForContext<MefHelper>()
+                    .Warning("The installed extension {ExtensionAssembly} could not be loaded; this version is skipped from the next start", candidate.AssemblyPath);
+            }
+        }
+        catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+        {
+            Log.ForContext<MefHelper>().Warning(e, "Could not mark {ExtensionAssembly} as failed", candidate.AssemblyPath);
         }
     }
 

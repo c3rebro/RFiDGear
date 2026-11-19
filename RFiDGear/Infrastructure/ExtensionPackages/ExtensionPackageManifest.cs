@@ -34,15 +34,17 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         private static readonly Regex IdPattern = new Regex(@"^RFiDGear\.Extensions\.[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex FileNamePattern = new Regex(@"^[A-Za-z0-9][A-Za-z0-9_.\-]{0,127}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex HashPattern = new Regex("^[0-9a-fA-F]{64}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex PlatformPattern = new Regex("^[A-Za-z0-9]{1,16}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly string[] AllowedFileTypes = { ".dll", ".pdb" };
 
         private static readonly JsonSerializerOptions Options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        private ExtensionPackageManifest(string id, string displayName, Version version, Version? minHostVersion, string notes, IReadOnlyList<ExtensionPackageManifestFile> files)
+        private ExtensionPackageManifest(string id, string displayName, Version version, string platform, Version? minHostVersion, string notes, IReadOnlyList<ExtensionPackageManifestFile> files)
         {
             Id = id;
             DisplayName = displayName;
             Version = version;
+            Platform = platform;
             MinHostVersion = minHostVersion;
             Notes = notes;
             Files = files;
@@ -56,6 +58,12 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
 
         /// <summary>Gets the version of the extension.</summary>
         public Version Version { get; }
+
+        /// <summary>
+        /// Gets the platform the package was made for (<c>x64</c> or <c>x86</c>), or empty or <c>AnyCPU</c> when it has no native
+        /// part and works in both. The payload of an extension (the native <c>sni.dll</c> of a database driver) is of one platform.
+        /// </summary>
+        public string Platform { get; }
 
         /// <summary>Gets the oldest RFiDGear the package works with; <c>null</c> if it does not say.</summary>
         public Version? MinHostVersion { get; }
@@ -115,7 +123,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 return (null, fileProblem);
             }
 
-            return (new ExtensionPackageManifest(document.Id!, document.DisplayName!.Trim(), version!, minHost, document.Notes?.Trim() ?? string.Empty, files), null);
+            return (new ExtensionPackageManifest(document.Id!, document.DisplayName!.Trim(), version!, document.Platform?.Trim() ?? string.Empty, minHost, document.Notes?.Trim() ?? string.Empty, files), null);
         }
 
         /// <summary>
@@ -163,6 +171,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
 
             if (document.Id == null || !IdPattern.IsMatch(document.Id) || !TryVersion(document.Version, out version) ||
                 !IsShortText(document.DisplayName, MaxDisplayNameLength) || (document.Notes?.Length ?? 0) > MaxNotesLength ||
+                !(string.IsNullOrWhiteSpace(document.Platform) || PlatformPattern.IsMatch(document.Platform.Trim())) ||
                 document.Files == null || document.Files.Count == 0 || document.Files.Count > ExtensionPackageReader.MaxFiles)
             {
                 return ExtensionPackageProblem.BadManifest;
@@ -225,6 +234,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             string? Id,
             string? DisplayName,
             string? Version,
+            string? Platform,
             string? MinHostVersion,
             string? Notes,
             List<FileEntry?>? Files);
