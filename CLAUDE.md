@@ -156,6 +156,23 @@ Task categories:
 `TaskExecutionService` drives sequential execution with error handling;
 individual task VMs implement `ITaskViewModel`.
 
+A Check UID task (`GenericChipTaskViewModel`, decided by `ExpectedUid`)
+compares the UID of the card the run read with a UID typed into the task (a
+question: "no" is `IsNotTrue`, a logic answer) or with a placeholder such as
+`$EXPECTEDUID`, which names a variable of the run (a start-up argument,
+`startRun` of the bridge, an extension): the card that whoever calls expects,
+so the project (and its revision) does not change from card to card. A
+placeholder without a value, with an empty one or with another UID ends
+`CardNotExpected`, which is no logic answer: a run that ends with it has
+`failed` (also when a branch of the project handles it), and a branch written
+for "another card" does not take it. The loop hands the variables to the task
+for the time it runs (`Args`, not saved), runs the three checks of the generic
+chip task through one method, and checks the UID that the read of the run found
+at its start (`cardUid`), never what the reader may still hold of an earlier
+card. A Check UID task was saved by the dialog and never run by the loop for a
+long time (the loop stayed on its position); a generic chip task of the type
+`None` or `ChangeDefault`, which the dialog does not save, still is not run.
+
 ### Ultralight / NTAG
 
 `MifareUltralightSetupViewModel` is the task kind for the chips of the Type 2
@@ -483,7 +500,10 @@ Normalized error codes used across the stack: `AuthFailure`, `PermissionDenied`,
 `KeyUnavailable`: a key slot is bound to a secure key provider and the key
 could not be obtained, so the command made no card call. The execution service
 does not route it like `AuthFailure`: a vault outage must not start the
-fallback branches that a project wrote for a card that refused a key.
+fallback branches that a project wrote for a card that refused a key. A Check
+UID task that takes its UID from a variable adds `CardNotExpected`: the card
+is not the one the caller of the run expects, and a run that ends with it has
+failed.
 
 ### Settings & Persistence
 

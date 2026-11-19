@@ -1931,6 +1931,12 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.ERROR.KeyUnavailable" xml:space="preserve">
     <value>Schlüssel nicht verfügbar</value>
   </data>
+  <data name="ENUM.ERROR.CardNotExpected" xml:space="preserve">
+    <value>Karte nicht erwartet</value>
+  </data>
+  <data name="toolTipSelectUIDOfChip" xml:space="preserve">
+    <value>Die UID der Karte, oder eine Variable, in der der Aufrufer des Laufs die UID übergibt, die er erwartet, zum Beispiel $EXPECTEDUID (ein Startargument, eine Variable von startRun, eine Erweiterung). Hat die Variable keinen Wert oder ist die UID eine andere, endet der Task mit "Karte nicht erwartet".</value>
+  </data>
   <data name="textBoxStatusFileSettingsUnsupportedFileType" xml:space="preserve">
     <value>{0}: Nur Standard- und Backup-Datendateien können geprüft werden; Wert- und Record-Dateien werden noch nicht unterstützt. Es wurde nichts gelesen.</value>
   </data>

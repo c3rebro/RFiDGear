@@ -221,6 +221,45 @@ the card.
 - The registration ends with the connection; register again after you
   reconnect.
 
+**Approving a card before it is written (Check UID with a variable):**
+
+A card should be written only after the program that owns the job has looked at
+it (its UID, the order, a duplicate check) and approved it. The project has a
+place for that: the task **Check UID** can name a variable instead of a UID,
+written as a dollar sign and a name, for example `$EXPECTEDUID`. The caller
+supplies the UID it has approved as that variable: with `startRun` it is one of
+`variables` (`{ "name": "$EXPECTEDUID", "value": "04A1B2C3D4E5F6" }`; a start-up
+argument or an extension supplies variables the same way). The project does not
+change from card to card, so its revision does not either.
+
+1. `scanReader`, and look at the UID of the card that is on the reader
+   (`credentials`; upper-case hexadecimal digits, as RFiDGear writes them in
+   the result).
+2. Decide: the order, the duplicate check, the profile. This is yours.
+3. `startRun` with the variable set to that UID (and the revision of the
+   project, see `project.revision`).
+
+The task compares the UID with the one of the card that **the run itself read
+at its start** (the `cardUid` of the result), so a card that was swapped between
+the scan and the start is not the approved one. A card that is not the
+approved one ends the Check UID with `CardNotExpected`, as does a variable that
+is not given, is empty, or holds anything but the UID of the card. Every task
+that depends on the check is skipped, and the run ends `failure`: never
+`success`, and never `completedWithIntentionalFailures`, which only a question
+answered "no" can end with.
+
+- Make the check the first task, and make **every task that touches the card**
+  depend on it (its execute condition: the check, error `NoError`, and a task
+  behind that one on the one before it). RFiDGear cannot tell which tasks
+  write: a task that does not depend on the check runs whatever the check said.
+- A UID typed into the task is another thing: a question ("is this card that
+  card?"), answered `isNotTrue`, which a project may branch on and a run may
+  end with as an answer it asked for. Only a variable is an approval.
+- The variable is the one of the run. In automatic mode the variables are
+  those of the start-up (they do not change from card to card), so a variable
+  there approves every card with that UID again: do not approve a write that
+  way. Use single runs, as above.
+
 **What to log and what not:**
 
 Log the request id, the run id, the result number, the status and the kinds of
