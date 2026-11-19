@@ -1217,6 +1217,115 @@ namespace RFiDGear.Tests
             Assert.Empty(tasks[2].AttemptResults);
         }
 
+        // ── Check UID ──
+        // A task of the type Check UID was saved by the dialog and never run by the loop: nothing ran, the index did not move.
+        // The card of these runs has the UID 0123456789.
+
+        private static GenericChipTaskViewModel CheckUid(string index, string expected) => new GenericChipTaskViewModel
+        {
+            CurrentTaskIndex = index,
+            SelectedTaskType = TaskType_GenericChipTask.CheckUID,
+            SelectedUIDOfChip = expected
+        };
+
+        // Stands for a task that writes: it runs only when the check before it ended with the given error level, and it has
+        // an error level of its own once it has run.
+        private static GenericChipTaskViewModel TaskAfterTheCheck(string index, ERROR condition) => new GenericChipTaskViewModel
+        {
+            CurrentTaskIndex = index,
+            SelectedTaskType = TaskType_GenericChipTask.ChipIsOfType,
+            SelectedChipType = CARD_TYPE.EM4102,
+            SelectedExecuteConditionTaskIndex = "0",
+            SelectedExecuteConditionErrorLevel = condition
+        };
+
+        [Fact]
+        public async Task ACheckUidTaskWithATypedUid_IsRunByTheLoop_AndPassesForTheCardOnTheReader()
+        {
+            var (result, observations) = await RunProjectAsync(() => CheckUid("0", "0123456789"));
+
+            var observation = Assert.Single(observations);
+            Assert.Equal("Executed", observation.Decision);
+            Assert.Equal(ERROR.NoError, observation.ErrorLevel);
+            Assert.Equal(TaskLoopTerminalStatus.Success, result.TerminalStatus);
+        }
+
+        [Fact]
+        public async Task ACheckUidTaskWithATypedUidOfAnotherCard_AnswersNo_LikeTheOtherChecks()
+        {
+            var (result, observations) = await RunProjectAsync(() => CheckUid("0", "ABCDEF0123"));
+
+            // The answer of a question, as before: a logic answer that a project may branch on.
+            Assert.Equal(ERROR.IsNotTrue, Assert.Single(observations).ErrorLevel);
+            Assert.Equal(TaskLoopTerminalStatus.CompletedWithIntentionalFailures, result.TerminalStatus);
+        }
+
+        [Theory]
+        [InlineData("0123456789")]
+        [InlineData("  0123456789\r\n")]
+        public async Task ACheckUidTaskThatNamesAVariable_PassesForTheUidTheCallerExpects(string expected)
+        {
+            var tasks = new List<GenericChipTaskViewModel>();
+
+            var (result, observations) = await RunProjectAsync(
+                new Dictionary<string, string> { ["$EXPECTEDUID"] = expected },
+                () => Added(tasks, CheckUid("0", "$EXPECTEDUID")),
+                () => Added(tasks, TaskAfterTheCheck("1", ERROR.NoError)));
+
+            Assert.Equal(new[] { "Executed", "Executed" }, observations.OrderBy(o => o.TaskPosition).Select(o => o.Decision));
+            Assert.Equal(ERROR.NoError, tasks[0].CurrentTaskErrorLevel);
+            Assert.Equal(TaskLoopTerminalStatus.Success, result.TerminalStatus);
+        }
+
+        [Theory]
+        [InlineData(null)]                 // nothing was named
+        [InlineData("")]                   // an empty value
+        [InlineData("   ")]
+        [InlineData("ABCDEF0123")]         // another card
+        [InlineData("$EXPECTEDUID")]       // the placeholder itself is no UID
+        public async Task ACardThatWasNotExpected_ErrorsOut_NothingThatDependsOnTheCheckRuns_AndTheRunFails(string expected)
+        {
+            var tasks = new List<GenericChipTaskViewModel>();
+            var variables = expected == null ? new Dictionary<string, string>() : new Dictionary<string, string> { ["$EXPECTEDUID"] = expected };
+
+            var (result, observations) = await RunProjectAsync(
+                variables,
+                () => Added(tasks, CheckUid("0", "$EXPECTEDUID")),
+                () => Added(tasks, TaskAfterTheCheck("1", ERROR.NoError)));
+
+            // The check is a refusal, which no run counts as an answer the project asked for: the run has failed.
+            Assert.Equal(ERROR.CardNotExpected, tasks[0].CurrentTaskErrorLevel);
+            Assert.Equal(new[] { "Executed", "Skipped" }, observations.OrderBy(o => o.TaskPosition).Select(o => o.Decision));
+            Assert.Equal(ERROR.Empty, tasks[1].CurrentTaskErrorLevel);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
+        [Fact]
+        public async Task ABranchWrittenForAnotherCard_IsNotTakenForACardThatWasNotExpected()
+        {
+            var tasks = new List<GenericChipTaskViewModel>();
+
+            var (_, observations) = await RunProjectAsync(
+                () => Added(tasks, CheckUid("0", "$EXPECTEDUID")),
+                () => Added(tasks, TaskAfterTheCheck("1", ERROR.IsNotTrue)));
+
+            // The same branch is taken for a typed UID that is another card's: the answer "no". A refusal is not that answer.
+            Assert.Equal(new[] { "Executed", "Skipped" }, observations.OrderBy(o => o.TaskPosition).Select(o => o.Decision));
+            Assert.Equal(ERROR.Empty, tasks[1].CurrentTaskErrorLevel);
+        }
+
+        [Fact]
+        public async Task TheVariablesOfARun_AreNotLeftOnTheTask_WhenTheRunIsOver()
+        {
+            var tasks = new List<GenericChipTaskViewModel>();
+
+            await RunProjectAsync(
+                new Dictionary<string, string> { ["$EXPECTEDUID"] = "0123456789" },
+                () => Added(tasks, CheckUid("0", "$EXPECTEDUID")));
+
+            Assert.Null(tasks[0].Args);
+        }
+
         private static object Added<T>(List<T> list, T task)
         {
             list.Add(task);
@@ -1226,7 +1335,11 @@ namespace RFiDGear.Tests
 
         // Runs a project of the given tasks through the handlers of the service, with the reader of a test, and returns the
         // result and what the loop recorded. The token ends a run that hangs after ten seconds, which fails the test.
-        private static async Task<(TaskExecutionResult Result, List<TaskExecutionObservation> Observations)> RunProjectAsync(params Func<object>[] createTasks)
+        private static Task<(TaskExecutionResult Result, List<TaskExecutionObservation> Observations)> RunProjectAsync(params Func<object>[] createTasks) =>
+            RunProjectAsync(new Dictionary<string, string>(), createTasks);
+
+        // The same with the variables of the run: what a start-up argument, startRun of the bridge or an extension hands over.
+        private static async Task<(TaskExecutionResult Result, List<TaskExecutionObservation> Observations)> RunProjectAsync(Dictionary<string, string> variables, params Func<object>[] createTasks)
         {
             TaskExecutionResult result = null;
             var observations = new List<TaskExecutionObservation>();
@@ -1248,7 +1361,7 @@ namespace RFiDGear.Tests
                     var request = new TaskExecutionRequest
                     {
                         TaskHandler = handler,
-                        VariablesFromArgs = new Dictionary<string, string>(),
+                        VariablesFromArgs = variables,
                         Timeouts = TaskExecutionTimeouts.Default,
                         Observations = observations
                     };

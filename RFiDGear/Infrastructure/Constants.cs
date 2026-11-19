@@ -366,7 +366,14 @@ namespace RFiDGear.Infrastructure
         /// made no card call. It is not routed like <see cref="AuthFailure"/>: a vault outage must not start the fallback
         /// branches of a project that were written for a card that refused a key.
         /// </summary>
-        KeyUnavailable
+        KeyUnavailable,
+        /// <summary>
+        /// A Check UID task that takes its expected UID from a variable of the run (a placeholder such as <c>$EXPECTEDUID</c>)
+        /// found no value, or a value that is not the UID of the card: this is not the card that the caller of the run expects. It is a
+        /// refusal and not an answer: unlike <see cref="IsNotTrue"/> it is never a result that "the project asked for", so a run
+        /// that ends with it has failed, and it does not start the branches that a project wrote for a card that is another one.
+        /// </summary>
+        CardNotExpected
     }
 
     /// <summary>

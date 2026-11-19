@@ -532,10 +532,20 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// 
+        /// Gets or sets the variables of the run that is executing this task (a start-up argument, a variable of <c>startRun</c> of
+        /// the external control bridge, a variable of an extension), or <see langword="null"/> outside a run. The loop sets it for the
+        /// time the task runs. It is not part of the project.
         /// </summary>
-        public ICommand CheckChipUID => new AsyncRelayCommand(OnNewCheckChipUIDCommand);
-        private async Task<ERROR> OnNewCheckChipUIDCommand()
+        [XmlIgnore]
+        public IReadOnlyDictionary<string, string> Args { get; set; }
+
+        /// <summary>
+        /// Checks the UID of the card against <see cref="SelectedUIDOfChip"/>: a UID typed into the task, or a placeholder such as
+        /// <c>$EXPECTEDUID</c> for the UID that the caller of the run expects (see <see cref="ExpectedUid"/>). A run hands over
+        /// the chip it has read itself, so that the UID that is checked is the one the result of the run reports.
+        /// </summary>
+        public IAsyncRelayCommand CheckChipUID => new AsyncRelayCommand<GenericChipModel>(chip => OnNewCheckChipUIDCommand(chip));
+        private async Task<ERROR> OnNewCheckChipUIDCommand(GenericChipModel chip)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
@@ -543,22 +553,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 if (device != null)
                 {
-                    var result = await device.ReadChipPublic();
+                    var chipToUse = chip;
+                    var read = ERROR.NoError;
 
-                    if (result == ERROR.NoError)
+                    if (chipToUse == null)
                     {
-                        if (device.GenericChip.UID.ToLower(CultureInfo.CurrentCulture) == SelectedUIDOfChip.ToLower(CultureInfo.CurrentCulture))
-                        {
-                            result = ERROR.NoError;
-                        }
-                        else
-                        {
-                            result = ERROR.IsNotTrue;
-                        }
-
-                        CurrentTaskErrorLevel = result;
-
+                        read = await device.ReadChipPublic();
+                        chipToUse = device.GenericChip;
                     }
+
+                    // A card that could not be read is that error, not an empty answer.
+                    CurrentTaskErrorLevel = read != ERROR.NoError
+                        ? read
+                        : ExpectedUid.Check(SelectedUIDOfChip, RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.PrimaryUidOf(chipToUse) ?? chipToUse?.UID, Args);
                 }
                 else
                 {

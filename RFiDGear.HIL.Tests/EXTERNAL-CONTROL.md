@@ -120,6 +120,26 @@ time to change the protocol.
   written: the run ends normally, and closing RFiDGear at that moment still
   asks.
 
+**Approving a card (Check UID with a variable):**
+
+Use a copy of a project whose first task is Check UID with the text
+`$EXPECTEDUID` (a UID typed as `$EXPECTEDUID`), and whose second task depends on
+it (execute condition: task 0, error "No error"). You need two cards that have
+different UIDs, A and B. `status` shows the UID of the card that is on the
+reader.
+
+- 34, the approval: put A on the reader and `run job-34 C:\path\copy.rfPrj
+  $EXPECTEDUID=<UID of A>`: both tasks ran, the status is `success`.
+- 35, another card: put B on the reader and run with the UID of A: the Check UID
+  says "Card not expected", the second task did not run (nothing was written),
+  and the status is `failure`, not `completedWithIntentionalFailures`.
+- 36, nothing approved: run without the variable: the same as case 35.
+- 37, swapped after the scan: `status` with A on the reader, swap to B, run
+  with the UID of A: the same as case 35. A typed UID of another card (replace
+  the text of the first task) ends "no" instead, and the status is
+  `completedWithIntentionalFailures`: that is the difference between a question
+  and an approval.
+
 **Card keys from the client's vault:**
 
 These use a DESFire application that you can spare (see `SECURE-KEYS.md` for

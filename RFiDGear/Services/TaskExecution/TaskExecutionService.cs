@@ -1562,88 +1562,73 @@ namespace RFiDGear.Services.TaskExecution
 
         private async Task<bool> HandleGenericChipTaskAsync(GenericChipTaskViewModel genericTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors, ReaderDevice device)
         {
-            var executed = false;
             switch (genericTask.SelectedTaskType)
             {
                 case TaskType_GenericChipTask.ChipIsOfType:
-                    taskTimeout.Start();
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
-                    {
-                        case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
-
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                            {
-                                request.UpdateReaderBusy?.Invoke(true);
-                                await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
-                                executed = true;
-                            }
-                            else
-                            {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
-                                    {
-                                        request.UpdateReaderBusy?.Invoke(true);
-                                        await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
-                                        executed = true;
-                                    }
-                                    else
-                                    {
-                                        CurrentTaskIndex++;
-                                    }
-                                }
-                            }
-
-                            request.UpdateReaderBusy?.Invoke(false);
-                            break;
-
-                        default:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                            CurrentTaskIndex++;
-                            break;
-                    }
-                    break;
+                    return await RunGenericChipCheckAsync(genericTask, request, descriptors, () => genericTask.CheckChipType.ExecuteAsync(device.GenericChip));
                 case TaskType_GenericChipTask.ChipIsMultiChip:
-                    taskTimeout.Start();
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
-                    {
-                        case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
+                    return await RunGenericChipCheckAsync(genericTask, request, descriptors, () => genericTask.CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip));
+                case TaskType_GenericChipTask.CheckUID:
+                    // The variables of the run are the task's only while it runs: a check that is started from a window later must
+                    // not find the ones of a run that is over.
+                    genericTask.Args = request.VariablesFromArgs;
 
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                    try
+                    {
+                        return await RunGenericChipCheckAsync(genericTask, request, descriptors, () => genericTask.CheckChipUID.ExecuteAsync(device.GenericChip));
+                    }
+                    finally
+                    {
+                        genericTask.Args = null;
+                    }
+
+                default:
+                    return false;
+            }
+        }
+
+        // The steps that every check of the generic chip task goes through: a task that has an answer already is stepped over, a
+        // task with an execute condition runs only when the task it depends on ended with the error the condition asks for, and
+        // otherwise the loop moves on. Only the check itself differs.
+        private async Task<bool> RunGenericChipCheckAsync(GenericChipTaskViewModel genericTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors, Func<Task> check)
+        {
+            var executed = false;
+            taskTimeout.Start();
+
+            switch (genericTask.CurrentTaskErrorLevel)
+            {
+                case ERROR.Empty:
+                    genericTask.IsFocused = true;
+
+                    if (genericTask.SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                    {
+                        request.UpdateReaderBusy?.Invoke(true);
+                        await check();
+                        executed = true;
+                    }
+                    else
+                    {
+                        if (TryResolveTaskIndex(descriptors, genericTask.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                        {
+                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == genericTask.SelectedExecuteConditionErrorLevel)
                             {
                                 request.UpdateReaderBusy?.Invoke(true);
-                                await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
+                                await check();
                                 executed = true;
                             }
                             else
                             {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
-                                    {
-                                        request.UpdateReaderBusy?.Invoke(true);
-                                        await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
-                                        executed = true;
-                                    }
-                                    else
-                                    {
-                                        CurrentTaskIndex++;
-                                    }
-                                }
+                                CurrentTaskIndex++;
                             }
-
-                            request.UpdateReaderBusy?.Invoke(false);
-                            break;
-
-                        default:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                            CurrentTaskIndex++;
-                            break;
+                        }
                     }
+
+                    request.UpdateReaderBusy?.Invoke(false);
                     break;
+
                 default:
+                    genericTask.IsFocused = false;
+                    CurrentTaskIndex++;
                     break;
             }
 
