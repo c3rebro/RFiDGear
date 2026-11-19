@@ -496,6 +496,35 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task CardAfterCard_TheApprovedRevisionStaysTheProject_AfterARunThatRewroteSettingsOfItsTasks_ButNotAfterAnEdit()
+        {
+            var (_, pipe, host) = Start();
+            host.ProjectHost.Revision = "r0";
+            host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            var client = await ConnectAsync(pipe);
+
+            // The first card: the run writes what it found (the application it created, the key version) into its tasks.
+            await client.Service.StartRun(new StartRunRequest { RequestId = "card-1", ExpectProjectRevision = "r0" });
+            host.ProjectHost.Revision = "r1";
+            host.ExecutionHost.RunGate.SetResult(true);
+            await client.Service.GetRunResult(new GetRunResultRequest { RequestId = "card-1", WaitMs = 10_000 });
+            host.ExecutionHost.RunGate = null;
+
+            // The second card, with the revision that was approved before the first: admitted, and it ran what the first left.
+            await client.Service.StartRun(new StartRunRequest { RequestId = "card-2", ExpectProjectRevision = "r0" });
+            var second = await client.Service.GetRunResult(new GetRunResultRequest { RequestId = "card-2", WaitMs = 10_000 });
+
+            // A person changes a task in the window: this is no state that a run led to.
+            host.ProjectHost.Revision = "r9";
+            var refused = await Assert.ThrowsAsync<RemoteInvocationException>(() => client.Service.StartRun(new StartRunRequest { RequestId = "card-3", ExpectProjectRevision = "r0" }));
+
+            Assert.Equal("r1", second.Result!.ProjectRevision);
+            Assert.Equal(BridgeErrorCodes.ProjectMismatch, refused.ErrorCode);
+            Assert.True(BridgeTestClient.DataOf(refused)!.NeverStarted);
+            Assert.Equal(2, host.ExecutionHost.Requests.Count);
+        }
+
+        [Fact]
         public async Task TheRevisionOfALoad_IsTheStateThatWasCommitted_NotWhatAnEditLeftAMomentLater()
         {
             var path = ProjectFixtures.CreateProject(2);

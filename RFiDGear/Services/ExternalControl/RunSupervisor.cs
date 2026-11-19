@@ -34,6 +34,7 @@ namespace RFiDGear.Services.ExternalControl
     internal sealed class RunSupervisor
     {
         private static readonly TimeSpan DefaultAdmissionTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan RevisionReadTimeout = TimeSpan.FromSeconds(2);
 
         private static ILogger Logger => Log.ForContext<RunSupervisor>();
 
@@ -48,6 +49,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly IRunJournal? _journal;
         private readonly object _activeGate = new object();
         private readonly List<RunRecord> _active = new List<RunRecord>();
+        private readonly RevisionLineage _lineage = new RevisionLineage();
 
         // The run this thread is asking the host to admit, for the length of that call. The host raises "running changed"
         // synchronously inside the call, on this thread, so a handler can tell a run of the bridge from a run of someone else
@@ -593,10 +595,11 @@ namespace RFiDGear.Services.ExternalControl
 
             // The state of the project, with what was changed in the window and not saved. It is taken here, on the thread that owns
             // the tasks and right before the host is asked, so that it is the project the run uses: the result carries it. A client
-            // that asked for a revision never gets a run whose revision is not known or another.
+            // that asked for a revision never gets a run whose revision is not known or another. "Another" does not include the state
+            // a run of the bridge left behind: it changes the project it runs, and that is the same project (see RevisionLineage).
             record.ProjectRevision = (_host.Project as IProjectRevisionSource)?.GetProjectRevision();
 
-            if (plan.ExpectProjectRevision != null && !string.Equals(record.ProjectRevision, plan.ExpectProjectRevision, StringComparison.Ordinal))
+            if (plan.ExpectProjectRevision != null && (record.ProjectRevision == null || !_lineage.Matches(record.ProjectRevision, plan.ExpectProjectRevision)))
             {
                 return BridgeFault.ProjectMismatch("expectProjectRevision");
             }
@@ -654,6 +657,40 @@ namespace RFiDGear.Services.ExternalControl
                 (seq, sessionId, at) => new RunStartedEvent { Seq = seq, SessionId = sessionId, At = at, RequestId = requestId, RunId = runId, StartedAt = startedAt });
         }
 
+        // A run changes the project it runs (tasks write what they found into their own settings), and the project cannot be edited while
+        // it goes on, so the state after it is the one it started with, changed by the run alone. The revision is read on the thread of
+        // the window, with a time limit: a window that does not answer leaves the difference unrecognized, which refuses the next run
+        // that expects the old revision, the safe way to be wrong. This is not on the thread of the window itself (the run's task
+        // continues on the thread pool), so the wait does not hold it up.
+        private void AbsorbWhatTheRunDidToTheProject(RunRecord record)
+        {
+            if (record.ProjectRevision == null || _host.Project is not IProjectRevisionSource source)
+            {
+                return;
+            }
+
+            string? after = null;
+
+            try
+            {
+                if (!_dispatchToUi(() => after = source.GetProjectRevision()).Wait(RevisionReadTimeout))
+                {
+                    return;
+                }
+            }
+            catch (Exception e) when (e is AggregateException || e is InvalidOperationException || e is OperationCanceledException)
+            {
+                Logger.Warning("External control: the revision after run {RunId} could not be read ({ExceptionType})", record.RunId, e.GetType().FullName);
+
+                return;
+            }
+
+            if (after != null && !string.Equals(after, record.ProjectRevision, StringComparison.Ordinal))
+            {
+                _lineage.Absorb(record.ProjectRevision, after);
+            }
+        }
+
         // The one place a run of the bridge ends. It is reached from the task of the run only.
         private void Finish(RunRecord record, Task<ExecResult> task)
         {
@@ -672,6 +709,10 @@ namespace RFiDGear.Services.ExternalControl
             // contradicted by a restart that finds the run unfinished. If this cannot be written the run stays "interrupted" for a
             // later RFiDGear, which is the safe way to be wrong.
             _journal?.RecordEnded(record.RequestId, record.RunId);
+
+            // Before the result is final, so that the client that reads it and sends the next run finds the state this run left behind
+            // recognized as the same project.
+            AbsorbWhatTheRunDidToTheProject(record);
 
             var startedAt = record.StartedAt ?? DateTimeOffset.UtcNow;
             var result = _registry.Complete(

@@ -98,7 +98,8 @@ save would write, so a change that was made in the window and not saved is
 part of it, and it does not change when a run only leaves its results on the
 tasks: the data that a task read from a card is no part of it, nor is what a
 task that reads holds in its data buffer, nor which task has the focus. The
-data that a write task is going to write is part of it. (A write task that is
+data that a write task is going to write is part of it, the bytes that would go
+to the card, a selected part of its buffer included. (A write task that is
 set to take its data from a file just before it writes does not: the revision
 says what is in the project, not what is in a file on the disk.) A load gives
 the revision of the project as it was put in place, so an edit that follows is
@@ -118,6 +119,17 @@ down as what was run.
   project has another revision, and the `instanceId` tells the processes apart.
   Read the revision again after you loaded the project; do not store one for
   later.
+- A run changes the project it runs: tasks write what they found into their
+  own settings (the application a task created, the key version it read, the
+  size of a file). That is no edit. The state a run that was started with
+  `startRun` leaves behind is recognized as the project it started with, so the
+  revision you approved is still the project for the next card, and `getStatus`
+  after the run may show another value. What is not recognized: a change made
+  in the window after the run, what a run left that was started in the window,
+  by automatic mode or by an extension (the bridge did not see where it
+  started), and any run when the window did not answer right after it. Such a
+  state is refused, which is the safe way to be wrong: read the revision again
+  and approve it.
 - A RFiDGear that cannot tell a revision refuses a run that expects one, and
   does not offer the capability. A run never starts on a revision it cannot
   check. If it offers the capability and the answer to `loadProject` has no

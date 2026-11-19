@@ -419,9 +419,14 @@ passed with a real reader; until then a snapshot may be re-baselined.
   results are `[XmlIgnore]`, and `ProjectRevision` removes the elements that
   a read fills (`ChildNodeViewModelFromChip` always, `ChildNodeViewModelTemp`
   unless the task is `WriteData` that does not refresh from a file) and the
-  focus (`IsFocused`); tests run a DESFire read and write and a real loop to
-  prove it, so a serialized member that a task type starts to write needs
-  the same treatment. The project host gives it through the internal
+  focus (`IsFocused`); the bytes a DESFire write would send (a selection that
+  is not saved, `TryGetDesfireWritePayload`) are added. Some fields are both
+  input and result (DESFire writes `AppNumberCurrent`, `KeyVersionCurrent`
+  and `FileSizeCurrent` itself), so no list can sort them: `RevisionLineage`
+  (`RunSupervisor`) records that the state after a run of the bridge is the
+  project it started with, and `CheckProject` accepts either. Runs of the
+  window, of automatic mode and of extensions are not followed. The project
+  host gives it through the internal
   `IProjectRevisionSource` (a host without it does not offer the capability
   and refuses a run that expects a revision); `LoadWithRevisionAsync` takes it
   inside the commit of a load. It is read on the main window's thread.

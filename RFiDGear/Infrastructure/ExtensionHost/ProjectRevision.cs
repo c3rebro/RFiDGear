@@ -1,12 +1,14 @@
 #nullable enable
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
 using RFiDGear.Models;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 namespace RFiDGear.Infrastructure.ExtensionHost
 {
@@ -71,8 +73,31 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             stream.Position = 0;
             var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
             LeaveOutWhatARunWrites(document);
+            AddWhatAWriteWillWrite(document, model);
 
             return document.ToString(SaveOptions.DisableFormatting);
+        }
+
+        // A DESFire write sends a slice of the buffer of its task: from a start and for a length that the data explorer selects, and the
+        // selection is a state of the window that the project does not save. The bytes that would go to the card are what counts, so
+        // they are part of the text: another slice of the same buffer is another project.
+        private static void AddWhatAWriteWillWrite(XDocument document, ChipTaskHandlerModel model)
+        {
+            var elements = document.Descendants("TaskCollection").Elements().ToList();
+            var tasks = model.TaskCollection?.ToList();
+
+            if (tasks == null || tasks.Count != elements.Count)
+            {
+                return;
+            }
+
+            for (var i = 0; i < tasks.Count; i++)
+            {
+                if (tasks[i] is MifareDesfireSetupViewModel desfire && HoldsThePayloadToWrite(elements[i]))
+                {
+                    elements[i].Add(new XElement("EffectiveWritePayload", desfire.TryGetDesfireWritePayload(out var payload, out _) ? Convert.ToHexString(payload) : string.Empty));
+                }
+            }
         }
 
         // The tasks are the elements below TaskCollection. A name that no task has is simply not found.

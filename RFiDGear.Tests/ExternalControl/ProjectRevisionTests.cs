@@ -143,6 +143,31 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task ThePartOfTheBufferThatADesfireWriteSends_IsPartOfTheRevision_AnOffsetOrALengthAloneChangesIt()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var model = new ChipTaskHandlerModel();
+                var write = new MifareDesfireSetupViewModel { CurrentTaskIndex = "0", SelectedTaskType = TaskType_MifareDesfireTask.WriteData };
+                write.ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[] { 1, 2, 3, 4, 5 }, 0), write.ChildNodeViewModelTemp));
+                model.TaskCollection.Add(write);
+                var node = write.ChildNodeViewModelTemp.Children[0];
+
+                // The slice is chosen in the data explorer and is not saved with the project, but it is what goes to the card.
+                node.SelectedDataIndexStartInBytes = 0;
+                node.SelectedDataLengthInBytes = 3;
+                var firstThree = ProjectRevision.Compute(model);
+                node.SelectedDataIndexStartInBytes = 1;
+                var fromTheSecond = ProjectRevision.Compute(model);
+                node.SelectedDataLengthInBytes = 2;
+                var shorter = ProjectRevision.Compute(model);
+
+                Assert.NotEqual(firstThree, fromTheSecond);
+                Assert.NotEqual(fromTheSecond, shorter);
+            });
+        }
+
+        [Fact]
         public async Task TheDataOfAClassicTask_IsPartOfTheRevisionForAWriteTask_AndNotForOneThatReads()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
