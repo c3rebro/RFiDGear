@@ -416,11 +416,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         }
 
         // A group that is not in the list any more (a month long ago, a customer who has no order) is forgotten, so the
-        // closed groups of the grouping in use do not pile up. Nothing is forgotten while the list is empty: that may be
-        // a read that failed, and the groups come back with the next one.
+        // closed groups of the grouping in use do not pile up. Nothing is forgotten while the list is empty (that may be
+        // a read that failed, and the groups come back with the next one) or while it shows made-up orders (the test mode:
+        // the customers of the real list are not in it, and are back when the test mode is switched off).
         private void PruneCollapsedGroups()
         {
-            if (_orders.Count == 0)
+            if (_orders.Count == 0 || IsTestMode)
             {
                 return;
             }

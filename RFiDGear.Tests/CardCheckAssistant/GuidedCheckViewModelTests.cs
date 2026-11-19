@@ -430,6 +430,30 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
+        public Task TheClosedGroupsOfTheRealOrders_AreNotForgotten_WhileTheListShowsMadeUpOnes()
+        {
+            var memory = new MemoryViewState();
+
+            return Run(
+                async page =>
+                {
+                    var vm = page.Vm;
+                    await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00")));
+                    vm.SetGroupExpanded("Created", false);
+
+                    // The test mode shows orders that are made up: none of them is in the group that was closed.
+                    await page.PushAsync(WorkflowState.Idle, s => s with { IsTestMode = true, Orders = new[] { Dated("T1", "Test GmbH", "InProgress", "2026-11-03 10:00:00") } });
+                    Assert.Equal(new[] { "Status:Created" }, memory.Current.CollapsedGroups);
+
+                    // And when it is switched off the group is closed as it was.
+                    await page.PushAsync(WorkflowState.Idle, s => s with { IsTestMode = false, Orders = new[] { Dated("B", "Beta", "Created", "2026-10-20 09:30:00") } });
+                    Assert.False(vm.IsGroupExpanded("Created"));
+                    Assert.Equal(new[] { "Status:Created" }, memory.Current.CollapsedGroups);
+                },
+                viewState: memory);
+        }
+
+        [Fact]
         public Task TwoWindows_EachSayOnlyWhatTheyChanged_SoOneDoesNotUndoTheOther() => StaTestRunner.RunOnStaThreadAsync(async () =>
         {
             var memory = new MemoryViewState();
