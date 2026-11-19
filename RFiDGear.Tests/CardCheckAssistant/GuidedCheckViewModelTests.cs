@@ -380,6 +380,50 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
+        public async Task AGroupWithAVeryLongName_IsRememberedClosed_AndIsNotTakenForAnother()
+        {
+            // The order system does not limit the name of a customer; the store keeps a key up to a length. Two names that begin the
+            // same for longer than that are two groups, and each keeps its own state.
+            var memory = new MemoryViewState();
+            var longName = string.Join(" ", Enumerable.Repeat("Mueller Metallbau GmbH", 12));
+            var otherName = longName + " II";
+            Assert.True(longName.Length > FileGuidedViewState.MaxGroupKeyLength);
+            var orders = WithOrders(Dated("A", longName, "InProgress", "2026-11-03 10:00:00"), Dated("B", otherName, "InProgress", "2026-11-04 10:00:00"));
+
+            await Run(
+                async page =>
+                {
+                    var vm = page.Vm;
+                    await page.PushAsync(WorkflowState.Idle, orders);
+                    vm.SelectedGrouping = vm.Groupings.Single(option => option.Grouping == OrderGrouping.Customer);
+
+                    vm.SetGroupExpanded(longName, false);
+
+                    var kept = Assert.Single(memory.Saved[^1].CollapsedGroups);
+                    Assert.True(kept.Length <= FileGuidedViewState.MaxGroupKeyLength, "the key fits the store");
+                    Assert.False(vm.IsGroupExpanded(longName));
+                    Assert.True(vm.IsGroupExpanded(otherName));
+                },
+                viewState: memory);
+
+            await Run(
+                async page =>
+                {
+                    var vm = page.Vm;
+                    await page.PushAsync(WorkflowState.Idle, orders);
+
+                    Assert.False(vm.IsGroupExpanded(longName));
+                    Assert.True(vm.IsGroupExpanded(otherName));
+
+                    // The list is read again with the same groups: the closed one is still there, so it is not forgotten.
+                    await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", longName, "InProgress", "2026-11-05 10:00:00"), Dated("B", otherName, "InProgress", "2026-11-04 10:00:00")));
+                    Assert.False(vm.IsGroupExpanded(longName));
+                    Assert.Single(memory.Current.CollapsedGroups);
+                },
+                viewState: memory);
+        }
+
+        [Fact]
         public Task WhatIsRemembered_IsOnlyUsedWhenItIsKnown_AndAStoreThatFails_DoesNotStopThePage()
         {
             var memory = new MemoryViewState(new GuidedViewStateData { Grouping = "FromAnotherVersion", Sort = "AlsoUnknown" });

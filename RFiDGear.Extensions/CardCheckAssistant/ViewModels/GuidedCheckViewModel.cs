@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -379,7 +381,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         private string GroupKey(string? name) => GroupKey(_selectedGrouping.Grouping, name);
 
-        private static string GroupKey(OrderGrouping grouping, string? name) => grouping + ":" + name;
+        // The key of a closed group: the grouping and the name. The store keeps keys up to a length, and a customer's name can be
+        // longer than that (the order system does not limit it), so a key that would be too long is made from a hash of the name:
+        // the same name always has the same key and two names have not, and nothing else needs to know the difference.
+        private static string GroupKey(OrderGrouping grouping, string? name)
+        {
+            var key = grouping + ":" + name;
+            if (key.Length <= FileGuidedViewState.MaxGroupKeyLength)
+            {
+                return key;
+            }
+
+            return grouping + ":#" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name ?? string.Empty)));
+        }
 
         // The names of the groups the orders are in now, for the grouping in use.
         private HashSet<string> CurrentGroupNames()
@@ -405,9 +419,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 return;
             }
 
-            var current = CurrentGroupNames();
+            var current = CurrentGroupNames().Select(name => GroupKey(_selectedGrouping.Grouping, name)).ToHashSet(StringComparer.Ordinal);
             var prefix = GroupKey(_selectedGrouping.Grouping, null);
-            var gone = _collapsedGroups.Where(key => key.StartsWith(prefix, StringComparison.Ordinal) && !current.Contains(key.Substring(prefix.Length))).ToList();
+            var gone = _collapsedGroups.Where(key => key.StartsWith(prefix, StringComparison.Ordinal) && !current.Contains(key)).ToList();
             if (gone.Count == 0)
             {
                 return;
