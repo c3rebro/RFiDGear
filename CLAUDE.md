@@ -82,8 +82,9 @@ A release (the four MSIs, the bundle, `update.zip` and `update.xml`) is made wit
 `RFiDGearBundleSetup/Build-Release.ps1`, `Sign-Release.ps1` and `Pack-Release.ps1`
 in that order, from a clean checkout of the merged commit; the version is
 written by hand in `RFiDGear.csproj`, `Bundle.wxs` and `update.xml`, and
-`ReleaseManifestTests` stops a release in which they differ. See
-`DEVELOPER_NOTES.md` (Making a release).
+`ReleaseManifestTests` stops a release in which they differ.
+`RFiDGearBundleSetup/Make-Release.bat` runs the three and asks for the
+certificate and its password. See `DEVELOPER_NOTES.md` (Making a release).
 
 ## Architecture
 
