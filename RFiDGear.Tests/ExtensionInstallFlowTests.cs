@@ -85,15 +85,23 @@ namespace RFiDGear.Tests
 
             public void Inform(string text, bool isError) => Told.Add((text, isError));
 
-            public IDisposable Working() => new Nothing();
+            // How many times the application was shown as busy, and finished being so.
+            public int Worked { get; private set; }
 
-            private sealed class Nothing : IDisposable
+            public IDisposable Working() => new Busy(this);
+
+            private sealed class Busy : IDisposable
             {
-                public void Dispose()
-                {
-                }
+                private readonly Dialogs _owner;
+
+                public Busy(Dialogs owner) => _owner = owner;
+
+                public void Dispose() => _owner.Worked++;
             }
         }
+
+        // The name of a version folder, such as 1.1.0.0, written as what it is: a version with four parts.
+        private static string Ver(int major, int minor) => new Version(major, minor, 0, 0).ToString();
 
         private string WritePackage(string version = "1.1.0", string? notes = null, string? minHost = null)
         {
@@ -157,7 +165,8 @@ namespace RFiDGear.Tests
             var told = Assert.Single(dialogs.Told);
             Assert.False(told.IsError);
             Assert.StartsWith("messageExtensionInstalled", told.Text, StringComparison.Ordinal);
-            Assert.True(File.Exists(Path.Combine(UserRoot, Id, "1.1.0.0", Id + ".dll")));
+            Assert.True(File.Exists(Path.Combine(UserRoot, Id, Ver(1, 1), Id + ".dll")));
+            Assert.Equal(2, dialogs.Worked);   // busy while the package was prepared, and again while it was put in place
             Assert.Empty(Directory.EnumerateDirectories(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName)));
         }
 

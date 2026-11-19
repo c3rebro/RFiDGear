@@ -40,6 +40,9 @@ namespace RFiDGear.Tests
 
         private static byte[] Bytes(string text) => Encoding.UTF8.GetBytes(text);
 
+        // The name of a version folder, such as 1.1.0.0, written as what it is: a version with four parts.
+        private static string Ver(int major, int minor) => new Version(major, minor, 0, 0).ToString();
+
         private static string ManifestJson(IEnumerable<KeyValuePair<string, byte[]>> files, string id = Id, string version = "1.1.0", string? minHost = null, int schema = 1)
         {
             var list = string.Join(",", files.Select(file => $"{{\"name\":\"{file.Key}\",\"sha256\":\"{Hash(file.Value)}\"}}"));
@@ -310,7 +313,7 @@ namespace RFiDGear.Tests
 
             Assert.Null(installer.Commit(prepared.Staged));
 
-            var target = Path.Combine(UserRoot, Id, "1.1.0.0");
+            var target = Path.Combine(UserRoot, Id, Ver(1, 1));
             Assert.Equal(files[Main], File.ReadAllBytes(Path.Combine(target, Main)));
             Assert.Equal(files["sni.dll"], File.ReadAllBytes(Path.Combine(target, "sni.dll")));
             Assert.False(Directory.Exists(prepared.Staged.StagingFolder));
@@ -374,7 +377,7 @@ namespace RFiDGear.Tests
             Assert.Null(second.Problem);
 
             Assert.Null(installer.Commit(first.Staged!));
-            var marker = Path.Combine(UserRoot, Id, "1.1.0.0", "marker.txt");
+            var marker = Path.Combine(UserRoot, Id, Ver(1, 1), "marker.txt");
             File.WriteAllText(marker, "first");
 
             Assert.Equal(ExtensionPackageProblem.AlreadyInstalled, installer.Commit(second.Staged!));
@@ -407,18 +410,18 @@ namespace RFiDGear.Tests
         public void BeforeTheStart_WhatAnInstallLeftHalfDone_AndTheOldVersions_AreRemoved()
         {
             Directory.CreateDirectory(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName, "half-done"));
-            foreach (var version in new[] { "1.0.0.0", "1.1.0.0", "1.2.0.0", "1.3.0.0" })
+            foreach (var version in new[] { Ver(1, 0), Ver(1, 1), Ver(1, 2), Ver(1, 3) })
             {
                 Directory.CreateDirectory(Path.Combine(UserRoot, Id, version));
             }
 
-            Directory.CreateDirectory(Path.Combine(UserRoot, "CardCheckAssistant", "1.0.0.0"));   // not an extension: left alone
+            Directory.CreateDirectory(Path.Combine(UserRoot, "CardCheckAssistant", Ver(1, 0)));   // not an extension: left alone
 
             ExtensionPackageInstaller.Tidy(UserRoot);
 
             Assert.Empty(Directory.EnumerateDirectories(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName)));
-            Assert.Equal(new[] { "1.2.0.0", "1.3.0.0" }, Directory.EnumerateDirectories(Path.Combine(UserRoot, Id)).Select(Path.GetFileName).OrderBy(name => name).ToArray());
-            Assert.True(Directory.Exists(Path.Combine(UserRoot, "CardCheckAssistant", "1.0.0.0")));
+            Assert.Equal(new[] { Ver(1, 2), Ver(1, 3) }, Directory.EnumerateDirectories(Path.Combine(UserRoot, Id)).Select(Path.GetFileName).OrderBy(name => name).ToArray());
+            Assert.True(Directory.Exists(Path.Combine(UserRoot, "CardCheckAssistant", Ver(1, 0))));
         }
 
         // ── which copy is loaded ──
@@ -447,9 +450,9 @@ namespace RFiDGear.Tests
         public void TheHigherVersionIsTheOneThatIsUsed_AndTheOtherIsOnlyAFallback()
         {
             var machine = MakeMachine();
-            var user = MakeInstalled("1.2.0.0");
+            var user = MakeInstalled(Ver(1, 2));
 
-            var selected = Assert.Single(ExtensionSelector.Select(new[] { machine }, UserRoot, Versions((machine, "1.1.0.0"), (user, "1.2.0.0"))));
+            var selected = Assert.Single(ExtensionSelector.Select(new[] { machine }, UserRoot, Versions((machine, Ver(1, 1)), (user, Ver(1, 2)))));
 
             Assert.Equal(new[] { user, machine }, selected.Candidates.Select(candidate => candidate.AssemblyPath));
             Assert.True(selected.Candidates[0].IsUserInstalled);
@@ -459,20 +462,20 @@ namespace RFiDGear.Tests
         public void TheMachineWideCopyIsUsed_WhenItIsTheSameVersionOrNewer()
         {
             var machine = MakeMachine();
-            var user = MakeInstalled("1.1.0.0");
+            var user = MakeInstalled(Ver(1, 1));
 
-            Assert.Equal(machine, Assert.Single(ExtensionSelector.Select(new[] { machine }, UserRoot, Versions((machine, "1.1.0.0"), (user, "1.1.0.0")))).Candidates[0].AssemblyPath);
-            Assert.Equal(machine, Assert.Single(ExtensionSelector.Select(new[] { machine }, UserRoot, Versions((machine, "1.3.0.0"), (user, "1.1.0.0")))).Candidates[0].AssemblyPath);
+            Assert.Equal(machine, Assert.Single(ExtensionSelector.Select(new[] { machine }, UserRoot, Versions((machine, Ver(1, 1)), (user, Ver(1, 1))))).Candidates[0].AssemblyPath);
+            Assert.Equal(machine, Assert.Single(ExtensionSelector.Select(new[] { machine }, UserRoot, Versions((machine, Ver(1, 3)), (user, Ver(1, 1))))).Candidates[0].AssemblyPath);
         }
 
         [Fact]
         public void AnExtensionThatIsOnlyInstalledForTheUser_IsUsed_AndItsNewestVersionFolderWins()
         {
-            MakeInstalled("1.0.0.0");
-            var newest = MakeInstalled("1.10.0.0");
-            MakeInstalled("1.9.0.0");
+            MakeInstalled(Ver(1, 0));
+            var newest = MakeInstalled(Ver(1, 10));
+            MakeInstalled(Ver(1, 9));
 
-            var selected = Assert.Single(ExtensionSelector.Select(Array.Empty<string>(), UserRoot, Versions((newest, "1.10.0.0"))));
+            var selected = Assert.Single(ExtensionSelector.Select(Array.Empty<string>(), UserRoot, Versions((newest, Ver(1, 10)))));
 
             Assert.Equal(newest, Assert.Single(selected.Candidates).AssemblyPath);   // 1.10 is newer than 1.9
         }
@@ -482,10 +485,10 @@ namespace RFiDGear.Tests
         {
             Directory.CreateDirectory(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName, "abc"));
             File.WriteAllText(Path.Combine(UserRoot, ExtensionPackageLayout.StagingFolderName, "abc", Main), "x");
-            Directory.CreateDirectory(Path.Combine(UserRoot, "CardCheckAssistant", "1.0.0.0"));
+            Directory.CreateDirectory(Path.Combine(UserRoot, "CardCheckAssistant", Ver(1, 0)));
             Directory.CreateDirectory(Path.Combine(UserRoot, Id, "not-a-version"));
             File.WriteAllText(Path.Combine(UserRoot, Id, "not-a-version", Main), "x");
-            Directory.CreateDirectory(Path.Combine(UserRoot, Id, "1.0.0.0"));   // a folder without the extension in it
+            Directory.CreateDirectory(Path.Combine(UserRoot, Id, Ver(1, 0)));   // a folder without the extension in it
 
             Assert.Empty(ExtensionSelector.Select(Array.Empty<string>(), UserRoot, _ => null));
             Assert.Empty(ExtensionSelector.Select(Array.Empty<string>(), Path.Combine(_root, "no-such-folder"), _ => null));
@@ -514,7 +517,7 @@ namespace RFiDGear.Tests
         public void RFiDGearLoadsTheExtensionOnce_FromTheFolderThatWins()
         {
             var machine = MakeMachine();
-            var user = MakeInstalled("9.0.0.0");   // no real file version: the folder name is the version
+            var user = MakeInstalled(Ver(9, 0));   // no real file version: the folder name is the version
             var log = new CatalogLog();
             using var cleanup = new Disposer(Helper(log, _ => false));
             var helper = cleanup.Helper;
@@ -534,7 +537,7 @@ namespace RFiDGear.Tests
         public void WhenTheInstalledCopyCannotBeLoaded_TheMachineWideOneIsUsed_AndItIsSaid()
         {
             var machine = MakeMachine();
-            var user = MakeInstalled("9.0.0.0");
+            var user = MakeInstalled(Ver(9, 0));
             var log = new CatalogLog();
             using var cleanup = new Disposer(Helper(log, path => path == user));
             var helper = cleanup.Helper;

@@ -28,6 +28,9 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <summary>The package format this version of RFiDGear reads.</summary>
         internal const int SupportedSchema = 1;
 
+        private const int MaxDisplayNameLength = 100;
+        private const int MaxNotesLength = 1000;
+
         private static readonly Regex IdPattern = new Regex(@"^RFiDGear\.Extensions\.[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex FileNamePattern = new Regex(@"^[A-Za-z0-9][A-Za-z0-9_.\-]{0,127}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex HashPattern = new Regex("^[0-9a-fA-F]{64}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -66,6 +69,25 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <summary>Gets the name of the assembly of the extension itself: the one file that carries its id.</summary>
         public string MainAssemblyName => Id + ".dll";
 
+        /// <summary>
+        /// The assemblies that the host owns and that every extension uses from it. They are the same ones that the build of an
+        /// extension refuses to copy next to it (<c>RejectPrivateCopiesOfHostAssemblies</c>): two copies of the contract types
+        /// are two different sets of types.
+        /// </summary>
+        internal static readonly ISet<string> HostOwnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "RFiDGear",
+            "RFiDGear.Contracts",
+            "RFiDGear.ExtensionSdk",
+            "RFiDGear.Bridge.Contracts",
+            "System.ComponentModel.Composition",
+            "GemBox.Pdf",
+            "Serilog",
+            "SkiaSharp",
+            "HarfBuzzSharp",
+            "Newtonsoft.Json",
+        };
+
         /// <summary>Reads and checks a manifest. Nothing in it is trusted: every name is looked at before it is used for anything.</summary>
         /// <param name="json">The content of <c>extension.json</c>.</param>
         /// <returns>The manifest, or the problem.</returns>
@@ -81,58 +103,19 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 return (null, ExtensionPackageProblem.BadManifest);
             }
 
-            if (document == null)
+            var problem = CheckHeader(document, out var version, out var minHost);
+            if (problem != null)
             {
-                return (null, ExtensionPackageProblem.BadManifest);
+                return (null, problem);
             }
 
-            if (document.Schema != SupportedSchema)
+            var (files, fileProblem) = ReadFiles(document!.Files!, document.Id!);
+            if (files == null)
             {
-                return (null, document.Schema > SupportedSchema ? ExtensionPackageProblem.UnsupportedSchema : ExtensionPackageProblem.BadManifest);
+                return (null, fileProblem);
             }
 
-            if (document.Id == null || !IdPattern.IsMatch(document.Id) || !TryVersion(document.Version, out var version) ||
-                string.IsNullOrWhiteSpace(document.DisplayName) || document.DisplayName.Length > 100 ||
-                document.Files == null || document.Files.Count == 0 || document.Files.Count > ExtensionPackageReader.MaxFiles ||
-                (document.Notes?.Length ?? 0) > 1000)
-            {
-                return (null, ExtensionPackageProblem.BadManifest);
-            }
-
-            Version? minHost = null;
-            if (!string.IsNullOrWhiteSpace(document.MinHostVersion) && !TryVersion(document.MinHostVersion, out minHost))
-            {
-                return (null, ExtensionPackageProblem.BadManifest);
-            }
-
-            var files = new List<ExtensionPackageManifestFile>();
-            foreach (var file in document.Files)
-            {
-                if (file?.Name == null || file.Sha256 == null || !HashPattern.IsMatch(file.Sha256))
-                {
-                    return (null, ExtensionPackageProblem.BadManifest);
-                }
-
-                var problem = CheckFileName(file.Name, document.Id);
-                if (problem != null)
-                {
-                    return (null, problem);
-                }
-
-                files.Add(new ExtensionPackageManifestFile(file.Name, file.Sha256.ToLowerInvariant()));
-            }
-
-            if (files.Select(file => file.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != files.Count)
-            {
-                return (null, ExtensionPackageProblem.BadFileName);
-            }
-
-            if (!files.Any(file => string.Equals(file.Name, document.Id + ".dll", StringComparison.OrdinalIgnoreCase)))
-            {
-                return (null, ExtensionPackageProblem.MainAssemblyMissing);
-            }
-
-            return (new ExtensionPackageManifest(document.Id, document.DisplayName.Trim(), version!, minHost, document.Notes?.Trim() ?? string.Empty, files), null);
+            return (new ExtensionPackageManifest(document.Id!, document.DisplayName!.Trim(), version!, minHost, document.Notes?.Trim() ?? string.Empty, files), null);
         }
 
         /// <summary>
@@ -163,24 +146,65 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
             return isOtherExtension ? ExtensionPackageProblem.HostOwnedFile : null;
         }
 
-        /// <summary>
-        /// The assemblies that the host owns and that every extension uses from it. They are the same ones that the build of an
-        /// extension refuses to copy next to it (<c>RejectPrivateCopiesOfHostAssemblies</c>): two copies of the contract types
-        /// are two different sets of types.
-        /// </summary>
-        internal static readonly ISet<string> HostOwnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        // The part of the manifest that is not about files: the format, the id, the name, the versions and the length of the texts.
+        private static ExtensionPackageProblem? CheckHeader(Document? document, out Version? version, out Version? minHost)
         {
-            "RFiDGear",
-            "RFiDGear.Contracts",
-            "RFiDGear.ExtensionSdk",
-            "RFiDGear.Bridge.Contracts",
-            "System.ComponentModel.Composition",
-            "GemBox.Pdf",
-            "Serilog",
-            "SkiaSharp",
-            "HarfBuzzSharp",
-            "Newtonsoft.Json",
-        };
+            version = null;
+            minHost = null;
+            if (document == null)
+            {
+                return ExtensionPackageProblem.BadManifest;
+            }
+
+            if (document.Schema != SupportedSchema)
+            {
+                return document.Schema > SupportedSchema ? ExtensionPackageProblem.UnsupportedSchema : ExtensionPackageProblem.BadManifest;
+            }
+
+            if (document.Id == null || !IdPattern.IsMatch(document.Id) || !TryVersion(document.Version, out version) ||
+                !IsShortText(document.DisplayName, MaxDisplayNameLength) || (document.Notes?.Length ?? 0) > MaxNotesLength ||
+                document.Files == null || document.Files.Count == 0 || document.Files.Count > ExtensionPackageReader.MaxFiles)
+            {
+                return ExtensionPackageProblem.BadManifest;
+            }
+
+            return string.IsNullOrWhiteSpace(document.MinHostVersion) || TryVersion(document.MinHostVersion, out minHost)
+                ? null
+                : ExtensionPackageProblem.BadManifest;
+        }
+
+        // The files: each a plain name with a hash, none twice (the names are not case sensitive), and the extension's own
+        // assembly among them.
+        private static (IReadOnlyList<ExtensionPackageManifestFile>? Files, ExtensionPackageProblem? Problem) ReadFiles(List<FileEntry?> entries, string id)
+        {
+            var files = new List<ExtensionPackageManifestFile>();
+            foreach (var entry in entries)
+            {
+                if (entry?.Name == null || entry.Sha256 == null || !HashPattern.IsMatch(entry.Sha256))
+                {
+                    return (null, ExtensionPackageProblem.BadManifest);
+                }
+
+                var problem = CheckFileName(entry.Name, id);
+                if (problem != null)
+                {
+                    return (null, problem);
+                }
+
+                files.Add(new ExtensionPackageManifestFile(entry.Name, entry.Sha256.ToLowerInvariant()));
+            }
+
+            if (files.Select(file => file.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != files.Count)
+            {
+                return (null, ExtensionPackageProblem.BadFileName);
+            }
+
+            return files.Any(file => string.Equals(file.Name, id + ".dll", StringComparison.OrdinalIgnoreCase))
+                ? (files, null)
+                : (null, ExtensionPackageProblem.MainAssemblyMissing);
+        }
+
+        private static bool IsShortText(string? text, int maxLength) => !string.IsNullOrWhiteSpace(text) && text.Length <= maxLength;
 
         private static bool TryVersion(string? text, out Version? version)
         {

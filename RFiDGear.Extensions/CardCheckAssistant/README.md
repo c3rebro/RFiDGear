@@ -16,8 +16,9 @@ system. It appears in the Extensions menu of the main window.
   and the extension is installed for the user, without administrator rights and
   without a visit to a folder (`%LocalAppData%\RFiDGear\InstalledExtensions`).
   The new version is used after RFiDGear has been restarted; the version that is
-  shown in the header of the page tells which one runs. A package is made with
-  `dotnet build RFiDGear.Extensions/CardCheckAssistant -c Release -p:Platform=x64 -p:PackExtension=true`
+  shown in the header of the page tells which one runs. A package is made, in
+  the folder of the extension project, with
+  `dotnet build -c Release -p:Platform=x64 -p:PackExtension=true`
   (the file is in `bin\package`, one for each platform, the file name says which
   and the version); see `PackExtension.targets` and `DEVELOPER_NOTES.md`
   ("Shipping an extension update as a package").

@@ -26,7 +26,7 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         /// <summary>The most files a package may list. The archive may hold one more, the manifest.</summary>
         internal const int MaxFiles = 64;
 
-        /// <summary>The most bytes a file of a package may have, as the same limit for a project's file (see <c>ProjectManager</c>).</summary>
+        /// <summary>The most bytes a file of a package may have, the same limit as for a file of a project (see <c>ProjectManager</c>).</summary>
         internal const long MaxFileBytes = 64L * 1024 * 1024;
 
         /// <summary>The most bytes the files of a package may have together.</summary>
@@ -71,25 +71,10 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
         private static ExtensionPackageReadResult Read(ZipArchive archive)
         {
             var entries = archive.Entries;
-            if (entries.Count > MaxFiles + 1)
+            var problem = CheckEntries(entries);
+            if (problem != null)
             {
-                return ExtensionPackageReadResult.Fail(ExtensionPackageProblem.TooLarge);
-            }
-
-            long total = 0;
-            foreach (var entry in entries)
-            {
-                // A package is flat, like the folder it is installed into: a name with a folder in it is never looked at further.
-                if (entry.FullName.Length == 0 || entry.FullName.IndexOfAny(new[] { '/', '\\' }) >= 0)
-                {
-                    return ExtensionPackageReadResult.Fail(ExtensionPackageProblem.BadFileName);
-                }
-
-                total += entry.Length;
-                if (entry.Length > MaxFileBytes || total > MaxTotalBytes)
-                {
-                    return ExtensionPackageReadResult.Fail(ExtensionPackageProblem.TooLarge);
-                }
+                return ExtensionPackageReadResult.Fail(problem.Value);
             }
 
             var manifestEntry = entries.FirstOrDefault(entry => string.Equals(entry.FullName, ExtensionPackageLayout.ManifestFileName, StringComparison.OrdinalIgnoreCase));
@@ -98,28 +83,70 @@ namespace RFiDGear.Infrastructure.ExtensionPackages
                 return ExtensionPackageReadResult.Fail(ExtensionPackageProblem.NoManifest);
             }
 
-            var manifestBytes = ReadBounded(manifestEntry, MaxManifestBytes);
-            if (manifestBytes == null)
-            {
-                return ExtensionPackageReadResult.Fail(ExtensionPackageProblem.BadManifest);
-            }
-
-            // A byte order mark in front of the JSON (some tools write one) is not part of the text.
-            var (manifest, problem) = ExtensionPackageManifest.Parse(new UTF8Encoding(false, false).GetString(manifestBytes).TrimStart('﻿'));
+            var (manifest, manifestProblem) = ReadManifest(manifestEntry);
             if (manifest == null)
             {
-                return ExtensionPackageReadResult.Fail(problem ?? ExtensionPackageProblem.BadManifest);
+                return ExtensionPackageReadResult.Fail(manifestProblem ?? ExtensionPackageProblem.BadManifest);
             }
 
             var files = entries.Where(entry => entry != manifestEntry).ToList();
-            var archiveNames = files.Select(entry => entry.FullName).ToList();
-            var listedNames = manifest.Files.Select(file => file.Name).ToList();
-            if (archiveNames.Count != archiveNames.Distinct(StringComparer.OrdinalIgnoreCase).Count() ||
-                !archiveNames.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(listedNames))
+            if (!ListsTheSameFiles(files, manifest))
             {
                 return ExtensionPackageReadResult.Fail(ExtensionPackageProblem.FileListMismatch);
             }
 
+            return ReadFiles(files, manifest);
+        }
+
+        // The limits of the archive, and the names of its entries: a package is flat, like the folder it is installed into, so a
+        // name with a folder in it is never looked at further.
+        private static ExtensionPackageProblem? CheckEntries(IReadOnlyCollection<ZipArchiveEntry> entries)
+        {
+            if (entries.Count > MaxFiles + 1)
+            {
+                return ExtensionPackageProblem.TooLarge;
+            }
+
+            long total = 0;
+            foreach (var entry in entries)
+            {
+                if (entry.FullName.Length == 0 || entry.FullName.IndexOfAny(new[] { '/', '\\' }) >= 0)
+                {
+                    return ExtensionPackageProblem.BadFileName;
+                }
+
+                total += entry.Length;
+                if (entry.Length > MaxFileBytes || total > MaxTotalBytes)
+                {
+                    return ExtensionPackageProblem.TooLarge;
+                }
+            }
+
+            return null;
+        }
+
+        private static (ExtensionPackageManifest? Manifest, ExtensionPackageProblem? Problem) ReadManifest(ZipArchiveEntry entry)
+        {
+            var bytes = ReadBounded(entry, MaxManifestBytes);
+            if (bytes == null)
+            {
+                return (null, ExtensionPackageProblem.BadManifest);
+            }
+
+            // A byte order mark in front of the JSON (some tools write one) is not part of the text.
+            return ExtensionPackageManifest.Parse(new UTF8Encoding(false, false).GetString(bytes).TrimStart('﻿'));
+        }
+
+        // The archive holds exactly the files the manifest lists, each once (the names of a package are not case sensitive).
+        private static bool ListsTheSameFiles(IReadOnlyCollection<ZipArchiveEntry> files, ExtensionPackageManifest manifest)
+        {
+            var archiveNames = files.Select(entry => entry.FullName).ToList();
+            return archiveNames.Count == archiveNames.Distinct(StringComparer.OrdinalIgnoreCase).Count()
+                && archiveNames.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(manifest.Files.Select(file => file.Name));
+        }
+
+        private static ExtensionPackageReadResult ReadFiles(IReadOnlyCollection<ZipArchiveEntry> files, ExtensionPackageManifest manifest)
+        {
             var read = new List<ExtensionPackageFile>();
             foreach (var listed in manifest.Files)
             {
