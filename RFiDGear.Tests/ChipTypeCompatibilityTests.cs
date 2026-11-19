@@ -151,6 +151,48 @@ namespace RFiDGear.Tests
             Assert.Equal(expected, GenericChipTaskViewModel.ChipTypeMatches(selected, found));
         }
 
+        // ── A SmartMX that presents itself as DESFire: the reader names it by its GetVersion answer, a check names the kind ──
+
+        [Theory]
+        // Every SmartMX DESFire chip, whatever its generation and size, is a "SmartMX DESFire" (the generic type is its own family).
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFire, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV0_256, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV0_4K, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV1_256, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV1_4K, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV1_8K, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV2_2K, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV2_32K, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV3_2K, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_DESFireEV3_32K, true)]
+        // Nothing else is one: not a DESFire chip itself, not a SmartMX that is a Classic chip, not another family.
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireEV0, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireEV0_4K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireEV1, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireEV1_2K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireEV1_8K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireEV2_32K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireEV3_32K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.DESFireLight, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_Mifare_1K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.SmartMX_Mifare_4K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.MifarePlus_SL3_4K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.Mifare4K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.NTAG_215, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFire, CARD_TYPE.NOTAG, false)]
+        // The other checks are what they were: a family is the family, and any other type is that exact type.
+        [InlineData(CARD_TYPE.DESFireEV1, CARD_TYPE.SmartMX_DESFireEV1_4K, true)]
+        [InlineData(CARD_TYPE.DESFireEV1, CARD_TYPE.DESFireEV1_2K, true)]
+        [InlineData(CARD_TYPE.DESFireEV0, CARD_TYPE.SmartMX_DESFireEV1_4K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFireEV1_4K, CARD_TYPE.SmartMX_DESFireEV1_4K, true)]
+        [InlineData(CARD_TYPE.SmartMX_DESFireEV1_4K, CARD_TYPE.SmartMX_DESFireEV1_8K, false)]
+        [InlineData(CARD_TYPE.SmartMX_DESFireEV1_4K, CARD_TYPE.SmartMX_DESFire, false)]
+        [InlineData(CARD_TYPE.DESFireEV1_4K, CARD_TYPE.SmartMX_DESFireEV1_4K, false)]
+        public void AChipTypeCheckForASmartMxDesfire_PassesForEverySmartMxThatPresentsItselfAsDesfire(CARD_TYPE selected, CARD_TYPE found, bool expected)
+        {
+            Assert.Equal(expected, GenericChipTaskViewModel.ChipTypeMatches(selected, found));
+        }
+
         [Theory]
         [InlineData(CARD_TYPE.NTAG_215, ERROR.NoError)]
         [InlineData(CARD_TYPE.MifareUltralight_EV1_MF0UL21, ERROR.NoError)]
