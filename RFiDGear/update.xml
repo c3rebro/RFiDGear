@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Manifest version="2.1.0.0">
+<Manifest version="2.1.1.0">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
@@ -45,6 +45,33 @@ Available internal Variables
   + %EXIT will immediatly exit rfidgear application
 
 ################# END OF GENERAL INFORMATION ####################
+
+Version 2.1.1.0
+-----------------------------------------------------------------
+New:
+- Extension updates: File > Install extension update... installs an extension package
+  (.rfext) for the current Windows user. It needs no administrator rights and no copying
+  into the folder of the program. The window shows the name, the new and the installed
+  version and the signer of the package; the new version is used after RFiDGear was
+  restarted. An extension that is installed for all users and for the current user is
+  loaded once, the copy with the higher file version. A version that could not be loaded
+  is not tried again; the one before it is used instead. A package that is too large, or
+  that lists more files than a package may hold, is refused before it is read.
+- Card Check Assistant 1.1.0 (its version is shown in the header of its window): one
+  header on every step, the order list remembers its grouping, the closed groups and a
+  new "Sort by" choice, and a check that answered "No" is shown as "No" instead of
+  "Failed". The setup carries this version (Custom or Complete, as before).
+
+Fixed:
+- A run in which a task was skipped because the task it depends on had been skipped
+  itself was reported as failed (an invalid skip), and the Card Check Assistant did not
+  offer the programming step. Such a chain of conditions is accepted now.
+- The chip type SmartMX (DESFire) of the generic chip task matches every SmartMX that
+  presents itself as DESFire. It could not match a real card before.
+
+Please note:
+- The signature of an extension package is shown, not enforced: a package is accepted
+  when the SHA-256 of each file is the one it lists.
 
 Version 2.1.0.0
 -----------------------------------------------------------------
