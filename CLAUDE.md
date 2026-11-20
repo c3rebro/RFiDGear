@@ -471,11 +471,12 @@ passed with a real reader; until then a snapshot may be re-baselined.
   client (`RunApprovedCardAsync`, command `approved-run`) are the reference.
   `ApprovedRunOutcome.IsConfirmed` says when a result may be recorded as
   written: the run completed and the card it read is the approved one. The
-  revision is not compared: RFiDGear refuses a run in a state that is neither the
-  approved one nor one that a run of this client left behind (RevisionLineage)
-  before it starts, so a started run is in an acceptable state, and in a series
-  of cards the result of every card after the first starts with the state the
-  card before it left. The revision of the result is for the record of the job.
+  revision is not compared: RFiDGear refuses a run in a state that is neither
+  the approved one nor one that a run of this client left behind
+  (RevisionLineage) before it starts, so a started run is in an acceptable
+  state, and in a series of cards the result of every card after the first
+  starts with the state the card before it left. The revision of the result is
+  for the record of the job.
 - **The bridge never retries a card operation, and never repeats a request.**
   `startRun` is idempotent by the client's request id (`RunRegistry`,
   `RunSupervisor`: admission by compare-and-swap, the window's callback must win
