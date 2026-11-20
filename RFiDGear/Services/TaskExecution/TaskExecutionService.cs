@@ -21,6 +21,7 @@ using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using Serilog;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Services.SecureKeys;
+using VerificationDetails = RFiDGear.Contracts.VerificationDetails;
 
 namespace RFiDGear.Services.TaskExecution
 {
@@ -759,7 +760,7 @@ namespace RFiDGear.Services.TaskExecution
                         {
                             var timedDescriptor = descriptors[position];
                             var timedModel = timedDescriptor.Task ?? request.TaskHandler?.TaskCollection?[position] as IGenericTask;
-                            ReviseObservation(observations, request, CreateTaskObservation(position, timedDescriptor, timedModel, "Executed", false));
+                            ReviseObservation(observations, request, CreateTaskObservation(position, timedDescriptor, timedModel, "Executed", false, includeDetails: false));
                             abandonedAt = position;
                         }
 
@@ -883,7 +884,7 @@ namespace RFiDGear.Services.TaskExecution
                         {
                             // A task the watchdog gave up on failed, whatever it reports when it finally returns.
                             var success = abandoned ? false : GetTaskSuccess(taskModel);
-                            RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", success));
+                            RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", success, includeDetails: !abandoned));
 
                             LogTaskOutcome(
                                 runId,
@@ -1037,7 +1038,8 @@ namespace RFiDGear.Services.TaskExecution
             IGenericTask taskModel,
             string decision,
             bool? wasSuccessful,
-            string skipReason = null)
+            string skipReason = null,
+            bool includeDetails = true)
         {
             return new TaskExecutionObservation(
                 taskPosition,
@@ -1046,7 +1048,29 @@ namespace RFiDGear.Services.TaskExecution
                 decision,
                 wasSuccessful,
                 taskModel?.CurrentTaskErrorLevel ?? ERROR.Empty,
-                skipReason);
+                skipReason,
+                includeDetails && string.Equals(decision, TaskLoopTerminalEvaluator.ExecutedDecision, StringComparison.Ordinal)
+                    ? ReadVerificationDetails(taskModel)
+                    : null);
+        }
+
+        // What a task that compares values says it compared. Read when the task has just ended, so the next attempt (which forgets
+        // it) cannot take it away; whatever goes wrong here never touches the run.
+        private static VerificationDetails ReadVerificationDetails(IGenericTask taskModel)
+        {
+            if (taskModel is not ITaskVerificationSource source)
+            {
+                return null;
+            }
+
+            try
+            {
+                return source.GetVerificationDetails();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private void LogTaskOutcome(

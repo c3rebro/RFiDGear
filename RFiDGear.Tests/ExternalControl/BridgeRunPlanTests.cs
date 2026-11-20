@@ -289,7 +289,7 @@ namespace RFiDGear.Tests.ExternalControl
                 new[] { "CardUid", "CompletedAt", "FailedTasks", "FailureReason", "Outcome", "RunId", "StartedAt", "TaskOutcomes", "TotalTasks" },
                 typeof(ExecResult).GetProperties().Where(p => p.Name != "EqualityContract").Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal));
             Assert.Equal(
-                new[] { "IsSuccess", "NormalizedErrorCode", "Position", "ProjectTaskIndex", "SkipReason", "TaskTypeName" },
+                new[] { "IsSuccess", "NormalizedErrorCode", "Position", "ProjectTaskIndex", "SkipReason", "TaskTypeName", "VerificationDetails" },
                 typeof(TaskOutcome).GetProperties().Where(p => p.Name != "EqualityContract").Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal));
             Assert.Equal(new[] { "Cancelled", "Faulted", "None", "TimedOut" }, Enum.GetNames<ExecutionFailureReason>().OrderBy(n => n, StringComparer.Ordinal));
             Assert.Equal(new[] { "CompletedWithIntentionalFailures", "Failure", "Success" }, Enum.GetNames<ExecutionOutcome>().OrderBy(n => n, StringComparer.Ordinal));

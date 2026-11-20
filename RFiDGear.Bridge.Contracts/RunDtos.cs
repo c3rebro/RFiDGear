@@ -134,6 +134,14 @@ namespace RFiDGear.Bridge
         /// <summary>Gets why the task did not run, when it did not.</summary>
         [JsonPropertyName("skipReason")]
         public string? SkipReason { get; init; }
+
+        /// <summary>
+        /// Gets what a task that compares values found: the expected and the read settings of a DESFire file, for instance. Nothing for
+        /// every other task, for a task that did not run, and for a check that made no comparison. Needs
+        /// <see cref="BridgeCapabilities.ExecutionVerificationDetails"/>; a client that does not know a kind of detail ignores it.
+        /// </summary>
+        [JsonPropertyName("verificationDetails")]
+        public VerificationDetailsDto? VerificationDetails { get; init; }
     }
 
     /// <summary>

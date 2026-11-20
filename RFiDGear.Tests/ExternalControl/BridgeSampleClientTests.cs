@@ -459,6 +459,39 @@ namespace RFiDGear.Tests.ExternalControl
         };
 
         [Fact]
+
+        public void TheVerificationText_SaysWhatWasComparedAndWhatDiffered_AndLeavesOutWhatWasNot()
+        {
+            var sample = (TaskOutcomeDto)BridgeSamples.All["TaskOutcomeDto"];
+
+            var lines = VerificationText.Describe(sample.VerificationDetails!);
+
+            Assert.Equal(
+                new[]
+                {
+                    "desfire.fileSettings (application 3, file 1): DOES NOT MATCH, all of the compared settings, 2 compared, 1 not",
+                    "fileType: match, expected 0, read 0",
+                    "fileSize: mismatch, expected 16, read 8 (exact)",
+                },
+                lines);
+        }
+
+        [Fact]
+        public void TheVerificationText_CopesWithAKindItDoesNotKnow_ByItsChecksAlone()
+        {
+            var unknown = new VerificationDetailsDto
+            {
+                SchemaVersion = 7,
+                Kind = "something.else",
+                Checks = new[] { new VerificationCheckDto { Name = "novel", Compared = true, Result = "a-token-of-a-later-version", Expected = 1 } },
+            };
+
+            var lines = VerificationText.Describe(unknown);
+
+            Assert.Equal(new[] { "something.else: no verdict, 1 compared, 0 not", "novel: a-token-of-a-later-version, expected 1" }, lines);
+        }
+
+        [Fact]
         public async Task TheSampleVault_ServesOneReference_RefusesTheRest_AndForgetsTheKeyWhenDisposed()
         {
             var key = new byte[] { 1, 2, 3, 4, 5, 6 };

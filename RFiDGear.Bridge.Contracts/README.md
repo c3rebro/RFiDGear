@@ -117,13 +117,18 @@ that registered for a card key. See the client guide for the rules. With
 
 **Capabilities:** `session`, `status`, `project.load`, `project.revision`,
 `execution.run`, `execution.cancel`, `execution.resultLookup`,
-`execution.resultLog`, `execution.journal`, `autoMode`, `keys.provider`,
-`keys.context`, `reader.scan`, and the event groups `events.execution`, `events.running`,
-`events.reader`, `events.project`, `events.autoMode`, `events.lifecycle`.
-`execution.journal`, `project.revision` and `keys.context` are guarantees and not
-methods.
+`execution.resultLog`, `execution.journal`, `execution.verificationDetails`,
+`autoMode`, `keys.provider`, `keys.context`, `reader.scan`, and the event groups
+`events.execution`, `events.running`, `events.reader`, `events.project`,
+`events.autoMode`, `events.lifecycle`.
+`execution.journal`, `project.revision`, `execution.verificationDetails` and
+`keys.context` are guarantees and not methods.
 `execution.journal`: RFiDGear writes a run down before it starts it, so that
 after a restart a request id it had admitted is still known.
+`execution.verificationDetails`: the outcome of a task that compares values (today
+the DESFire "Check: File Settings") can carry `verificationDetails`: what was
+compared, what was expected, what was read and how each setting ended, as numbers
+and fixed words.
 `project.revision`: `loadProject` and `getStatus` say in which state the loaded
 project is (changes that were not saved included), `startRun` can insist on
 that state, and the result says which state the run started with. The revision

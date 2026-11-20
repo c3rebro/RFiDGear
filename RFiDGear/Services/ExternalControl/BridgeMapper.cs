@@ -86,6 +86,7 @@ namespace RFiDGear.Services.ExternalControl
                     IsSuccess = outcome.IsSuccess,
                     NormalizedErrorCode = outcome.NormalizedErrorCode ?? string.Empty,
                     SkipReason = outcome.SkipReason,
+                    VerificationDetails = ToVerificationDto(outcome.VerificationDetails),
                 })
                 .ToList();
 
@@ -113,6 +114,39 @@ namespace RFiDGear.Services.ExternalControl
                 ResultSeq = resultSeq,
                 ProjectRevision = projectRevision,
                 TaskOutcomes = outcomes,
+            };
+        }
+
+        /// <summary>Maps what a task that compares values reported to the wire; every token and number goes through as the task wrote it.</summary>
+        /// <param name="details">The details, or <see langword="null"/>.</param>
+        /// <returns>The details as the wire has them, or <see langword="null"/> when there are none.</returns>
+        internal static VerificationDetailsDto? ToVerificationDto(VerificationDetails? details)
+        {
+            if (details == null)
+            {
+                return null;
+            }
+
+            return new VerificationDetailsDto
+            {
+                SchemaVersion = details.SchemaVersion,
+                Kind = details.Kind ?? string.Empty,
+                OverallMatch = details.OverallMatch,
+                CompareMode = details.CompareMode,
+                ApplicationId = details.ApplicationId,
+                FileNumber = details.FileNumber,
+                ErrorCode = details.ErrorCode,
+                Checks = (details.Checks ?? System.Array.Empty<VerificationCheck>())
+                    .Select(check => new VerificationCheckDto
+                    {
+                        Name = check.Name ?? string.Empty,
+                        Compared = check.Compared,
+                        Result = check.Result ?? string.Empty,
+                        Rule = check.Rule,
+                        Expected = check.Expected,
+                        Actual = check.Actual,
+                    })
+                    .ToList(),
             };
         }
 

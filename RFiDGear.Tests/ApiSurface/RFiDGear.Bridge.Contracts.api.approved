@@ -48,6 +48,7 @@ public static class RFiDGear.Bridge.BridgeCapabilities
     public const string ExecutionResultLog = "execution.resultLog"
     public const string ExecutionResultLookup = "execution.resultLookup"
     public const string ExecutionRun = "execution.run"
+    public const string ExecutionVerificationDetails = "execution.verificationDetails"
     public const string KeysContext = "keys.context"
     public const string KeysProvider = "keys.provider"
     public const string ProjectLoad = "project.load"
@@ -193,12 +194,42 @@ public sealed class RFiDGear.Bridge.CapabilityAttribute : System.Attribute
     public ctor(string name)
     public string Name { get; }
 
+public static class RFiDGear.Bridge.CheckNames
+    public const string AccessChange = "accessChange"
+    public const string AccessRead = "accessRead"
+    public const string AccessReadWrite = "accessReadWrite"
+    public const string AccessWrite = "accessWrite"
+    public const string CommunicationMode = "communicationMode"
+    public const string FileSize = "fileSize"
+    public const string FileType = "fileType"
+
+public static class RFiDGear.Bridge.CheckResults
+    public const string Match = "match"
+    public const string Mismatch = "mismatch"
+    public const string NotCompared = "notCompared"
+    public const string NotRead = "notRead"
+
+public static class RFiDGear.Bridge.CheckRules
+    public const string AtLeast = "atLeast"
+    public const string AtMost = "atMost"
+    public const string Exact = "exact"
+
+public static class RFiDGear.Bridge.CompareModes
+    public const string All = "all"
+    public const string Any = "any"
+
 public sealed record RFiDGear.Bridge.CredentialDto : System.IEquatable<CredentialDto>
     public ctor()
     [JsonPropertyName("displayName")] public string DisplayName { get; init; }
     [JsonPropertyName("isPrimary")] public bool IsPrimary { get; init; }
     [JsonPropertyName("typeCode")] public int TypeCode { get; init; }
     [JsonPropertyName("uid")] public string Uid { get; init; }
+
+public static class RFiDGear.Bridge.DetailErrors
+    public const string NotRead = "notRead"
+
+public static class RFiDGear.Bridge.DetailKinds
+    public const string DesfireFileSettings = "desfire.fileSettings"
 
 public static class RFiDGear.Bridge.FailureReasons
     public const string BridgeFault = "bridgeFault"
@@ -500,8 +531,29 @@ public sealed record RFiDGear.Bridge.TaskOutcomeDto : System.IEquatable<TaskOutc
     [JsonPropertyName("projectTaskIndex")] public string ProjectTaskIndex { get; init; }
     [JsonPropertyName("skipReason")] public string? SkipReason { get; init; }
     [JsonPropertyName("taskTypeName")] public string TaskTypeName { get; init; }
+    [JsonPropertyName("verificationDetails")] public VerificationDetailsDto? VerificationDetails { get; init; }
 
 public sealed record RFiDGear.Bridge.VariablePair : System.IEquatable<VariablePair>
     public ctor()
     [JsonPropertyName("name")] public string Name { get; init; }
     [JsonPropertyName("value")] public string Value { get; init; }
+
+public sealed record RFiDGear.Bridge.VerificationCheckDto : System.IEquatable<VerificationCheckDto>
+    public ctor()
+    [JsonPropertyName("actual")] public long? Actual { get; init; }
+    [JsonPropertyName("compared")] public bool Compared { get; init; }
+    [JsonPropertyName("expected")] public long? Expected { get; init; }
+    [JsonPropertyName("name")] public string Name { get; init; }
+    [JsonPropertyName("result")] public string Result { get; init; }
+    [JsonPropertyName("rule")] public string? Rule { get; init; }
+
+public sealed record RFiDGear.Bridge.VerificationDetailsDto : System.IEquatable<VerificationDetailsDto>
+    public ctor()
+    [JsonPropertyName("applicationId")] public int? ApplicationId { get; init; }
+    [JsonPropertyName("checks")] public System.Collections.Generic.IReadOnlyList<VerificationCheckDto> Checks { get; init; }
+    [JsonPropertyName("compareMode")] public string? CompareMode { get; init; }
+    [JsonPropertyName("errorCode")] public string? ErrorCode { get; init; }
+    [JsonPropertyName("fileNumber")] public int? FileNumber { get; init; }
+    [JsonPropertyName("kind")] public string Kind { get; init; }
+    [JsonPropertyName("overallMatch")] public bool? OverallMatch { get; init; }
+    [JsonPropertyName("schemaVersion")] public int SchemaVersion { get; init; }

@@ -171,6 +171,29 @@ namespace RFiDGear.Tests.ExternalControl
                 ProjectRevision = "5c0e2b7d4a916f38e1d09a7b6c5d4e3f",
             },
             ["ResolveKeyResponse"] = new ResolveKeyResponse { Result = KeyResolveResults.Resolved, Key = "AQIDBAUGBwg=" },
+            ["TaskOutcomeDto"] = new TaskOutcomeDto
+            {
+                Position = 2,
+                ProjectTaskIndex = "3",
+                TaskTypeName = "MifareDesfireSetupViewModel",
+                IsSuccess = false,
+                NormalizedErrorCode = "IsNotTrue",
+                VerificationDetails = new VerificationDetailsDto
+                {
+                    SchemaVersion = 1,
+                    Kind = DetailKinds.DesfireFileSettings,
+                    OverallMatch = false,
+                    CompareMode = CompareModes.All,
+                    ApplicationId = 3,
+                    FileNumber = 1,
+                    Checks = new[]
+                    {
+                        new VerificationCheckDto { Name = CheckNames.FileType, Compared = true, Result = CheckResults.Match, Expected = 0, Actual = 0 },
+                        new VerificationCheckDto { Name = CheckNames.FileSize, Compared = true, Result = CheckResults.Mismatch, Rule = CheckRules.Exact, Expected = 16, Actual = 8 },
+                        new VerificationCheckDto { Name = CheckNames.CommunicationMode, Compared = false, Result = CheckResults.NotCompared },
+                    },
+                },
+            },
             ["BridgeErrorData"] = new BridgeErrorData
             {
                 Kind = BridgeErrorKinds.Busy,

@@ -55,7 +55,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     // An executed task whose success could not be determined stays (null, null).
                     skipped ? null : observation.WasSuccessful,
                     observation.ErrorLevel.ToString(),
-                    skipped ? observation.SkipReason : null));
+                    skipped ? observation.SkipReason : null)
+                {
+                    VerificationDetails = skipped ? null : observation.VerificationDetails,
+                });
             }
 
             for (var position = 0; position < snapshot.Count; position++)

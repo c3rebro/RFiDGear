@@ -117,6 +117,45 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheDetailsOfACheck_TravelWithTheResult_ToTheClient_AndATaskWithoutHasNone()
+        {
+            var (_, pipe, host) = Start();
+            var details = new RFiDGear.Contracts.VerificationDetails(
+                1,
+                RFiDGear.Contracts.VerificationKinds.DesfireFileSettings,
+                new[]
+                {
+                    new RFiDGear.Contracts.VerificationCheck("fileSize", true, "mismatch") { Rule = "atLeast", Expected = 16, Actual = 8 },
+                    new RFiDGear.Contracts.VerificationCheck("fileType", false, "notCompared"),
+                })
+            {
+                OverallMatch = false,
+                CompareMode = "all",
+                ApplicationId = 3,
+                FileNumber = 1,
+            };
+            host.ExecutionHost.Result = FakeResults.Success(2) with
+            {
+                TaskOutcomes = new[]
+                {
+                    new RFiDGear.Contracts.TaskOutcome(0, "1", "MifareDesfireSetupViewModel", false, "IsNotTrue") { VerificationDetails = details },
+                    new RFiDGear.Contracts.TaskOutcome(1, "2", "MifareDesfireSetupViewModel", true, "NoError"),
+                },
+            };
+            var client = await ConnectAsync(pipe);
+            Assert.Contains(BridgeCapabilities.ExecutionVerificationDetails, (await client.HelloAsync()).Capabilities);
+
+            await client.Service.StartRun(Request("r-1"));
+            var lookup = await client.Service.GetRunResult(new GetRunResultRequest { RequestId = "r-1", WaitMs = 5000 });
+
+            var wire = lookup.Result!.TaskOutcomes[0].VerificationDetails!;
+            Assert.Equal((1, DetailKinds.DesfireFileSettings, false, CompareModes.All, 3, 1), (wire.SchemaVersion, wire.Kind, wire.OverallMatch, wire.CompareMode, wire.ApplicationId, wire.FileNumber));
+            var size = Assert.Single(wire.Checks, check => check.Compared);
+            Assert.Equal((CheckNames.FileSize, CheckResults.Mismatch, CheckRules.AtLeast, 16L, 8L), (size.Name, size.Result, size.Rule, size.Expected, size.Actual));
+            Assert.Null(lookup.Result.TaskOutcomes[1].VerificationDetails);
+        }
+
+        [Fact]
         public async Task AConnectionThatIsLostInTheMiddleOfARun_ComesBackToTheSameRun_AndItsResult()
         {
             var (_, pipe, host) = Start();

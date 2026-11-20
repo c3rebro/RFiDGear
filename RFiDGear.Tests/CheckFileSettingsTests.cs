@@ -7,9 +7,11 @@ using RFiDGear.ViewModel.TaskSetupViewModels;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Xunit;
+using Contracts = RFiDGear.Contracts;
 
 namespace RFiDGear.Tests
 {
@@ -680,6 +682,65 @@ namespace RFiDGear.Tests
             return finished;
         }
 
+        // What a program that has to say why a check failed gets: the settings the task compared, as numbers and tokens.
+        [Fact]
+        public async Task TheTaskReportsWhatItCompared_ExpectedAndReadSideBySide_AndWhichOneDiffered()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings(size: 15) };
+
+                await Run(viewModel, reader);
+
+                var details = ((ITaskVerificationSource)viewModel).GetVerificationDetails();
+
+                Assert.NotNull(details);
+                Assert.Equal(Contracts.VerificationKinds.DesfireFileSettings, details!.Kind);
+                Assert.Equal(1, details.SchemaVersion);
+                Assert.False(details.OverallMatch);
+                Assert.Equal((1, 2), (details.ApplicationId, details.FileNumber));
+                Assert.Equal(Contracts.VerificationCompareModes.All, details.CompareMode);
+                Assert.Null(details.ErrorCode);
+                Assert.Equal(
+                    new[] { "fileType", "fileSize", "communicationMode", "accessRead", "accessWrite", "accessReadWrite", "accessChange" },
+                    details.Checks.Select(check => check.Name));
+
+                var size = details.Checks.Single(check => check.Name == Contracts.VerificationCheckNames.FileSize);
+                Assert.True(size.Compared);
+                Assert.Equal(Contracts.VerificationResults.Mismatch, size.Result);
+                Assert.Equal(Contracts.VerificationRules.Exact, size.Rule);
+                Assert.Equal((16L, 15L), (size.Expected, size.Actual));
+
+                // Everything else matched, and carries the nibble that was expected and the one that was read.
+                var change = details.Checks.Single(check => check.Name == Contracts.VerificationCheckNames.AccessChange);
+                Assert.Equal(Contracts.VerificationResults.Match, change.Result);
+                Assert.Equal((3L, 3L), (change.Expected, change.Actual));
+                Assert.All(details.Checks.Where(check => check != size), check => Assert.Equal(Contracts.VerificationResults.Match, check.Result));
+            });
+        }
+
+        [Fact]
+        public async Task ACheckThatComparedNothing_HasNoDetails_AndAnEarlierAttemptIsForgottenWhenARunStarts()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                var source = (ITaskVerificationSource)viewModel;
+                await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings() });
+                var afterAMatch = source.GetVerificationDetails();
+
+                ((ITaskOutcomeDetails)viewModel).ClearOutcomeDetails();
+                var afterTheNextRunStarted = source.GetVerificationDetails();
+
+                await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings(), AuthenticationResult = ERROR.AuthFailure });
+                var afterARefusedLogin = source.GetVerificationDetails();
+
+                Assert.True(afterAMatch!.OverallMatch);
+                Assert.Null(afterTheNextRunStarted);
+                Assert.Null(afterARefusedLogin);
+            });
+        }
         private static async Task Run(MifareDesfireSetupViewModel viewModel, FakeFileSettingsProvider? reader)
         {
             using (ReaderDeviceScope.Use(reader))

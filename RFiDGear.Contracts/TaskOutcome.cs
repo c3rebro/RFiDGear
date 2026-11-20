@@ -34,5 +34,14 @@ namespace RFiDGear.Contracts
         string TaskTypeName,
         bool? IsSuccess,
         string NormalizedErrorCode,
-        string? SkipReason = null);
+        string? SkipReason = null)
+    {
+        /// <summary>
+        /// Gets what a task that compares values found, for a program that has to say why a check failed: the expected and the
+        /// actual settings of a DESFire file, for instance. <see langword="null"/> for every other task, for a task that did not
+        /// run, and for a check that made no comparison. It is an optional member (not part of the constructor), so a task outcome
+        /// that was built without it, and code that deconstructs one, work as before. Numbers and fixed tokens only, never a key.
+        /// </summary>
+        public VerificationDetails? VerificationDetails { get; init; }
+    }
 }

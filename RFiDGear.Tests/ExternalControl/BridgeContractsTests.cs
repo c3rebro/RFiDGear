@@ -205,7 +205,7 @@ namespace RFiDGear.Tests.ExternalControl
             var dataTypes = Bridge.GetExportedTypes().Where(IsDataType).ToList();
 
             // Types that only appear inside others are covered through them.
-            var nested = new HashSet<Type> { typeof(VariablePair), typeof(CredentialDto), typeof(TaskOutcomeDto), typeof(ReaderDto), typeof(RunResultDto), typeof(ProjectStatusDto), typeof(ActiveRunDto), typeof(ProtocolVersionDto), typeof(BridgeLimitsDto), typeof(AutoModeStatusDto) };
+            var nested = new HashSet<Type> { typeof(VariablePair), typeof(CredentialDto), typeof(TaskOutcomeDto), typeof(ReaderDto), typeof(RunResultDto), typeof(ProjectStatusDto), typeof(ActiveRunDto), typeof(ProtocolVersionDto), typeof(BridgeLimitsDto), typeof(AutoModeStatusDto), typeof(VerificationDetailsDto), typeof(VerificationCheckDto) };
 
             Assert.All(dataTypes, type => Assert.True(covered.Contains(type) || nested.Contains(type), $"{type.Name} has no sample in BridgeSamples"));
             Assert.All(nested, type => Assert.Contains(type, dataTypes));
