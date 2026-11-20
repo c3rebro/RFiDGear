@@ -1669,6 +1669,15 @@ namespace RFiDGear.ViewModel
 
                     return cardRefusal == AutoModeRefusal.CardChanged ? AutoModeRunReport.CardChanged : AutoModeRunReport.NotAdmitted;
                 }
+
+                // The look took time: a mode that was stopped meanwhile (or whose client left), or a card that another run processed,
+                // ends the request here, before anything is admitted.
+                if (isStillWanted != null && !isStillWanted())
+                {
+                    _coordinator.EndExecution();
+
+                    return AutoModeRunReport.NotAdmitted;
+                }
             }
 
             // The window holds the execution slot, so nothing can change the project now. An approval that says which state of the

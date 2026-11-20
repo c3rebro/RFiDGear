@@ -279,8 +279,8 @@ namespace RFiDGear.Services.ExternalControl
             pending?.Completion.TrySetResult(new Decision(null, reason));
         }
 
-        // The card that is waited for, if the answer is for it, comes from the connection that started the mode and is not late;
-        // anything else is an answer to nothing.
+        // Finds the card that is waited for. The answer must be for that card, must come from the connection that started the mode
+        // and must not be late. Anything else is an answer to nothing.
         private Pending FindPending(string sessionId, string? presenceId)
         {
             Pending? pending;

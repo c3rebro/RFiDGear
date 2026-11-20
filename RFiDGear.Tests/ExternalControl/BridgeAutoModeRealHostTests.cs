@@ -336,6 +336,41 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task AModeThatIsStoppedWhileTheWindowLooksAtTheReader_RunsNothing_EvenWhenTheLookSucceeds()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+
+                // The look that the window takes before it admits the run is held; the mode is stopped while it is outstanding, and then
+                // the look ends with the right card. The request is no longer wanted, so nothing may be admitted.
+                var slowLook = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                provider.Script(RFiDGear.Infrastructure.ERROR.NoError, Card(CardA), slowLook.Task);
+                var nextRead = provider.ReadCount + 1;
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = shown.PresenceId });
+                await AutoModeMainWindowTests.Within(provider.ReadStarted(nextRead));
+                await client.Service.StopAutoMode(new StopAutoModeRequest());
+                slowLook.SetResult(true);
+                await AutoModeMainWindowTests.Within(tick);
+                var events = await client.WaitForEventsAsync(2);
+
+                Assert.Empty(exec.Requests);
+                Assert.Equal(PresentationEndReasons.NotAdmitted, Assert.IsType<CardPresentationEndedEvent>(events[1]).Reason);
+                Assert.False(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
         public async Task ACardThatIsReplacedWhileTheClientDecides_IsWithdrawnByTheNextTick_AndALateApprovalIsRefused()
         {
             await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>

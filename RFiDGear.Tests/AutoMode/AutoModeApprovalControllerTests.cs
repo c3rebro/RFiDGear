@@ -83,13 +83,19 @@ namespace RFiDGear.Tests.AutoMode
             // What a run of an approved card ends with, in place of an admitted run that succeeded.
             public Func<AutoModeApproval, AutoModeRunReport>? ApprovedBehavior;
 
+            // Runs while the runner waits for the execution slot, before it asks whether the card is still wanted.
+            public Action? WhileTheRunnerWaits;
+
+            // The next poll looks at the reader at once and then waits for this before it answers, as a slow read does.
+            public TaskCompletionSource<bool>? HoldNextPoll;
+
             public readonly AutoModeController Controller;
 
             public Rig(bool canRunAnApprovedCard = true)
             {
                 Controller = new AutoModeController(
                     Coordinator,
-                    () => Task.FromResult(Reader),
+                    PollAsync,
                     (uid, _, _) =>
                     {
                         PlainRuns.Add(uid);
@@ -104,12 +110,34 @@ namespace RFiDGear.Tests.AutoMode
                         ? (uid, _, isStillWanted, approval) =>
                         {
                             ApprovedRuns.Add((uid, approval));
-                            StillWanted.Add(isStillWanted());
+                            WhileTheRunnerWaits?.Invoke();
+                            var wanted = isStillWanted();
+                            StillWanted.Add(wanted);
+
+                            // As the window does: a request that is no longer wanted is not admitted.
+                            if (!wanted)
+                            {
+                                return Task.FromResult(AutoModeRunReport.NotAdmitted);
+                            }
 
                             return Task.FromResult(ApprovedBehavior != null ? ApprovedBehavior(approval) : Admitted());
                         }
                         : null);
                 Controller.StateChanged += (_, _) => Events.Add(Controller.IsEnabled ? "on" : "off:" + Controller.LastStopReason);
+            }
+
+            private async Task<AutoModePoll?> PollAsync()
+            {
+                var seen = Reader;
+                var hold = HoldNextPoll;
+                HoldNextPoll = null;
+
+                if (hold != null)
+                {
+                    await hold.Task.ConfigureAwait(false);
+                }
+
+                return seen;
             }
 
             public Task Tick() => Controller.TickAsync();
@@ -412,6 +440,51 @@ namespace RFiDGear.Tests.AutoMode
             Assert.Empty(rig.ApprovedRuns);
             Assert.Equal((rig.Approval.Asked[0].PresenceId, AutoModeRefusal.CardChanged), Assert.Single(rig.Approval.Refusals));
             Assert.Single(rig.Approval.Asked);
+        }
+
+        [Fact]
+        public async Task ALookAtTheReaderThatEndsAfterAnotherRunWroteTheCardDown_DoesNotEraseWhatThatRunWrote()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            // The watcher looks (it sees no card) and the read is slow; meanwhile a run by hand is made on the card and says so.
+            var slowRead = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.HoldNextPoll = slowRead;
+            rig.Remove();
+            var watching = rig.Tick();
+            rig.Controller.RememberCard("04AA");
+            slowRead.SetResult(true);
+            await watching;
+            await waiting;
+
+            // The wait is withdrawn, but what the other run wrote down is the truth: the card was processed, and is not shown again.
+            rig.Present("04AA");
+            await rig.Tick();
+
+            Assert.Single(rig.Approval.Asked);
+            Assert.Empty(rig.ApprovedRuns);
+        }
+
+        [Fact]
+        public async Task ACardThatAnotherRunProcessesWhileTheRunnerWaitsForTheSlot_IsNotRunOnTheApproval_AndTheProgramIsToldTheCardChanged()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.WhileTheRunnerWaits = () => rig.Controller.RememberCard("04AA");
+            rig.Present("04AA");
+
+            await rig.Tick();
+            await rig.Tick();
+
+            // The runner was asked, found the card taken (the question it is given covers that), and did not admit anything.
+            Assert.False(Assert.Single(rig.StillWanted));
+            Assert.Equal((rig.Approval.Asked[0].PresenceId, AutoModeRefusal.CardChanged), Assert.Single(rig.Approval.Refusals));
+            Assert.Single(rig.Approval.Asked);
+            Assert.True(rig.Controller.IsEnabled);
         }
 
         [Fact]
