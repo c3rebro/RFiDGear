@@ -8,6 +8,16 @@ public sealed record RFiDGear.Bridge.ActiveRunDto : System.IEquatable<ActiveRunD
     [JsonPropertyName("source")] public string Source { get; init; }
     [JsonPropertyName("startedAt")] public System.DateTimeOffset? StartedAt { get; init; }
 
+public sealed record RFiDGear.Bridge.ApproveCardRequest : System.IEquatable<ApproveCardRequest>
+    public ctor()
+    [JsonPropertyName("expectProjectRevision")] public string? ExpectProjectRevision { get; init; }
+    [JsonPropertyName("presenceId")] public string PresenceId { get; init; }
+    [JsonPropertyName("variables")] public System.Collections.Generic.IReadOnlyList<VariablePair>? Variables { get; init; }
+
+public sealed record RFiDGear.Bridge.ApproveCardResponse : System.IEquatable<ApproveCardResponse>
+    public ctor()
+    [JsonPropertyName("presenceId")] public string PresenceId { get; init; }
+
 public sealed record RFiDGear.Bridge.AutoModeChangedEvent : BridgeEvent, System.IEquatable<AutoModeChangedEvent>
     public ctor()
     [JsonPropertyName("enabled")] public bool Enabled { get; init; }
@@ -19,6 +29,8 @@ public sealed record RFiDGear.Bridge.AutoModeStatusDto : System.IEquatable<AutoM
     public ctor()
     [JsonPropertyName("enabled")] public bool Enabled { get; init; }
     [JsonPropertyName("lastStopReason")] public string LastStopReason { get; init; }
+    [JsonPropertyName("pendingPresenceId")] public string? PendingPresenceId { get; init; }
+    [JsonPropertyName("requireApproval")] public bool RequireApproval { get; init; }
     [JsonPropertyName("startedBy")] public string? StartedBy { get; init; }
     [JsonPropertyName("stopOnDisconnect")] public bool StopOnDisconnect { get; init; }
 
@@ -37,6 +49,7 @@ public sealed record RFiDGear.Bridge.AutoRunCompletedEvent : BridgeEvent, System
 
 public static class RFiDGear.Bridge.BridgeCapabilities
     public const string AutoMode = "autoMode"
+    public const string AutoModeApproval = "autoMode.approval"
     public const string EventsAutoMode = "events.autoMode"
     public const string EventsExecution = "events.execution"
     public const string EventsLifecycle = "events.lifecycle"
@@ -63,6 +76,7 @@ public static class RFiDGear.Bridge.BridgeClientMethods
     public const string ResolveKey = "resolveKey"
 
 public static class RFiDGear.Bridge.BridgeErrorCodes
+    public const int ApprovalNotPending = 1018
     public const int AutoModeActive = 1007
     public const int Busy = 1006
     public const int CapabilityNotSupported = 1003
@@ -89,6 +103,7 @@ public sealed record RFiDGear.Bridge.BridgeErrorData : System.IEquatable<BridgeE
     [JsonPropertyName("neverStarted")] public bool? NeverStarted { get; init; }
 
 public static class RFiDGear.Bridge.BridgeErrorKinds
+    public const string ApprovalNotPending = "approvalNotPending"
     public const string AutoModeActive = "autoModeActive"
     public const string Busy = "busy"
     public const string CapabilityNotSupported = "capabilityNotSupported"
@@ -116,6 +131,8 @@ public abstract record RFiDGear.Bridge.BridgeEvent : System.IEquatable<BridgeEve
 public static class RFiDGear.Bridge.BridgeEvents
     public const string AutoModeChanged = "autoModeChanged"
     public const string AutoRunCompleted = "autoRunCompleted"
+    public const string CardPresentationEnded = "cardPresentationEnded"
+    public const string CardPresented = "cardPresented"
     public const string ProjectChanged = "projectChanged"
     public const string ReaderChanged = "readerChanged"
     public const string RunCompleted = "runCompleted"
@@ -141,7 +158,9 @@ public sealed record RFiDGear.Bridge.BridgeLimitsDto : System.IEquatable<BridgeL
     [JsonPropertyName("resultHistory")] public int ResultHistory { get; init; }
 
 public static class RFiDGear.Bridge.BridgeMethods
+    public const string ApproveCard = "approveCard"
     public const string CancelRun = "cancelRun"
+    public const string DeclineCard = "declineCard"
     public const string GetRunResult = "getRunResult"
     public const string GetStatus = "getStatus"
     public const string Hello = "hello"
@@ -154,7 +173,9 @@ public static class RFiDGear.Bridge.BridgeMethods
     public const string StopAutoMode = "stopAutoMode"
 
 public static class RFiDGear.Bridge.BridgeProtocol
+    public const int DefaultApprovalTimeoutMs = 15000
     public const int Major = 1
+    public const int MaxApprovalTimeoutMs = 120000
     public const int MaxKeyBytes = 32
     public const int MaxMessageBytes = 1048576
     public const int MaxPathLength = 4096
@@ -164,6 +185,7 @@ public static class RFiDGear.Bridge.BridgeProtocol
     public const int MaxVariableValueLength = 2048
     public const int MaxVariables = 64
     public const int MaxWaitMs = 30000
+    public const int MinApprovalTimeoutMs = 2000
     public const int Minor = 0
     public const string PipeNamePrefix = "RFiDGear.Bridge."
     public const string Product = "RFiDGear"
@@ -193,6 +215,19 @@ public sealed record RFiDGear.Bridge.CancelRunResponse : System.IEquatable<Cance
 public sealed class RFiDGear.Bridge.CapabilityAttribute : System.Attribute
     public ctor(string name)
     public string Name { get; }
+
+public sealed record RFiDGear.Bridge.CardPresentationEndedEvent : BridgeEvent, System.IEquatable<CardPresentationEndedEvent>
+    public ctor()
+    [JsonPropertyName("presenceId")] public string PresenceId { get; init; }
+    [JsonPropertyName("reason")] public string Reason { get; init; }
+    [JsonPropertyName("runId")] public string? RunId { get; init; }
+
+public sealed record RFiDGear.Bridge.CardPresentedEvent : BridgeEvent, System.IEquatable<CardPresentedEvent>
+    public ctor()
+    [JsonPropertyName("expiresAt")] public System.DateTimeOffset ExpiresAt { get; init; }
+    [JsonPropertyName("presenceId")] public string PresenceId { get; init; }
+    [JsonPropertyName("projectRevision")] public string? ProjectRevision { get; init; }
+    [JsonPropertyName("uid")] public string Uid { get; init; }
 
 public static class RFiDGear.Bridge.CheckNames
     public const string AccessChange = "accessChange"
@@ -224,6 +259,14 @@ public sealed record RFiDGear.Bridge.CredentialDto : System.IEquatable<Credentia
     [JsonPropertyName("isPrimary")] public bool IsPrimary { get; init; }
     [JsonPropertyName("typeCode")] public int TypeCode { get; init; }
     [JsonPropertyName("uid")] public string Uid { get; init; }
+
+public sealed record RFiDGear.Bridge.DeclineCardRequest : System.IEquatable<DeclineCardRequest>
+    public ctor()
+    [JsonPropertyName("presenceId")] public string PresenceId { get; init; }
+
+public sealed record RFiDGear.Bridge.DeclineCardResponse : System.IEquatable<DeclineCardResponse>
+    public ctor()
+    [JsonPropertyName("presenceId")] public string PresenceId { get; init; }
 
 public static class RFiDGear.Bridge.DetailErrors
     public const string NotRead = "notRead"
@@ -276,6 +319,8 @@ public sealed record RFiDGear.Bridge.HelloResponse : System.IEquatable<HelloResp
 public interface RFiDGear.Bridge.IBridgeClientEvents
     [Capability("events.autoMode")] public void AutoModeChanged(AutoModeChangedEvent e)
     [Capability("events.autoMode")] public void AutoRunCompleted(AutoRunCompletedEvent e)
+    [Capability("autoMode.approval")] public void CardPresentationEnded(CardPresentationEndedEvent e)
+    [Capability("autoMode.approval")] public void CardPresented(CardPresentedEvent e)
     [Capability("events.project")] public void ProjectChanged(ProjectChangedEvent e)
     [Capability("events.reader")] public void ReaderChanged(ReaderChangedEvent e)
     [Capability("events.execution")] public void RunCompleted(RunCompletedEvent e)
@@ -287,7 +332,9 @@ public interface RFiDGear.Bridge.IBridgeClientKeys
     [Capability("keys.provider")] public System.Threading.Tasks.Task<ResolveKeyResponse> ResolveKey(ResolveKeyRequest request, System.Threading.CancellationToken cancellationToken)
 
 public interface RFiDGear.Bridge.IBridgeService
+    [Capability("autoMode.approval")] public System.Threading.Tasks.Task<ApproveCardResponse> ApproveCard(ApproveCardRequest request)
     [Capability("execution.cancel")] public System.Threading.Tasks.Task<CancelRunResponse> CancelRun(CancelRunRequest request)
+    [Capability("autoMode.approval")] public System.Threading.Tasks.Task<DeclineCardResponse> DeclineCard(DeclineCardRequest request)
     [Capability("execution.resultLookup")] public System.Threading.Tasks.Task<GetRunResultResponse> GetRunResult(GetRunResultRequest request)
     [Capability("status")] public System.Threading.Tasks.Task<StatusResponse> GetStatus(GetStatusRequest request)
     [Capability("session")] public System.Threading.Tasks.Task<HelloResponse> Hello(HelloRequest request)
@@ -339,6 +386,15 @@ public sealed record RFiDGear.Bridge.LoadProjectResponse : System.IEquatable<Loa
     [JsonPropertyName("path")] public string Path { get; init; }
     [JsonPropertyName("revision")] public string? Revision { get; init; }
     [JsonPropertyName("taskCount")] public int TaskCount { get; init; }
+
+public static class RFiDGear.Bridge.PresentationEndReasons
+    public const string Approved = "approved"
+    public const string ClientLost = "clientLost"
+    public const string Declined = "declined"
+    public const string Expired = "expired"
+    public const string NotAdmitted = "notAdmitted"
+    public const string ProjectChanged = "projectChanged"
+    public const string Stopped = "stopped"
 
 public sealed record RFiDGear.Bridge.ProjectChangedEvent : BridgeEvent, System.IEquatable<ProjectChangedEvent>
     public ctor()
@@ -419,6 +475,7 @@ public sealed record RFiDGear.Bridge.RunResultDto : System.IEquatable<RunResultD
     [JsonPropertyName("completedAt")] public System.DateTimeOffset CompletedAt { get; init; }
     [JsonPropertyName("failedTasks")] public int FailedTasks { get; init; }
     [JsonPropertyName("failureReason")] public string FailureReason { get; init; }
+    [JsonPropertyName("presenceId")] public string? PresenceId { get; init; }
     [JsonPropertyName("projectRevision")] public string? ProjectRevision { get; init; }
     [JsonPropertyName("requestId")] public string? RequestId { get; init; }
     [JsonPropertyName("resultSeq")] public long ResultSeq { get; init; }
@@ -479,12 +536,16 @@ public sealed record RFiDGear.Bridge.ShuttingDownEvent : BridgeEvent, System.IEq
 
 public sealed record RFiDGear.Bridge.StartAutoModeRequest : System.IEquatable<StartAutoModeRequest>
     public ctor()
+    [JsonPropertyName("approvalTimeoutMs")] public int? ApprovalTimeoutMs { get; init; }
+    [JsonPropertyName("requireApproval")] public bool RequireApproval { get; init; }
     [JsonPropertyName("stopOnDisconnect")] public bool StopOnDisconnect { get; init; }
 
 public sealed record RFiDGear.Bridge.StartAutoModeResponse : System.IEquatable<StartAutoModeResponse>
     public ctor()
     [JsonPropertyName("alreadyEnabled")] public bool AlreadyEnabled { get; init; }
+    [JsonPropertyName("approvalTimeoutMs")] public int? ApprovalTimeoutMs { get; init; }
     [JsonPropertyName("enabled")] public bool Enabled { get; init; }
+    [JsonPropertyName("requireApproval")] public bool RequireApproval { get; init; }
     [JsonPropertyName("stopOnDisconnect")] public bool StopOnDisconnect { get; init; }
 
 public sealed record RFiDGear.Bridge.StartRunRequest : System.IEquatable<StartRunRequest>

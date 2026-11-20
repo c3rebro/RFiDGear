@@ -109,6 +109,27 @@ namespace RFiDGear.Bridge
         Task<StopAutoModeResponse> StopAutoMode(StopAutoModeRequest request);
 
         /// <summary>
+        /// Approves the card that automatic mode is waiting for (<see cref="BridgeEvents.CardPresented"/>), once: RFiDGear then runs the
+        /// project once for that card, with the variables of the request laid over the start-up variables for that run only. The
+        /// approval is used up by the first answer, whatever comes of the run; it is not carried over to the same UID after the card was taken
+        /// away and put back. An id that is unknown, answered, expired, or of a mode that is over is <see cref="BridgeErrorCodes.ApprovalNotPending"/>.
+        /// Only the connection that switched the mode on can answer.
+        /// </summary>
+        /// <param name="request">The presence, the revision it expects, and the variables of the run.</param>
+        /// <returns>That the approval was taken. How it ended is told by <see cref="BridgeEvents.CardPresentationEnded"/>.</returns>
+        [Capability(BridgeCapabilities.AutoModeApproval)]
+        Task<ApproveCardResponse> ApproveCard(ApproveCardRequest request);
+
+        /// <summary>
+        /// Declines the card that automatic mode is waiting for: nothing is run, and the card is not offered again until it was taken
+        /// away. An id that is not pending is <see cref="BridgeErrorCodes.ApprovalNotPending"/>.
+        /// </summary>
+        /// <param name="request">The presence.</param>
+        /// <returns>That the card was declined.</returns>
+        [Capability(BridgeCapabilities.AutoModeApproval)]
+        Task<DeclineCardResponse> DeclineCard(DeclineCardRequest request);
+
+        /// <summary>
         /// Lists the results of the runs from a number onward: those of the runs this client started and those of automatic
         /// mode, in the order in which they ended. It is how a client catches up after a lost connection or after events were
         /// dropped. <see cref="ListRunResultsResponse.Gap"/> says when it cannot, because the history only holds the last

@@ -73,6 +73,12 @@ namespace RFiDGear.Bridge
 
         /// <summary>No reader is selected in RFiDGear, so there is nothing for automatic mode to wait on.</summary>
         public const int NoReader = 1017;
+
+        /// <summary>
+        /// No card of this client waits for an approval under that presence id: it was answered already, it expired, the mode was
+        /// stopped, or the id is not one that RFiDGear gave. Nothing was started.
+        /// </summary>
+        public const int ApprovalNotPending = 1018;
     }
 
     /// <summary>The short names of the errors, carried in <see cref="BridgeErrorData.Kind"/>; they match <see cref="BridgeErrorCodes"/> one to one.</summary>
@@ -129,6 +135,9 @@ namespace RFiDGear.Bridge
 
         /// <summary>See <see cref="BridgeErrorCodes.NoReader"/>.</summary>
         public const string NoReader = "noReader";
+
+        /// <summary>See <see cref="BridgeErrorCodes.ApprovalNotPending"/>.</summary>
+        public const string ApprovalNotPending = "approvalNotPending";
     }
 
     /// <summary>The structured part of an error (<c>error.data</c>).</summary>

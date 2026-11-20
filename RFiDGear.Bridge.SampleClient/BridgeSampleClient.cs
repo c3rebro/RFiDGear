@@ -489,6 +489,12 @@ namespace RFiDGear.Bridge.SampleClient
         public void AutoRunCompleted(AutoRunCompletedEvent e) => Raise(e);
 
         /// <inheritdoc />
+        public void CardPresented(CardPresentedEvent e) => Raise(e);
+
+        /// <inheritdoc />
+        public void CardPresentationEnded(CardPresentationEndedEvent e) => Raise(e);
+
+        /// <inheritdoc />
         public async Task<ResolveKeyResponse> ResolveKey(ResolveKeyRequest request, CancellationToken cancellationToken)
         {
             var vault = KeyVault;

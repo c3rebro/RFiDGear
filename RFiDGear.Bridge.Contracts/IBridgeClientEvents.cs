@@ -47,5 +47,15 @@ namespace RFiDGear.Bridge
         /// <param name="e">The event with the result.</param>
         [Capability(BridgeCapabilities.EventsAutoMode)]
         void AutoRunCompleted(AutoRunCompletedEvent e);
+
+        /// <summary>Automatic mode that waits for approval found a card and waits for the answer.</summary>
+        /// <param name="e">The event.</param>
+        [Capability(BridgeCapabilities.AutoModeApproval)]
+        void CardPresented(CardPresentedEvent e);
+
+        /// <summary>The wait for the answer about a card ended. Once for every <see cref="CardPresented"/>.</summary>
+        /// <param name="e">The event.</param>
+        [Capability(BridgeCapabilities.AutoModeApproval)]
+        void CardPresentationEnded(CardPresentationEndedEvent e);
     }
 }

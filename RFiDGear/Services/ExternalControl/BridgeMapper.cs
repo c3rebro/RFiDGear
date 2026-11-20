@@ -72,8 +72,9 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="resultSeq">The number of the result in the order in which results were completed.</param>
         /// <param name="source">Who started the run, one of <see cref="RunSources"/>.</param>
         /// <param name="projectRevision">The revision of the project the run started with, when the host could tell.</param>
+        /// <param name="presenceId">The presence of the card that the run was approved for, for a run of automatic mode that waited for approval.</param>
         /// <returns>The result as the wire has it.</returns>
-        internal static RunResultDto ToDto(ExecResult result, string runId, string? requestId, long resultSeq, string source = RunSources.Bridge, string? projectRevision = null)
+        internal static RunResultDto ToDto(ExecResult result, string runId, string? requestId, long resultSeq, string source = RunSources.Bridge, string? projectRevision = null, string? presenceId = null)
         {
             System.ArgumentNullException.ThrowIfNull(result);
 
@@ -113,6 +114,7 @@ namespace RFiDGear.Services.ExternalControl
                 CardUid = result.CardUid,
                 ResultSeq = resultSeq,
                 ProjectRevision = projectRevision,
+                PresenceId = presenceId,
                 TaskOutcomes = outcomes,
             };
         }

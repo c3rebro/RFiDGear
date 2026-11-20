@@ -280,7 +280,8 @@ namespace RFiDGear.ViewModel
                     }
                 },
                 isReaderSelected: () => ReaderDevice.Instance != null,
-                hasTasks: () => (taskHandler?.TaskCollection?.Count ?? 0) > 0);
+                hasTasks: () => (taskHandler?.TaskCollection?.Count ?? 0) > 0,
+                runApprovedCard: (_, keepApplicationOpen, isStillWanted, approval) => RunCardForAutoModeAsync(keepApplicationOpen, isStillWanted, approval));
 
             // The menu item shows the state of the machine, whoever changed it (the click, the start-up argument, or an
             // extension through the host). The state can change on any thread; the binding is raised on the UI thread.
@@ -851,14 +852,14 @@ namespace RFiDGear.ViewModel
         /// of an extension before it is admitted, and a stop meanwhile must not be followed by a run.
         /// </param>
         /// <returns>What came of it; not admitted when something else held the execution slot or the request was withdrawn.</returns>
-        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen, Func<bool> isStillWanted)
+        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen, Func<bool> isStillWanted, AutoModeApproval approval = null)
         {
             foreach (var item in treeViewParentNodes)
             {
                 item.IsExpanded = false;
             }
 
-            return await RunAllOnceCoreAsync(keepApplicationOpen, isStillWanted);
+            return await RunAllOnceCoreAsync(keepApplicationOpen, isStillWanted, approval);
         }
 
         /// <summary>
@@ -1642,8 +1643,13 @@ namespace RFiDGear.ViewModel
         /// Asked while the run waits for a reader scan of an extension to end: when it returns <c>false</c> the run is
         /// given up (not admitted). <c>null</c> for a run by hand, which is always wanted.
         /// </param>
+        /// <param name="approval">
+        /// What the program that decides about the cards of automatic mode approved for this card, or <c>null</c>: the variables of this one
+        /// run (laid over those of the start-up), and the revision of the project that it expects, which is checked here, with the
+        /// execution slot held, before anything is started.
+        /// </param>
         /// <returns>What came of it; <see cref="AutoModeRunReport.NotAdmitted"/> when nothing ran.</returns>
-        private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen, Func<bool> isStillWanted = null)
+        private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen, Func<bool> isStillWanted = null, AutoModeApproval approval = null)
         {
             if (!await TryBeginExecutionAfterAScanAsync(isStillWanted))
             {
@@ -1651,11 +1657,23 @@ namespace RFiDGear.ViewModel
                 return AutoModeRunReport.NotAdmitted;
             }
 
+            // The window holds the execution slot, so nothing can change the project now. An approval that says which state of the
+            // project it was given for is held to it, and a state that cannot be told is not the one that was approved.
+            var revision = ReadTheProjectRevision(approval);
+
+            if (approval?.ExpectProjectRevision != null && !string.Equals(approval.ExpectProjectRevision, revision, StringComparison.Ordinal))
+            {
+                _coordinator.EndExecution();
+
+                return AutoModeRunReport.ProjectChanged;
+            }
+
             var runId = Guid.NewGuid().ToString("N");
 
             // A run by hand has no question to ask the mode ("isStillWanted" is for the requests of automatic mode only).
             _windowRuns.Begin(runId, isStillWanted == null ? RunSources.Gui : RunSources.AutoMode);
-            NoteTheProjectOfTheRun(runId);
+            NoteTheProjectOfTheRun(runId, revision, approval?.PresenceId);
+            approval?.NotifyRunAdmitted(runId);
             var startedAt = DateTimeOffset.UtcNow;
             var observations = new List<TaskExecutionObservation>();
             IReadOnlyList<object> snapshot = Array.Empty<object>();
@@ -1698,7 +1716,7 @@ namespace RFiDGear.ViewModel
                     },
                     TaskHandler = taskHandler,
                     TreeViewParentNodes = treeViewParentNodes,
-                    VariablesFromArgs = variablesFromArgs,
+                    VariablesFromArgs = VariablesOfTheRun(approval),
                     Dialogs = Dialogs,
                     ReportReaderWriter = reportReaderWriter,
                     ReportOutputPath = reportOutputPath,
@@ -1745,24 +1763,60 @@ namespace RFiDGear.ViewModel
             return new AutoModeRunReport(admitted: true, execResult, abandoned);
         }
 
-        // The window holds the execution slot, so nothing can change the project now: the revision it has is the one the run
-        // starts with, and the result of the run (made later, by the bridge) says so. Only while the bridge listens for it, and it
-        // never affects the run.
-        private void NoteTheProjectOfTheRun(string runId)
+        // The revision of the project, read only when somebody needs it: the bridge listens for the results of the runs of the mode, or
+        // an approval says which state it was given for. It never affects the run (a state that cannot be told is null).
+        private string ReadTheProjectRevision(AutoModeApproval approval)
         {
-            if (!_runFacts.IsWanted || extensionHost?.Project is not IProjectRevisionSource source)
+            if ((!_runFacts.IsWanted && approval?.ExpectProjectRevision == null) || extensionHost?.Project is not IProjectRevisionSource source)
             {
-                return;
+                return null;
             }
 
             try
             {
-                _runFacts.Remember(runId, new RunFact(source.GetProjectRevision()));
+                return source.GetProjectRevision();
             }
             catch (Exception e)
             {
-                Log.ForContext<MainWindowViewModel>().Debug("The revision of the project could not be noted for run {RunId} ({ExceptionType})", runId, e.GetType().FullName);
+                Log.ForContext<MainWindowViewModel>().Debug("The revision of the project could not be read for a run ({ExceptionType})", e.GetType().FullName);
+
+                return null;
             }
+        }
+
+        // What the window knows about the run when it takes it: the revision the run starts with, and the presence the run was
+        // approved for. The result of the run (made later, by the bridge) says so. Only while the bridge listens for it.
+        private void NoteTheProjectOfTheRun(string runId, string revision, string presenceId)
+        {
+            if (_runFacts.IsWanted)
+            {
+                _runFacts.Remember(runId, new RunFact(revision, presenceId));
+            }
+        }
+
+        // The variables of a run: those of the start-up, and for a card that a program approved, the variables of that approval laid
+        // over them (the approval wins), in a table of its own so that nothing of it stays for the next card. Names are compared
+        // without regard to case, as the bridge does for the variables of startRun.
+        private Dictionary<string, string> VariablesOfTheRun(AutoModeApproval approval)
+        {
+            if (approval == null || approval.Variables.Count == 0)
+            {
+                return variablesFromArgs;
+            }
+
+            var merged = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var pair in variablesFromArgs)
+            {
+                merged[pair.Key] = pair.Value;
+            }
+
+            foreach (var pair in approval.Variables)
+            {
+                merged[pair.Key] = pair.Value;
+            }
+
+            return merged;
         }
 
         /// <summary>

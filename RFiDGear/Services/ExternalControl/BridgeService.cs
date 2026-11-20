@@ -58,6 +58,12 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets what <c>stopAutoMode</c> does; a host that offers the <c>autoMode</c> capability sets it.</summary>
         internal Func<StopAutoModeRequest, Task<StopAutoModeResponse>>? StopAutoMode { get; init; }
 
+        /// <summary>Gets what <c>approveCard</c> does, given the id of the connection; a host that offers the <c>autoMode.approval</c> capability sets it.</summary>
+        internal Func<string, ApproveCardRequest, Task<ApproveCardResponse>>? ApproveCard { get; init; }
+
+        /// <summary>Gets what <c>declineCard</c> does, given the id of the connection; a host that offers the <c>autoMode.approval</c> capability sets it.</summary>
+        internal Func<string, DeclineCardRequest, Task<DeclineCardResponse>>? DeclineCard { get; init; }
+
         /// <summary>Gets what <c>listRunResults</c> does; a host that offers the <c>execution.resultLog</c> capability sets it.</summary>
         internal Func<ListRunResultsRequest, Task<ListRunResultsResponse>>? ListRunResults { get; init; }
 
@@ -141,6 +147,14 @@ namespace RFiDGear.Services.ExternalControl
         /// <inheritdoc />
         public Task<StopAutoModeResponse> StopAutoMode(StopAutoModeRequest request) =>
             Run(BridgeMethods.StopAutoMode, () => (_options.StopAutoMode ?? throw new NotSupportedException())(request));
+
+        /// <inheritdoc />
+        public Task<ApproveCardResponse> ApproveCard(ApproveCardRequest request) =>
+            Run(BridgeMethods.ApproveCard, () => (_options.ApproveCard ?? throw new NotSupportedException())(_sessionId, request));
+
+        /// <inheritdoc />
+        public Task<DeclineCardResponse> DeclineCard(DeclineCardRequest request) =>
+            Run(BridgeMethods.DeclineCard, () => (_options.DeclineCard ?? throw new NotSupportedException())(_sessionId, request));
 
         /// <inheritdoc />
         public Task<ListRunResultsResponse> ListRunResults(ListRunResultsRequest request) =>

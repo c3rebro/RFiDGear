@@ -124,6 +124,46 @@ namespace RFiDGear.Bridge
         public long LastResultSeq { get; init; }
     }
 
+    /// <summary>
+    /// Automatic mode that waits for approval (<see cref="StartAutoModeRequest.RequireApproval"/>) found a card on the reader and
+    /// waits for the client's answer until <see cref="ExpiresAt"/>. One card at a time. A card that was taken away and put back is a new
+    /// presence with a new id; the same UID is never approved by an answer to another presence.
+    /// </summary>
+    public sealed record CardPresentedEvent : BridgeEvent
+    {
+        /// <summary>Gets the id of this presence of the card. The answer (<see cref="BridgeMethods.ApproveCard"/>, <see cref="BridgeMethods.DeclineCard"/>) names it, and the result of the run carries it (<see cref="RunResultDto.PresenceId"/>).</summary>
+        [JsonPropertyName("presenceId")]
+        public string PresenceId { get; init; } = string.Empty;
+
+        /// <summary>Gets the UID of the card as the poll of the reader read it, as upper-case hexadecimal digits. The run reads the card again itself, and a card that was swapped meanwhile is not the one that was approved.</summary>
+        [JsonPropertyName("uid")]
+        public string Uid { get; init; } = string.Empty;
+
+        /// <summary>Gets the revision of the project as it is now (see <see cref="BridgeCapabilities.ProjectRevision"/>); nothing when RFiDGear cannot tell.</summary>
+        [JsonPropertyName("projectRevision")]
+        public string? ProjectRevision { get; init; }
+
+        /// <summary>Gets when RFiDGear stops waiting for the answer.</summary>
+        [JsonPropertyName("expiresAt")]
+        public DateTimeOffset ExpiresAt { get; init; }
+    }
+
+    /// <summary>The wait for the answer about a card ended. Once for every <see cref="CardPresentedEvent"/>.</summary>
+    public sealed record CardPresentationEndedEvent : BridgeEvent
+    {
+        /// <summary>Gets the id of the presence, as <see cref="CardPresentedEvent.PresenceId"/> said it.</summary>
+        [JsonPropertyName("presenceId")]
+        public string PresenceId { get; init; } = string.Empty;
+
+        /// <summary>Gets how it ended, one of <see cref="PresentationEndReasons"/>.</summary>
+        [JsonPropertyName("reason")]
+        public string Reason { get; init; } = string.Empty;
+
+        /// <summary>Gets the id of the run, for <see cref="PresentationEndReasons.Approved"/>: the run that was admitted for the card, whose result follows as <see cref="BridgeEvents.AutoRunCompleted"/>.</summary>
+        [JsonPropertyName("runId")]
+        public string? RunId { get; init; }
+    }
+
     /// <summary>Automatic mode processed a card. Sent exactly once for every run of the mode, and every one of them is also kept for <c>listRunResults</c>.</summary>
     public sealed record AutoRunCompletedEvent : BridgeEvent
     {

@@ -83,7 +83,7 @@ namespace RFiDGear.Services.ExternalControl
         /// <returns>The request.</returns>
         internal ExecutionRequest ToExecutionRequest() => new ExecutionRequest(Variables);
 
-        private static List<KeyValuePair<string, string>> CheckVariables(IReadOnlyList<VariablePair>? pairs)
+        internal static List<KeyValuePair<string, string>> CheckVariables(IReadOnlyList<VariablePair>? pairs)
         {
             var result = new List<KeyValuePair<string, string>>();
 

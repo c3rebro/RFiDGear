@@ -61,6 +61,8 @@ namespace RFiDGear.Tests.ExternalControl
             CompletedAt = Start.AddSeconds(2),
             CardUid = "04A1B2C3D4E5F6",
             ResultSeq = 8,
+            ProjectRevision = "5c0e2b7d4a916f38e1d09a7b6c5d4e3f",
+            PresenceId = "p-1",
             TaskOutcomes = new[]
             {
                 new TaskOutcomeDto { Position = 0, ProjectTaskIndex = "0", TaskTypeName = "MifareDesfireSetupViewModel", IsSuccess = true, NormalizedErrorCode = "Empty" },
@@ -138,8 +140,36 @@ namespace RFiDGear.Tests.ExternalControl
             ["ReaderChangedEvent"] = new ReaderChangedEvent { Seq = 4, SessionId = "s1", At = Start, Reader = Reader },
             ["ProjectChangedEvent"] = new ProjectChangedEvent { Seq = 5, SessionId = "s1", At = Start, Path = @"C:\Projects\order.rfPrj", TaskCount = 3 },
             ["ShuttingDownEvent"] = new ShuttingDownEvent { Seq = 6, SessionId = "s1", At = Start, Reason = ShutdownReasons.UserClose, RunInFlight = true },
-            ["StartAutoModeRequest"] = new StartAutoModeRequest { StopOnDisconnect = false },
-            ["StartAutoModeResponse"] = new StartAutoModeResponse { Enabled = true, AlreadyEnabled = false, StopOnDisconnect = false },
+            ["StartAutoModeRequest"] = new StartAutoModeRequest { StopOnDisconnect = true, RequireApproval = true, ApprovalTimeoutMs = 15000 },
+            ["StartAutoModeResponse"] = new StartAutoModeResponse { Enabled = true, AlreadyEnabled = false, StopOnDisconnect = true, RequireApproval = true, ApprovalTimeoutMs = 15000 },
+            ["ApproveCardRequest"] = new ApproveCardRequest
+            {
+                PresenceId = "p-1",
+                ExpectProjectRevision = "5c0e2b7d4a916f38e1d09a7b6c5d4e3f",
+                Variables = new[] { new VariablePair { Name = "$EXPECTEDUID", Value = "04A1B2C3D4E5F6" } },
+            },
+            ["ApproveCardResponse"] = new ApproveCardResponse { PresenceId = "p-1" },
+            ["DeclineCardRequest"] = new DeclineCardRequest { PresenceId = "p-1" },
+            ["DeclineCardResponse"] = new DeclineCardResponse { PresenceId = "p-1" },
+            ["CardPresentedEvent"] = new CardPresentedEvent
+            {
+                Seq = 9,
+                SessionId = "s1",
+                At = Start,
+                PresenceId = "p-1",
+                Uid = "04A1B2C3D4E5F6",
+                ProjectRevision = "5c0e2b7d4a916f38e1d09a7b6c5d4e3f",
+                ExpiresAt = Start.AddSeconds(15),
+            },
+            ["CardPresentationEndedEvent"] = new CardPresentationEndedEvent
+            {
+                Seq = 10,
+                SessionId = "s1",
+                At = Start.AddSeconds(1),
+                PresenceId = "p-1",
+                Reason = PresentationEndReasons.Approved,
+                RunId = "b2c3d4e5f60718293a4b5c6d7e8f90a1",
+            },
             ["StopAutoModeRequest"] = new StopAutoModeRequest(),
             ["StopAutoModeResponse"] = new StopAutoModeResponse { WasEnabled = true },
             ["ListRunResultsRequest"] = new ListRunResultsRequest { AfterResultSeq = 6, Limit = 10 },

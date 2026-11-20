@@ -152,6 +152,12 @@ namespace RFiDGear.Tests.ExternalControl
         public void AutoRunCompleted(AutoRunCompletedEvent e) => Add(e);
 
         /// <inheritdoc />
+        public void CardPresented(CardPresentedEvent e) => Add(e);
+
+        /// <inheritdoc />
+        public void CardPresentationEnded(CardPresentationEndedEvent e) => Add(e);
+
+        /// <inheritdoc />
         public Task<ResolveKeyResponse> ResolveKey(ResolveKeyRequest request, CancellationToken cancellationToken)
         {
             lock (_gate)

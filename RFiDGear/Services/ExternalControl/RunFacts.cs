@@ -6,7 +6,8 @@ namespace RFiDGear.Services.ExternalControl
 {
     /// <summary>What the main window knew about a run when it took it, and nobody else can say afterwards.</summary>
     /// <param name="ProjectRevision">The revision of the project the run started with, or <see langword="null"/> when it could not be made.</param>
-    internal sealed record RunFact(string? ProjectRevision);
+    /// <param name="PresenceId">The presence of the card that the run was approved for, or <see langword="null"/> for a run that was not approved.</param>
+    internal sealed record RunFact(string? ProjectRevision, string? PresenceId = null);
 
     /// <summary>
     /// A small table of what the main window knows about the runs that it makes (the run of a card of automatic mode, by hand): the
