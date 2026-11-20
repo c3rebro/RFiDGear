@@ -1657,6 +1657,20 @@ namespace RFiDGear.ViewModel
                 return AutoModeRunReport.NotAdmitted;
             }
 
+            // A card that was approved is the card that was shown, and no other: the reader is looked at once more now that the window
+            // holds the execution slot, before anything is admitted. A card that cannot be told is not the one that was approved.
+            if (approval != null)
+            {
+                var cardRefusal = await VerifyTheApprovedCardAsync(approval);
+
+                if (cardRefusal != AutoModeRefusal.None)
+                {
+                    _coordinator.EndExecution();
+
+                    return cardRefusal == AutoModeRefusal.CardChanged ? AutoModeRunReport.CardChanged : AutoModeRunReport.NotAdmitted;
+                }
+            }
+
             // The window holds the execution slot, so nothing can change the project now. An approval that says which state of the
             // project it was given for is held to it, and a state that cannot be told is not the one that was approved.
             var revision = ReadTheProjectRevision(approval);
@@ -1711,7 +1725,16 @@ namespace RFiDGear.ViewModel
                     KeepApplicationOpen = keepApplicationOpen,
                     ChipHydrated = chip =>
                     {
-                        cardUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
+                        var hydratedUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
+
+                        // The card this run's own read found is the card the tasks work on: it must be the one that was approved, before
+                        // anything is written to it or remembered about it.
+                        if (approval != null && !string.Equals(hydratedUid, approval.Uid, StringComparison.Ordinal))
+                        {
+                            throw new ApprovedCardChangedException();
+                        }
+
+                        cardUid = hydratedUid;
                         RememberCard(chip);
                     },
                     TaskHandler = taskHandler,
@@ -1761,6 +1784,20 @@ namespace RFiDGear.ViewModel
             }
 
             return new AutoModeRunReport(admitted: true, execResult, abandoned);
+        }
+
+        // Looks at the reader once (the same look automatic mode takes) and says whether the card on it is the one an approval was given
+        // for. Nothing is changed on the card; a reader that cannot say is a refusal to run, and the card is tried again.
+        private async Task<AutoModeRefusal> VerifyTheApprovedCardAsync(AutoModeApproval approval)
+        {
+            var poll = await PollReaderForAutoModeAsync();
+
+            if (!poll.HasValue || poll.Value.State != ReaderScanState.Ready)
+            {
+                return AutoModeRefusal.NotAdmitted;
+            }
+
+            return string.Equals(poll.Value.Uid, approval.Uid, StringComparison.Ordinal) ? AutoModeRefusal.None : AutoModeRefusal.CardChanged;
         }
 
         // The revision of the project, read only when somebody needs it: the bridge listens for the results of the runs of the mode, or

@@ -44,6 +44,9 @@ namespace RFiDGear.Services.AutoMode
         /// <summary>The project was not in the state that the approval expected; nothing ran, and the card is tried again.</summary>
         internal static readonly AutoModeRunReport ProjectChanged = new AutoModeRunReport(AutoModeRefusal.ProjectChanged);
 
+        /// <summary>The card on the reader is not the card that was approved; nothing ran. A card that is still there is tried again as a new presence, unless another run processed it.</summary>
+        internal static readonly AutoModeRunReport CardChanged = new AutoModeRunReport(AutoModeRefusal.CardChanged);
+
         /// <summary>The card was not approved; nothing ran, and the card is not tried again until it was taken away.</summary>
         internal static readonly AutoModeRunReport Declined = new AutoModeRunReport(AutoModeRefusal.Declined);
 
@@ -133,6 +136,11 @@ namespace RFiDGear.Services.AutoMode
         private bool _keepApplicationOpen;
         private int _ticking;
         private int _pauseCount;
+        private int _watching;
+
+        // The card that waits for the decision of the program, guarded by _sync; the tick that waits holds _ticking, so the ticks that
+        // come meanwhile look at the reader for this card only.
+        private PendingCard? _pendingCard;
 
         // The card of the presence being processed or processed last. Guarded by _sync, because a run that an extension
         // started remembers its card from any thread; _cardStamp changes with every write, so that a refused request puts
@@ -487,8 +495,16 @@ namespace RFiDGear.Services.AutoMode
                 return;
             }
 
-            if (Volatile.Read(ref _pauseCount) > 0 || Interlocked.CompareExchange(ref _ticking, 1, 0) != 0)
+            if (Volatile.Read(ref _pauseCount) > 0)
             {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _ticking, 1, 0) != 0)
+            {
+                // A tick is waiting for the decision about a card: this one only looks whether that card is still the one on the reader.
+                await WatchPendingCardAsync().ConfigureAwait(true);
+
                 return;
             }
 
@@ -508,6 +524,54 @@ namespace RFiDGear.Services.AutoMode
             finally
             {
                 Volatile.Write(ref _ticking, 0);
+            }
+        }
+
+        // While a card waits for a decision the reader is looked at on every tick: when the card is gone, or another one is on the
+        // reader, the wait is withdrawn, so that an approval can never run on a card the program was not shown. It never starts a run
+        // and never counts a failed poll; if the reader is gone the wait ends by its own time limit.
+        private async Task WatchPendingCardAsync()
+        {
+            PendingCard? pending;
+            lock (_sync)
+            {
+                pending = _pendingCard;
+            }
+
+            if (pending == null || !_coordinator.IsIdle || Interlocked.CompareExchange(ref _watching, 1, 0) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var poll = await _poll().ConfigureAwait(true);
+
+                if (poll.HasValue && IsEnabled && poll.Value.State == ReaderScanState.Ready && !string.Equals(poll.Value.Uid, pending.Uid, StringComparison.Ordinal))
+                {
+                    // The presence of the card ends here, as it does for a tick that finds the reader without it: a card that is put back,
+                    // or another one, is a new presence. Written before the wait is withdrawn, so that an approval that wins the race
+                    // finds the presence ended.
+                    lock (_sync)
+                    {
+                        _lastUid = null;
+                        _cardStamp++;
+                    }
+
+                    pending.Withdraw();
+                }
+            }
+            catch (Exception ex)
+            {
+                var error = new SanitizedException(ex);
+                Logger.Error(
+                    "Watching a card that waits for approval failed; automatic mode stops. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                    error.TypeName, error.Message, error.StackTrace);
+                Stop(AutoModeStopReason.RunAborted);
+            }
+            finally
+            {
+                Volatile.Write(ref _watching, 0);
             }
         }
 
@@ -591,12 +655,22 @@ namespace RFiDGear.Services.AutoMode
                 }
             }
 
+            // The card of this presence, as nobody wrote another one down since: a run made by hand or by an extension on this card while
+            // the program was deciding has processed it, and an old approval must not run it a second time.
+            bool IsStillThisPresence()
+            {
+                lock (_sync)
+                {
+                    return _cardStamp == stamp;
+                }
+            }
+
             AutoModeRunReport report;
             try
             {
                 report = approval == null
                     ? await _runCard(uid, _keepApplicationOpen, IsCurrent).ConfigureAwait(true)
-                    : await RunWithApprovalAsync(approval, uid, IsCurrent).ConfigureAwait(true);
+                    : await RunWithApprovalAsync(approval, uid, IsCurrent, IsStillThisPresence).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
@@ -645,14 +719,48 @@ namespace RFiDGear.Services.AutoMode
 
         // A card of a mode that waits for approval: shown to the program, once, and run only for what it approves. The approval is for
         // this presence; nothing that it says is kept for the next card.
-        private async Task<AutoModeRunReport> RunWithApprovalAsync(IAutoModeApproval approval, string uid, Func<bool> isCurrent)
+        private async Task<AutoModeRunReport> RunWithApprovalAsync(IAutoModeApproval approval, string uid, Func<bool> isCurrent, Func<bool> isStillThisPresence)
         {
             var presence = new AutoModePresence(Guid.NewGuid().ToString("N"), uid);
-            var approved = await approval.RequestAsync(presence).ConfigureAwait(true);
+            AutoModeApproval? approved;
+
+            // The ticks that come while the program decides look at the reader and withdraw the wait when the card is gone or replaced.
+            using (var withdrawn = new CancellationTokenSource())
+            {
+                var pending = new PendingCard(uid, withdrawn);
+
+                lock (_sync)
+                {
+                    _pendingCard = pending;
+                }
+
+                try
+                {
+                    approved = await approval.RequestAsync(presence, withdrawn.Token).ConfigureAwait(true);
+                }
+                finally
+                {
+                    lock (_sync)
+                    {
+                        if (ReferenceEquals(_pendingCard, pending))
+                        {
+                            _pendingCard = null;
+                        }
+                    }
+                }
+            }
 
             if (approved == null)
             {
                 return AutoModeRunReport.Declined;
+            }
+
+            if (!isStillThisPresence())
+            {
+                // Somebody else made a run on this card while the program decided: it is processed, and an old approval does not run it again.
+                approval.RunRefused(presence.PresenceId, AutoModeRefusal.CardChanged);
+
+                return AutoModeRunReport.CardChanged;
             }
 
             if (_runApprovedCard == null)
@@ -755,6 +863,32 @@ namespace RFiDGear.Services.AutoMode
                     Logger.Error(
                         "A subscriber of the end of a run of automatic mode threw for run {RunId}; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
                         result.RunId, error.TypeName, error.Message, error.StackTrace);
+                }
+            }
+        }
+
+        // The card that waits for a decision, and the way to withdraw the wait when the card is gone.
+        private sealed class PendingCard
+        {
+            private readonly CancellationTokenSource _withdrawn;
+
+            internal PendingCard(string uid, CancellationTokenSource withdrawn)
+            {
+                Uid = uid;
+                _withdrawn = withdrawn;
+            }
+
+            internal string Uid { get; }
+
+            internal void Withdraw()
+            {
+                try
+                {
+                    _withdrawn.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The wait has ended on its own.
                 }
             }
         }

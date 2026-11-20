@@ -15,10 +15,12 @@ namespace RFiDGear.Services.ExternalControl
     /// The one client that decides about the cards of a mode it started: every card that automatic mode finds is shown to it as an
     /// event, and runs only if the client approves it, once, within the time limit. A card is waited for one at a time (automatic
     /// mode handles one card at a time), and everything that is not an approval ends the wait with nothing run: a refusal, no
-    /// answer, a mode that was stopped, a connection that ended.
+    /// answer, a card that is no longer the one on the reader, a mode that was stopped, a connection that ended.
     /// <para>
     /// What the gate never does: it never approves anything itself, it never keeps an approval for a later card (the wait ends with
-    /// the answer, whichever it is), and it accepts an answer only from the connection that started the mode.
+    /// the answer, whichever it is), it accepts an answer only from the connection that started the mode, and it accepts none after
+    /// the time limit, whether or not its timer has noticed yet. A gate belongs to one start of the mode: once it was cancelled it
+    /// shows no more cards.
     /// </para>
     /// </summary>
     internal sealed class AutoModeApprovalGate : IAutoModeApproval
@@ -32,6 +34,9 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Func<DateTimeOffset> _now;
         private readonly object _gate = new object();
         private Pending? _pending;
+
+        // Why the start this gate belongs to is over, once it is; guarded by _gate. A card that arrives after that is not shown.
+        private string? _endedWith;
 
         /// <summary>Creates the gate of one start of the mode.</summary>
         /// <param name="sessionId">The connection that started the mode; only it can answer.</param>
@@ -73,27 +78,42 @@ namespace RFiDGear.Services.ExternalControl
 
         private sealed class Pending
         {
-            internal Pending(string presenceId)
+            internal Pending(string presenceId, string uid, DateTimeOffset deadline)
             {
                 PresenceId = presenceId;
+                Uid = uid;
+                Deadline = deadline;
             }
 
             internal string PresenceId { get; }
+
+            internal string Uid { get; }
+
+            // The time the wait ends, as the event said. An answer at or after it is no answer.
+            internal DateTimeOffset Deadline { get; }
 
             // Completed on the thread of whoever decides, never inline: the machine goes on on its own thread.
             internal TaskCompletionSource<Decision> Completion { get; } = new TaskCompletionSource<Decision>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         /// <inheritdoc/>
-        public async Task<AutoModeApproval?> RequestAsync(AutoModePresence presence)
+        public async Task<AutoModeApproval?> RequestAsync(AutoModePresence presence, CancellationToken withdrawn)
         {
             ArgumentNullException.ThrowIfNull(presence);
 
-            var pending = new Pending(presence.PresenceId);
+            var expiresAt = _now() + _timeout;
+            var pending = new Pending(presence.PresenceId, presence.Uid, expiresAt);
             Pending? replaced;
 
             lock (_gate)
             {
+                if (_endedWith != null)
+                {
+                    // The start this gate belongs to is over (the mode was stopped, or its connection ended) while the machine was on its
+                    // way here: nobody is left to show the card to, and nobody is waited for.
+                    return null;
+                }
+
                 replaced = _pending;
                 _pending = pending;
             }
@@ -113,8 +133,6 @@ namespace RFiDGear.Services.ExternalControl
                 revision = null;
             }
 
-            var expiresAt = _now() + _timeout;
-
             _publish(
                 BridgeEvents.CardPresented,
                 true,
@@ -131,6 +149,8 @@ namespace RFiDGear.Services.ExternalControl
 
             Decision decision;
 
+            // The card is taken away or replaced while the client decides: the machine withdraws the wait, and the card is not run.
+            using (withdrawn.Register(() => pending.Completion.TrySetResult(new Decision(null, PresentationEndReasons.CardChanged))))
             using (var stopWaiting = new CancellationTokenSource())
             {
                 var timer = Task.Delay(_timeout, stopWaiting.Token);
@@ -169,14 +189,19 @@ namespace RFiDGear.Services.ExternalControl
         /// <inheritdoc/>
         public void RunRefused(string presenceId, AutoModeRefusal refusal)
         {
-            var reason = refusal == AutoModeRefusal.ProjectChanged ? PresentationEndReasons.ProjectChanged : PresentationEndReasons.NotAdmitted;
+            var reason = refusal switch
+            {
+                AutoModeRefusal.ProjectChanged => PresentationEndReasons.ProjectChanged,
+                AutoModeRefusal.CardChanged => PresentationEndReasons.CardChanged,
+                _ => PresentationEndReasons.NotAdmitted,
+            };
 
             PublishEnded(presenceId, reason, null);
         }
 
         /// <summary>
-        /// Takes the approval of the card that is waited for, once. The approval is for that presence and no other, and only the connection
-        /// that started the mode can give it.
+        /// Takes the approval of the card that is waited for, once. The approval is for that presence and no other, it must come before
+        /// the time limit is up, and only the connection that started the mode can give it.
         /// </summary>
         /// <param name="sessionId">The connection that answers.</param>
         /// <param name="request">The answer.</param>
@@ -205,6 +230,7 @@ namespace RFiDGear.Services.ExternalControl
             var presenceId = pending.PresenceId;
             var approval = new AutoModeApproval(
                 presenceId,
+                pending.Uid,
                 variables,
                 request.ExpectProjectRevision,
                 runId => PublishEnded(presenceId, PresentationEndReasons.Approved, runId));
@@ -235,7 +261,10 @@ namespace RFiDGear.Services.ExternalControl
             return new DeclineCardResponse { PresenceId = pending.PresenceId };
         }
 
-        /// <summary>Ends the wait for the card that is waited for, with nothing run. Does nothing when no card is waited for.</summary>
+        /// <summary>
+        /// Ends the start this gate belongs to: the card that is waited for is not run, and no card that comes later is shown. Does
+        /// nothing more when no card is waited for.
+        /// </summary>
         /// <param name="reason">Why: <see cref="PresentationEndReasons.Stopped"/> or <see cref="PresentationEndReasons.ClientLost"/>.</param>
         internal void Cancel(string reason)
         {
@@ -243,14 +272,15 @@ namespace RFiDGear.Services.ExternalControl
 
             lock (_gate)
             {
+                _endedWith ??= reason;
                 pending = _pending;
             }
 
             pending?.Completion.TrySetResult(new Decision(null, reason));
         }
 
-        // The card that is waited for, if the answer is for it and comes from the connection that started the mode; anything else is
-        // an answer to nothing.
+        // The card that is waited for, if the answer is for it, comes from the connection that started the mode and is not late;
+        // anything else is an answer to nothing.
         private Pending FindPending(string sessionId, string? presenceId)
         {
             Pending? pending;
@@ -265,6 +295,14 @@ namespace RFiDGear.Services.ExternalControl
                 || !string.Equals(presenceId, pending.PresenceId, StringComparison.Ordinal)
                 || pending.Completion.Task.IsCompleted)
             {
+                throw BridgeFault.ApprovalNotPending();
+            }
+
+            if (_now() >= pending.Deadline)
+            {
+                // The time is up whether or not the timer has noticed yet: an answer after the limit is no answer, and it ends the wait.
+                pending.Completion.TrySetResult(new Decision(null, PresentationEndReasons.Expired));
+
                 throw BridgeFault.ApprovalNotPending();
             }
 

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using RFiDGear.Contracts;
@@ -31,12 +32,15 @@ namespace RFiDGear.Tests.AutoMode
 
             public void Answer(Func<AutoModePresence, AutoModeApproval?> answer) => _answers.Enqueue(answer);
 
+            // When set, the program does not answer until the test does (or the machine withdraws the wait, which is an answer of "no").
+            public TaskCompletionSource<AutoModeApproval?>? Hold;
+
             public void Approve(Dictionary<string, string>? variables = null, string? expectRevision = null) =>
-                Answer(presence => new AutoModeApproval(presence.PresenceId, variables ?? new Dictionary<string, string>(), expectRevision));
+                Answer(presence => new AutoModeApproval(presence.PresenceId, presence.Uid, variables ?? new Dictionary<string, string>(), expectRevision));
 
             public void Decline() => Answer(_ => null);
 
-            public async Task<AutoModeApproval?> RequestAsync(AutoModePresence presence)
+            public async Task<AutoModeApproval?> RequestAsync(AutoModePresence presence, CancellationToken withdrawn)
             {
                 Asked.Add(presence);
 
@@ -45,9 +49,17 @@ namespace RFiDGear.Tests.AutoMode
                     await WhileAsked(presence);
                 }
 
+                if (Hold != null)
+                {
+                    using (withdrawn.Register(() => Hold.TrySetResult(null)))
+                    {
+                        return await Hold.Task.ConfigureAwait(false);
+                    }
+                }
+
                 return _answers.Count > 0
                     ? _answers.Dequeue()(presence)
-                    : new AutoModeApproval(presence.PresenceId, new Dictionary<string, string>(), null);
+                    : new AutoModeApproval(presence.PresenceId, presence.Uid, new Dictionary<string, string>(), null);
             }
 
             public void RunRefused(string presenceId, AutoModeRefusal refusal) => Refusals.Add((presenceId, refusal));
@@ -305,6 +317,128 @@ namespace RFiDGear.Tests.AutoMode
             Assert.False(rig.Controller.IsEnabled);
             Assert.Equal("04AA", Assert.Single(rig.ApprovedRuns).Uid);
             Assert.False(Assert.Single(rig.StillWanted));
+        }
+
+        // ── the card while the program decides ──
+
+        private static AutoModeApproval ApprovalFor(AutoModePresence presence) =>
+            new AutoModeApproval(presence.PresenceId, presence.Uid, new Dictionary<string, string>(), null);
+
+        [Fact]
+        public async Task ACardThatIsTakenAwayWhileTheProgramDecides_IsNeverRun_AndWhenPutBackItIsANewPresence()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            // The tick that waits holds the machine; the next ticks look at the reader and see that the card is gone.
+            rig.Remove();
+            await rig.Tick();
+            await waiting;
+            rig.Approval.Hold = null;
+            rig.Present("04AA");
+            await rig.Tick();
+
+            Assert.Equal(2, rig.Approval.Asked.Count);
+            Assert.NotEqual(rig.Approval.Asked[0].PresenceId, rig.Approval.Asked[1].PresenceId);
+            Assert.Equal(rig.Approval.Asked[1].PresenceId, Assert.Single(rig.ApprovedRuns).Approval.PresenceId);
+            Assert.True(rig.Controller.IsEnabled);
+        }
+
+        [Fact]
+        public async Task ACardThatIsReplacedWhileTheProgramDecides_IsNeverRunOnTheOldApproval_AndTheOtherCardIsShownNext()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            rig.Present("04BB");
+            await rig.Tick();
+            await waiting;
+            rig.Approval.Hold = null;
+            await rig.Tick();
+
+            Assert.Equal(new[] { "04AA", "04BB" }, rig.Approval.Asked.Select(p => p.Uid));
+            Assert.Equal("04BB", Assert.Single(rig.ApprovedRuns).Uid);
+        }
+
+        [Fact]
+        public async Task ACardThatStays_KeepsWaiting_WhateverTheReaderSaysThatSaysNothingAboutIt()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            // A reader that cannot tell, a reader that is busy and the same card again: none of them withdraws the wait.
+            rig.Reader = new AutoModePoll(ReaderScanState.ReadFailed, null);
+            await rig.Tick();
+            rig.Reader = null;
+            await rig.Tick();
+            rig.Reader = new AutoModePoll(ReaderScanState.Busy, null);
+            await rig.Tick();
+            rig.Present("04AA");
+            await rig.Tick();
+            var stillWaiting = !waiting.IsCompleted;
+            rig.Approval.Hold.SetResult(ApprovalFor(rig.Approval.Asked[0]));
+            await waiting;
+
+            Assert.True(stillWaiting);
+            Assert.Equal("04AA", Assert.Single(rig.ApprovedRuns).Uid);
+        }
+
+        [Fact]
+        public async Task ACardThatAnotherRunProcessedWhileTheProgramDecides_IsNotRunAgainOnTheApproval()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            // A run by hand (or of an extension) is made on the card that is waited for, and says so.
+            rig.Controller.RememberCard("04AA");
+            rig.Approval.Hold.SetResult(ApprovalFor(rig.Approval.Asked[0]));
+            await waiting;
+            await rig.Tick();
+
+            // Nothing was run for the approval, the program was told, and the card is not shown again: it was processed.
+            Assert.Empty(rig.ApprovedRuns);
+            Assert.Equal((rig.Approval.Asked[0].PresenceId, AutoModeRefusal.CardChanged), Assert.Single(rig.Approval.Refusals));
+            Assert.Single(rig.Approval.Asked);
+        }
+
+        [Fact]
+        public async Task ACardThatTheRunFindsReplacedAtTheStart_IsOfferedAgainAsANewPresence()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            var first = true;
+            rig.ApprovedBehavior = _ =>
+            {
+                if (first)
+                {
+                    first = false;
+
+                    return AutoModeRunReport.CardChanged;
+                }
+
+                return rig.Admitted();
+            };
+            rig.Present("04AA");
+
+            await rig.Tick();
+            await rig.Tick();
+
+            Assert.Equal((rig.Approval.Asked[0].PresenceId, AutoModeRefusal.CardChanged), Assert.Single(rig.Approval.Refusals));
+            Assert.Equal(2, rig.Approval.Asked.Count);
+            Assert.NotEqual(rig.Approval.Asked[0].PresenceId, rig.Approval.Asked[1].PresenceId);
+            Assert.Equal(2, rig.ApprovedRuns.Count);
         }
     }
 }

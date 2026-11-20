@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using RFiDGear.Bridge;
@@ -83,7 +84,7 @@ namespace RFiDGear.Tests.ExternalControl
             new StartAutoModeRequest { StopOnDisconnect = true, RequireApproval = true, ApprovalTimeoutMs = timeoutMs };
 
         private static Task<AutoModeApproval?> Present(FakeExtensionHost host, string presenceId = "p-1", string uid = "04AA") =>
-            Task.Run(() => host.AutoModeHost.Approval!.RequestAsync(new AutoModePresence(presenceId, uid)));
+            Task.Run(() => host.AutoModeHost.Approval!.RequestAsync(new AutoModePresence(presenceId, uid), CancellationToken.None));
 
         // ── What is offered ──
 

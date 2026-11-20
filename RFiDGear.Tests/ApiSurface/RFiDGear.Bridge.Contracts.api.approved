@@ -389,6 +389,7 @@ public sealed record RFiDGear.Bridge.LoadProjectResponse : System.IEquatable<Loa
 
 public static class RFiDGear.Bridge.PresentationEndReasons
     public const string Approved = "approved"
+    public const string CardChanged = "cardChanged"
     public const string ClientLost = "clientLost"
     public const string Declined = "declined"
     public const string Expired = "expired"

@@ -303,6 +303,13 @@ namespace RFiDGear.Bridge
         /// <summary>The project is not in the state the approval expected (<see cref="ApproveCardRequest.ExpectProjectRevision"/>). Nothing was run.</summary>
         public const string ProjectChanged = "projectChanged";
 
+        /// <summary>
+        /// The card on the reader is no longer the one that was shown: it was taken away or replaced while RFiDGear waited or before the
+        /// run started, or another run was made on it meanwhile. Nothing was run. A card that is on the reader and was not processed
+        /// otherwise is offered again with a new presence id.
+        /// </summary>
+        public const string CardChanged = "cardChanged";
+
         /// <summary>The card was approved, but the run could not be admitted (something else held the execution slot). Nothing was run; the card is offered again with a new presence id.</summary>
         public const string NotAdmitted = "notAdmitted";
     }

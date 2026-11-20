@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using RFiDGear.Bridge;
@@ -28,6 +29,9 @@ namespace RFiDGear.Tests.ExternalControl
             public readonly List<(string Name, BridgeEvent Event)> Published = new List<(string, BridgeEvent)>();
             public readonly AutoModeApprovalGate Gate;
 
+            // The clock of the gate: a test moves it past the limit without waiting for it.
+            public DateTimeOffset Clock = Now;
+
             public Rig(TimeSpan? timeout = null, Func<string?>? readRevision = null)
             {
                 Gate = new AutoModeApprovalGate(
@@ -41,7 +45,7 @@ namespace RFiDGear.Tests.ExternalControl
                             Published.Add((name, create(++_seq, Session, Now)));
                         }
                     },
-                    () => Now);
+                    () => Clock);
             }
 
             public IReadOnlyList<T> Events<T>() where T : BridgeEvent
@@ -85,7 +89,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task ACard_IsShownWithItsPresenceUidAndRevision_AndRunsOnlyWhenTheStartingConnectionApproves()
         {
             var rig = new Rig(TimeSpan.FromSeconds(15));
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Events<CardPresentedEvent>().Count == 1);
 
             var shown = rig.Events<CardPresentedEvent>().Single();
@@ -99,6 +103,9 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal("p-1", response.PresenceId);
             Assert.NotNull(approval);
             Assert.Equal("p-1", approval!.PresenceId);
+
+            // The approval is for the card that was shown, and says which: the run is held to it.
+            Assert.Equal("04AA", approval.Uid);
             Assert.Equal("rev-1", approval.ExpectProjectRevision);
             Assert.Equal("04AA", approval.Variables["$EXPECTEDUID"]);
 
@@ -111,7 +118,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task AnApproval_IsUsedUpByTheFirstAnswer_ASecondOneForTheSamePresenceIsNotPending()
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             rig.Gate.Approve(Session, Approval("p-1"));
@@ -125,7 +132,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task AnAnswerForAnotherPresence_IsNotPending_AndTheCardKeepsWaiting()
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             AssertNotPending(() => rig.Gate.Approve(Session, Approval("p-0")));
@@ -141,7 +148,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task AnAnswerFromAnotherConnection_IsNotPending_AndTheCardKeepsWaiting()
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             AssertNotPending(() => rig.Gate.Approve("s-2", Approval("p-1")));
@@ -166,7 +173,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task ADeclinedCard_RunsNothing_AndSaysSo()
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             var response = rig.Gate.Decline(Session, new DeclineCardRequest { PresenceId = "p-1" });
@@ -182,7 +189,7 @@ namespace RFiDGear.Tests.ExternalControl
         {
             var rig = new Rig(TimeSpan.FromMilliseconds(150));
 
-            var approval = await rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var approval = await rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
 
             Assert.Null(approval);
             Assert.Equal(PresentationEndReasons.Expired, Assert.Single(rig.Events<CardPresentationEndedEvent>()).Reason);
@@ -195,7 +202,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task AWaitThatIsCancelled_RunsNothing_AndSaysWhy(string reason)
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             rig.Gate.Cancel(reason);
@@ -219,7 +226,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task AnAnswerThatBreaksTheRules_IsRefusedAndTheCardKeepsWaiting_ForAnotherAnswerInTime()
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             // The rules of the variables of startRun, and the alphabet of a revision.
@@ -242,7 +249,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task AnApprovalWithoutVariablesOrRevision_IsAnApprovalAllTheSame()
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             rig.Gate.Approve(Session, new ApproveCardRequest { PresenceId = "p-1" });
@@ -257,7 +264,7 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task TheRunThatWasAdmitted_IsToldWithItsId_AndARefusedOneWithItsReason()
         {
             var rig = new Rig();
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
             rig.Gate.Approve(Session, Approval("p-1"));
             var approval = (await waiting)!;
@@ -265,18 +272,105 @@ namespace RFiDGear.Tests.ExternalControl
             approval.NotifyRunAdmitted("run-9");
             rig.Gate.RunRefused("p-2", AutoModeRefusal.ProjectChanged);
             rig.Gate.RunRefused("p-3", AutoModeRefusal.NotAdmitted);
+            rig.Gate.RunRefused("p-4", AutoModeRefusal.CardChanged);
 
             var ended = rig.Events<CardPresentationEndedEvent>();
             Assert.Equal(
-                new[] { ("p-1", PresentationEndReasons.Approved, "run-9"), ("p-2", PresentationEndReasons.ProjectChanged, (string?)null), ("p-3", PresentationEndReasons.NotAdmitted, (string?)null) },
+                new[]
+                {
+                    ("p-1", PresentationEndReasons.Approved, "run-9"),
+                    ("p-2", PresentationEndReasons.ProjectChanged, (string?)null),
+                    ("p-3", PresentationEndReasons.NotAdmitted, (string?)null),
+                    ("p-4", PresentationEndReasons.CardChanged, (string?)null),
+                },
                 ended.Select(e => (e.PresenceId, e.Reason, e.RunId)));
+        }
+
+        [Fact]
+        public async Task AnAnswerAfterTheTimeLimit_IsNoAnswer_EvenWhenTheTimerHasNotNoticedYet()
+        {
+            var rig = new Rig(TimeSpan.FromSeconds(30));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+
+            // The time of the event has come; the timer of the wait (30 s of real time) has not fired.
+            rig.Clock = Now.AddSeconds(30);
+
+            AssertNotPending(() => rig.Gate.Approve(Session, Approval("p-1")));
+
+            // The wait ends as expired, with nothing approved, and nobody can still answer it.
+            Assert.Null(await waiting);
+            Assert.Equal(PresentationEndReasons.Expired, Assert.Single(rig.Events<CardPresentationEndedEvent>()).Reason);
+            AssertNotPending(() => rig.Gate.Decline(Session, new DeclineCardRequest { PresenceId = "p-1" }));
+        }
+
+        [Fact]
+        public async Task ADeclineAfterTheTimeLimit_IsNoAnswerEither_AndTheWaitEndsAsExpired()
+        {
+            var rig = new Rig(TimeSpan.FromSeconds(30));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+            rig.Clock = Now.AddSeconds(31);
+
+            AssertNotPending(() => rig.Gate.Decline(Session, new DeclineCardRequest { PresenceId = "p-1" }));
+
+            Assert.Null(await waiting);
+            Assert.Equal(PresentationEndReasons.Expired, Assert.Single(rig.Events<CardPresentationEndedEvent>()).Reason);
+        }
+
+        [Theory]
+        [InlineData(PresentationEndReasons.Stopped)]
+        [InlineData(PresentationEndReasons.ClientLost)]
+        public async Task AGateThatWasCancelledBeforeACardArrived_ShowsNothingAndWaitsForNothing(string reason)
+        {
+            var rig = new Rig();
+
+            // The mode was stopped while the machine was on its way to ask: the gate has been cancelled, nobody was waited for yet.
+            rig.Gate.Cancel(reason);
+            var approval = await rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+
+            Assert.Null(approval);
+            Assert.Null(rig.Gate.PendingPresenceId);
+            Assert.Empty(rig.Published);
+            AssertNotPending(() => rig.Gate.Approve(Session, Approval("p-1")));
+        }
+
+        [Fact]
+        public async Task ACardThatTheMachineWithdraws_RunsNothing_AndTheNoticeSaysTheCardChanged()
+        {
+            var rig = new Rig();
+            using var withdrawn = new CancellationTokenSource();
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), withdrawn.Token);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+
+            withdrawn.Cancel();
+
+            Assert.Null(await waiting);
+            Assert.Equal(PresentationEndReasons.CardChanged, Assert.Single(rig.Events<CardPresentationEndedEvent>()).Reason);
+            AssertNotPending(() => rig.Gate.Approve(Session, Approval("p-1")));
+        }
+
+        [Fact]
+        public async Task AnApprovalThatWinsTheRaceAgainstTheWithdrawal_IsKeptAndTheOtherSideIsNotApplied()
+        {
+            var rig = new Rig();
+            using var withdrawn = new CancellationTokenSource();
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), withdrawn.Token);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+
+            rig.Gate.Approve(Session, Approval("p-1"));
+            withdrawn.Cancel();
+
+            // The first answer counts: the machine, which looks at the card again before it runs anything, has the last word.
+            Assert.NotNull(await waiting);
+            Assert.Empty(rig.Events<CardPresentationEndedEvent>());
         }
 
         [Fact]
         public async Task ARevisionThatCannotBeRead_IsLeftOutOfTheEvent_AndTheCardIsShownAllTheSame()
         {
             var rig = new Rig(readRevision: () => throw new InvalidOperationException("the project cannot be read"));
-            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             rig.Gate.Decline(Session, new DeclineCardRequest { PresenceId = "p-1" });
@@ -289,10 +383,10 @@ namespace RFiDGear.Tests.ExternalControl
         public async Task OneCardAtATime_ANewCardEndsTheWaitOfALeftOverOne_AsStopped()
         {
             var rig = new Rig();
-            var first = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"));
+            var first = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId == "p-1");
 
-            var second = rig.Gate.RequestAsync(new AutoModePresence("p-2", "04BB"));
+            var second = rig.Gate.RequestAsync(new AutoModePresence("p-2", "04BB"), CancellationToken.None);
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId == "p-2");
 
             Assert.Null(await first);
