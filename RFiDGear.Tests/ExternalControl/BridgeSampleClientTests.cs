@@ -680,6 +680,9 @@ namespace RFiDGear.Tests.ExternalControl
                 },
                 cancellationToken: cancelling.Token));
 
+            // A request that was sent is admitted by the bridge a moment later: give it the time, so that a run that was started shows.
+            await Task.Delay(400);
+
             Assert.Empty(host.ExecutionHost.Requests);
         }
 
