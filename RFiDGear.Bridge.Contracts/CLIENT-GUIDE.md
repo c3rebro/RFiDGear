@@ -137,7 +137,11 @@ down as what was run.
   `revision` (it could not make one for this project), do not start: a run
   without the revision is only held back by the path and the task count, which
   cannot tell a task that was changed in the window.
-- The result of automatic mode does not carry a revision yet.
+- The result of a run of automatic mode carries `projectRevision` as well: the
+  state the run started with, which the main window read when it took the run.
+  Every card of the mode starts with the state that the card before it left
+  (the tasks write some of their own settings), so the values differ from card
+  to card; note the one of the result in the record of the card.
 
 **After a doubt, a lost connection or a restart:**
 

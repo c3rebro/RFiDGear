@@ -69,6 +69,10 @@ namespace RFiDGear.Services.ExternalControl
         /// <see cref="RunSources.AutoMode"/>), or <see langword="null"/> for a run that is not the window's (see
         /// <see cref="WindowRunMarker.SourceOf"/>). Without it a run of the window is <see cref="RunSources.Other"/> to a key supplier.
         /// </param>
+        /// <param name="runFacts">
+        /// What the main window noted about its runs when it took them (see <see cref="RunFacts"/>): the result of a run of automatic mode
+        /// carries the revision that the run started with. Without it that result has none.
+        /// </param>
         internal ExternalControlService(
             IRFiDGearExtensionHost host,
             Func<Action, Task> dispatchToUi,
@@ -81,7 +85,8 @@ namespace RFiDGear.Services.ExternalControl
             TimeSpan? admissionTimeout = null,
             string? journalDirectory = null,
             BridgeKeyProvider? keyProvider = null,
-            Func<string?, string?>? windowRunSource = null)
+            Func<string?, string?>? windowRunSource = null,
+            RunFacts? runFacts = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = Guid.NewGuid().ToString("N");
@@ -124,7 +129,8 @@ namespace RFiDGear.Services.ExternalControl
                     registry,
                     (name, durable, create) => _server!.Publish(name, durable, create),
                     () => Volatile.Read(ref _shutdown) != 0,
-                    () => busyActivity?.Invoke());
+                    () => busyActivity?.Invoke(),
+                    runFacts);
             }
 
             var autoMode = _autoMode;

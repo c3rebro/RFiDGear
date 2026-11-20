@@ -196,8 +196,8 @@ namespace RFiDGear.Bridge
 
         /// <summary>
         /// Gets the revision of the project the run started with (see <see cref="BridgeCapabilities.ProjectRevision"/>), for the record
-        /// of what was run. Nothing for a run that did not start over <c>startRun</c> (the results of automatic mode do not carry
-        /// it yet), when this RFiDGear does not offer the capability, or when the revision could not be made.
+        /// of what was run: for a run that started over <c>startRun</c> and for a run of automatic mode (the main window reads it when it
+        /// takes the run, before the first task). Nothing when this RFiDGear does not offer the capability, or when the revision could not be made.
         /// </summary>
         [JsonPropertyName("projectRevision")]
         public string? ProjectRevision { get; init; }

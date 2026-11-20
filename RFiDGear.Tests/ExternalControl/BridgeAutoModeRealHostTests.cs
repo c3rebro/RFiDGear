@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 using RFiDGear.Bridge;
 using RFiDGear.Contracts;
+using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.Services.ExternalControl;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.Tests.AutoMode;
@@ -91,6 +92,58 @@ namespace RFiDGear.Tests.ExternalControl
                 Assert.Equal(2, off.LastResultSeq);
                 Assert.Equal(new long[] { 1, 2 }, list.Results.Select(r => r.ResultSeq));
                 Assert.Equal(RunSources.AutoMode, list.Results[1].Source);
+            });
+        }
+
+        [Fact]
+        public async Task TheResultOfACardOfTheMode_SaysWhichStateOfTheProjectTheWindowTookTheRunWith()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted);
+                var expected = ((IProjectRevisionSource)viewModel.ExtensionHost.Project).GetProjectRevision();
+
+                await client.Service.StartAutoMode(new StartAutoModeRequest());
+                exec.OnExecute = _ => new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Success };
+                provider.Card = Card(CardA);
+                await viewModel.AutoMode.TickAsync();
+                var events = await client.WaitForEventsAsync(2);
+
+                var completed = Assert.IsType<AutoRunCompletedEvent>(events[1]);
+                Assert.Matches("^[0-9a-f]{32}$", completed.Result.ProjectRevision);
+                Assert.Equal(expected, completed.Result.ProjectRevision);
+                Assert.True(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task WithoutAWindowThatNotesIt_TheResultOfACardOfTheMode_HasNoRevision()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, _, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted);
+
+                await client.Service.StartAutoMode(new StartAutoModeRequest());
+                exec.OnExecute = _ => new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Success };
+                provider.Card = Card(CardA);
+                await viewModel.AutoMode.TickAsync();
+                var events = await client.WaitForEventsAsync(2);
+
+                var completed = Assert.IsType<AutoRunCompletedEvent>(events[1]);
+                Assert.Null(completed.Result.ProjectRevision);
+
+                // Nobody takes the facts, so the window did not make a revision for them: a revision costs a look at the whole project.
+                Assert.Null(viewModel.RunFacts.Take(completed.Result.RunId));
             });
         }
 

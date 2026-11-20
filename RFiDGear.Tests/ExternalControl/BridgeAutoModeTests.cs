@@ -319,6 +319,48 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheResultOfARunOfTheMode_CarriesTheRevisionTheWindowNotedWhenItTookTheRun_OnceAndOnlyForThatRun()
+        {
+            var facts = new RunFacts();
+            var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+            var host = new FakeExtensionHost();
+            using var service = new ExternalControlService(host, RunAtOnce, () => false, "2.0.10", name, runFacts: facts);
+            Assert.True(service.Start());
+            service.MarkStartupComplete();
+            var wantedWhileListening = facts.IsWanted;
+            var client = await ConnectAsync(name, BridgeEvents.AutoRunCompleted);
+            facts.Remember("run-a", new RunFact("rev-7"));
+
+            host.AutoModeHost.RaiseRunCompleted(AResult("run-a"));
+            host.AutoModeHost.RaiseRunCompleted(AResult("run-b"));
+            var events = await client.WaitForEventsAsync(2);
+            var list = await client.Service.ListRunResults(new ListRunResultsRequest());
+
+            // The run that was noted has its revision, in the event and in the log; the one that was not has none, and so has a result
+            // that is made twice for the same id (a fact is taken once).
+            Assert.True(wantedWhileListening);
+            Assert.Equal("rev-7", Assert.IsType<AutoRunCompletedEvent>(events[0]).Result.ProjectRevision);
+            Assert.Null(Assert.IsType<AutoRunCompletedEvent>(events[1]).Result.ProjectRevision);
+            Assert.Equal(new[] { "rev-7", null }, list.Results.Select(r => r.ProjectRevision));
+        }
+
+        [Fact]
+        public async Task WhenTheBridgeStopsListening_TheWindowIsNotAskedForFactsAnyMore()
+        {
+            var facts = new RunFacts();
+            var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+            var service = new ExternalControlService(new FakeExtensionHost(), RunAtOnce, () => false, "2.0.10", name, runFacts: facts);
+            Assert.True(service.Start());
+            var whileListening = facts.IsWanted;
+
+            service.Dispose();
+            await Task.CompletedTask;
+
+            Assert.True(whileListening);
+            Assert.False(facts.IsWanted);
+        }
+
+        [Fact]
         public async Task TheResultsOfClientsAndOfTheMode_ShareOneSequence_AndTheLogListsThemInTheOrderTheyEnded()
         {
             var (_, pipe, host) = Start();

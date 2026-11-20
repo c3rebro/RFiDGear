@@ -88,6 +88,12 @@ namespace RFiDGear.ViewModel
 
         // Which run the window is running and who asked for it (by hand, or automatic mode): a supplier of keys is told.
         private readonly WindowRunMarker _windowRuns = new WindowRunMarker();
+
+        // What the window knows about a run when it takes it (the revision of the project), for the result that is made later.
+        private readonly RunFacts _runFacts = new RunFacts();
+
+        /// <summary>Gets what the window notes about its runs, for the bridge that reports their results.</summary>
+        internal RunFacts RunFacts => _runFacts;
         private readonly string externalControlPipeName;
         private readonly string externalControlJournalDirectory;
         private readonly OnceGate startupOnce = new OnceGate();
@@ -397,7 +403,8 @@ namespace RFiDGear.ViewModel
                     busyActivity: () => ExternalControlService.ActivityOf(_coordinator),
                     journalDirectory: externalControlJournalDirectory ?? RunJournal.DefaultDirectory,
                     keyProvider: BridgeKeyProvider.Shared,
-                    windowRunSource: _windowRuns.SourceOf);
+                    windowRunSource: _windowRuns.SourceOf,
+                    runFacts: _runFacts);
 
                 // The status bar shows whether a program is connected; the server raises the change on its own threads.
                 service.ConnectionChanged += (_, _) =>
@@ -1648,6 +1655,7 @@ namespace RFiDGear.ViewModel
 
             // A run by hand has no question to ask the mode ("isStillWanted" is for the requests of automatic mode only).
             _windowRuns.Begin(runId, isStillWanted == null ? RunSources.Gui : RunSources.AutoMode);
+            NoteTheProjectOfTheRun(runId);
             var startedAt = DateTimeOffset.UtcNow;
             var observations = new List<TaskExecutionObservation>();
             IReadOnlyList<object> snapshot = Array.Empty<object>();
@@ -1735,6 +1743,26 @@ namespace RFiDGear.ViewModel
             }
 
             return new AutoModeRunReport(admitted: true, execResult, abandoned);
+        }
+
+        // The window holds the execution slot, so nothing can change the project now: the revision it has is the one the run
+        // starts with, and the result of the run (made later, by the bridge) says so. Only while the bridge listens for it, and it
+        // never affects the run.
+        private void NoteTheProjectOfTheRun(string runId)
+        {
+            if (!_runFacts.IsWanted || extensionHost?.Project is not IProjectRevisionSource source)
+            {
+                return;
+            }
+
+            try
+            {
+                _runFacts.Remember(runId, new RunFact(source.GetProjectRevision()));
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<MainWindowViewModel>().Debug("The revision of the project could not be noted for run {RunId} ({ExceptionType})", runId, e.GetType().FullName);
+            }
         }
 
         /// <summary>
