@@ -43,8 +43,8 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets what <c>scanReader</c> does; a host that offers the <c>reader.scan</c> capability sets it.</summary>
         internal Func<Task<ScanReaderResponse>>? ScanReader { get; init; }
 
-        /// <summary>Gets what <c>startRun</c> does; a host that offers the <c>execution.run</c> capability sets it.</summary>
-        internal Func<StartRunRequest, Task<StartRunResponse>>? StartRun { get; init; }
+        /// <summary>Gets what <c>startRun</c> does, given the id of the connection; a host that offers the <c>execution.run</c> capability sets it.</summary>
+        internal Func<string, StartRunRequest, Task<StartRunResponse>>? StartRun { get; init; }
 
         /// <summary>Gets what <c>cancelRun</c> does; a host that offers the <c>execution.cancel</c> capability sets it.</summary>
         internal Func<CancelRunRequest, Task<CancelRunResponse>>? CancelRun { get; init; }
@@ -82,6 +82,7 @@ namespace RFiDGear.Services.ExternalControl
         private HashSet<string> _enabledEvents = new HashSet<string>(StringComparer.Ordinal);
         private volatile bool _helloDone;
         private volatile bool _providesKeys;
+        private volatile bool _ownRunsOnly;
 
         /// <summary>Creates the service of one connection.</summary>
         /// <param name="options">What the host offers.</param>
@@ -97,6 +98,9 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Gets whether the client registered as the supplier of card keys; for the life of the connection.</summary>
         internal bool ProvidesKeys => _providesKeys;
+
+        /// <summary>Gets whether the client that registered as the supplier of card keys asked to be asked for the keys of its own runs only, and the host agreed.</summary>
+        internal bool OwnRunsOnly => _ownRunsOnly;
 
         /// <summary>Says whether the client asked for an event and the host offers it.</summary>
         /// <param name="name">The wire name of the event.</param>
@@ -116,7 +120,7 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <inheritdoc />
         public Task<StartRunResponse> StartRun(StartRunRequest request) =>
-            Run(BridgeMethods.StartRun, () => (_options.StartRun ?? throw new NotSupportedException())(request));
+            Run(BridgeMethods.StartRun, () => (_options.StartRun ?? throw new NotSupportedException())(_sessionId, request));
 
         /// <inheritdoc />
         public Task<CancelRunResponse> CancelRun(CancelRunRequest request) =>
@@ -148,7 +152,9 @@ namespace RFiDGear.Services.ExternalControl
             {
                 var response = await (_options.RegisterKeyProvider ?? throw new NotSupportedException())(request).ConfigureAwait(false);
 
-                // From now on the host may call the client for keys, until the connection ends.
+                // From now on the host may call the client for keys, until the connection ends. What the client asked for is set
+                // first: a request must never see a supplier without the restriction it asked for. The latest registration counts.
+                _ownRunsOnly = response.OwnRunsOnly;
                 _providesKeys = true;
 
                 return response;

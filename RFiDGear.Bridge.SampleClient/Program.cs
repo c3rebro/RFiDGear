@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
@@ -18,6 +19,8 @@ namespace RFiDGear.Bridge.SampleClient
     internal static class Program
     {
         private const string ExpectRevisionOption = "--expect-revision=";
+        private const string OwnRunsOnlyOption = "--own-runs-only";
+        private const string RunOption = "--run=";
 
         private const string Usage =
             "RFiDGear.Bridge.SampleClient status\n" +
@@ -25,7 +28,7 @@ namespace RFiDGear.Bridge.SampleClient
             "RFiDGear.Bridge.SampleClient result <requestId>\n" +
             "RFiDGear.Bridge.SampleClient results [<afterResultSeq>]\n" +
             "RFiDGear.Bridge.SampleClient auto\n" +
-            "RFiDGear.Bridge.SampleClient keys <reference>";
+            "RFiDGear.Bridge.SampleClient keys <reference> [--own-runs-only] [--run=<requestId>]";
 
         private static async Task<int> Main(string[] args)
         {
@@ -52,7 +55,7 @@ namespace RFiDGear.Bridge.SampleClient
                     "result" when args.Length == 2 => await ResultAsync(args[1], stop.Token),
                     "results" => await ResultsAsync(args.Length > 1 ? long.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 0, stop.Token),
                     "auto" => await AutoAsync(stop.Token),
-                    "keys" when args.Length == 2 => await KeysAsync(args[1], stop.Token),
+                    "keys" when args.Length >= 2 => await KeysAsync(args, stop.Token),
                     _ => Fail(Usage),
                 };
             }
@@ -217,8 +220,23 @@ namespace RFiDGear.Bridge.SampleClient
 
         // Serves one reference with a key that is typed at a prompt that does not show it: a key does not belong in an argument, a
         // file or an environment variable. The key is erased when the command ends.
-        private static async Task<int> KeysAsync(string reference, CancellationToken cancellationToken)
+        // With --own-runs-only the sample asks to be bothered with the runs it started itself, and with --run=<requestId> it starts one
+        // right away (on the connection that supplies the keys: a program that does both needs one connection for both, because the
+        // bridge serves one client at a time), prints how it ended, and goes.
+        private static async Task<int> KeysAsync(string[] args, CancellationToken cancellationToken)
         {
+            var reference = args[1];
+            var options = args.Skip(2).ToList();
+            var ownRunsOnly = options.Remove(OwnRunsOnlyOption);
+            var runOptions = options.Where(option => option.StartsWith(RunOption, StringComparison.Ordinal)).ToList();
+            options = options.Where(option => !option.StartsWith(RunOption, StringComparison.Ordinal)).ToList();
+
+            if (options.Count > 0 || runOptions.Count > 1 || (runOptions.Count == 1 && runOptions[0].Length == RunOption.Length))
+            {
+                return Fail(Usage);
+            }
+
+            var requestId = runOptions.Count == 1 ? runOptions[0][RunOption.Length..] : null;
             var key = ReadKey();
 
             try
@@ -226,9 +244,20 @@ namespace RFiDGear.Bridge.SampleClient
                 using var vault = new SampleVault(reference, key);
                 await using var client = await BridgeSampleClient.ConnectAsync(cancellationToken: cancellationToken);
                 client.KeyVault = vault.ResolveAsync;
-                var registered = await client.RegisterKeyProviderAsync();
+                var registered = await client.RegisterKeyProviderAsync(ownRunsOnly);
                 Console.WriteLine("registered as the supplier of keys; name the provider \"" + registered.ProviderId + "\" and the reference \"" + reference + "\" in a task");
-                Console.WriteLine("every other reference is refused; Ctrl+C ends it");
+                Console.WriteLine("every other reference is refused" + (ownRunsOnly ? ", and so is every run that this program did not start" : string.Empty) + "; Ctrl+C ends it");
+
+                if (requestId != null)
+                {
+                    // Written before the call, as for `run`.
+                    Console.WriteLine("request id: " + requestId);
+                    var outcome = await client.RunOnceAsync(requestId, new Dictionary<string, string>(), cancellationToken: cancellationToken);
+                    var code = Print(outcome);
+                    Console.WriteLine("keys handed out: " + vault.Served);
+
+                    return code;
+                }
 
                 var lost = await WaitUntilEndedAsync(client, cancellationToken);
                 Console.WriteLine((lost ? "RFiDGear closed the connection; " : string.Empty) + "keys handed out: " + vault.Served);

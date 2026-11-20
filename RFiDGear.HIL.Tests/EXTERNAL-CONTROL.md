@@ -188,6 +188,40 @@ refusals happen before the card is touched.
   `status` prints another revision for the same file. That is meant: a revision
   is valid for one process.
 
+**Where a request for a key comes from (`keys.context`):**
+
+Use the copy of a project from above, with a task that names the provider
+`bridge-client` and the reference `orders/4711` for its key (a test card with
+that key on the reader). The sample command `keys` asks to be told only about
+its own runs with `--own-runs-only`, and starts a run on the same connection
+with `--run=<requestId>`; the bridge serves one client at a time, so a program
+that supplies keys and starts runs needs one connection for both.
+
+- 38, a run of the client: `keys orders/4711 --run=job-38`, type the key. The
+  task authenticates, the result is a success, and the sample says one key was
+  handed out.
+- 39, the same with the restriction: `keys orders/4711 --own-runs-only
+  --run=job-39`. The same, and the line "and so is every run that this program
+  did not start" is printed at registration.
+- 40, a run of the window with the restriction: start `keys orders/4711
+  --own-runs-only` (no `--run`), type the key, then run the project from the
+  window. The task ends with `KeyUnavailable` and the card is untouched; the
+  sample says that no key was handed out. The log of RFiDGear has a line that
+  says the key request of the run (source `gui`) was refused without asking
+  the client, which asked for its own runs only.
+- 41, a run of automatic mode with the restriction: the same, then switch
+  automatic mode on and present a card: `KeyUnavailable`, the log says source
+  `autoMode`, nothing was handed out.
+- 41b, a run that was left behind: with `--own-runs-only` and `--run=<id>` on a
+  project that takes a while, end the sample (Ctrl+C) while the run is still
+  going, start `keys orders/4711 --own-runs-only` again and let the run ask for
+  its key: it ends with `KeyUnavailable`, the new sample hands out nothing, and
+  the log names the source `bridge`. (The run belongs to the connection that
+  started it, not to whoever registers next.)
+- 42, the restriction is not needed to work: `keys orders/4711` without it, run
+  the project from the window: the task authenticates (the vault of the sample
+  serves the reference whoever asked, as before).
+
 **Cleaning up:**
 
 Remove the test application from the card if you made one (`SECURE-KEYS.md`),

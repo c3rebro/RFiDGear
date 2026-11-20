@@ -476,6 +476,23 @@ passed with a real reader; until then a snapshot may be re-baselined.
   `ERROR.KeyUnavailable`. No key, reference, UID or text of a client reaches a
   log (only the type of an exception), and the text forms of the two messages
   are fixed strings.
+- **Where a request for a key comes from** (`keys.context`, a guarantee that
+  comes with `keys.provider`): `KeyChannel` asks `RunOriginResolver`
+  (`RunOrigin.cs`) about the run id and puts `requestId`, `source` and
+  `projectRevision` on the `ResolveKeyRequest`; `SecureKeyRequest` of the
+  Contracts is not touched. A run is `bridge` while its record in `RunRegistry`
+  is Admitting or Running (the revision is the one it started with); a run of
+  the window is `gui` or `autoMode` as `WindowRunMarker` says, which
+  `MainWindowViewModel.RunAllOnceCoreAsync` sets for the one run it holds the
+  slot for; everything else (an extension, a task dialog button, no run id) is
+  `other`, and a run that is over is never `bridge`. `registerKeyProvider`
+  takes `ownRunsOnly` (default off, latest registration counts, the answer says
+  what is in force): `KeyChannel` then answers `NotAuthorized` for every run
+  that was not started over the same connection (`RunRecord.SessionId`, which
+  `startRun` records; a run a client left behind belongs to nobody who
+  connects later) and does not call the client. These are information and a
+  convenience, not protection against a hostile program of the same user (see
+  the guide).
 - Logs hold method names, request and run ids, numbers and error kinds. Never a
   variable, a path, a UID, a key or the text of an exception (`SanitizedException`
   is for the existing logs; the bridge logs only the type). Errors on the wire

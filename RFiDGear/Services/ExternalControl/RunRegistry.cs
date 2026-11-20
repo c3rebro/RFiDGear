@@ -84,6 +84,12 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets the request id the client chose.</summary>
         internal string RequestId { get; }
 
+        /// <summary>
+        /// Gets the id of the connection that sent the request, or <see langword="null"/> when it is not known (a run of an earlier
+        /// RFiDGear, or a caller that gave none). A run belongs to that connection and to no other, whoever connects later.
+        /// </summary>
+        internal string? SessionId { get; init; }
+
         /// <summary>Gets the hash of what the request asked for; a second request with the same id and another hash is a conflict.</summary>
         internal string PayloadHash { get; }
 
@@ -236,8 +242,9 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Finds the record of a request id, or makes one.</summary>
         /// <param name="requestId">The request id.</param>
         /// <param name="payloadHash">The hash of what the request asks for.</param>
+        /// <param name="sessionId">The id of the connection that sent the request; it is kept with the record when this call makes it.</param>
         /// <returns>The record, and whether this call made it (the caller that made it is the one that starts the run).</returns>
-        internal (RunRecord Record, bool Created) GetOrCreate(string requestId, string payloadHash)
+        internal (RunRecord Record, bool Created) GetOrCreate(string requestId, string payloadHash, string? sessionId = null)
         {
             lock (_gate)
             {
@@ -246,7 +253,7 @@ namespace RFiDGear.Services.ExternalControl
                     return (existing, false);
                 }
 
-                var record = new RunRecord(requestId, payloadHash);
+                var record = new RunRecord(requestId, payloadHash) { SessionId = sessionId };
                 _byRequestId[requestId] = record;
                 _byRunId[record.RunId] = record;
 

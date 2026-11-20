@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
@@ -47,6 +48,7 @@ namespace RFiDGear.Bridge.SampleClient
 
         private readonly NamedPipeClientStream _pipe;
         private readonly JsonRpc _rpc;
+        private readonly ConcurrentDictionary<string, byte> _ownRequests = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
         private TimeSpan _longPoll = TimeSpan.FromSeconds(20);
 
         private BridgeSampleClient(NamedPipeClientStream pipe)
@@ -95,6 +97,13 @@ namespace RFiDGear.Bridge.SampleClient
         /// refused (<see cref="KeyResolveResults.NotAuthorized"/>). It must check the reference against what it serves.
         /// </summary>
         public Func<ResolveKeyRequest, CancellationToken, Task<ResolveKeyResponse>>? KeyVault { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether this client hands out keys only for the runs it started itself (a request of <see cref="StartedByThisClient"/>).
+        /// It is the client's own check and does not depend on the host: a host that is older than <see cref="BridgeCapabilities.KeysContext"/>
+        /// sends no <c>requestId</c>, so every request is refused, which is the safe way to be wrong. <see cref="RegisterKeyProviderAsync"/> sets it.
+        /// </summary>
+        public bool ServeOwnRunsOnly { get; set; }
 
         /// <summary>Raised for every notification the host sends and this client asked for. Keep the handler short and never call the host from it.</summary>
         public event Action<BridgeEvent>? EventReceived;
@@ -212,6 +221,9 @@ namespace RFiDGear.Bridge.SampleClient
         {
             ArgumentNullException.ThrowIfNull(variables);
 
+            // Written down before the call: the host may ask for a key the moment it starts, before the answer to startRun is here.
+            _ownRequests[requestId] = 0;
+
             var request = new StartRunRequest
             {
                 RequestId = requestId,
@@ -294,15 +306,50 @@ namespace RFiDGear.Bridge.SampleClient
             Service.ListRunResults(new ListRunResultsRequest { AfterResultSeq = afterResultSeq }).WaitAsync(cancellationToken);
 
         /// <summary>Registers this client as the supplier of card keys, with the vault in <see cref="KeyVault"/>, for the life of the connection.</summary>
+        /// <param name="ownRunsOnly">
+        /// Whether keys are to be asked for the runs of this client only. RFiDGear then answers "not authorized" itself for every
+        /// other run and does not call this client, and the client also refuses them (<see cref="ServeOwnRunsOnly"/>). It needs
+        /// <see cref="BridgeCapabilities.KeysContext"/>; without it, or when RFiDGear does not say that it applies the restriction,
+        /// this method throws instead of registering a client that would believe it is protected.
+        /// </param>
         /// <returns>The id of the provider to name in projects, and the time limits.</returns>
-        public async Task<RegisterKeyProviderResponse> RegisterKeyProviderAsync()
+        public async Task<RegisterKeyProviderResponse> RegisterKeyProviderAsync(bool ownRunsOnly = false)
         {
             if (!Offers(BridgeCapabilities.KeysProvider))
             {
                 throw new NotSupportedException("This RFiDGear does not offer the capability " + BridgeCapabilities.KeysProvider + ".");
             }
 
-            return await Service.RegisterKeyProvider(new RegisterKeyProviderRequest()).ConfigureAwait(false);
+            if (ownRunsOnly && !Offers(BridgeCapabilities.KeysContext))
+            {
+                throw new NotSupportedException("This RFiDGear does not offer the capability " + BridgeCapabilities.KeysContext + ", so it cannot tell which runs are this client's.");
+            }
+
+            // Before the registration, so that the client never serves a key without the check it asked for.
+            ServeOwnRunsOnly = ownRunsOnly;
+
+            var registered = await Service.RegisterKeyProvider(new RegisterKeyProviderRequest { OwnRunsOnly = ownRunsOnly }).ConfigureAwait(false);
+
+            // The answer says what is in force. A restriction that was asked for and is not applied is not a registration to go on with.
+            return ownRunsOnly && !registered.OwnRunsOnly
+                ? throw new InvalidOperationException("RFiDGear did not apply the restriction to the runs of this client; do not serve keys on this connection.")
+                : registered;
+        }
+
+        /// <summary>
+        /// Says whether a request for a key is for a run that this client started over this connection's bridge: RFiDGear says the run
+        /// is a client's (<c>source</c> is <see cref="RunSources.Bridge"/>) and the request id is one that this client sent with
+        /// <c>startRun</c>. A request without them (an extension, the window, automatic mode, an older RFiDGear) is not.
+        /// </summary>
+        /// <param name="request">The request of the host.</param>
+        /// <returns><see langword="true"/> for a run this client started.</returns>
+        public bool StartedByThisClient(ResolveKeyRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            return string.Equals(request.Source, RunSources.Bridge, StringComparison.Ordinal)
+                && request.RequestId != null
+                && _ownRequests.ContainsKey(request.RequestId);
         }
 
         /// <summary>Reads the error data of the bridge from a failed call.</summary>
@@ -344,7 +391,7 @@ namespace RFiDGear.Bridge.SampleClient
         {
             var vault = KeyVault;
 
-            if (vault == null)
+            if (vault == null || (ServeOwnRunsOnly && !StartedByThisClient(request)))
             {
                 return new ResolveKeyResponse { Result = KeyResolveResults.NotAuthorized };
             }

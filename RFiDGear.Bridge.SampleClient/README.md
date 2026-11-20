@@ -23,6 +23,7 @@ RFiDGear.Bridge.SampleClient run job-1 C:\projects\order.rfPrj $JOBNUMBER=4711
 RFiDGear.Bridge.SampleClient result job-1
 RFiDGear.Bridge.SampleClient results 12
 RFiDGear.Bridge.SampleClient auto
+RFiDGear.Bridge.SampleClient keys orders/4711 --own-runs-only --run=job-2
 ```
 
 `run` with a project loads it first and passes what it learned (the path, the
@@ -38,6 +39,12 @@ with `result` even if the program is killed on the way; a result that cannot be
 told (the connection broke, RFiDGear was restarted, the id is not known) is
 printed as `Unknown` with the advice to look at the card first, and the exit
 code is not zero. `run` writes a card: use a test card.
+
+`keys` serves a key for one reference (typed at a prompt that does not show
+it). `--own-runs-only` asks RFiDGear to answer for every run that the sample did
+not start and checks it again itself (`StartedByThisClient`); `--run=<id>` starts
+a run on the same connection, because the bridge serves one client at a time and
+a program that supplies keys and starts runs needs one connection for both.
 
 The key vault is not on the command line on purpose: a key does not belong in
 an argument. The tests of this sample (`BridgeSampleClientTests` in

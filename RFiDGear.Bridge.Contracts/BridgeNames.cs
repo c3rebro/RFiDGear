@@ -74,6 +74,22 @@ namespace RFiDGear.Bridge
         public const string KeysProvider = "keys.provider";
 
         /// <summary>
+        /// A guarantee, not a method: RFiDGear tells the supplier of keys where a run comes from. <see cref="ResolveKeyRequest"/>
+        /// carries <c>requestId</c> (the id the client chose, for a run that it started over this bridge), <c>source</c> (one of
+        /// <see cref="RunSources"/>) and <c>projectRevision</c> (the revision the run started with, see
+        /// <see cref="ProjectRevision"/>), and <see cref="RegisterKeyProviderRequest.OwnRunsOnly"/> makes RFiDGear itself refuse
+        /// the request of every run that the client did not start, without asking the client.
+        /// <para>
+        /// The fields are information, not a permission: a client that does not read them is not asked less or more than before.
+        /// A host that does not offer this capability sends none of them, and it rejects a <c>registerKeyProvider</c> that carries
+        /// <c>ownRunsOnly</c> (a host rejects the members it does not know): check the capability before you send the field. A
+        /// registration that does not carry it is the same message as before. Where the capability is offered, the answer says
+        /// whether the restriction is in force.
+        /// </para>
+        /// </summary>
+        public const string KeysContext = "keys.context";
+
+        /// <summary>
         /// A guarantee, not a method: RFiDGear writes down, before it asks the host to run, that it is about to, and when the run
         /// ended. After RFiDGear has been restarted, a request id it had admitted is still known, as long as it is among the
         /// last <see cref="BridgeProtocol.RequestIdHistory"/> request ids: <c>startRun</c> with it never starts a second run
@@ -127,6 +143,7 @@ namespace RFiDGear.Bridge
             EventsProject,
             EventsAutoMode,
             KeysProvider,
+            KeysContext,
             EventsLifecycle,
             ReaderScan,
         };
@@ -139,6 +156,7 @@ namespace RFiDGear.Bridge
         {
             ProjectRevision,
             ExecutionJournal,
+            KeysContext,
         };
     }
 
