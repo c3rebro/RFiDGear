@@ -38,7 +38,7 @@ Join the GoogleGroup and become a tester:
 
 * Load a prebuilt RFiDGear project into the Android App
 * Perform a QuickCheck on Android
-* [GoogleGroup](https://groups.google.com/g/rfidgear/members/)
+* [GoogleGroup](https://groups.google.com/g/rfidgear/)
   
 ## Task model and supported operations
 
