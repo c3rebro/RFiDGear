@@ -88,7 +88,8 @@ one response):
 - `scanReader` [reader.scan]: reads the reader now.
 - `startAutoMode`, `stopAutoMode` [autoMode]: continuous processing of cards.
 - `registerKeyProvider` [keys.provider]: makes the client the supplier of card
-  keys for the rest of the connection.
+  keys for the rest of the connection. With `ownRunsOnly` [keys.context] only
+  for the runs that the client started; the answer says whether that is in force.
 
 **Events** (notifications; a client asks for the ones it wants in `hello`, and
 only those are sent; each carries `seq`, `sessionId` and `at`):
@@ -110,20 +111,26 @@ Events are hints. Nothing is replayed after a reconnect; the truth is
 **A call from RFiDGear to the client:**
 
 `resolveKey` [keys.provider], on `IBridgeClientKeys`: RFiDGear asks a client
-that registered for a card key. See the client guide for the rules.
+that registered for a card key. See the client guide for the rules. With
+`keys.context` the request also carries `requestId`, `source` and
+`projectRevision` of the run it is for.
 
 **Capabilities:** `session`, `status`, `project.load`, `project.revision`,
 `execution.run`, `execution.cancel`, `execution.resultLookup`,
 `execution.resultLog`, `execution.journal`, `autoMode`, `keys.provider`,
-`reader.scan`, and the event groups `events.execution`, `events.running`,
+`keys.context`, `reader.scan`, and the event groups `events.execution`, `events.running`,
 `events.reader`, `events.project`, `events.autoMode`, `events.lifecycle`.
-`execution.journal` and `project.revision` are guarantees and not methods.
+`execution.journal`, `project.revision` and `keys.context` are guarantees and not
+methods.
 `execution.journal`: RFiDGear writes a run down before it starts it, so that
 after a restart a request id it had admitted is still known.
 `project.revision`: `loadProject` and `getStatus` say in which state the loaded
 project is (changes that were not saved included), `startRun` can insist on
 that state, and the result says which state the run started with. The revision
 is opaque and valid for one RFiDGear process only.
+`keys.context`: a request for a key says where its run comes from (`requestId`,
+`source`, `projectRevision`), and a client can ask RFiDGear to refuse, for it,
+every request of a run that it did not start (`ownRunsOnly`).
 
 **What a run reports:**
 

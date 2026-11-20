@@ -61,7 +61,13 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="keyProvider">
         /// The secure key provider that stands for the connected program (<see cref="BridgeKeyProvider.Shared"/> in the application), or
         /// <see langword="null"/> for none. With one, a program can register as the supplier of card keys and the capability
-        /// <see cref="BridgeCapabilities.KeysProvider"/> is offered; the provider is bound to this service while it listens.
+        /// <see cref="BridgeCapabilities.KeysProvider"/> and <see cref="BridgeCapabilities.KeysContext"/> are offered; the provider is
+        /// bound to this service while it listens.
+        /// </param>
+        /// <param name="windowRunSource">
+        /// Says who asked for the run that the main window is running under this id (<see cref="RunSources.Gui"/> or
+        /// <see cref="RunSources.AutoMode"/>), or <see langword="null"/> for a run that is not the window's (see
+        /// <see cref="WindowRunMarker.SourceOf"/>). Without it a run of the window is <see cref="RunSources.Other"/> to a key supplier.
         /// </param>
         internal ExternalControlService(
             IRFiDGearExtensionHost host,
@@ -74,7 +80,8 @@ namespace RFiDGear.Services.ExternalControl
             Func<string?>? busyActivity = null,
             TimeSpan? admissionTimeout = null,
             string? journalDirectory = null,
-            BridgeKeyProvider? keyProvider = null)
+            BridgeKeyProvider? keyProvider = null,
+            Func<string?, string?>? windowRunSource = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _instanceId = Guid.NewGuid().ToString("N");
@@ -171,6 +178,9 @@ namespace RFiDGear.Services.ExternalControl
             if (keyProvider != null)
             {
                 capabilities.Add(BridgeCapabilities.KeysProvider);
+
+                // A guarantee that comes with the provider: every request for a key says where its run comes from.
+                capabilities.Add(BridgeCapabilities.KeysContext);
             }
 
             if (_journal != null)
@@ -193,16 +203,19 @@ namespace RFiDGear.Services.ExternalControl
                 ListRunResults = supervisor == null ? null : request => Task.FromResult(supervisor.ListResults(request, _instanceId)),
                 StartAutoMode = autoMode == null ? null : (sessionId, request) => Task.FromResult(autoMode.Start(sessionId, request)),
                 StopAutoMode = autoMode == null ? null : _ => Task.FromResult(autoMode.Stop()),
-                RegisterKeyProvider = keyProvider == null ? null : _ => Task.FromResult(new RegisterKeyProviderResponse
+                RegisterKeyProvider = keyProvider == null ? null : request => Task.FromResult(new RegisterKeyProviderResponse
                 {
                     ProviderId = BridgeKeyProvider.ProviderId,
                     TimeoutMs = (int)SecureKeyRegistry.DefaultTimeout.TotalMilliseconds,
                     InteractiveTimeoutMs = (int)SecureKeyRegistry.DefaultInteractiveTimeout.TotalMilliseconds,
+
+                    // What the connection will be held to, so that a client sees whether its wish is in force.
+                    OwnRunsOnly = request is { OwnRunsOnly: true },
                 }),
             };
 
             _server = new BridgeServer(pipeName, options, timings);
-            _keyChannel = keyProvider == null ? null : new KeyChannel(_server);
+            _keyChannel = keyProvider == null ? null : new KeyChannel(_server, new RunOriginResolver(registry, windowRunSource));
             RunInFlight = () => (supervisor?.HasActiveRun ?? false) || (autoMode?.HasRunInFlight ?? false);
         }
 
@@ -457,10 +470,12 @@ namespace RFiDGear.Services.ExternalControl
         private sealed class KeyChannel : IBridgeKeyChannel
         {
             private readonly BridgeServer _server;
+            private readonly RunOriginResolver _origins;
 
-            internal KeyChannel(BridgeServer server)
+            internal KeyChannel(BridgeServer server, RunOriginResolver origins)
             {
                 _server = server;
+                _origins = origins;
             }
 
             public KeySupplierAvailability Availability => AvailabilityOf(_server.State, _server.ActiveSession?.Service.ProvidesKeys == true);
@@ -474,7 +489,23 @@ namespace RFiDGear.Services.ExternalControl
                     return null;
                 }
 
-                return await session.RequestKeyAsync(request, cancellationToken).ConfigureAwait(false);
+                var origin = _origins.Resolve(request.RunId);
+
+                // The client asked to be bothered with its own runs only: the host answers for everything else, and the client
+                // is not called. No run id of a client is a run of another, so the check is the source and nothing else.
+                if (session.Service.OwnRunsOnly && !string.Equals(origin.Source, RunSources.Bridge, StringComparison.Ordinal))
+                {
+                    Logger.Information(
+                        "External control: the key request of run {RunId} (source {Source}) was refused without asking the client, which asked for its own runs only",
+                        request.RunId,
+                        origin.Source);
+
+                    return new ResolveKeyResponse { Result = KeyResolveResults.NotAuthorized };
+                }
+
+                var told = request with { RequestId = origin.RequestId, Source = origin.Source, ProjectRevision = origin.ProjectRevision };
+
+                return await session.RequestKeyAsync(told, cancellationToken).ConfigureAwait(false);
             }
         }
 

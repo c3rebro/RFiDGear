@@ -3,8 +3,19 @@ using System.Text.Json.Serialization;
 
 namespace RFiDGear.Bridge
 {
-    /// <summary>The parameters of <c>registerKeyProvider</c>. There are none yet; the type exists so that an optional field can be added later.</summary>
-    public sealed record RegisterKeyProviderRequest;
+    /// <summary>The parameters of <c>registerKeyProvider</c>. Every field is optional; the default is what every client got before the field existed.</summary>
+    public sealed record RegisterKeyProviderRequest
+    {
+        /// <summary>
+        /// Gets whether RFiDGear is to ask this client only for the keys of runs that the client started over this bridge (<see cref="RunSources.Bridge"/>).
+        /// For every other run (the window, automatic mode, an extension, a button of a task dialog) RFiDGear answers
+        /// <see cref="KeyResolveResults.NotAuthorized"/> itself and does not call the client. The default is <see langword="false"/>.
+        /// Needs <see cref="BridgeCapabilities.KeysContext"/>; <see cref="RegisterKeyProviderResponse.OwnRunsOnly"/> says whether it is in force.
+        /// The latest registration of a connection counts.
+        /// </summary>
+        [JsonPropertyName("ownRunsOnly")]
+        public bool OwnRunsOnly { get; init; }
+    }
 
     /// <summary>The answer to <c>registerKeyProvider</c>.</summary>
     public sealed record RegisterKeyProviderResponse
@@ -27,6 +38,14 @@ namespace RFiDGear.Bridge
         /// <summary>Gets how long the client has to answer when <see cref="ResolveKeyRequest.Interactive"/> is set, in milliseconds.</summary>
         [JsonPropertyName("interactiveTimeoutMs")]
         public int InteractiveTimeoutMs { get; init; }
+
+        /// <summary>
+        /// Gets whether RFiDGear applies <see cref="RegisterKeyProviderRequest.OwnRunsOnly"/>: <see langword="true"/> only when the
+        /// client asked for it and the host offers <see cref="BridgeCapabilities.KeysContext"/>. A client that needs the
+        /// restriction checks this and does not rely on the request alone.
+        /// </summary>
+        [JsonPropertyName("ownRunsOnly")]
+        public bool OwnRunsOnly { get; init; }
     }
 
     /// <summary>
@@ -76,6 +95,33 @@ namespace RFiDGear.Bridge
         /// <summary>Gets whether a person may be asked (the task was started by a click, not by a run without anybody there); the time limit is then <see cref="RegisterKeyProviderResponse.InteractiveTimeoutMs"/>.</summary>
         [JsonPropertyName("interactive")]
         public bool Interactive { get; init; }
+
+        /// <summary>
+        /// Gets the request id the client chose for the run, when the client started the run over this bridge (<see cref="Source"/>
+        /// is <see cref="RunSources.Bridge"/>); nothing for any other run. It is what the client matches against the requests it
+        /// sent with <c>startRun</c>, without waiting for the <c>runId</c> in the answer. Needs <see cref="BridgeCapabilities.KeysContext"/>.
+        /// </summary>
+        [JsonPropertyName("requestId")]
+        public string? RequestId { get; init; }
+
+        /// <summary>
+        /// Gets who started the run the key is for, one of <see cref="RunSources"/>: <see cref="RunSources.Bridge"/> for a run
+        /// of a client of this bridge (any client; compare <see cref="RequestId"/> to know whether it was this one),
+        /// <see cref="RunSources.AutoMode"/>, <see cref="RunSources.Gui"/> for a run that the user started in the main window or
+        /// with a start-up argument, and <see cref="RunSources.Other"/> for everything else (an extension, a button of a task
+        /// dialog, a run that RFiDGear cannot place). A host that does not offer <see cref="BridgeCapabilities.KeysContext"/>
+        /// sends nothing, which reads as <see cref="RunSources.Other"/>: a missing value is never taken for a run of the client.
+        /// </summary>
+        [JsonPropertyName("source")]
+        public string Source { get; init; } = RunSources.Other;
+
+        /// <summary>
+        /// Gets the revision of the project the run started with, when <see cref="Source"/> is <see cref="RunSources.Bridge"/> and
+        /// the host could tell it (see <see cref="BridgeCapabilities.ProjectRevision"/>); nothing otherwise. Opaque, and only to be
+        /// compared with a revision that the client approved.
+        /// </summary>
+        [JsonPropertyName("projectRevision")]
+        public string? ProjectRevision { get; init; }
 
         /// <summary>Gets a text form that holds nothing of the request.</summary>
         /// <returns>A fixed text.</returns>

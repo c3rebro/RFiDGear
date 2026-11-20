@@ -375,6 +375,90 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task AClientThatAsksForItsOwnRunsOnly_IsAskedForTheRunItStarted_AndNeverForAnother()
+        {
+            var (_, pipe, host, keys) = Start();
+            var registry = SecureKeyRegistry.Create(
+                new[] { new SecureKeyProviderRegistration(BridgeKeyProvider.ProviderId, BridgeKeyProvider.DisplayName, keys) },
+                Array.Empty<Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>>());
+            var client = await ConnectAsync(pipe);
+            var key = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+            using var vault = new SampleVault("orders/4711", key);
+            client.KeyVault = vault.ResolveAsync;
+
+            var registered = await client.RegisterKeyProviderAsync(ownRunsOnly: true);
+
+            // A run of the client, held in the host while keys are asked for.
+            host.ExecutionHost.RunGate = new TaskCompletionSource<bool>();
+            var run = client.RunOnceAsync("job-1", NoVariables);
+            await WaitUntilAsync(() => host.ExecutionHost.RunIds.Count == 1);
+            var ownRunId = host.ExecutionHost.RunIds[0];
+
+            using var own = await registry.ResolveAsync(registered.ProviderId, RequestOfRun("orders/4711", ownRunId), CancellationToken.None);
+            using var another = await registry.ResolveAsync(registered.ProviderId, RequestOfRun("orders/4711", "a-run-of-the-window"), CancellationToken.None);
+            host.ExecutionHost.RunGate.SetResult(true);
+            var outcome = await run;
+
+            Assert.True(registered.OwnRunsOnly);
+            Assert.True(client.ServeOwnRunsOnly);
+            Assert.Equal(key, Assert.IsType<SecureKeyLease>(own.Key).Key.ToArray());
+            Assert.Equal(SecureKeyFailureReason.NotAuthorized, another.FailureReason);
+            Assert.Equal(1, vault.Served);
+            Assert.Equal(RunOutcomeKind.Completed, outcome.Kind);
+        }
+
+        [Fact]
+        public async Task TheClientsOwnCheck_ServesOnlyWhatItStartedOverTheBridge_AndRefusesARequestWithoutContext()
+        {
+            var (_, pipe, _, _) = Start();
+            var client = await ConnectAsync(pipe);
+            var key = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+            using var vault = new SampleVault("orders/4711", key);
+            client.KeyVault = vault.ResolveAsync;
+            await client.RegisterKeyProviderAsync(ownRunsOnly: true);
+            await client.RunOnceAsync("job-1", NoVariables);
+
+            Task<ResolveKeyResponse> Ask(string? requestId, string source) =>
+                client.ResolveKey(new ResolveKeyRequest { Reference = "orders/4711", RequestId = requestId, Source = source }, CancellationToken.None);
+
+            var own = await Ask("job-1", RunSources.Bridge);
+            var anotherRequest = await Ask("job-2", RunSources.Bridge);
+            var sameIdButNotAClientsRun = await Ask("job-1", RunSources.Gui);
+            var withoutContext = await client.ResolveKey(new ResolveKeyRequest { Reference = "orders/4711" }, CancellationToken.None);
+
+            Assert.Equal(KeyResolveResults.Resolved, own.Result);
+            Assert.Equal(KeyResolveResults.NotAuthorized, anotherRequest.Result);
+            Assert.Equal(KeyResolveResults.NotAuthorized, sameIdButNotAClientsRun.Result);
+            Assert.Equal(KeyResolveResults.NotAuthorized, withoutContext.Result);
+            Assert.Equal(1, vault.Served);
+        }
+
+        [Fact]
+        public async Task WithoutTheRestriction_TheClientServesAsBefore_AndTheFlagIsOff()
+        {
+            var (_, pipe, _, _) = Start();
+            var client = await ConnectAsync(pipe);
+            using var vault = new SampleVault("orders/4711", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+            client.KeyVault = vault.ResolveAsync;
+
+            var registered = await client.RegisterKeyProviderAsync();
+            var answer = await client.ResolveKey(new ResolveKeyRequest { Reference = "orders/4711" }, CancellationToken.None);
+
+            Assert.False(registered.OwnRunsOnly);
+            Assert.False(client.ServeOwnRunsOnly);
+            Assert.Equal(KeyResolveResults.Resolved, answer.Result);
+        }
+
+        private static SecureKeyRequest RequestOfRun(string reference, string runId) => new SecureKeyRequest
+        {
+            SlotId = "desfire.app.current",
+            Reference = reference,
+            Algorithm = SecureKeyAlgorithm.Aes128,
+            Usage = SecureKeyUsage.Authenticate,
+            RunId = runId,
+        };
+
+        [Fact]
         public async Task TheSampleVault_ServesOneReference_RefusesTheRest_AndForgetsTheKeyWhenDisposed()
         {
             var key = new byte[] { 1, 2, 3, 4, 5, 6 };

@@ -48,6 +48,7 @@ public static class RFiDGear.Bridge.BridgeCapabilities
     public const string ExecutionResultLog = "execution.resultLog"
     public const string ExecutionResultLookup = "execution.resultLookup"
     public const string ExecutionRun = "execution.run"
+    public const string KeysContext = "keys.context"
     public const string KeysProvider = "keys.provider"
     public const string ProjectLoad = "project.load"
     public const string ProjectRevision = "project.revision"
@@ -345,10 +346,12 @@ public static class RFiDGear.Bridge.ReaderStates
 
 public sealed record RFiDGear.Bridge.RegisterKeyProviderRequest : System.IEquatable<RegisterKeyProviderRequest>
     public ctor()
+    [JsonPropertyName("ownRunsOnly")] public bool OwnRunsOnly { get; init; }
 
 public sealed record RFiDGear.Bridge.RegisterKeyProviderResponse : System.IEquatable<RegisterKeyProviderResponse>
     public ctor()
     [JsonPropertyName("interactiveTimeoutMs")] public int InteractiveTimeoutMs { get; init; }
+    [JsonPropertyName("ownRunsOnly")] public bool OwnRunsOnly { get; init; }
     [JsonPropertyName("providerId")] public string ProviderId { get; init; }
     [JsonPropertyName("timeoutMs")] public int TimeoutMs { get; init; }
 
@@ -359,9 +362,12 @@ public sealed record RFiDGear.Bridge.ResolveKeyRequest : System.IEquatable<Resol
     [JsonPropertyName("cardUid")] public string? CardUid { get; init; }
     [JsonPropertyName("interactive")] public bool Interactive { get; init; }
     [JsonPropertyName("keyNumber")] public int? KeyNumber { get; init; }
+    [JsonPropertyName("projectRevision")] public string? ProjectRevision { get; init; }
     [JsonPropertyName("reference")] public string Reference { get; init; }
+    [JsonPropertyName("requestId")] public string? RequestId { get; init; }
     [JsonPropertyName("runId")] public string? RunId { get; init; }
     [JsonPropertyName("slotId")] public string SlotId { get; init; }
+    [JsonPropertyName("source")] public string Source { get; init; }
     [JsonPropertyName("taskIndex")] public string TaskIndex { get; init; }
     [JsonPropertyName("usage")] public string Usage { get; init; }
     public override string ToString()

@@ -29,6 +29,7 @@ using RedCell.Diagnostics.Update;
 using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.AutoMode;
+using RFiDGear.Bridge;
 using RFiDGear.Services.ExternalControl;
 using RFiDGear.Services.Sam;
 using RFiDGear.Services.SecureKeys;
@@ -84,6 +85,9 @@ namespace RFiDGear.ViewModel
 
         private HeadlessExtensionHost extensionHost;
         private ExternalControlService externalControl;
+
+        // Which run the window is running and who asked for it (by hand, or automatic mode): a supplier of keys is told.
+        private readonly WindowRunMarker _windowRuns = new WindowRunMarker();
         private readonly string externalControlPipeName;
         private readonly string externalControlJournalDirectory;
         private readonly OnceGate startupOnce = new OnceGate();
@@ -392,7 +396,8 @@ namespace RFiDGear.ViewModel
                     externalControlPipeName ?? PipeNames.ForCurrentUser(),
                     busyActivity: () => ExternalControlService.ActivityOf(_coordinator),
                     journalDirectory: externalControlJournalDirectory ?? RunJournal.DefaultDirectory,
-                    keyProvider: BridgeKeyProvider.Shared);
+                    keyProvider: BridgeKeyProvider.Shared,
+                    windowRunSource: _windowRuns.SourceOf);
 
                 // The status bar shows whether a program is connected; the server raises the change on its own threads.
                 service.ConnectionChanged += (_, _) =>
@@ -1640,6 +1645,9 @@ namespace RFiDGear.ViewModel
             }
 
             var runId = Guid.NewGuid().ToString("N");
+
+            // A run by hand has no question to ask the mode ("isStillWanted" is for the requests of automatic mode only).
+            _windowRuns.Begin(runId, isStillWanted == null ? RunSources.Gui : RunSources.AutoMode);
             var startedAt = DateTimeOffset.UtcNow;
             var observations = new List<TaskExecutionObservation>();
             IReadOnlyList<object> snapshot = Array.Empty<object>();
@@ -1721,6 +1729,7 @@ namespace RFiDGear.ViewModel
             }
             finally
             {
+                _windowRuns.End(runId);
                 _coordinator.EndExecution();
                 Mouse.OverrideCursor = null;
             }

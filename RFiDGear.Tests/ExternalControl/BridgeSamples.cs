@@ -152,8 +152,8 @@ namespace RFiDGear.Tests.ExternalControl
             },
             ["AutoModeChangedEvent"] = new AutoModeChangedEvent { Seq = 7, SessionId = "s1", At = Start, Enabled = false, StartedBy = null, LastStopReason = AutoModeStopReasons.ReaderLost, LastResultSeq = 8 },
             ["AutoRunCompletedEvent"] = new AutoRunCompletedEvent { Seq = 8, SessionId = "s1", At = Start.AddSeconds(2), Result = AutoResult },
-            ["RegisterKeyProviderRequest"] = new RegisterKeyProviderRequest(),
-            ["RegisterKeyProviderResponse"] = new RegisterKeyProviderResponse { ProviderId = "bridge-client", TimeoutMs = 10000, InteractiveTimeoutMs = 300000 },
+            ["RegisterKeyProviderRequest"] = new RegisterKeyProviderRequest { OwnRunsOnly = true },
+            ["RegisterKeyProviderResponse"] = new RegisterKeyProviderResponse { ProviderId = "bridge-client", TimeoutMs = 10000, InteractiveTimeoutMs = 300000, OwnRunsOnly = true },
             ["ResolveKeyRequest"] = new ResolveKeyRequest
             {
                 SlotId = "desfire.app.master",
@@ -166,6 +166,9 @@ namespace RFiDGear.Tests.ExternalControl
                 TaskIndex = "2",
                 CardUid = "04A1B2C3D4E5F6",
                 Interactive = false,
+                RequestId = "r-1",
+                Source = RunSources.Bridge,
+                ProjectRevision = "5c0e2b7d4a916f38e1d09a7b6c5d4e3f",
             },
             ["ResolveKeyResponse"] = new ResolveKeyResponse { Result = KeyResolveResults.Resolved, Key = "AQIDBAUGBwg=" },
             ["BridgeErrorData"] = new BridgeErrorData

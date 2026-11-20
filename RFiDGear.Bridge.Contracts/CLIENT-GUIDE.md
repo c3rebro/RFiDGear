@@ -221,6 +221,52 @@ the card.
 - The registration ends with the connection; register again after you
   reconnect.
 
+**Whose run is it, and what that is worth (`keys.context`):**
+
+When RFiDGear offers `keys.context`, every request for a key says where its run
+comes from:
+
+- `source`: `bridge` for a run of a client of this bridge (any client, so
+  compare `requestId` to know whether it was you), `autoMode`, `gui` for a run
+  that the user started in the main window or with a start-up argument, and
+  `other` for everything else (an extension, a button in a task dialog, a run
+  RFiDGear cannot place). A request without a `source` reads as `other`: a
+  missing value is never taken for your own run.
+- `requestId`: for a run of a client of this bridge, the id that the client
+  chose in `startRun`. It is yours when you sent it. It makes the match without
+  the `runId` in the answer to `startRun`, which the first request for a key can
+  overtake: write the request id down before you call `startRun`.
+- `projectRevision`: for a run of a client, the revision the run **started
+  with** (see `project.revision`), not the one of the project now. Compare it
+  with the revision you approved for that request.
+
+These are information. Whether you are asked, and what you may answer, does not
+change if you ignore them, and the decision stays with your vault. A vault that
+gives out a key only for a request that is `source: bridge`, whose `requestId`
+it sent, whose `projectRevision` it approved and whose `cardUid` is the card it
+approved, has a release that is bound to one job.
+
+`ownRunsOnly` in `registerKeyProvider` (default off) goes one step further:
+RFiDGear then answers `notAuthorized` itself for every run that is not a run of
+a client of this bridge, and does not call you for it. That includes a run that
+the user starts in the window and a button in a task dialog: a project that
+names your provider ends `KeyUnavailable` there. The answer to the registration
+says whether the restriction is in force (`ownRunsOnly: true`); an older
+RFiDGear does not know the field and answers without it, so check the answer
+and, in any case, do your own check as in the sample (`StartedByThisClient`).
+The latest registration of a connection counts.
+
+**What this protects against, and what it does not.** The fields and the
+restriction protect against mix-ups and mistakes: a run from the window while
+your job was meant, a run of automatic mode, a project that was changed after
+you approved it, a request for a card you did not approve. They do not protect
+against a hostile program of the same Windows user. Such a program has the same
+rights as the user: it can use the pipe (when you are not connected), put any
+reference in a project and run it, and RFiDGear can only say what it knows
+about a run, not prove who is behind it. Keep your keys as you would for any
+program of the user, and treat a release that is bound to a run as a second
+lock, not as the only one.
+
 **Approving a card before it is written (Check UID with a variable):**
 
 A card should be written only after the program that owns the job has looked at
