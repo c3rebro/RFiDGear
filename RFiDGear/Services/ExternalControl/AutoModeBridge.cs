@@ -46,6 +46,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Action<string, bool, BridgeEventFactory> _publish;
         private readonly Func<bool> _isShuttingDown;
         private readonly Func<string?> _busyActivity;
+        private readonly RunFacts? _facts;
         private readonly EventHandler _stateChangedHandler;
         private readonly EventHandler _runningChangedHandler;
         private readonly EventHandler<ExecResult> _runCompletedHandler;
@@ -61,13 +62,15 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="publish">Hands an event to the client that is connected (name, whether it is durable, the maker of the event).</param>
         /// <param name="isShuttingDown">Says whether RFiDGear is closing.</param>
         /// <param name="busyActivity">Says what the application is busy with, for the hint in a "busy" refusal.</param>
+        /// <param name="facts">What the main window noted about its runs when it took them (the revision of the project), or <see langword="null"/> for none.</param>
         internal AutoModeBridge(
             IRFiDGearExtensionHost host,
             IAutoModeControl control,
             RunRegistry registry,
             Action<string, bool, BridgeEventFactory> publish,
             Func<bool> isShuttingDown,
-            Func<string?> busyActivity)
+            Func<string?> busyActivity,
+            RunFacts? facts = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _control = control ?? throw new ArgumentNullException(nameof(control));
@@ -75,6 +78,7 @@ namespace RFiDGear.Services.ExternalControl
             _publish = publish ?? throw new ArgumentNullException(nameof(publish));
             _isShuttingDown = isShuttingDown ?? throw new ArgumentNullException(nameof(isShuttingDown));
             _busyActivity = busyActivity ?? throw new ArgumentNullException(nameof(busyActivity));
+            _facts = facts;
             _stateChangedHandler = (_, _) => OnStateChanged();
             _runningChangedHandler = (_, _) => OnRunningChanged();
             _runCompletedHandler = (_, result) => OnRunCompleted(result);
@@ -121,6 +125,12 @@ namespace RFiDGear.Services.ExternalControl
                 return;
             }
 
+            // The window notes the facts of its runs from now on (the result takes them).
+            if (_facts != null)
+            {
+                _facts.IsWanted = true;
+            }
+
             // The host raises all of them synchronously, on the thread that made the change: the handlers only number, queue and return.
             _host.AutoMode.AutoModeStateChanged += _stateChangedHandler;
             _host.AutoMode.AutoModeRunCompleted += _runCompletedHandler;
@@ -138,6 +148,11 @@ namespace RFiDGear.Services.ExternalControl
             _host.AutoMode.AutoModeStateChanged -= _stateChangedHandler;
             _host.AutoMode.AutoModeRunCompleted -= _runCompletedHandler;
             _host.Execution.IsRunningChanged -= _runningChangedHandler;
+
+            if (_facts != null)
+            {
+                _facts.IsWanted = false;
+            }
         }
 
         /// <summary>Switches automatic mode on for a client.</summary>
@@ -343,7 +358,10 @@ namespace RFiDGear.Services.ExternalControl
             }
 
             var runId = string.IsNullOrEmpty(result.RunId) ? Guid.NewGuid().ToString("N") : result.RunId;
-            var dto = _registry.RecordUnrequested(seq => BridgeMapper.ToDto(result, runId, null, seq, RunSources.AutoMode));
+            // The revision the run started with: the window read it when it took the run, before the first task, and the result
+            // is made much later (the same revision that a run of a client has).
+            var revision = _facts?.Take(runId)?.ProjectRevision;
+            var dto = _registry.RecordUnrequested(seq => BridgeMapper.ToDto(result, runId, null, seq, RunSources.AutoMode, revision));
 
             // No UID and no path: the number, the status and the counts.
             Logger.Information(
