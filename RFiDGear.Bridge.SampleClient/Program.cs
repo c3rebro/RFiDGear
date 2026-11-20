@@ -21,6 +21,8 @@ namespace RFiDGear.Bridge.SampleClient
         private const string ExpectRevisionOption = "--expect-revision=";
         private const string OwnRunsOnlyOption = "--own-runs-only";
         private const string RunOption = "--run=";
+        private const string VariableOption = "--variable=";
+        private const string YesOption = "--yes";
 
         private const string Usage =
             "RFiDGear.Bridge.SampleClient status\n" +
@@ -28,7 +30,8 @@ namespace RFiDGear.Bridge.SampleClient
             "RFiDGear.Bridge.SampleClient result <requestId>\n" +
             "RFiDGear.Bridge.SampleClient results [<afterResultSeq>]\n" +
             "RFiDGear.Bridge.SampleClient auto\n" +
-            "RFiDGear.Bridge.SampleClient keys <reference> [--own-runs-only] [--run=<requestId>]";
+            "RFiDGear.Bridge.SampleClient keys <reference> [--own-runs-only] [--run=<requestId>]\n" +
+            "RFiDGear.Bridge.SampleClient approved-run <requestId> <project.rfPrj> [--variable=$NAME] [--yes]";
 
         private static async Task<int> Main(string[] args)
         {
@@ -56,6 +59,7 @@ namespace RFiDGear.Bridge.SampleClient
                     "results" => await ResultsAsync(args.Length > 1 ? long.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 0, stop.Token),
                     "auto" => await AutoAsync(stop.Token),
                     "keys" when args.Length >= 2 => await KeysAsync(args, stop.Token),
+                    "approved-run" when args.Length >= 3 => await ApprovedRunAsync(args, stop.Token),
                     _ => Fail(Usage),
                 };
             }
@@ -151,6 +155,90 @@ namespace RFiDGear.Bridge.SampleClient
             var outcome = await client.RunOnceAsync(requestId, variables, expectedPath, expectedTasks, expectedRevision, cancellationToken);
 
             return Print(outcome);
+        }
+
+        // The reference flow for a job that writes one card: load the project and note its revision, look at the reader, ask the operator
+        // about THIS card (the part a real program does with its job and its list), and run once with the approved UID in the variable
+        // that the project's Check UID task reads. The result is compared with what was approved before the card counts as written.
+        private static async Task<int> ApprovedRunAsync(string[] args, CancellationToken cancellationToken)
+        {
+            var requestId = args[1];
+            var rest = args.Skip(2).ToList();
+            var yes = rest.Remove(YesOption);
+            var variableOptions = rest.Where(arg => arg.StartsWith(VariableOption, StringComparison.Ordinal)).ToList();
+            rest = rest.Where(arg => !arg.StartsWith(VariableOption, StringComparison.Ordinal)).ToList();
+
+            if (rest.Count != 1 || variableOptions.Count > 1)
+            {
+                return Fail(Usage);
+            }
+
+            var uidVariable = variableOptions.Count == 1 ? variableOptions[0][VariableOption.Length..] : "$EXPECTEDUID";
+
+            await using var client = await BridgeSampleClient.ConnectAsync(cancellationToken: cancellationToken);
+            var loaded = await client.Service.LoadProject(new LoadProjectRequest { Path = System.IO.Path.GetFullPath(rest[0]) });
+            string? revision;
+
+            try
+            {
+                revision = client.RevisionToExpect(loaded);
+            }
+            catch (InvalidOperationException e)
+            {
+                // Offered but not given: starting anyway would run whatever is loaded.
+                return Fail(e.Message);
+            }
+
+            Console.WriteLine("loaded " + loaded.TaskCount + " tasks");
+
+            // Written before the call, so that an operator can ask about it even if this program dies in the middle.
+            Console.WriteLine("request id: " + requestId);
+
+            try
+            {
+                var outcome = await client.RunApprovedCardAsync(
+                    requestId,
+                    uidVariable,
+                    (card, _) => Task.FromResult(yes || Confirm(card)),
+                    expectProjectPath: loaded.Path,
+                    expectTaskCount: loaded.TaskCount,
+                    expectProjectRevision: revision,
+                    cancellationToken: cancellationToken);
+
+                return Print(outcome);
+            }
+            catch (ArgumentException e)
+            {
+                return Fail(e.Message);
+            }
+        }
+
+        private static bool Confirm(ApprovedCard card)
+        {
+            Console.Write("Card " + card.Uid + " (" + card.DisplayName + ") is on the reader. Type yes to write this card: ");
+
+            return string.Equals(Console.ReadLine()?.Trim(), "yes", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int Print(ApprovedRunOutcome outcome)
+        {
+            Console.WriteLine(outcome.Kind + ": " + outcome.Detail);
+
+            if (outcome.Run == null)
+            {
+                return 1;
+            }
+
+            var code = Print(outcome.Run);
+            Console.WriteLine("card of the run: " + (outcome.CardUidMatches ? "the approved one" : "NOT THE APPROVED ONE"));
+
+            if (outcome.RevisionMatches != null)
+            {
+                Console.WriteLine("project of the run: " + (outcome.RevisionMatches == true ? "in the approved state" : "NOT IN THE APPROVED STATE"));
+            }
+
+            // Only a run that is confirmed is a card that was written; anything else is for a person to look at.
+            return outcome.IsConfirmed && code == 0 ? 0 : 1;
         }
 
         private static async Task<int> ResultAsync(string requestId, CancellationToken cancellationToken)
