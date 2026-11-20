@@ -232,11 +232,6 @@ namespace RFiDGear.Bridge.SampleClient
             var code = Print(outcome.Run);
             Console.WriteLine("card of the run: " + (outcome.CardUidMatches ? "the approved one" : "NOT THE APPROVED ONE"));
 
-            if (outcome.RevisionMatches != null)
-            {
-                Console.WriteLine("project of the run: " + (outcome.RevisionMatches == true ? "in the approved state" : "NOT IN THE APPROVED STATE"));
-            }
-
             // Only a run that is confirmed is a card that was written; anything else is for a person to look at.
             return outcome.IsConfirmed && code == 0 ? 0 : 1;
         }

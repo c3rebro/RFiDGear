@@ -259,8 +259,8 @@ namespace RFiDGear.Bridge.SampleClient
         /// caller whether THIS card may be written (the caller checks its job, its profile and its list of serial numbers; this is the
         /// part that is not RFiDGear's), and only then starts the run with the approved UID in a variable that the project's Check UID
         /// task compares with the card that the run reads itself. A card that was swapped in between is not the approved one, and
-        /// the tasks that depend on the check never start. Afterwards it compares what the result says about the card and the project
-        /// with what was approved. It never starts a run for more than one card, and never repeats one (see <see cref="RunOnceAsync"/>).
+        /// the tasks that depend on the check never start. Afterwards it compares the card that the result says the run read with the
+        /// approved one. It never starts a run for more than one card, and never repeats one (see <see cref="RunOnceAsync"/>).
         /// </summary>
         /// <param name="requestId">The id of this job and this card. Make it from the job; it is the only way to ask about the run later, and an id is never reused for another card.</param>
         /// <param name="uidVariable">The variable the project reads the approved UID from, with its dollar sign (for example <c>$EXPECTEDUID</c>).</param>
@@ -337,17 +337,15 @@ namespace RFiDGear.Bridge.SampleClient
             };
             var run = await RunOnceAsync(requestId, runVariables, expectProjectPath, expectTaskCount, expectProjectRevision, cancellationToken).ConfigureAwait(false);
 
-            // What the run says about itself, against what was approved: the card it read and the state of the project it started with.
+            // What the run says about itself, against what was approved: the card it read. The project is not compared here:
+            // RFiDGear refused the run before it started if the project was not the approved state.
             var cardMatches = run.Result != null && string.Equals(run.Result.CardUid, card.Uid, StringComparison.OrdinalIgnoreCase);
-            bool? revisionMatches = expectProjectRevision == null || run.Result == null
-                ? null
-                : string.Equals(run.Result.ProjectRevision, expectProjectRevision, StringComparison.Ordinal);
 
-            return new ApprovedRunOutcome(ApprovedRunKind.Ran, card.Uid, run, cardMatches, revisionMatches, run.Detail);
+            return new ApprovedRunOutcome(ApprovedRunKind.Ran, card.Uid, run, cardMatches, run.Detail);
         }
 
         private static ApprovedRunOutcome Stopped(ApprovedRunKind kind, string detail, string? approvedUid = null) =>
-            new ApprovedRunOutcome(kind, approvedUid, null, false, null, detail);
+            new ApprovedRunOutcome(kind, approvedUid, null, false, detail);
 
         /// <summary>
         /// Asks what became of a request, waiting for the run to end. It is also the way back after a lost connection: connect

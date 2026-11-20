@@ -498,8 +498,34 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(ApprovedRunKind.Ran, outcome.Kind);
             Assert.Equal("04AABB", outcome.ApprovedUid);
             Assert.True(outcome.CardUidMatches);
-            Assert.True(outcome.RevisionMatches);
             Assert.True(outcome.IsConfirmed);
+            Assert.Equal("rev-0", outcome.Run!.Result!.ProjectRevision);
+        }
+
+        [Fact]
+        public async Task ASeriesOfCards_EachConfirmed_EvenThoughTheRunsChangeSettingsOfTheirOwnTasks()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ProjectHost.Revision = "rev-0";
+
+            // Each run leaves the project in another state (the tasks write some of their own settings), as a DESFire write does.
+            var runs = 0;
+            host.ExecutionHost.OnExecute = _ => host.ProjectHost.Revision = "rev-" + (++runs);
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            host.ReaderHost.ScriptScan(Reader("ready", ("04CCDD", true)));
+            var client = await ConnectAsync(pipe);
+
+            host.ExecutionHost.Result = FakeResults.Success(2) with { CardUid = "04AABB" };
+            var first = await client.RunApprovedCardAsync("job-7-card-1", "$EXPECTEDUID", Yes, expectProjectRevision: "rev-0");
+            host.ExecutionHost.Result = FakeResults.Success(2) with { CardUid = "04CCDD" };
+            var second = await client.RunApprovedCardAsync("job-7-card-2", "$EXPECTEDUID", Yes, expectProjectRevision: "rev-0");
+
+            // The second run started with the state the first one left, which RFiDGear knows as the approved one: it ran, and it is confirmed.
+            Assert.True(first.IsConfirmed);
+            Assert.True(second.IsConfirmed);
+            Assert.Equal("rev-0", first.Run!.Result!.ProjectRevision);
+            Assert.Equal("rev-1", second.Run!.Result!.ProjectRevision);
+            Assert.Equal(2, host.ExecutionHost.Requests.Count);
         }
 
         [Fact]

@@ -57,8 +57,8 @@ loads the project and notes its revision, looks at the reader, shows the UID and
 asks you to type `yes` (a real program asks its own job and its own list),
 starts one run with that UID in the variable `$EXPECTEDUID` (`--variable=$NAME`
 for another name; `--yes` answers for you, for a test), and only then compares
-what the result says about the card and the project with what was approved. The
-exit code is 0 only for a confirmed run.
+the card that the result says the run read with the approved one. The exit code
+is 0 only for a confirmed run.
 
 This is a sample, not a library: copy what you need. It keeps the rules of
 the guide and nothing more; a real client also decides what its operators see,

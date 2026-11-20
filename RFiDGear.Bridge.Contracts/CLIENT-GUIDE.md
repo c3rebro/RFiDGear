@@ -344,8 +344,13 @@ For every card:
 6. Wait for the result (`getRunResult` with `waitMs`, or the event). Record the
    card as written only when all of this holds: the status is `success` (or
    `completedWithIntentionalFailures`, if that is what your project means by
-   done), `cardUid` is the approved UID, and `projectRevision` is the approved
-   one. The sample says it in one flag, `ApprovedRunOutcome.IsConfirmed`.
+   done) and `cardUid` is the approved UID. The sample says it in one flag,
+   `ApprovedRunOutcome.IsConfirmed`. Put the `projectRevision` of the result into
+   the record of the job: it is the state the run started with. After an earlier
+   run of yours it can be another than the one you approved, because the tasks
+   write some of their own settings; RFiDGear refused the run before it started
+   if the project was in a state that is neither the approved one nor one that
+   a run of yours left behind.
 7. After a doubt (a timeout, a lost connection, a restart) ask `getRunResult`
    by the request id and never start the job again before you have looked at the
    card.

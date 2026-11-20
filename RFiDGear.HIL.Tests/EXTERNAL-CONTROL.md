@@ -248,8 +248,7 @@ card on the reader.
 
 - 47, approve: `approved-run job-47 C:\path\copy.rfPrj`, check the UID that is
   shown, type `yes`. The run is a success, the sample says `card of the run: the
-  approved one` and `project of the run: in the approved state`, and the exit code
-  is 0.
+  approved one`, and the exit code is 0.
 - 48, decline: answer with anything but `yes`: `Declined`, nothing is started,
   the card is untouched, and `results` shows no run for the id.
 - 49, a swapped card: at the prompt, put another card on the reader, then type

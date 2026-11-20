@@ -29,34 +29,33 @@ namespace RFiDGear.Bridge.SampleClient
     }
 
     /// <summary>
-    /// What one approved run found, with the two facts that a program checks before it believes that it wrote the card it approved:
-    /// the card the run read itself, and the state of the project the run started with.
+    /// What one approved run found, with the fact that a program checks before it believes that it wrote the card it approved: the
+    /// card the run read itself. (The state of the project is not checked here: RFiDGear refuses a run whose project is not the
+    /// approved one, or the state an earlier run of this client left behind, before it starts. The revision the run started with is in
+    /// the result, <c>Run.Result.ProjectRevision</c>, for the record of the job; in a series of cards it may be another than the one
+    /// that was approved, because the tasks write some of their own settings.)
     /// </summary>
     /// <param name="Kind">What came of it.</param>
     /// <param name="ApprovedUid">The UID the program approved, when it got that far.</param>
     /// <param name="Run">How the run went, when one was started.</param>
     /// <param name="CardUidMatches">Whether the card that the run read at its start is the one that was approved.</param>
-    /// <param name="RevisionMatches">Whether the run started with the revision that was expected; <see langword="null"/> when none was expected or the result has none.</param>
     /// <param name="Detail">A sentence for the operator; never a key, a path or a value of a variable.</param>
     public sealed record ApprovedRunOutcome(
         ApprovedRunKind Kind,
         string? ApprovedUid,
         RunOutcome? Run,
         bool CardUidMatches,
-        bool? RevisionMatches,
         string Detail)
     {
         /// <summary>
         /// Gets whether the run ended the way a program may record as "the approved card was written": it completed with the status
-        /// of a run that did what the project says (a success, or the failures the project asked for), the card that the run read is the
-        /// approved one, and the project was in the state that was expected. Anything else is for a person to look at, and the card is looked at
-        /// before the job is started again.
+        /// of a run that did what the project says (a success, or the failures the project asked for) and the card that the run read is the
+        /// approved one. Anything else is for a person to look at, and the card is looked at before the job is started again.
         /// </summary>
         public bool IsConfirmed =>
             Kind == ApprovedRunKind.Ran
             && Run is { Kind: RunOutcomeKind.Completed, Result: { } result }
             && (result.Status == RunStatuses.Success || result.Status == RunStatuses.CompletedWithIntentionalFailures)
-            && CardUidMatches
-            && RevisionMatches != false;
+            && CardUidMatches;
     }
 }
