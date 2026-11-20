@@ -466,6 +466,12 @@ passed with a real reader; until then a snapshot may be re-baselined.
   has none and the run goes on. A new kind needs a token in both contracts
   (`VerificationKinds` and `DetailKinds`, pinned equal by a test) and no new
   capability.
+- **Writing a card under approval** is a single run, not automatic mode: the
+  guide's "Reference flow: one card, one approval, one run" and the sample
+  client (`RunApprovedCardAsync`, command `approved-run`) are the reference.
+  `ApprovedRunOutcome.IsConfirmed` says when a result may be recorded as
+  written: the run completed, the card it read is the approved one and the
+  revision is the approved one.
 - **The bridge never retries a card operation, and never repeats a request.**
   `startRun` is idempotent by the client's request id (`RunRegistry`,
   `RunSupervisor`: admission by compare-and-swap, the window's callback must win

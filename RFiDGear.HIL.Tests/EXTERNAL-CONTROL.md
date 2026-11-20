@@ -240,6 +240,27 @@ card on the reader. The sample prints the lines of the details under the task.
 - 46, a part of the settings: select only the size and the change right in the
   task: the first line says `2 compared, 5 not` and only those two are listed.
 
+**The reference flow (`approved-run`):**
+
+Use a copy of a project whose first task is "Check UID" with `$EXPECTEDUID` and
+whose write task depends on it (condition: that task, `NoError`), and a test
+card on the reader.
+
+- 47, approve: `approved-run job-47 C:\path\copy.rfPrj`, check the UID that is
+  shown, type `yes`. The run is a success, the sample says `card of the run: the
+  approved one` and `project of the run: in the approved state`, and the exit code
+  is 0.
+- 48, decline: answer with anything but `yes`: `Declined`, nothing is started,
+  the card is untouched, and `results` shows no run for the id.
+- 49, a swapped card: at the prompt, put another card on the reader, then type
+  `yes`. The run is a `failure`, the write task is skipped (the check ended
+  `CardNotExpected`), the sample says `NOT THE APPROVED ONE`, and the exit code is 1.
+- 50, two cards: put two cards on the reader: `AmbiguousCard`, no prompt, nothing
+  started.
+- 51, a changed project: at the prompt, change a text of a task in RFiDGear and
+  close its dialog, then type `yes`: the run is refused (`projectMismatch`),
+  `NotStarted`, and the card is untouched.
+
 **Cleaning up:**
 
 Remove the test application from the card if you made one (`SECURE-KEYS.md`),
