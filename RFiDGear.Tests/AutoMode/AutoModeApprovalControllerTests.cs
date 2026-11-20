@@ -51,9 +51,10 @@ namespace RFiDGear.Tests.AutoMode
 
                 if (Hold != null)
                 {
+                    // A wait that nobody ends fails the test after a few seconds instead of hanging it.
                     using (withdrawn.Register(() => Hold.TrySetResult(null)))
                     {
-                        return await Hold.Task.ConfigureAwait(false);
+                        return await Hold.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                     }
                 }
 
