@@ -68,13 +68,24 @@ namespace RFiDGear.Tests.ExternalControl
             }
         }
 
-        private static ApproveCardRequest Approval(string presenceId, string? revision = null, params (string Name, string Value)[] variables) =>
+        // An approval that names the card and nothing else.
+        private static ApproveCardRequest Approval(string presenceId) => new ApproveCardRequest { PresenceId = presenceId };
+
+        // An approval for a state of the project, with variables for the run.
+        private static ApproveCardRequest Approval(string presenceId, string revision, params (string Name, string Value)[] variables) =>
             new ApproveCardRequest
             {
                 PresenceId = presenceId,
                 ExpectProjectRevision = revision,
-                Variables = variables.Select(v => new VariablePair { Name = v.Name, Value = v.Value }).ToList(),
+                Variables = ToPairs(variables),
             };
+
+        // An approval with variables for the run and no revision.
+        private static ApproveCardRequest WithVariables(string presenceId, params (string Name, string Value)[] variables) =>
+            new ApproveCardRequest { PresenceId = presenceId, Variables = ToPairs(variables) };
+
+        private static List<VariablePair> ToPairs((string Name, string Value)[] variables) =>
+            variables.Select(v => new VariablePair { Name = v.Name, Value = v.Value }).ToList();
 
         private static void AssertNotPending(Action answer)
         {
@@ -230,14 +241,14 @@ namespace RFiDGear.Tests.ExternalControl
             await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
 
             // The rules of the variables of startRun, and the alphabet of a revision.
-            var badName = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(Session, Approval("p-1", null, ("$A\tB", "x"))));
-            var duplicates = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(Session, Approval("p-1", null, ("$A", "1"), ("$a", "2"))));
+            var badName = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(Session, WithVariables("p-1", ("$A\tB", "x"))));
+            var duplicates = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(Session, WithVariables("p-1", ("$A", "1"), ("$a", "2"))));
             var badRevision = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(Session, Approval("p-1", "has space!")));
             var tooMany = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(
                 Session,
-                Approval("p-1", null, Enumerable.Range(0, BridgeProtocol.MaxVariables + 1).Select(i => ("$V" + i, "x")).ToArray())));
+                WithVariables("p-1", Enumerable.Range(0, BridgeProtocol.MaxVariables + 1).Select(i => ("$V" + i, "x")).ToArray())));
             var stillWaiting = !waiting.IsCompleted;
-            rig.Gate.Approve(Session, Approval("p-1", null, ("$A", "1")));
+            rig.Gate.Approve(Session, WithVariables("p-1", ("$A", "1")));
 
             Assert.All(new[] { badName, duplicates, badRevision, tooMany }, fault => Assert.Equal(BridgeErrorKinds.InvalidRequest, fault.Kind));
             Assert.Equal("expectProjectRevision", badRevision.Details!["field"]);

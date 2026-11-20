@@ -521,6 +521,23 @@ passed with a real reader; until then a snapshot may be re-baselined.
   run of card N leaves a state for card N+1): do not compare them. A start with
   approval is never agreed on again (`AutoModeActive`), and the mode of a user
   is never taken over for approval.
+- **The card is held to the approval.** While the program decides, the ticks
+  that come meanwhile still look at the reader (`WatchPendingCardAsync`; the
+  tick that waits holds the machine): a card that is gone or replaced withdraws
+  the wait (`cardChanged`) and ends the presence as an empty poll does, so a
+  card put back is a new presence. The approval carries the UID it was given
+  for (`AutoModeApproval.Uid`). The window looks at the reader once more, with
+  the execution slot held, before it admits the run
+  (`VerifyTheApprovedCardAsync`): another card is `cardChanged`, a reader that
+  cannot tell is `notAdmitted`, and both offer the card again. The run's own
+  read (`ChipHydrated`) is checked against the UID before the first task
+  (`ApprovedCardChangedException`: the run ends as a fault and stops the mode).
+  A run that another path made on the card while the program decided (the card
+  stamp changed) is not repeated for the approval (`cardChanged`; the card stays
+  processed). The gate refuses an answer after the time limit itself, whether or
+  not its timer has fired, and a gate that was cancelled shows no card that
+  arrives later. A removal and a return between two ticks are not seen, as
+  everywhere in the mode.
 - Card keys: the built-in secure key provider `bridge-client`
   (`BridgeKeyProvider`) is bound to the connected client that called
   `registerKeyProvider`; RFiDGear then calls `resolveKey` on the client inside

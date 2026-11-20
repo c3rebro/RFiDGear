@@ -225,7 +225,7 @@ namespace RFiDGear.Tests.ExternalControl
             var client = await ConnectAsync(pipe, BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
             await client.Service.StartAutoMode(WithApproval());
 
-            var waiting = Present(host, "p-1", "04AA");
+            var waiting = Present(host);
             var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
             var status = await client.Service.GetStatus(new GetStatusRequest());
             var answer = await client.Service.ApproveCard(new ApproveCardRequest

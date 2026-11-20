@@ -30,7 +30,7 @@ namespace RFiDGear.Tests.AutoMode
 
             public Func<AutoModePresence, Task>? WhileAsked;
 
-            public void Answer(Func<AutoModePresence, AutoModeApproval?> answer) => _answers.Enqueue(answer);
+            public void Answer(Func<AutoModePresence, AutoModeApproval?> decide) => _answers.Enqueue(decide);
 
             // When set, the program does not answer until the test does (or the machine withdraws the wait, which is an answer of "no").
             public TaskCompletionSource<AutoModeApproval?>? Hold;
