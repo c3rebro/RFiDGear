@@ -87,10 +87,12 @@ namespace RFiDGear.Services.ExternalControl
                 return RunOrigin.Unknown;
             }
 
-            // Admitting counts: the host starts the first task before the record says that the run is in flight.
+            // Admitting counts: the host starts the first task before the record says that the run is in flight. A run that the host
+            // has let go of is over, even while the record still says Running (it is made final a moment later), so it is not the
+            // client's any more.
             var record = _registry?.Find(null, runId);
 
-            if (record != null && (record.State == RunRecordState.Admitting || record.State == RunRecordState.Running))
+            if (record != null && !record.HostEnded && (record.State == RunRecordState.Admitting || record.State == RunRecordState.Running))
             {
                 return new RunOrigin(RunSources.Bridge, record.RequestId, record.ProjectRevision);
             }

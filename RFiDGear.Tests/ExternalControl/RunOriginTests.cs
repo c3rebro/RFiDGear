@@ -42,6 +42,21 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public void ARunTheHostHasLetGoOf_IsOver_EvenWhileTheRecordStillSaysRunning()
+        {
+            var registry = new RunRegistry();
+            var record = Record(registry, "r-1", RunRecordState.Running);
+            var resolver = new RunOriginResolver(registry, null);
+
+            var whileItRuns = resolver.Resolve(record.RunId);
+            record.HostEnded = true;
+            var afterTheHostEnded = resolver.Resolve(record.RunId);
+
+            Assert.Equal(RunSources.Bridge, whileItRuns.Source);
+            Assert.Equal(RunOrigin.Unknown, afterTheHostEnded);
+        }
+
+        [Fact]
         public void ARunThatAClientStarted_WithoutARevision_SaysSo_NotWhateverIsThereNow()
         {
             var registry = new RunRegistry();

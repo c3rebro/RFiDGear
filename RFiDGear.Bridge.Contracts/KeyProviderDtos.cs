@@ -11,9 +11,12 @@ namespace RFiDGear.Bridge
         /// For every other run (the window, automatic mode, an extension, a button of a task dialog) RFiDGear answers
         /// <see cref="KeyResolveResults.NotAuthorized"/> itself and does not call the client. The default is <see langword="false"/>.
         /// Needs <see cref="BridgeCapabilities.KeysContext"/>; <see cref="RegisterKeyProviderResponse.OwnRunsOnly"/> says whether it is in force.
-        /// The latest registration of a connection counts.
+        /// The latest registration of a connection counts. It is left out of the message while it is <see langword="false"/>, so a
+        /// registration that does not ask for it is the same message as before the field existed and a host that does not know the
+        /// field (it rejects members it does not know) still accepts it.
         /// </summary>
         [JsonPropertyName("ownRunsOnly")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public bool OwnRunsOnly { get; init; }
     }
 
@@ -42,9 +45,11 @@ namespace RFiDGear.Bridge
         /// <summary>
         /// Gets whether RFiDGear applies <see cref="RegisterKeyProviderRequest.OwnRunsOnly"/>: <see langword="true"/> only when the
         /// client asked for it and the host offers <see cref="BridgeCapabilities.KeysContext"/>. A client that needs the
-        /// restriction checks this and does not rely on the request alone.
+        /// restriction checks this and does not rely on the request alone. Left out of the message while it is
+        /// <see langword="false"/>: nothing and <see langword="false"/> mean the same.
         /// </summary>
         [JsonPropertyName("ownRunsOnly")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public bool OwnRunsOnly { get; init; }
     }
 

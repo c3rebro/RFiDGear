@@ -127,6 +127,21 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public void ARegistrationThatAsksForNothing_IsTheMessageItWasBeforeTheFieldExisted()
+        {
+            var options = BridgeJson.CreateClientOptions();
+
+            var plain = System.Text.Json.JsonSerializer.Serialize(new RegisterKeyProviderRequest(), options);
+            var restricted = System.Text.Json.JsonSerializer.Serialize(new RegisterKeyProviderRequest { OwnRunsOnly = true }, options);
+            var unrestrictedAnswer = System.Text.Json.JsonSerializer.Serialize(new RegisterKeyProviderResponse { ProviderId = "bridge-client" }, options);
+
+            // A host that does not know the field rejects it, so the default must not be written at all.
+            Assert.Equal("{}", plain);
+            Assert.Equal("""{"ownRunsOnly":true}""", restricted);
+            Assert.DoesNotContain("ownRunsOnly", unrestrictedAnswer);
+        }
+
+        [Fact]
         public async Task TheCapability_IsOfferedWithAProvider_AndWithoutOneItIsNot()
         {
             var with = Start();
