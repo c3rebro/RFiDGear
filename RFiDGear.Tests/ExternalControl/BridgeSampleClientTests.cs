@@ -466,7 +466,13 @@ namespace RFiDGear.Tests.ExternalControl
                 state == "ready" ? ReaderScanState.Ready : ReaderScanState.Busy,
                 cards.Select(card => new CredentialInfo(card.Uid, 7, "MIFARE DESFire", card.Primary)).ToList());
 
-        private static Task<bool> Yes(ApprovedCard card, CancellationToken token) => Task.FromResult(true);
+        private static Task<bool> Yes(ApprovedCard card, CancellationToken token)
+        {
+            ArgumentNullException.ThrowIfNull(card);
+            token.ThrowIfCancellationRequested();
+
+            return Task.FromResult(true);
+        }
 
         [Fact]
         public async Task AnApprovedCard_IsRunOnceWithItsUidInTheVariable_AndConfirmedByWhatTheResultSays()
@@ -651,6 +657,46 @@ namespace RFiDGear.Tests.ExternalControl
             var client = await ConnectAsync(pipe);
 
             await Assert.ThrowsAsync<ArgumentException>(() => client.RunApprovedCardAsync("job-7", variable, Yes));
+            Assert.Equal(0, host.ReaderHost.ScanCount);
+        }
+
+        [Fact]
+        public async Task AnApprovalThatComesWhileTheCallerIsCancelling_StartsNoRun()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            var client = await ConnectAsync(pipe);
+            using var cancelling = new CancellationTokenSource();
+
+            // A prompt that does not look at the token: Ctrl+C cancelled, and the operator typed yes afterwards.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.RunApprovedCardAsync(
+                "job-7",
+                "$EXPECTEDUID",
+                (_, _) =>
+                {
+                    cancelling.Cancel();
+
+                    return Task.FromResult(true);
+                },
+                cancellationToken: cancelling.Token));
+
+            Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Theory]
+        [InlineData("$EXPECTEDUID")]
+        [InlineData("$expecteduid")]
+        [InlineData("$ExpectedUid")]
+        public async Task TheVariableOfTheApprovedUid_IsNotSetByTheCaller_UnderAnyCaseOfItsName(string callersName)
+        {
+            var (_, pipe, host, _) = Start();
+            var client = await ConnectAsync(pipe);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => client.RunApprovedCardAsync(
+                "job-7",
+                "$EXPECTEDUID",
+                Yes,
+                new Dictionary<string, string> { [callersName] = "04FFFF" }));
             Assert.Equal(0, host.ReaderHost.ScanCount);
         }
 

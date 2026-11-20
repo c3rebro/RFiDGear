@@ -253,7 +253,8 @@ card on the reader.
   the card is untouched, and `results` shows no run for the id.
 - 49, a swapped card: at the prompt, put another card on the reader, then type
   `yes`. The run is a `failure`, the write task is skipped (the check ended
-  `CardNotExpected`), the sample says `NOT THE APPROVED ONE`, and the exit code is 1.
+  `CardNotExpected`), the sample says `NOT THE APPROVED ONE`, and the exit code
+  is 1.
 - 50, two cards: put two cards on the reader: `AmbiguousCard`, no prompt, nothing
   started.
 - 51, a changed project: at the prompt, change a text of a task in RFiDGear and

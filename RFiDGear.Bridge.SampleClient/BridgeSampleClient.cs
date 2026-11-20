@@ -290,8 +290,9 @@ namespace RFiDGear.Bridge.SampleClient
                 throw new ArgumentException("The variable of the approved UID is a dollar sign and a name, such as $EXPECTEDUID.", nameof(uidVariable));
             }
 
-            if (variables != null && variables.ContainsKey(uidVariable))
+            if (variables != null && variables.Keys.Any(name => string.Equals(name, uidVariable, StringComparison.OrdinalIgnoreCase)))
             {
+                // The bridge takes the names of variables without regard to case, so $expecteduid is the same variable.
                 throw new ArgumentException("The variable of the approved UID is set by this method and by nobody else.", nameof(variables));
             }
 
@@ -330,6 +331,10 @@ namespace RFiDGear.Bridge.SampleClient
             {
                 return Stopped(ApprovedRunKind.Declined, "The card was not approved. Nothing was started.", card.Uid);
             }
+
+            // An approval that was given while the caller was cancelling (a prompt that does not look at the token answers after Ctrl+C)
+            // is not a reason to start a card-writing run.
+            cancellationToken.ThrowIfCancellationRequested();
 
             var runVariables = new Dictionary<string, string>(variables ?? new Dictionary<string, string>(), StringComparer.Ordinal)
             {
