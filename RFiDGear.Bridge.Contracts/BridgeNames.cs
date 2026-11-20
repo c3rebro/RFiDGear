@@ -81,8 +81,10 @@ namespace RFiDGear.Bridge
         /// the request of every run that the client did not start, without asking the client.
         /// <para>
         /// The fields are information, not a permission: a client that does not read them is not asked less or more than before.
-        /// A host that does not offer this capability sends none of them, and a <c>registerKeyProvider</c> with
-        /// <c>ownRunsOnly</c> is then answered with <c>ownRunsOnly: false</c>, which is how a client sees that it is not in force.
+        /// A host that does not offer this capability sends none of them, and it rejects a <c>registerKeyProvider</c> that carries
+        /// <c>ownRunsOnly</c> (a host rejects the members it does not know): check the capability before you send the field. A
+        /// registration that does not carry it is the same message as before. Where the capability is offered, the answer says
+        /// whether the restriction is in force.
         /// </para>
         /// </summary>
         public const string KeysContext = "keys.context";

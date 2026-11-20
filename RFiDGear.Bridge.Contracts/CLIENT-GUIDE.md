@@ -254,10 +254,12 @@ earlier connection left behind (a client that went away mid-run, even if it was
 you before you reconnected): a project that names your provider ends
 `KeyUnavailable` there, and you ask for the result of your earlier run by its
 request id as usual. The answer to the registration
-says whether the restriction is in force (`ownRunsOnly: true`); an older
-RFiDGear does not know the field and answers without it, so check the answer
-and, in any case, do your own check as in the sample (`StartedByThisClient`).
-The latest registration of a connection counts.
+says whether the restriction is in force (`ownRunsOnly: true`); check it. Send
+the field only when `keys.context` is offered: an older RFiDGear rejects a
+registration that carries a member it does not know, while a registration
+without the field is the same message as always. In any case, do your own check
+as in the sample (`StartedByThisClient`). The latest registration of a
+connection counts.
 
 **What this protects against, and what it does not.** The fields and the
 restriction protect against mix-ups and mistakes: a run from the window while

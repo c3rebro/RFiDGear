@@ -11,7 +11,8 @@ namespace RFiDGear.Bridge
         /// A run that an earlier connection started (the client went away and left it running) is not this client's, whoever registered since.
         /// For every other run (the window, automatic mode, an extension, a button of a task dialog) RFiDGear answers
         /// <see cref="KeyResolveResults.NotAuthorized"/> itself and does not call the client. The default is <see langword="false"/>.
-        /// Needs <see cref="BridgeCapabilities.KeysContext"/>; <see cref="RegisterKeyProviderResponse.OwnRunsOnly"/> says whether it is in force.
+        /// Send it only when <see cref="BridgeCapabilities.KeysContext"/> is offered: a host that does not know the field rejects the
+        /// registration. <see cref="RegisterKeyProviderResponse.OwnRunsOnly"/> says whether it is in force.
         /// The latest registration of a connection counts. It is left out of the message while it is <see langword="false"/>, so a
         /// registration that does not ask for it is the same message as before the field existed and a host that does not know the
         /// field (it rejects members it does not know) still accepts it.
