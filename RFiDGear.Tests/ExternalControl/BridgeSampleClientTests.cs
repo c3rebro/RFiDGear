@@ -458,8 +458,266 @@ namespace RFiDGear.Tests.ExternalControl
             RunId = runId,
         };
 
-        [Fact]
+        // ── The reference flow: one card, one approval, one run ──
 
+        private static ReaderSnapshot Reader(string state, params (string Uid, bool Primary)[] cards) =>
+            new ReaderSnapshot(
+                "Reader 1",
+                state == "ready" ? ReaderScanState.Ready : ReaderScanState.Busy,
+                cards.Select(card => new CredentialInfo(card.Uid, 7, "MIFARE DESFire", card.Primary)).ToList());
+
+        private static Task<bool> Yes(ApprovedCard card, CancellationToken token)
+        {
+            ArgumentNullException.ThrowIfNull(card);
+            token.ThrowIfCancellationRequested();
+
+            return Task.FromResult(true);
+        }
+
+        [Fact]
+        public async Task AnApprovedCard_IsRunOnceWithItsUidInTheVariable_AndConfirmedByWhatTheResultSays()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ProjectHost.Revision = "rev-0";
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            host.ExecutionHost.Result = FakeResults.Success(2) with { CardUid = "04AABB" };
+            var client = await ConnectAsync(pipe);
+            var asked = new List<ApprovedCard>();
+
+            var outcome = await client.RunApprovedCardAsync(
+                "job-7",
+                "$EXPECTEDUID",
+                (card, _) =>
+                {
+                    asked.Add(card);
+
+                    return Task.FromResult(true);
+                },
+                new Dictionary<string, string> { ["$JOBNUMBER"] = "J-7" },
+                expectProjectRevision: "rev-0");
+
+            // The program is asked once, about the card that is on the reader, before anything is started.
+            Assert.Equal(new ApprovedCard("04AABB", 7, "MIFARE DESFire"), Assert.Single(asked));
+            var started = Assert.Single(host.ExecutionHost.Requests);
+            Assert.Equal("04AABB", started.Variables["$EXPECTEDUID"]);
+            Assert.Equal("J-7", started.Variables["$JOBNUMBER"]);
+            Assert.Equal(ApprovedRunKind.Ran, outcome.Kind);
+            Assert.Equal("04AABB", outcome.ApprovedUid);
+            Assert.True(outcome.CardUidMatches);
+            Assert.True(outcome.IsConfirmed);
+            Assert.Equal("rev-0", outcome.Run!.Result!.ProjectRevision);
+        }
+
+        [Fact]
+        public async Task ASeriesOfCards_EachConfirmed_EvenThoughTheRunsChangeSettingsOfTheirOwnTasks()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ProjectHost.Revision = "rev-0";
+
+            // Each run leaves the project in another state (the tasks write some of their own settings), as a DESFire write does.
+            var runs = 0;
+            host.ExecutionHost.OnExecute = _ => host.ProjectHost.Revision = "rev-" + (++runs);
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            host.ReaderHost.ScriptScan(Reader("ready", ("04CCDD", true)));
+            var client = await ConnectAsync(pipe);
+
+            host.ExecutionHost.Result = FakeResults.Success(2) with { CardUid = "04AABB" };
+            var first = await client.RunApprovedCardAsync("job-7-card-1", "$EXPECTEDUID", Yes, expectProjectRevision: "rev-0");
+            host.ExecutionHost.Result = FakeResults.Success(2) with { CardUid = "04CCDD" };
+            var second = await client.RunApprovedCardAsync("job-7-card-2", "$EXPECTEDUID", Yes, expectProjectRevision: "rev-0");
+
+            // The second run started with the state the first one left, which RFiDGear knows as the approved one: it ran, and it is confirmed.
+            Assert.True(first.IsConfirmed);
+            Assert.True(second.IsConfirmed);
+            Assert.Equal("rev-0", first.Run!.Result!.ProjectRevision);
+            Assert.Equal("rev-1", second.Run!.Result!.ProjectRevision);
+            Assert.Equal(2, host.ExecutionHost.Requests.Count);
+        }
+
+        [Fact]
+        public async Task ACardTheProgramDoesNotApprove_StartsNothing()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            var client = await ConnectAsync(pipe);
+
+            var outcome = await client.RunApprovedCardAsync("job-7", "$EXPECTEDUID", (_, _) => Task.FromResult(false));
+
+            Assert.Equal(ApprovedRunKind.Declined, outcome.Kind);
+            Assert.Equal("04AABB", outcome.ApprovedUid);
+            Assert.Null(outcome.Run);
+            Assert.False(outcome.IsConfirmed);
+            Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Theory]
+        [InlineData("none", ApprovedRunKind.NoCard)]
+        [InlineData("two", ApprovedRunKind.AmbiguousCard)]
+        [InlineData("notPrimary", ApprovedRunKind.AmbiguousCard)]
+        [InlineData("busy", ApprovedRunKind.ReaderNotReady)]
+        public async Task AReaderThatDoesNotShowExactlyOneCard_IsNeverApprovedAndNeverRun(string scenario, ApprovedRunKind expected)
+        {
+            var (_, pipe, host, _) = Start();
+            host.ReaderHost.ScriptScan(scenario switch
+            {
+                "none" => Reader("ready"),
+                "two" => Reader("ready", ("04AABB", true), ("04CCDD", false)),
+                "notPrimary" => Reader("ready", ("04AABB", false)),
+                _ => Reader("busy"),
+            });
+            var client = await ConnectAsync(pipe);
+            var calls = 0;
+
+            var outcome = await client.RunApprovedCardAsync(
+                "job-7",
+                "$EXPECTEDUID",
+                (_, _) =>
+                {
+                    calls++;
+
+                    return Task.FromResult(true);
+                });
+
+            Assert.Equal(expected, outcome.Kind);
+            Assert.Equal(0, calls);
+            Assert.Null(outcome.ApprovedUid);
+            Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task AReaderThatCannotBeLookedAt_IsNotReady_AndNothingIsStarted()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ReaderHost.ScriptScanFailure(new InvalidOperationException("the reader does not answer"));
+            var client = await ConnectAsync(pipe);
+
+            var outcome = await client.RunApprovedCardAsync("job-7", "$EXPECTEDUID", Yes);
+
+            Assert.Equal(ApprovedRunKind.ReaderNotReady, outcome.Kind);
+            Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Fact]
+        public async Task ACardOtherThanTheApprovedOne_IsNotConfirmed_EvenWhenTheRunSucceeded()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+
+            // The card was swapped after the approval: the run read another one.
+            host.ExecutionHost.Result = FakeResults.Success(2) with { CardUid = "04FFFF" };
+            var client = await ConnectAsync(pipe);
+
+            var outcome = await client.RunApprovedCardAsync("job-7", "$EXPECTEDUID", Yes);
+
+            Assert.Equal(ApprovedRunKind.Ran, outcome.Kind);
+            Assert.Equal(RunStatuses.Success, outcome.Run!.Result!.Status);
+            Assert.False(outcome.CardUidMatches);
+            Assert.False(outcome.IsConfirmed);
+        }
+
+        [Fact]
+        public async Task ARunThatFailed_IsNotConfirmed_EvenWhenItReadTheApprovedCard()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            host.ExecutionHost.Result = FakeResults.Success(2) with { CardUid = "04AABB", Outcome = ExecutionOutcome.Failure };
+            var client = await ConnectAsync(pipe);
+
+            var outcome = await client.RunApprovedCardAsync("job-7", "$EXPECTEDUID", Yes);
+
+            Assert.True(outcome.CardUidMatches);
+            Assert.Equal(RunStatuses.Failure, outcome.Run!.Result!.Status);
+            Assert.False(outcome.IsConfirmed);
+        }
+
+        [Fact]
+        public async Task AProjectThatChangedAfterTheApproval_IsRefusedBeforeAnythingIsTouched_AndNotConfirmed()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ProjectHost.Revision = "rev-9";
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            var client = await ConnectAsync(pipe);
+
+            var outcome = await client.RunApprovedCardAsync("job-7", "$EXPECTEDUID", Yes, expectProjectRevision: "rev-0");
+
+            Assert.Equal(ApprovedRunKind.Ran, outcome.Kind);
+            Assert.Equal(RunOutcomeKind.NotStarted, outcome.Run!.Kind);
+            Assert.False(outcome.IsConfirmed);
+            Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Theory]
+        [InlineData("EXPECTEDUID")]
+        [InlineData("$")]
+        [InlineData("$A B")]
+        [InlineData("")]
+        public async Task AVariableThatIsNoVariable_IsRefusedBeforeTheReaderIsLookedAt(string variable)
+        {
+            var (_, pipe, host, _) = Start();
+            var client = await ConnectAsync(pipe);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => client.RunApprovedCardAsync("job-7", variable, Yes));
+            Assert.Equal(0, host.ReaderHost.ScanCount);
+        }
+
+        [Fact]
+        public async Task AnApprovalThatComesWhileTheCallerIsCancelling_StartsNoRun()
+        {
+            var (_, pipe, host, _) = Start();
+            host.ReaderHost.ScriptScan(Reader("ready", ("04AABB", true)));
+            var client = await ConnectAsync(pipe);
+            using var cancelling = new CancellationTokenSource();
+
+            // A prompt that does not look at the token: Ctrl+C cancelled, and the operator typed yes afterwards.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.RunApprovedCardAsync(
+                "job-7",
+                "$EXPECTEDUID",
+                (_, _) =>
+                {
+                    cancelling.Cancel();
+
+                    return Task.FromResult(true);
+                },
+                cancellationToken: cancelling.Token));
+
+            // A request that was sent is admitted by the bridge a moment later: give it the time, so that a run that was started shows.
+            await Task.Delay(400);
+
+            Assert.Empty(host.ExecutionHost.Requests);
+        }
+
+        [Theory]
+        [InlineData("$EXPECTEDUID")]
+        [InlineData("$expecteduid")]
+        [InlineData("$ExpectedUid")]
+        public async Task TheVariableOfTheApprovedUid_IsNotSetByTheCaller_UnderAnyCaseOfItsName(string callersName)
+        {
+            var (_, pipe, host, _) = Start();
+            var client = await ConnectAsync(pipe);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => client.RunApprovedCardAsync(
+                "job-7",
+                "$EXPECTEDUID",
+                Yes,
+                new Dictionary<string, string> { [callersName] = "04FFFF" }));
+            Assert.Equal(0, host.ReaderHost.ScanCount);
+        }
+
+        [Fact]
+        public async Task TheVariableOfTheApprovedUid_IsNotSetByTheCaller_NobodyElseMayWriteIt()
+        {
+            var (_, pipe, host, _) = Start();
+            var client = await ConnectAsync(pipe);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => client.RunApprovedCardAsync(
+                "job-7",
+                "$EXPECTEDUID",
+                Yes,
+                new Dictionary<string, string> { ["$EXPECTEDUID"] = "04FFFF" }));
+            Assert.Equal(0, host.ReaderHost.ScanCount);
+        }
+
+        [Fact]
         public void TheVerificationText_SaysWhatWasComparedAndWhatDiffered_AndLeavesOutWhatWasNot()
         {
             var sample = (TaskOutcomeDto)BridgeSamples.All["TaskOutcomeDto"];

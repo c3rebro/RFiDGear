@@ -7,6 +7,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Security.Principal;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,6 +46,9 @@ namespace RFiDGear.Bridge.SampleClient
     public sealed class BridgeSampleClient : IBridgeClientEvents, IBridgeClientKeys, IAsyncDisposable
     {
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
+
+        // The form of a variable a project can name for an approved UID: a dollar sign and a name, as the Check UID task reads it.
+        private static readonly Regex UidVariablePattern = new Regex(@"^\$[A-Za-z0-9_]{1,64}\z", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
         private readonly NamedPipeClientStream _pipe;
         private readonly JsonRpc _rpc;
@@ -249,6 +253,104 @@ namespace RFiDGear.Bridge.SampleClient
 
             return await ResumeAsync(requestId, cancellationToken).ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// One card, one approval, one run: the reference flow for a job that writes a card. It looks at the reader, asks the
+        /// caller whether THIS card may be written (the caller checks its job, its profile and its list of serial numbers; this is the
+        /// part that is not RFiDGear's), and only then starts the run with the approved UID in a variable that the project's Check UID
+        /// task compares with the card that the run reads itself. A card that was swapped in between is not the approved one, and
+        /// the tasks that depend on the check never start. Afterwards it compares the card that the result says the run read with the
+        /// approved one. It never starts a run for more than one card, and never repeats one (see <see cref="RunOnceAsync"/>).
+        /// </summary>
+        /// <param name="requestId">The id of this job and this card. Make it from the job; it is the only way to ask about the run later, and an id is never reused for another card.</param>
+        /// <param name="uidVariable">The variable the project reads the approved UID from, with its dollar sign (for example <c>$EXPECTEDUID</c>).</param>
+        /// <param name="approve">The program's own decision about the card. Called once, with nothing started yet; <see langword="false"/> ends it.</param>
+        /// <param name="variables">The other variables of the run; it must not hold <paramref name="uidVariable"/>.</param>
+        /// <param name="expectProjectPath">The project the job is for (see <see cref="RunOnceAsync"/>).</param>
+        /// <param name="expectTaskCount">The number of tasks of the project.</param>
+        /// <param name="expectProjectRevision">The revision that was approved with the project (see <see cref="RevisionToExpect"/>).</param>
+        /// <param name="cancellationToken">Stops waiting; it does not stop a run that was started.</param>
+        /// <returns>What came of it. Look at <see cref="ApprovedRunOutcome.IsConfirmed"/> before you record the card as written.</returns>
+        /// <exception cref="ArgumentException">The variable is not of the form <c>$NAME</c>, or the caller set it as well.</exception>
+        public async Task<ApprovedRunOutcome> RunApprovedCardAsync(
+            string requestId,
+            string uidVariable,
+            Func<ApprovedCard, CancellationToken, Task<bool>> approve,
+            IReadOnlyDictionary<string, string>? variables = null,
+            string? expectProjectPath = null,
+            int? expectTaskCount = null,
+            string? expectProjectRevision = null,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(requestId);
+            ArgumentNullException.ThrowIfNull(approve);
+
+            if (uidVariable == null || !UidVariablePattern.IsMatch(uidVariable))
+            {
+                throw new ArgumentException("The variable of the approved UID is a dollar sign and a name, such as $EXPECTEDUID.", nameof(uidVariable));
+            }
+
+            if (variables != null && variables.Keys.Any(name => string.Equals(name, uidVariable, StringComparison.OrdinalIgnoreCase)))
+            {
+                // The bridge takes the names of variables without regard to case, so $expecteduid is the same variable.
+                throw new ArgumentException("The variable of the approved UID is set by this method and by nobody else.", nameof(variables));
+            }
+
+            ScanReaderResponse scan;
+
+            try
+            {
+                scan = await Service.ScanReader(new ScanReaderRequest()).WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (RemoteInvocationException failure)
+            {
+                return Stopped(ApprovedRunKind.ReaderNotReady, "The reader could not be looked at (" + (ErrorDataOf(failure)?.Kind ?? "error") + "). Nothing was started.");
+            }
+
+            var reader = scan.Reader;
+
+            if (reader.State != ReaderStates.Ready)
+            {
+                return Stopped(ApprovedRunKind.ReaderNotReady, "The reader is " + reader.State + ". Nothing was started.");
+            }
+
+            if (!reader.HasCard || reader.Credentials.Count == 0)
+            {
+                return Stopped(ApprovedRunKind.NoCard, "There is no card on the reader. Nothing was started.");
+            }
+
+            if (reader.Credentials.Count != 1 || !reader.Credentials[0].IsPrimary || string.IsNullOrEmpty(reader.Credentials[0].Uid))
+            {
+                return Stopped(ApprovedRunKind.AmbiguousCard, "More than one card is on the reader, or RFiDGear cannot say which one is the card. One card at a time is approved. Nothing was started.");
+            }
+
+            var credential = reader.Credentials[0];
+            var card = new ApprovedCard(credential.Uid, credential.TypeCode, credential.DisplayName);
+
+            if (!await approve(card, cancellationToken).ConfigureAwait(false))
+            {
+                return Stopped(ApprovedRunKind.Declined, "The card was not approved. Nothing was started.", card.Uid);
+            }
+
+            // An approval that was given while the caller was cancelling (a prompt that does not look at the token answers after Ctrl+C)
+            // is not a reason to start a card-writing run.
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var runVariables = new Dictionary<string, string>(variables ?? new Dictionary<string, string>(), StringComparer.Ordinal)
+            {
+                [uidVariable] = card.Uid,
+            };
+            var run = await RunOnceAsync(requestId, runVariables, expectProjectPath, expectTaskCount, expectProjectRevision, cancellationToken).ConfigureAwait(false);
+
+            // What the run says about itself, against what was approved: the card it read. The project is not compared here:
+            // RFiDGear refused the run before it started if the project was not the approved state.
+            var cardMatches = run.Result != null && string.Equals(run.Result.CardUid, card.Uid, StringComparison.OrdinalIgnoreCase);
+
+            return new ApprovedRunOutcome(ApprovedRunKind.Ran, card.Uid, run, cardMatches, run.Detail);
+        }
+
+        private static ApprovedRunOutcome Stopped(ApprovedRunKind kind, string detail, string? approvedUid = null) =>
+            new ApprovedRunOutcome(kind, approvedUid, null, false, detail);
 
         /// <summary>
         /// Asks what became of a request, waiting for the run to end. It is also the way back after a lost connection: connect

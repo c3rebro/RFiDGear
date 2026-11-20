@@ -311,6 +311,64 @@ answered "no" can end with.
   there approves every card with that UID again: do not approve a write that
   way. Use single runs, as above.
 
+**Reference flow: one card, one approval, one run:**
+
+This is the flow for a job that writes a card, as the sample client does it
+(`BridgeSampleClient.RunApprovedCardAsync`, command `approved-run`; the tests of
+`BridgeSampleClientTests` run it against the bridge). Use it for writes until
+your station has something better. Do not use automatic mode for a write.
+
+Once per project (and again after RFiDGear was restarted: a revision is valid
+for one process):
+
+- `hello`. This flow needs `project.load`, `reader.scan` and `execution.run`,
+  and should have `project.revision`; call nothing that is not offered.
+- `loadProject`. Note the `path`, the `taskCount` and the `revision` as the
+  state you approved for this job. A change made in RFiDGear afterwards makes the
+  run refuse, before anything is touched.
+
+For every card:
+
+1. `scanReader`. Go on only when the reader is `ready` and shows exactly one
+   card, which is the main one. No reader, busy, no card or more than one card is
+   a stop, and nothing has been started.
+2. Decide, in your own program: the job, the profile, the serial number, the
+   list of cards that were written already. That is the approval. The UID of the
+   scan is what you approve; it identifies the card for the job, it does not prove
+   that the card is genuine.
+3. `startRun` with the request id of this job and this card (written down before
+   the call, never reused for another card), the variable `$EXPECTEDUID` (or the
+   name your project uses) set to the approved UID, and `expectProjectPath`,
+   `expectTaskCount` and `expectProjectRevision` of the load. Never send it
+   again: ask by the request id.
+4. Wait for the result (`getRunResult` with `waitMs`, or the event). Record the
+   card as written only when all of this holds: the status is `success` (or
+   `completedWithIntentionalFailures`, if that is what your project means by
+   done) and `cardUid` is the approved UID. The sample says it in one flag,
+   `ApprovedRunOutcome.IsConfirmed`. Put the `projectRevision` of the result into
+   the record of the job: it is the state the run started with. After an earlier
+   run of yours it can be another than the one you approved, because the tasks
+   write some of their own settings; RFiDGear refused the run before it started
+   if the project was in a state that is neither the approved one nor one that
+   a run of yours left behind.
+5. After a doubt (a timeout, a lost connection, a restart) ask `getRunResult`
+   by the request id and never start the job again before you have looked at the
+   card.
+6. To read it back, load a separate project that only reads (a new
+   `loadProject` and a new revision) and run it the same way. Do not read back
+   with the project that writes.
+What the project that RFiDGear runs must look like (your generator's part):
+
+- The first task is Check UID with the variable `$EXPECTEDUID`, and every task that
+  touches the card depends on it (execute condition: the check, error `NoError`;
+  a task behind that one on the one before it). RFiDGear cannot tell which tasks
+  write: one that does not depend on the check runs whatever the check said.
+- A card that was swapped or taken away after the approval ends the check with
+  `CardNotExpected` (or the run with no card at all), the tasks that depend on it
+  are skipped, and the run is a `failure`.
+- Nothing in the project holds the UID of one card, so the project, and with it
+  its revision, does not change from card to card.
+
 **Why a check failed (`execution.verificationDetails`):**
 
 A task that compares values can say what it compared, so that the record of a
