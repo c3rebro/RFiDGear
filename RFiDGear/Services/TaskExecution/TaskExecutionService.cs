@@ -862,7 +862,7 @@ namespace RFiDGear.Services.TaskExecution
                     {
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", false));
+                            RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", false, includeDetails: !abandoned));
                             LogTaskOutcome(runId, descriptor, taskModel, "Executed", "Failed", null, ex);
                         }
 

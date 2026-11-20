@@ -190,7 +190,7 @@ namespace RFiDGear.Tests
         public void AnOutcome_CarriesTheDetailsOfItsObservation_AndASkippedTaskHasNone()
         {
             var details = DesfireFileSettingsVerification.From(Comparison());
-            var snapshot = new object?[] { new object(), new object(), new object() };
+            var snapshot = new[] { new object(), new object(), new object() };
             var observations = new[]
             {
                 Observed(details),
@@ -286,17 +286,11 @@ namespace RFiDGear.Tests
 
             public object Tag { get; set; } = string.Empty;
 
-            public void Start()
-            {
-            }
+            public void Start() => IsEnabled = true;
 
-            public void Stop()
-            {
-            }
+            public void Stop() => IsEnabled = false;
 
-            public void Dispose()
-            {
-            }
+            public void Dispose() => IsEnabled = false;
         }
         private sealed class VerifyingTask : StubTaskModel, ITaskVerificationSource
         {
@@ -345,6 +339,56 @@ namespace RFiDGear.Tests
             Assert.Same(details, observations.Single(o => o.TaskPosition == 0).VerificationDetails);
             Assert.Same(details, observations.Single(o => o.TaskPosition == 1).VerificationDetails);
             Assert.Null(observations.Single(o => o.TaskPosition == 2).VerificationDetails);
+        }
+
+        // A run in which the task calls the watchdog's way out itself (the loop gives the run up) and then ends or throws.
+        private static async Task<IReadOnlyList<TaskExecutionObservation>> RunAbandonedAsync(VerifyingTask task, bool throws)
+        {
+            var observations = new List<TaskExecutionObservation>();
+            var service = new TaskExecutionService(new NoReader(), new NoTimer(), new NoTimer());
+            var request = new TaskExecutionRequest
+            {
+                TaskDescriptors = new[]
+                {
+                    new TaskDescriptor(0, task, _ =>
+                    {
+                        service.AbandonRun();
+                        task.CurrentTaskErrorLevel = ERROR.NoError;
+
+                        return throws ? throw new InvalidOperationException("gave up, then failed") : Task.CompletedTask;
+                    }),
+                },
+                Timeouts = TaskExecutionTimeouts.Default,
+                Observations = observations,
+            };
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                try
+                {
+                    await service.ExecuteOnceAsync(request);
+                }
+                catch (InvalidOperationException)
+                {
+                    // The task threw after it was given up: the loop has recorded it before it passes the exception on.
+                }
+            });
+
+            return observations;
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ATaskTheWatchdogGaveUp_HasNoDetails_WhetherItEndsAfterwardsOrThrows(bool throws)
+        {
+            var task = new VerifyingTask { CurrentTaskIndex = "0", Details = DesfireFileSettingsVerification.From(Comparison()) };
+
+            var observations = await RunAbandonedAsync(task, throws);
+
+            var observed = Assert.Single(observations);
+            Assert.Null(observed.VerificationDetails);
+            Assert.Equal(false, observed.WasSuccessful);
         }
 
         [Fact]
