@@ -43,8 +43,8 @@ namespace RFiDGear.Services.ExternalControl
         /// <summary>Gets what <c>scanReader</c> does; a host that offers the <c>reader.scan</c> capability sets it.</summary>
         internal Func<Task<ScanReaderResponse>>? ScanReader { get; init; }
 
-        /// <summary>Gets what <c>startRun</c> does; a host that offers the <c>execution.run</c> capability sets it.</summary>
-        internal Func<StartRunRequest, Task<StartRunResponse>>? StartRun { get; init; }
+        /// <summary>Gets what <c>startRun</c> does, given the id of the connection; a host that offers the <c>execution.run</c> capability sets it.</summary>
+        internal Func<string, StartRunRequest, Task<StartRunResponse>>? StartRun { get; init; }
 
         /// <summary>Gets what <c>cancelRun</c> does; a host that offers the <c>execution.cancel</c> capability sets it.</summary>
         internal Func<CancelRunRequest, Task<CancelRunResponse>>? CancelRun { get; init; }
@@ -120,7 +120,7 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <inheritdoc />
         public Task<StartRunResponse> StartRun(StartRunRequest request) =>
-            Run(BridgeMethods.StartRun, () => (_options.StartRun ?? throw new NotSupportedException())(request));
+            Run(BridgeMethods.StartRun, () => (_options.StartRun ?? throw new NotSupportedException())(_sessionId, request));
 
         /// <inheritdoc />
         public Task<CancelRunResponse> CancelRun(CancelRunRequest request) =>

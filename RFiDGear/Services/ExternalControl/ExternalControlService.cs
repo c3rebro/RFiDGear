@@ -197,7 +197,7 @@ namespace RFiDGear.Services.ExternalControl
                 GetStatus = status.GetStatusAsync,
                 LoadProject = operations.LoadProjectAsync,
                 ScanReader = operations.ScanReaderAsync,
-                StartRun = supervisor == null ? null : supervisor.StartAsync,
+                StartRun = supervisor == null ? null : (sessionId, request) => supervisor.StartAsync(request, sessionId),
                 CancelRun = supervisor == null ? null : request => Task.FromResult(supervisor.Cancel(request)),
                 GetRunResult = supervisor == null ? null : supervisor.GetResultAsync,
                 ListRunResults = supervisor == null ? null : request => Task.FromResult(supervisor.ListResults(request, _instanceId)),
@@ -480,6 +480,12 @@ namespace RFiDGear.Services.ExternalControl
 
             public KeySupplierAvailability Availability => AvailabilityOf(_server.State, _server.ActiveSession?.Service.ProvidesKeys == true);
 
+            // A run of a client of the bridge that this very connection started. A run without a connection (one of an earlier
+            // RFiDGear, or a caller that gave none) has a null id, which is never equal to the id of a connection: it is nobody's.
+            private static bool IsOwnRun(RunOrigin origin, string sessionId) =>
+                string.Equals(origin.Source, RunSources.Bridge, StringComparison.Ordinal)
+                && string.Equals(origin.SessionId, sessionId, StringComparison.Ordinal);
+
             public async Task<ResolveKeyResponse?> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken)
             {
                 var session = _server.ActiveSession;
@@ -492,8 +498,9 @@ namespace RFiDGear.Services.ExternalControl
                 var origin = _origins.Resolve(request.RunId);
 
                 // The client asked to be bothered with its own runs only: the host answers for everything else, and the client
-                // is not called. No run id of a client is a run of another, so the check is the source and nothing else.
-                if (session.Service.OwnRunsOnly && !string.Equals(origin.Source, RunSources.Bridge, StringComparison.Ordinal))
+                // is not called. Its own is a run that was started over this connection: a run of another connection (a client that
+                // went away and left a run behind) is not, whoever is registered now.
+                if (session.Service.OwnRunsOnly && !IsOwnRun(origin, session.SessionId))
                 {
                     Logger.Information(
                         "External control: the key request of run {RunId} (source {Source}) was refused without asking the client, which asked for its own runs only",

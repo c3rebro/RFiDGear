@@ -57,6 +57,24 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public void ARunThatAClientStarted_KnowsTheConnectionItCameOver_AndTheRegistryKeepsTheFirstOne()
+        {
+            var registry = new RunRegistry();
+            var (record, created) = registry.GetOrCreate("r-1", "hash", "s-7");
+            record.ProjectRevision = "rev-1";
+            Assert.True(record.TryTransition(RunRecordState.Pending, RunRecordState.Running));
+
+            // The same request again, over another connection: it is the same run, and it stays the first connection's.
+            var (again, createdAgain) = registry.GetOrCreate("r-1", "hash", "s-8");
+            var origin = new RunOriginResolver(registry, null).Resolve(record.RunId);
+
+            Assert.True(created);
+            Assert.False(createdAgain);
+            Assert.Same(record, again);
+            Assert.Equal(new RunOrigin(RunSources.Bridge, "r-1", "rev-1", "s-7"), origin);
+        }
+
+        [Fact]
         public void ARunThatAClientStarted_WithoutARevision_SaysSo_NotWhateverIsThereNow()
         {
             var registry = new RunRegistry();

@@ -7,7 +7,8 @@ namespace RFiDGear.Bridge
     public sealed record RegisterKeyProviderRequest
     {
         /// <summary>
-        /// Gets whether RFiDGear is to ask this client only for the keys of runs that the client started over this bridge (<see cref="RunSources.Bridge"/>).
+        /// Gets whether RFiDGear is to ask this client only for the keys of runs that it started over this connection (<see cref="RunSources.Bridge"/>).
+        /// A run that an earlier connection started (the client went away and left it running) is not this client's, whoever registered since.
         /// For every other run (the window, automatic mode, an extension, a button of a task dialog) RFiDGear answers
         /// <see cref="KeyResolveResults.NotAuthorized"/> itself and does not call the client. The default is <see langword="false"/>.
         /// Needs <see cref="BridgeCapabilities.KeysContext"/>; <see cref="RegisterKeyProviderResponse.OwnRunsOnly"/> says whether it is in force.

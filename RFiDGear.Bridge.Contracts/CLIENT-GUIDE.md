@@ -247,10 +247,13 @@ it sent, whose `projectRevision` it approved and whose `cardUid` is the card it
 approved, has a release that is bound to one job.
 
 `ownRunsOnly` in `registerKeyProvider` (default off) goes one step further:
-RFiDGear then answers `notAuthorized` itself for every run that is not a run of
-a client of this bridge, and does not call you for it. That includes a run that
-the user starts in the window and a button in a task dialog: a project that
-names your provider ends `KeyUnavailable` there. The answer to the registration
+RFiDGear then answers `notAuthorized` itself for every run that was not started
+over **this connection**, and does not call you for it. That includes a run
+that the user starts in the window, a button in a task dialog, and a run that an
+earlier connection left behind (a client that went away mid-run, even if it was
+you before you reconnected): a project that names your provider ends
+`KeyUnavailable` there, and you ask for the result of your earlier run by its
+request id as usual. The answer to the registration
 says whether the restriction is in force (`ownRunsOnly: true`); an older
 RFiDGear does not know the field and answers without it, so check the answer
 and, in any case, do your own check as in the sample (`StartedByThisClient`).

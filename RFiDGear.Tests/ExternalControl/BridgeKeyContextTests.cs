@@ -202,6 +202,64 @@ namespace RFiDGear.Tests.ExternalControl
             });
         }
 
+        private static async Task WaitUntilAsync(Func<bool> condition)
+        {
+            var until = DateTime.UtcNow.AddSeconds(5);
+
+            while (!condition())
+            {
+                Assert.True(DateTime.UtcNow < until, "The condition did not become true in time.");
+                await Task.Delay(10);
+            }
+        }
+
+        [Fact]
+        public async Task ARunOfAClientThatWentAway_IsNotTheNextClientsOwn_WhoeverRegisteredSince()
+        {
+            var rig = Start();
+            var first = await ConnectAsync(rig, ownRunsOnly: false);
+            var runId = await StartHeldRunAsync(rig, first, "r-1");
+
+            // The first client goes away and leaves its run behind; another program connects and asks for its own runs only.
+            first.Dispose();
+            await WaitUntilAsync(() => !rig.Service.IsConnected);
+            var second = await ConnectAsync(rig, ownRunsOnly: true);
+
+            using var refused = await Ask(rig, runId);
+            var calledWhileRestricted = second.KeyRequests.Count;
+
+            // Without the restriction the second client is told whose request it is, so that its own check can say no.
+            await second.Service.RegisterKeyProvider(new RegisterKeyProviderRequest());
+            using var told = await Ask(rig, runId);
+            rig.Host.ExecutionHost.RunGate!.SetResult(true);
+
+            Assert.Equal(SecureKeyFailureReason.NotAuthorized, refused.FailureReason);
+            Assert.Equal(0, calledWhileRestricted);
+            Assert.True(told.IsResolved);
+            var asked = Assert.Single(second.KeyRequests);
+            Assert.Equal(("r-1", RunSources.Bridge), (asked.RequestId, asked.Source));
+        }
+
+        [Fact]
+        public async Task AClientThatReconnects_DoesNotGetItsEarlierRunsBackAsItsOwn_WithTheRestriction()
+        {
+            var rig = Start();
+            var before = await ConnectAsync(rig, ownRunsOnly: true);
+            var runId = await StartHeldRunAsync(rig, before, "r-1");
+            using var whileConnected = await Ask(rig, runId);
+
+            before.Dispose();
+            await WaitUntilAsync(() => !rig.Service.IsConnected);
+            var after = await ConnectAsync(rig, ownRunsOnly: true);
+            using var afterReconnecting = await Ask(rig, runId);
+            rig.Host.ExecutionHost.RunGate!.SetResult(true);
+
+            // Refused, not guessed at: the connection that started the run is gone, and the run ends with its key unavailable.
+            Assert.True(whileConnected.IsResolved);
+            Assert.Equal(SecureKeyFailureReason.NotAuthorized, afterReconnecting.FailureReason);
+            Assert.Empty(after.KeyRequests);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("a-run-nobody-started-over-the-bridge")]

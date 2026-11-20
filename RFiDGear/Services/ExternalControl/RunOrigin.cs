@@ -13,7 +13,8 @@ namespace RFiDGear.Services.ExternalControl
     /// <param name="Source">Who started the run, one of <see cref="RunSources"/>.</param>
     /// <param name="RequestId">The request id of the client, for a run of a client over the bridge; otherwise <see langword="null"/>.</param>
     /// <param name="ProjectRevision">The revision the run started with, for a run of a client over the bridge when the host could tell it.</param>
-    internal sealed record RunOrigin(string Source, string? RequestId = null, string? ProjectRevision = null)
+    /// <param name="SessionId">The connection that started the run, for a run of a client over the bridge; it is not sent to the client.</param>
+    internal sealed record RunOrigin(string Source, string? RequestId = null, string? ProjectRevision = null, string? SessionId = null)
     {
         /// <summary>Gets what is said about a run that RFiDGear cannot place: an extension, a button of a task dialog, a run that is over.</summary>
         internal static RunOrigin Unknown { get; } = new RunOrigin(RunSources.Other);
@@ -94,7 +95,7 @@ namespace RFiDGear.Services.ExternalControl
 
             if (record != null && !record.HostEnded && (record.State == RunRecordState.Admitting || record.State == RunRecordState.Running))
             {
-                return new RunOrigin(RunSources.Bridge, record.RequestId, record.ProjectRevision);
+                return new RunOrigin(RunSources.Bridge, record.RequestId, record.ProjectRevision, record.SessionId);
             }
 
             var source = _windowRunSource?.Invoke(runId);

@@ -177,8 +177,9 @@ namespace RFiDGear.Services.ExternalControl
 
         /// <summary>Starts a run, or answers with the run an earlier request with the same id started.</summary>
         /// <param name="request">The request.</param>
+        /// <param name="sessionId">The id of the connection the request came over; the run is kept as that connection's.</param>
         /// <returns>The answer, when the host has admitted the run.</returns>
-        internal async Task<StartRunResponse> StartAsync(StartRunRequest request)
+        internal async Task<StartRunResponse> StartAsync(StartRunRequest request, string? sessionId = null)
         {
             var plan = RunPlan.From(request);
 
@@ -187,7 +188,7 @@ namespace RFiDGear.Services.ExternalControl
                 throw BridgeFault.ShuttingDown();
             }
 
-            var (record, created) = _registry.GetOrCreate(plan.RequestId, plan.PayloadHash);
+            var (record, created) = _registry.GetOrCreate(plan.RequestId, plan.PayloadHash, sessionId);
 
             if (!created)
             {

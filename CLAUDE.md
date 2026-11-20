@@ -487,8 +487,10 @@ passed with a real reader; until then a snapshot may be re-baselined.
   slot for; everything else (an extension, a task dialog button, no run id) is
   `other`, and a run that is over is never `bridge`. `registerKeyProvider`
   takes `ownRunsOnly` (default off, latest registration counts, the answer says
-  what is in force): `KeyChannel` then answers `NotAuthorized` for every source
-  but `bridge` and does not call the client. These are information and a
+  what is in force): `KeyChannel` then answers `NotAuthorized` for every run
+  that was not started over the same connection (`RunRecord.SessionId`, which
+  `startRun` records; a run a client left behind belongs to nobody who
+  connects later) and does not call the client. These are information and a
   convenience, not protection against a hostile program of the same user (see
   the guide).
 - Logs hold method names, request and run ids, numbers and error kinds. Never a
