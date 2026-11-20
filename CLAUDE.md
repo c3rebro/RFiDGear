@@ -494,6 +494,33 @@ passed with a real reader; until then a snapshot may be re-baselined.
   owns is a claim on one START of the mode (`AutoModeController.CurrentSession`,
   `StopIfSession`), never on "the mode", so a mode the user switched on is never
   stopped for a client.
+- **Automatic mode that waits for approval** (`autoMode.approval`):
+  `startAutoMode` with `requireApproval` shows every card to the client that
+  started the mode and runs it only when that client approves it. It needs
+  `stopOnDisconnect` (nobody would be left to answer otherwise); an
+  `approvalTimeoutMs` of 2 to 120 s (default 15 s) is allowed only with it. The
+  machine (`AutoModeController`) asks an `IAutoModeApproval`, which on the
+  bridge is the `AutoModeApprovalGate` of that start, for each presence: a card
+  put on the reader gets a new `presenceId`, also the same card put back. The
+  gate publishes `cardPresented`; the answer is `approveCard` (optional
+  `expectProjectRevision`, and `variables` that are merged over the start-up
+  variables for that one run and for no other) or `declineCard`. Only the
+  connection that started the mode can answer, once, for the card that is
+  waited for; every other answer is `approvalNotPending`.
+- What each end of the wait does (`cardPresentationEnded` says it, with the
+  run id for `approved`): declined, not answered in time (`expired`), overtaken
+  by a stop, a connection that ended (`clientLost`): nothing runs, and the card
+  stays remembered, so it is not offered again until a poll found the reader
+  empty. A run that was not admitted (`notAdmitted`) or a project that is not
+  the revision the approval named (`projectChanged`) does not run either, but
+  the card is offered again with a new presence id. The revision is checked in
+  `RunAllOnceCoreAsync` after the window holds the execution slot, so nothing
+  can change the project between the check and the run. The result of the run
+  carries the `presenceId`. The revision in a result is the one the run started
+  with, so in a series of cards it is not the revision that was approved (the
+  run of card N leaves a state for card N+1): do not compare them. A start with
+  approval is never agreed on again (`AutoModeActive`), and the mode of a user
+  is never taken over for approval.
 - Card keys: the built-in secure key provider `bridge-client`
   (`BridgeKeyProvider`) is bound to the connected client that called
   `registerKeyProvider`; RFiDGear then calls `resolveKey` on the client inside
