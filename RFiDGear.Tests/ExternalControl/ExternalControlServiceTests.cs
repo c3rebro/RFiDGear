@@ -91,7 +91,7 @@ namespace RFiDGear.Tests.ExternalControl
             {
                 BridgeCapabilities.Session, BridgeCapabilities.Status, BridgeCapabilities.ProjectLoad, BridgeCapabilities.ProjectRevision, BridgeCapabilities.ReaderScan,
                 BridgeCapabilities.ExecutionRun, BridgeCapabilities.ExecutionCancel, BridgeCapabilities.ExecutionResultLookup,
-                BridgeCapabilities.ExecutionResultLog, BridgeCapabilities.AutoMode,
+                BridgeCapabilities.ExecutionResultLog, BridgeCapabilities.ExecutionVerificationDetails, BridgeCapabilities.AutoMode,
                 BridgeCapabilities.EventsExecution, BridgeCapabilities.EventsRunning, BridgeCapabilities.EventsProject,
                 BridgeCapabilities.EventsReader, BridgeCapabilities.EventsAutoMode, BridgeCapabilities.EventsLifecycle,
             };

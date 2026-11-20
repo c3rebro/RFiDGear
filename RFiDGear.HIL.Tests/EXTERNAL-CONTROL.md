@@ -222,6 +222,24 @@ that supplies keys and starts runs needs one connection for both.
   the project from the window: the task authenticates (the vault of the sample
   serves the reference whoever asked, as before).
 
+**Why a check failed (`execution.verificationDetails`):**
+
+Use a copy of a project with one task "Check: File Settings" for a file of a
+test card (application, file and keys that you know), no other task, and the
+card on the reader. The sample prints the lines of the details under the task.
+
+- 43, a difference: set the expected size to a value the file does not have
+  (the other settings as the file has them) and `run job-43 C:\path\copy.rfPrj`.
+  The task is `FAILED`, the lines say `DOES NOT MATCH`, `fileSize: mismatch,
+  expected <the one you set>, read <the real size>`, and the other settings
+  `match`, with the numbers you know.
+- 44, a match: set the expected size right: the task is `ok`, the line says
+  `matches`, and every compared setting says `match`.
+- 45, nothing compared: give the task a wrong application key: the task is
+  `FAILED` with `AuthFailure` and has no lines of details at all.
+- 46, a part of the settings: select only the size and the change right in the
+  task: the first line says `2 compared, 5 not` and only those two are listed.
+
 **Cleaning up:**
 
 Remove the test application from the card if you made one (`SECURE-KEYS.md`),

@@ -202,9 +202,60 @@ public record RFiDGear.Contracts.TaskOutcome : System.IEquatable<TaskOutcome>
     public string ProjectTaskIndex { get; init; }
     public string? SkipReason { get; init; }
     public string TaskTypeName { get; init; }
+    public VerificationDetails? VerificationDetails { get; init; }
 
 public static class RFiDGear.Contracts.TaskSkipReasons
     public static string ExecuteConditionNotMet { get; }
     public static string NotExecuted { get; }
     public static string NotReached { get; }
     public static string TaskModelUnavailable { get; }
+
+public sealed record RFiDGear.Contracts.VerificationCheck : System.IEquatable<VerificationCheck>
+    public ctor(string Name, bool Compared, string Result)
+    public long? Actual { get; init; }
+    public bool Compared { get; init; }
+    public long? Expected { get; init; }
+    public string Name { get; init; }
+    public string Result { get; init; }
+    public string? Rule { get; init; }
+
+public static class RFiDGear.Contracts.VerificationCheckNames
+    public static string AccessChange { get; }
+    public static string AccessRead { get; }
+    public static string AccessReadWrite { get; }
+    public static string AccessWrite { get; }
+    public static string CommunicationMode { get; }
+    public static string FileSize { get; }
+    public static string FileType { get; }
+
+public static class RFiDGear.Contracts.VerificationCompareModes
+    public static string All { get; }
+    public static string Any { get; }
+
+public sealed record RFiDGear.Contracts.VerificationDetails : System.IEquatable<VerificationDetails>
+    public ctor(int SchemaVersion, string Kind, System.Collections.Generic.IReadOnlyList<VerificationCheck> Checks)
+    public int? ApplicationId { get; init; }
+    public System.Collections.Generic.IReadOnlyList<VerificationCheck> Checks { get; init; }
+    public string? CompareMode { get; init; }
+    public string? ErrorCode { get; init; }
+    public int? FileNumber { get; init; }
+    public string Kind { get; init; }
+    public bool? OverallMatch { get; init; }
+    public int SchemaVersion { get; init; }
+
+public static class RFiDGear.Contracts.VerificationErrors
+    public static string NotRead { get; }
+
+public static class RFiDGear.Contracts.VerificationKinds
+    public static string DesfireFileSettings { get; }
+
+public static class RFiDGear.Contracts.VerificationResults
+    public static string Match { get; }
+    public static string Mismatch { get; }
+    public static string NotCompared { get; }
+    public static string NotRead { get; }
+
+public static class RFiDGear.Contracts.VerificationRules
+    public static string AtLeast { get; }
+    public static string AtMost { get; }
+    public static string Exact { get; }

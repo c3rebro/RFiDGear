@@ -166,6 +166,9 @@ namespace RFiDGear.Services.ExternalControl
                 capabilities.Add(BridgeCapabilities.ExecutionCancel);
                 capabilities.Add(BridgeCapabilities.ExecutionResultLookup);
                 capabilities.Add(BridgeCapabilities.ExecutionResultLog);
+
+                // A guarantee about what the outcomes of a result can carry; a task that compares nothing has no details.
+                capabilities.Add(BridgeCapabilities.ExecutionVerificationDetails);
                 capabilities.Add(BridgeCapabilities.EventsExecution);
             }
 

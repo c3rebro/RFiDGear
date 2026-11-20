@@ -45,6 +45,7 @@ namespace RFiDGear.Tests.ExternalControl
             ["RegisterKeyProviderResponse"] = """{"providerId":"bridge-client","timeoutMs":10000,"interactiveTimeoutMs":300000,"ownRunsOnly":true}""",
             ["ResolveKeyRequest"] = """{"slotId":"desfire.app.master","reference":"vault/order-4711","algorithm":"aes128","usage":"authenticate","applicationId":3,"keyNumber":0,"runId":"a1b2c3d4e5f60718293a4b5c6d7e8f90","taskIndex":"2","cardUid":"04A1B2C3D4E5F6","interactive":false,"requestId":"r-1","source":"bridge","projectRevision":"5c0e2b7d4a916f38e1d09a7b6c5d4e3f"}""",
             ["ResolveKeyResponse"] = """{"result":"resolved","key":"AQIDBAUGBwg="}""",
+            ["TaskOutcomeDto"] = """{"position":2,"projectTaskIndex":"3","taskTypeName":"MifareDesfireSetupViewModel","isSuccess":false,"normalizedErrorCode":"IsNotTrue","verificationDetails":{"schemaVersion":1,"kind":"desfire.fileSettings","overallMatch":false,"compareMode":"all","applicationId":3,"fileNumber":1,"checks":[{"name":"fileType","compared":true,"result":"match","expected":0,"actual":0},{"name":"fileSize","compared":true,"result":"mismatch","rule":"exact","expected":16,"actual":8},{"name":"communicationMode","compared":false,"result":"notCompared"}]}}""",
             ["BridgeErrorData"] = """{"kind":"busy","errorId":"e-42","neverStarted":true,"details":{"activity":"run"}}""",
         };
     }

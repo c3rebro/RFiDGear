@@ -452,6 +452,20 @@ passed with a real reader; until then a snapshot may be re-baselined.
   `IProjectRevisionSource` (a host without it does not offer the capability
   and refuses a run that expects a revision); `LoadWithRevisionAsync` takes it
   inside the commit of a load. It is read on the main window's thread.
+- **Verification details** (`execution.verificationDetails`, a guarantee): a
+  task that compares values says what it compared as `VerificationDetails`
+  (`RFiDGear.Contracts`, numbers and fixed tokens, never a key; an optional
+  `init` member of `TaskOutcome`, so the constructor and the deconstruction are
+  unchanged). A task implements the internal `ITaskVerificationSource`
+  (`MifareDesfireSetupViewModel.Verification.cs`, written by
+  `DesfireFileSettingsVerification` from the `DesfireFileSettingsComparison` of
+  its last attempt). The task loop reads it when the task has just ended
+  (`CreateTaskObservation`, only for an executed task and not for one that the
+  watchdog gave up), `TaskOutcomeMapper` copies it into the outcome and
+  `BridgeMapper.ToVerificationDto` onto the wire; a task that throws when asked
+  has none and the run goes on. A new kind needs a token in both contracts
+  (`VerificationKinds` and `DetailKinds`, pinned equal by a test) and no new
+  capability.
 - **The bridge never retries a card operation, and never repeats a request.**
   `startRun` is idempotent by the client's request id (`RunRegistry`,
   `RunSupervisor`: admission by compare-and-swap, the window's callback must win

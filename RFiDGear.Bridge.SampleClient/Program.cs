@@ -338,6 +338,15 @@ namespace RFiDGear.Bridge.SampleClient
                 foreach (var task in outcome.Result.TaskOutcomes)
                 {
                     Console.WriteLine("  task " + task.Position + " " + task.TaskTypeName + " " + (task.IsSuccess switch { true => "ok", false => "FAILED", null => "not run" }) + " " + task.NormalizedErrorCode);
+
+                    // What a check compared, for the operator who has to say why it failed.
+                    if (task.VerificationDetails != null)
+                    {
+                        foreach (var line in VerificationText.Describe(task.VerificationDetails))
+                        {
+                            Console.WriteLine("    " + line);
+                        }
+                    }
                 }
             }
 

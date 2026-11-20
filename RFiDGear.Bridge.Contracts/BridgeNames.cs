@@ -106,6 +106,13 @@ namespace RFiDGear.Bridge
         /// </summary>
         public const string ExecutionJournal = "execution.journal";
 
+        /// <summary>
+        /// A guarantee, not a method: the task outcomes of a result can carry <see cref="TaskOutcomeDto.VerificationDetails"/> for a task
+        /// that compares values (today the DESFire task "Check: File Settings"): what was compared, what was expected, what was read and how
+        /// each setting ended. A task that has none, did not run, or made no comparison has no details; that is not an error.
+        /// </summary>
+        public const string ExecutionVerificationDetails = "execution.verificationDetails";
+
         /// <summary>Events about a run started over the bridge: started and completed.</summary>
         public const string EventsExecution = "events.execution";
 
@@ -136,6 +143,7 @@ namespace RFiDGear.Bridge
             ExecutionResultLookup,
             ExecutionResultLog,
             ExecutionJournal,
+            ExecutionVerificationDetails,
             AutoMode,
             EventsExecution,
             EventsRunning,
@@ -155,6 +163,7 @@ namespace RFiDGear.Bridge
         public static IReadOnlyList<string> Guarantees { get; } = new[]
         {
             ProjectRevision,
+            ExecutionVerificationDetails,
             ExecutionJournal,
             KeysContext,
         };

@@ -5,6 +5,8 @@ using System.Linq;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 
+using VerificationDetails = RFiDGear.Contracts.VerificationDetails;
+
 namespace RFiDGear.Services.TaskExecution
 {
     /// <summary>
@@ -22,6 +24,7 @@ namespace RFiDGear.Services.TaskExecution
         /// <param name="wasSuccessful">Outcome of an executed task, or <see langword="null"/> when skipped or unknown.</param>
         /// <param name="errorLevel">Error level recorded on the task after execution.</param>
         /// <param name="skipReason">Reason token for a skipped task, or <see langword="null"/>.</param>
+        /// <param name="verificationDetails">What an executed task that compares values reported it compared, or <see langword="null"/>.</param>
         public TaskExecutionObservation(
             int taskPosition,
             string taskId,
@@ -29,7 +32,8 @@ namespace RFiDGear.Services.TaskExecution
             string decision,
             bool? wasSuccessful,
             ERROR errorLevel,
-            string skipReason = null)
+            string skipReason = null,
+            VerificationDetails verificationDetails = null)
         {
             TaskPosition = taskPosition;
             TaskId = taskId;
@@ -38,6 +42,7 @@ namespace RFiDGear.Services.TaskExecution
             WasSuccessful = wasSuccessful;
             ErrorLevel = errorLevel;
             SkipReason = skipReason;
+            VerificationDetails = verificationDetails;
         }
 
         /// <summary>Gets the zero-based position of the task in the descriptor list.</summary>
@@ -60,6 +65,12 @@ namespace RFiDGear.Services.TaskExecution
 
         /// <summary>Gets the reason token for a skipped task, or <see langword="null"/> for executed tasks.</summary>
         public string SkipReason { get; }
+
+        /// <summary>
+        /// Gets what the task reported it compared (numbers and fixed tokens, never a key), or <see langword="null"/> for a task that
+        /// compares nothing, one that did not run, and one that was given up on.
+        /// </summary>
+        public VerificationDetails VerificationDetails { get; }
     }
 
     /// <summary>

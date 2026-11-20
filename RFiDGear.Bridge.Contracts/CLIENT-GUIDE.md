@@ -311,6 +311,40 @@ answered "no" can end with.
   there approves every card with that UID again: do not approve a write that
   way. Use single runs, as above.
 
+**Why a check failed (`execution.verificationDetails`):**
+
+A task that compares values can say what it compared, so that the record of a
+failed check (an acceptance record, for instance) holds more than "failed". The
+outcome of such a task carries `verificationDetails`; today only the DESFire task
+"Check: File Settings" has them. The details of a task that has none, that did
+not run, or that failed before it could compare (the login was refused, the card
+went away) are absent, and `isSuccess` and `normalizedErrorCode` say what
+happened. They repeat nothing of the run, the request or the task position: that
+is the result around them.
+
+- `schemaVersion` (1), `kind` (`desfire.fileSettings`), `overallMatch` (the
+  verdict of the task), `compareMode` (`all` or `any`: whether all the compared
+  settings had to match or one was enough), for the kind `applicationId` and
+  `fileNumber`, and `errorCode` (`notRead` when a setting that was selected could
+  not be read).
+- `checks`: one entry per setting, in a fixed order (`fileType`, `fileSize`,
+  `communicationMode`, `accessRead`, `accessWrite`, `accessReadWrite`,
+  `accessChange`), whether the task compared it or not. `compared` says which,
+  and `result` is `match`, `mismatch`, `notRead` or `notCompared`. A setting that
+  was compared has `expected` and, unless it could not be read, `actual`, both
+  numbers: the file type and the communication mode as DESFire numbers them, the
+  size in bytes, and an access right as the number of the key (0 to 13), 14 for
+  "free" and 15 for "never". The size also has a `rule` (`exact`, `atLeast`,
+  `atMost`): how what was read has to relate to what was expected. A setting that
+  was not compared has no values at all.
+- `notRead`: a data file that reports a size of 0 cannot be told from one whose
+  size could not be read. The check does not call that a mismatch; it says so, and
+  the verdict is made from the other settings when there are any.
+- Only numbers and fixed words, never a key, a text or the content of a file.
+  Something you do not know (another `kind`, a later `schemaVersion`, a result
+  word) is no error: read `checks`, show what you do not understand as it is, and
+  never decide anything on a word you do not know.
+
 **What to log and what not:**
 
 Log the request id, the run id, the result number, the status and the kinds of
