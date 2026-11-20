@@ -470,6 +470,62 @@ namespace RFiDGear.Tests.AutoMode
         }
 
         [Fact]
+        public async Task ALookAtTheReaderThatEndsAfterItsWaitHasEnded_DoesNotTouchTheRecord_SoTheCardThatWasRunIsNotRunAgain()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            // A look at the reader is under way (it sees no card) when the program approves and the run is made.
+            var slowRead = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.HoldNextPoll = slowRead;
+            rig.Remove();
+            var watching = rig.Tick();
+            rig.Approval.Hold.SetResult(ApprovalFor(rig.Approval.Asked[0]));
+            await waiting;
+            slowRead.SetResult(true);
+            await watching;
+
+            // The look belonged to a wait that is over, so what it saw says nothing about the record of this card.
+            rig.Approval.Hold = null;
+            rig.Present("04AA");
+            await rig.Tick();
+
+            Assert.Single(rig.Approval.Asked);
+            Assert.Single(rig.ApprovedRuns);
+        }
+
+        [Fact]
+        public async Task ALookAtTheReaderOfAnEarlierStart_DoesNotTouchTheRecordOfTheLaterOne()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            // The mode is stopped and started again while a look at the reader is still under way.
+            var slowRead = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.HoldNextPoll = slowRead;
+            rig.Remove();
+            var watching = rig.Tick();
+            rig.Controller.Stop();
+            rig.StartWithApproval();
+            slowRead.SetResult(true);
+            await watching;
+            await waiting;
+
+            // The card that the first start wrote down is still the record of the card on the reader.
+            rig.Approval.Hold = null;
+            rig.Present("04AA");
+            await rig.Tick();
+
+            Assert.Single(rig.Approval.Asked);
+        }
+
+        [Fact]
         public async Task ACardThatAnotherRunProcessesWhileTheRunnerWaitsForTheSlot_IsNotRunOnTheApproval_AndTheProgramIsToldTheCardChanged()
         {
             var rig = new Rig();
