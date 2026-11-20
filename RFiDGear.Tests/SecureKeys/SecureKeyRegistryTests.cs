@@ -254,16 +254,20 @@ namespace RFiDGear.Tests.SecureKeys
             using var cancel = new CancellationTokenSource();
             var registry = RegistryOf(new ScriptedSecureKeyProvider((_, _) =>
             {
+                // The key exists before the caller cancels: the host may look the moment the token is cancelled, on another thread.
+                var lease = new SecureKeyLease(SecureKeyTestData.SixteenBytes());
+                issued = lease;
                 cancel.Cancel();
-                issued = new SecureKeyLease(SecureKeyTestData.SixteenBytes());
-                return new ValueTask<SecureKeyResolution>(SecureKeyResolution.Resolved(issued));
+                return new ValueTask<SecureKeyResolution>(SecureKeyResolution.Resolved(lease));
             }));
 
             using var answer = await registry.ResolveAsync(Id, SecureKeyTestData.Request(), cancel.Token);
 
             Assert.Equal(SecureKeyFailureReason.Cancelled, answer.FailureReason);
             Assert.NotNull(issued);
-            Assert.True(IsDisposed(issued!), "the key was handed out although the caller had given up");
+
+            // Disposed by the host at once when both are done, or when the provider's answer arrives when the host stopped first.
+            Assert.True(await WaitFor(() => IsDisposed(issued!)), "the key was handed out although the caller had given up");
         }
 
         [Theory]
