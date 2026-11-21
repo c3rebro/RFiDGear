@@ -533,8 +533,13 @@ passed with a real reader; until then a snapshot may be re-baselined.
   the execution slot held, before it admits the run
   (`VerifyTheApprovedCardAsync`): another card is `cardChanged`, a reader that
   cannot tell is `notAdmitted`, and both offer the card again. The run's own
-  read (`ChipHydrated`) is checked against the UID before the first task
-  (`ApprovedCardChangedException`: the run ends as a fault and stops the mode).
+  read is held to the UID too (`TaskExecutionRequest.ExpectedCardUid`): the
+  service compares it right after its public read and before anything else is
+  sent to the card, because the PC/SC listing of the applications of a DESFire
+  card can authenticate with a default key. Another card, or none, ends the run
+  before the first task (`ApprovedCardChangedException`: a fault, which stops
+  the mode). The execution slot that the window holds during its look is given
+  back if the look throws.
   A run that another path made on the card while the program decided (the card
   stamp changed) is not repeated for the approval (`cardChanged`; the card stays
   processed). The gate refuses an answer after the time limit itself, whether or
