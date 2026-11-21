@@ -1686,7 +1686,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 CurrentTaskErrorLevel = ERROR.IsNotTrue;
                 IsTaskCompletedSuccessfully = false;
-                Logger.Error("Error Parsing Variable: {Message}", e.Message);
+
+                // The message of a failed start names the expanded program (a UID, a variable of the run): only the type is logged.
+                Logger.Error("The program of a program task could not be started: {ExceptionType}.", e.GetType().Name);
             }
 
             return Task.CompletedTask;
