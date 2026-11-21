@@ -61,8 +61,28 @@ New:
   header on every step, the order list remembers its grouping, the closed groups and a
   new "Sort by" choice, and a check that answered "No" is shown as "No" instead of
   "Failed". The setup carries this version (Custom or Complete, as before).
+- External control, for programs that drive RFiDGear such as SIE Encode (the protocol,
+  the client guide and the sample client are in RFiDGear.Bridge.Contracts):
+  + The loaded project has a revision. loadProject and getStatus tell it, startRun can
+    name the one it expects and is refused (projectMismatch) when the project is in
+    another state, and the result carries it.
+  + A Check UID task can take its UID from a variable of the run, for example
+    $EXPECTEDUID, so that one project serves every card. A variable without a value, or
+    another UID, ends the run with CardNotExpected, which counts as failed.
+  + A request for a key says where it comes from (bridge, gui, autoMode or other), and a
+    program can ask to be given the keys of its own runs only (ownRunsOnly).
+  + A task that compares values says what it compared (verificationDetails).
+  + Automatic mode can wait for the approval of the program for every card
+    (startAutoMode with requireApproval, capability autoMode.approval). A card that is
+    put on the reader is shown to the program (cardPresented), and the project is run
+    only when the program approves that card, once, with the variables of that card
+    (approveCard). The run is held to the approved UID: another card, or none, ends it
+    before anything is written. The sample client has the loop for it (ApprovalModeLoop)
+    and the command auto --approve-with=$EXPECTEDUID.
 
 Fixed:
+- A Check UID task is run by the task loop now. It was saved by its dialog and never run;
+  the loop stayed on its position.
 - A run in which a task was skipped because the task it depends on had been skipped
   itself was reported as failed (an invalid skip), and the Card Check Assistant did not
   offer the programming step. Such a chain of conditions is accepted now.
@@ -72,6 +92,9 @@ Fixed:
 Please note:
 - The signature of an extension package is shown, not enforced: a package is accepted
   when the SHA-256 of each file is the one it lists.
+- The new functions of external control (revision, origin of a key request, approval
+  mode) have been tested against a simulated reader only. The hands-on cases are in
+  RFiDGear.HIL.Tests (EXTERNAL-CONTROL.md); the protocol is not frozen yet.
 
 Version 2.1.0.0
 -----------------------------------------------------------------
