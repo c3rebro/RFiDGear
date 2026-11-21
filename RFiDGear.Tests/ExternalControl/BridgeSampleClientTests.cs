@@ -470,6 +470,12 @@ namespace RFiDGear.Tests.ExternalControl
             client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "p-2", Reason = PresentationEndReasons.Declined, RunId = "w-2" });
             var noRunWasAdmitted = await Ask("w-2", RunSources.AutoMode);
 
+            // The check on its own (the one the guide tells an author to make): the run of an approved card, and nothing else.
+            var checkNamed = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.AutoMode, RunId = "w-1" });
+            var checkOther = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.AutoMode, RunId = "w-9" });
+            var checkWrongSource = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.Gui, RunId = "w-1" });
+            var checkWithoutRun = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.AutoMode });
+
             // The notice that is late: the request waits for it and is served when it comes.
             client.ApprovedRunWait = TimeSpan.FromSeconds(5);
             var late = Ask("w-3", RunSources.AutoMode);
@@ -492,6 +498,10 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(KeyResolveResults.Resolved, named.Result);
             Assert.Equal(KeyResolveResults.NotAuthorized, namedButNotOfTheMode.Result);
             Assert.Equal(KeyResolveResults.NotAuthorized, noRunWasAdmitted.Result);
+            Assert.True(checkNamed);
+            Assert.False(checkOther);
+            Assert.False(checkWrongSource);
+            Assert.False(checkWithoutRun);
             Assert.Equal(KeyResolveResults.Resolved, lateAnswer.Result);
             Assert.Equal(KeyResolveResults.NotAuthorized, forgotten.Result);
             Assert.Equal(KeyResolveResults.Resolved, remembered.Result);
