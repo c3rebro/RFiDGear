@@ -142,6 +142,28 @@ namespace RFiDGear.Tests.AutoMode
         }
 
         [Fact]
+        public void APatternWithSeveralPlaces_IsMatchedByTheFilesItMadeBefore()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+
+            try
+            {
+                // Every place of the pattern gets the same number, so 01-01.pdf and 02-02.pdf are files of ??-??.pdf and 01-02.pdf is not.
+                foreach (var name in new[] { "01-01.pdf", "02-02.pdf", "05-03.pdf", "x-09-09.pdf" })
+                {
+                    File.WriteAllText(Path.Combine(folder, name), "x");
+                }
+
+                Assert.Equal(Path.Combine(folder, "03-03.pdf"), StartupArgumentProcessor.NormalizeReportTargetPath(Path.Combine(folder, "??-??.pdf")));
+            }
+            finally
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+        }
+
+        [Fact]
         public async Task ResettingTheReportTargetPaths_ForgetsThePatternAlsoInAProjectWithoutAReportTask()
         {
             await WithWindowAsync(async (viewModel, exec, folder) =>

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using RFiDGear;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Services.Interfaces;
@@ -159,8 +161,9 @@ namespace RFiDGear.Services
                 return null;
             }
 
+            var matcher = NumberMatcherOf(path);
             var numbersInFileNames = Directory.GetFiles(directoryPath)
-                .Select(file => ExtractNumber(path, file))
+                .Select(file => ExtractNumber(matcher, file))
                 .Where(n => n >= 0)
                 .ToArray();
 
@@ -195,39 +198,48 @@ namespace RFiDGear.Services
             return !string.IsNullOrEmpty(directory) && Directory.Exists(directory);
         }
 
-        // The number that a file name holds in the place of the question marks of the pattern, or -1 when the file is not one of the pattern.
-        // What stands before the question marks and what stands after them (card-???-result.pdf) both have to match; ".pdf" at the end of
-        // either is left out, as it always was.
-        private static int ExtractNumber(string pattern, string fileName)
+        // What a file name of the pattern looks like. The placeholder that is replaced is the longest kind that the pattern holds
+        // (??? before ??, ?), as NormalizeReportTargetPath replaces it, and every place of it gets the same number: card-???-result.pdf is
+        // matched by card-007-result.pdf, ??-??.pdf by 07-07.pdf. The text around the places has to match too. ".pdf" at the end is left out,
+        // as it always was. Null when the pattern holds no question mark.
+        private static Regex NumberMatcherOf(string pattern)
         {
-            var patternName = WithoutPdf(Path.GetFileName(pattern));
-            var name = WithoutPdf(Path.GetFileName(fileName));
+            var name = WithoutPdf(Path.GetFileName(pattern));
+            var kind = name.Contains("???") ? "???" : name.Contains("??") ? "??" : "?";
 
-            var start = patternName.IndexOf('?');
-            if (start < 0)
+            var texts = name.Split(kind);
+            if (texts.Length < 2)
+            {
+                return null;
+            }
+
+            var expression = new StringBuilder("^").Append(Regex.Escape(texts[0])).Append("(?<n>[0-9]+)");
+            for (var i = 1; i < texts.Length; i++)
+            {
+                expression.Append(Regex.Escape(texts[i]));
+                if (i < texts.Length - 1)
+                {
+                    expression.Append("\\k<n>");
+                }
+            }
+
+            return new Regex(
+                expression.Append('$').ToString(),
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+                TimeSpan.FromSeconds(1));
+        }
+
+        // The number that a file name holds in the place of the question marks, or -1 when the file is not one of the pattern.
+        private static int ExtractNumber(Regex matcher, string fileName)
+        {
+            if (matcher == null)
             {
                 return -1;
             }
 
-            var end = start;
-            while (end < patternName.Length && patternName[end] == '?')
-            {
-                end++;
-            }
+            var match = matcher.Match(WithoutPdf(Path.GetFileName(fileName)));
 
-            var prefix = patternName.Substring(0, start);
-            var suffix = patternName.Substring(end);
-
-            if (name.Length <= prefix.Length + suffix.Length
-                || !name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-                || !name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-            {
-                return -1;
-            }
-
-            var digits = name.Substring(prefix.Length, name.Length - prefix.Length - suffix.Length);
-
-            return digits.All(c => c is >= '0' and <= '9') && int.TryParse(digits, out var n) ? n : -1;
+            return match.Success && int.TryParse(match.Groups["n"].Value, out var n) ? n : -1;
         }
 
         private static string WithoutPdf(string name) =>
