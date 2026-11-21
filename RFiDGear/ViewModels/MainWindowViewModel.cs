@@ -1728,6 +1728,11 @@ namespace RFiDGear.ViewModel
             // The UID of the card the service's own read found; it stays null for a run that never gets that far.
             string? cardUid = null;
 
+            // The report of an approval is built in a work folder of its own: the writer keeps the report it is building in a file there,
+            // and the writer of the window (which lives from run to run) keeps its own in the folder of the application. Two writers in
+            // one folder would hand the fields of one card to the report of the next.
+            string reportWorkFolder = null;
+
             try
             {
                 Mouse.OverrideCursor = Cursors.AppStarting;
@@ -1772,7 +1777,7 @@ namespace RFiDGear.ViewModel
                     TreeViewParentNodes = treeViewParentNodes,
                     VariablesFromArgs = VariablesOfTheRun(approval),
                     Dialogs = Dialogs,
-                    ReportReaderWriter = reportIsOfThisRun ? null : reportReaderWriter,
+                    ReportReaderWriter = reportIsOfThisRun ? MakeTheReportWriterOfThisRun(runId, out reportWorkFolder) : reportReaderWriter,
                     ReportOutputPath = approvedReportPath ?? reportOutputPath,
                     ReportTemplateFile = approvedReportTemplate ?? reportTemplateFile,
                     SelectedSetupViewModel = SelectedSetupViewModel,
@@ -1816,9 +1821,38 @@ namespace RFiDGear.ViewModel
                 _windowRuns.End(runId);
                 _coordinator.EndExecution();
                 Mouse.OverrideCursor = null;
+                DeleteTheReportWorkFolder(reportWorkFolder);
             }
 
             return new AutoModeRunReport(admitted: true, execResult, abandoned);
+        }
+
+        // A writer for the report of one run, with a folder of its own for the file in which it builds the report.
+        private static ReportReaderWriter MakeTheReportWriterOfThisRun(string runId, out string workFolder)
+        {
+            workFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", "report-work", runId);
+
+            return new ReportReaderWriter(new ProjectManager(workFolder));
+        }
+
+        private static void DeleteTheReportWorkFolder(string folder)
+        {
+            if (folder == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (Directory.Exists(folder))
+                {
+                    Directory.Delete(folder, recursive: true);
+                }
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                Log.ForContext<MainWindowViewModel>().Debug("The work folder of a report could not be removed ({ExceptionType})", e.GetType().FullName);
+            }
         }
 
         // Looks at the reader once (the same look automatic mode takes) and says whether the card on it is the one an approval was given

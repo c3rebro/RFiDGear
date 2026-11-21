@@ -239,6 +239,10 @@ namespace RFiDGear.Services.ExternalControl
                 throw BridgeFault.InvalidRequest("variables");
             }
 
+            // Checking the variables looked at the file system, which takes time: the limit is looked at again, right before the
+            // approval is taken.
+            ExpireIfLate(pending);
+
             var presenceId = pending.PresenceId;
             var approval = new AutoModeApproval(
                 presenceId,
@@ -310,15 +314,20 @@ namespace RFiDGear.Services.ExternalControl
                 throw BridgeFault.ApprovalNotPending();
             }
 
+            ExpireIfLate(pending);
+
+            return pending;
+        }
+
+        // The time is up whether or not the timer has noticed yet: an answer after the limit is no answer, and it ends the wait.
+        private void ExpireIfLate(Pending pending)
+        {
             if (_now() >= pending.Deadline)
             {
-                // The time is up whether or not the timer has noticed yet: an answer after the limit is no answer, and it ends the wait.
                 pending.Completion.TrySetResult(new Decision(null, PresentationEndReasons.Expired));
 
                 throw BridgeFault.ApprovalNotPending();
             }
-
-            return pending;
         }
 
         private void PublishEnded(string presenceId, string reason, string? runId) =>

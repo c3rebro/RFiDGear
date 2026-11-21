@@ -222,12 +222,34 @@ namespace RFiDGear.Tests.ExternalControl
 
                     // What the real service does with the report state of its request: it keeps it in its result (and makes a writer when
                     // there is none), and the window keeps it for the next run unless it was the report of one card only.
-                    var writerOfTheFirstRun = new RFiDGear.Infrastructure.FileAccess.ReportReaderWriter();
-                    exec.OnExecute = request => new TaskExecutionResult
+                    var defaultFolder = new RFiDGear.Infrastructure.FileAccess.ProjectManager().AppDataPath;
+                    var writerOfTheFirstRun = new RFiDGear.Infrastructure.FileAccess.ReportReaderWriter(
+                        new RFiDGear.Infrastructure.FileAccess.ProjectManager(System.IO.Path.Combine(folder, "window")));
+                    string workFolderOfTheApprovedRun = null;
+
+                    exec.OnExecute = request =>
                     {
-                        TerminalStatus = TaskLoopTerminalStatus.Success,
-                        ReportOutputPath = request.ReportOutputPath,
-                        ReportReaderWriter = request.ReportReaderWriter ?? writerOfTheFirstRun,
+                        // The writer of the report that an approval named: where does it build its report, and does it use that folder?
+                        if (request.ReportOutputPath != null && request.ReportReaderWriter != null)
+                        {
+                            var manager = (RFiDGear.Infrastructure.FileAccess.ProjectManager)typeof(RFiDGear.Infrastructure.FileAccess.ReportReaderWriter)
+                                .GetField("projectManager", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                                .GetValue(request.ReportReaderWriter)!;
+                            workFolderOfTheApprovedRun = manager.AppDataPath;
+
+                            // Never in the folder of the application (a regression would write there for real).
+                            if (!string.Equals(manager.AppDataPath, defaultFolder, StringComparison.OrdinalIgnoreCase))
+                            {
+                                System.IO.File.WriteAllText(manager.GetTemporaryReportTemplatePath(), "the report of the approved card");
+                            }
+                        }
+
+                        return new TaskExecutionResult
+                        {
+                            TerminalStatus = TaskLoopTerminalStatus.Success,
+                            ReportOutputPath = request.ReportOutputPath,
+                            ReportReaderWriter = request.ReportReaderWriter ?? writerOfTheFirstRun,
+                        };
                     };
 
                     // A card is put on the reader (after the card before it was taken away), shown, approved with the variables and run.
@@ -256,9 +278,17 @@ namespace RFiDGear.Tests.ExternalControl
                     Assert.Equal(3, exec.Requests.Count);
                     Assert.Null(exec.Requests[0].ReportOutputPath);
                     Assert.Equal(target, exec.Requests[1].ReportOutputPath);
-                    Assert.Null(exec.Requests[1].ReportReaderWriter);
                     Assert.Null(exec.Requests[2].ReportOutputPath);
                     Assert.Same(writerOfTheFirstRun, exec.Requests[2].ReportReaderWriter);
+
+                    // The report of the approved card is built by a writer of its own, in a work folder of its own (not the folder of the
+                    // application and not the one of the writer of the window), and the folder is gone when the run is over.
+                    Assert.NotNull(exec.Requests[1].ReportReaderWriter);
+                    Assert.NotSame(writerOfTheFirstRun, exec.Requests[1].ReportReaderWriter);
+                    Assert.NotNull(workFolderOfTheApprovedRun);
+                    Assert.NotEqual(defaultFolder, workFolderOfTheApprovedRun, StringComparer.OrdinalIgnoreCase);
+                    Assert.NotEqual(System.IO.Path.Combine(folder, "window"), workFolderOfTheApprovedRun, StringComparer.OrdinalIgnoreCase);
+                    Assert.False(System.IO.Directory.Exists(workFolderOfTheApprovedRun));
                 }
                 finally
                 {

@@ -30,8 +30,9 @@ namespace RFiDGear.Tests.ExternalControl
             public readonly List<(string Name, BridgeEvent Event)> Published = new List<(string, BridgeEvent)>();
             public readonly AutoModeApprovalGate Gate;
 
-            // The clock of the gate: a test moves it past the limit without waiting for it.
+            // The clock of the gate: a test moves it past the limit without waiting for it, or makes it say something else at each look.
             public DateTimeOffset Clock = Now;
+            public Func<DateTimeOffset>? ClockSource;
 
             public Rig(TimeSpan? timeout = null, Func<string?>? readRevision = null)
             {
@@ -46,7 +47,7 @@ namespace RFiDGear.Tests.ExternalControl
                             Published.Add((name, create(++_seq, Session, Now)));
                         }
                     },
-                    () => Clock);
+                    () => ClockSource != null ? ClockSource() : Clock);
             }
 
             public IReadOnlyList<T> Events<T>() where T : BridgeEvent
@@ -343,6 +344,24 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Null(await waiting);
             Assert.Equal(PresentationEndReasons.Expired, Assert.Single(rig.Events<CardPresentationEndedEvent>()).Reason);
             AssertNotPending(() => rig.Gate.Decline(Session, new DeclineCardRequest { PresenceId = "p-1" }));
+        }
+
+        [Fact]
+        public async Task AnApprovalThatTakesSoLongToCheckThatTheTimeLimitPasses_IsNoApproval()
+        {
+            var rig = new Rig(TimeSpan.FromSeconds(30));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+
+            // The first look at the clock (finding the card that is waited for) is in time. Checking the variables (the file system)
+            // takes time, and the second look, right before the approval is taken, is not.
+            var looks = 0;
+            rig.ClockSource = () => ++looks == 1 ? Now : Now.AddSeconds(31);
+
+            AssertNotPending(() => rig.Gate.Approve(Session, Approval("p-1")));
+
+            Assert.Null(await waiting);
+            Assert.Equal(PresentationEndReasons.Expired, Assert.Single(rig.Events<CardPresentationEndedEvent>()).Reason);
         }
 
         [Fact]

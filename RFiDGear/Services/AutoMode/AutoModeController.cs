@@ -553,12 +553,13 @@ namespace RFiDGear.Services.AutoMode
                     // The presence of the card ends here, as it does for a tick that finds the reader without it: a card that is put back,
                     // or another one, is a new presence. Written before the wait is withdrawn, so that an approval that wins the race
                     // finds the presence ended.
-                    // The look may have taken a while: only the record that belongs to this very wait is ended. If the wait is over, the
-                    // mode was stopped (and maybe started again) or another run wrote the card down meanwhile, what is written is the
-                    // truth and is left alone. The wait is withdrawn in any case.
+                    // The look may have taken a while, and the wait may have ended meanwhile (the program approved while the reader was
+                    // looked at): what it saw was true when it saw it, so it ends the presence of the card even then, and an approval that
+                    // has not been admitted yet is refused for it. It does not touch what was written down since (another run, a run of
+                    // this card that was admitted, a later presence, a later start): that is the truth. The wait is withdrawn in any case.
                     lock (_sync)
                     {
-                        if (ReferenceEquals(_pendingCard, pending) && _enabled && _session == pending.Session && _cardStamp == pending.Stamp)
+                        if (_enabled && _session == pending.Session && _cardStamp == pending.Stamp)
                         {
                             _lastUid = null;
                             _cardStamp++;

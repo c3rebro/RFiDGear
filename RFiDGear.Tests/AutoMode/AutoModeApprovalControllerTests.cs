@@ -84,7 +84,7 @@ namespace RFiDGear.Tests.AutoMode
             public Func<AutoModeApproval, AutoModeRunReport>? ApprovedBehavior;
 
             // Runs while the runner waits for the execution slot, before it asks whether the card is still wanted.
-            public Action? WhileTheRunnerWaits;
+            public Func<Task>? WhileTheRunnerWaits;
 
             // The next poll looks at the reader at once and then waits for this before it answers, as a slow read does.
             public TaskCompletionSource<bool>? HoldNextPoll;
@@ -107,20 +107,33 @@ namespace RFiDGear.Tests.AutoMode
                     () => true,
                     () => true,
                     canRunAnApprovedCard
-                        ? (uid, _, isStillWanted, approval) =>
+                        ? async (uid, _, isStillWanted, approval) =>
                         {
                             ApprovedRuns.Add((uid, approval));
-                            WhileTheRunnerWaits?.Invoke();
+
+                            if (WhileTheRunnerWaits != null)
+                            {
+                                await WhileTheRunnerWaits().ConfigureAwait(false);
+                            }
+
                             var wanted = isStillWanted();
                             StillWanted.Add(wanted);
 
                             // As the window does: a request that is no longer wanted is not admitted.
                             if (!wanted)
                             {
-                                return Task.FromResult(AutoModeRunReport.NotAdmitted);
+                                return AutoModeRunReport.NotAdmitted;
                             }
 
-                            return Task.FromResult(ApprovedBehavior != null ? ApprovedBehavior(approval) : Admitted());
+                            var report = ApprovedBehavior != null ? ApprovedBehavior(approval) : Admitted();
+
+                            // As the window does: a run that was admitted writes the card down as the one it works on.
+                            if (report.Admitted)
+                            {
+                                Controller.RememberCard(uid);
+                            }
+
+                            return report;
                         }
                         : null);
                 Controller.StateChanged += (_, _) => Events.Add(Controller.IsEnabled ? "on" : "off:" + Controller.LastStopReason);
@@ -497,6 +510,41 @@ namespace RFiDGear.Tests.AutoMode
         }
 
         [Fact]
+        public async Task ACardThatTheLookSawGoneWhileTheApprovalArrived_IsNotRunOnIt_EvenWhenTheCardIsBackBeforeTheRunIsAdmitted()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            // A look at the reader (it sees no card) is slow, and the program approves while it is under way. The runner has to wait for
+            // the look to end (it holds the reader), and when it has, the card is on the reader again.
+            var slowRead = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.HoldNextPoll = slowRead;
+            rig.Remove();
+            var watching = rig.Tick();
+            rig.WhileTheRunnerWaits = async () =>
+            {
+                slowRead.SetResult(true);
+                await watching;
+                rig.Present("04AA");
+            };
+            rig.Approval.Hold.SetResult(ApprovalFor(rig.Approval.Asked[0]));
+            await waiting;
+            rig.Approval.Hold = null;
+            rig.WhileTheRunnerWaits = null;
+            await rig.Tick();
+
+            // The card was away, so the approval was for a presence that ended: nothing was admitted for it, the program was told, and the
+            // card that is there now is a presence of its own.
+            Assert.Equal((rig.Approval.Asked[0].PresenceId, AutoModeRefusal.CardChanged), Assert.Single(rig.Approval.Refusals));
+            Assert.Equal(new[] { false, true }, rig.StillWanted);
+            Assert.Equal(2, rig.Approval.Asked.Count);
+            Assert.NotEqual(rig.Approval.Asked[0].PresenceId, rig.Approval.Asked[1].PresenceId);
+        }
+
+        [Fact]
         public async Task ALookAtTheReaderThatEndsAfterItsWaitHasEnded_DoesNotTouchTheRecord_SoTheCardThatWasRunIsNotRunAgain()
         {
             var rig = new Rig();
@@ -577,7 +625,12 @@ namespace RFiDGear.Tests.AutoMode
         {
             var rig = new Rig();
             rig.StartWithApproval();
-            rig.WhileTheRunnerWaits = () => rig.Controller.RememberCard("04AA");
+            rig.WhileTheRunnerWaits = () =>
+            {
+                rig.Controller.RememberCard("04AA");
+
+                return Task.CompletedTask;
+            };
             rig.Present("04AA");
 
             await rig.Tick();
