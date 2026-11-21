@@ -11,6 +11,13 @@ namespace RFiDGear.Services.Interfaces
     {
         public string ReportOutputPath { get; set; }
 
+        /// <summary>
+        /// Gets or sets the report target of the arguments as it was typed (<c>REPORTTARGETPATH</c>, <c>REPORTOUTPUTPATH</c>), with
+        /// its <c>?</c>, <c>??</c> or <c>???</c> not yet replaced. <see cref="ReportOutputPath"/> is that pattern resolved once, for the
+        /// moment the arguments were read; a report that is made for every card resolves the pattern again for each run.
+        /// </summary>
+        public string ReportOutputPattern { get; set; }
+
         public string ReportTemplateFile { get; set; }
 
         public string ProjectFilePath { get; set; }

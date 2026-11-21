@@ -43,6 +43,7 @@ namespace RFiDGear.Services
                     case "REPORTOUTPUTPATH":
                         result.Variables[key] = value;
                         result.ReportOutputPath = NormalizeReportTargetPath(value);
+                        result.ReportOutputPattern = value;
                         break;
 
                     case "REPORTTEMPLATEFILE":
