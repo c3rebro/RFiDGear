@@ -280,7 +280,8 @@ namespace RFiDGear.ViewModel
                     }
                 },
                 isReaderSelected: () => ReaderDevice.Instance != null,
-                hasTasks: () => (taskHandler?.TaskCollection?.Count ?? 0) > 0);
+                hasTasks: () => (taskHandler?.TaskCollection?.Count ?? 0) > 0,
+                runApprovedCard: (_, keepApplicationOpen, isStillWanted, approval) => RunCardForAutoModeAsync(keepApplicationOpen, isStillWanted, approval));
 
             // The menu item shows the state of the machine, whoever changed it (the click, the start-up argument, or an
             // extension through the host). The state can change on any thread; the binding is raised on the UI thread.
@@ -851,14 +852,14 @@ namespace RFiDGear.ViewModel
         /// of an extension before it is admitted, and a stop meanwhile must not be followed by a run.
         /// </param>
         /// <returns>What came of it; not admitted when something else held the execution slot or the request was withdrawn.</returns>
-        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen, Func<bool> isStillWanted)
+        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen, Func<bool> isStillWanted, AutoModeApproval approval = null)
         {
             foreach (var item in treeViewParentNodes)
             {
                 item.IsExpanded = false;
             }
 
-            return await RunAllOnceCoreAsync(keepApplicationOpen, isStillWanted);
+            return await RunAllOnceCoreAsync(keepApplicationOpen, isStillWanted, approval);
         }
 
         /// <summary>
@@ -1642,20 +1643,98 @@ namespace RFiDGear.ViewModel
         /// Asked while the run waits for a reader scan of an extension to end: when it returns <c>false</c> the run is
         /// given up (not admitted). <c>null</c> for a run by hand, which is always wanted.
         /// </param>
+        /// <param name="approval">
+        /// What the program that decides about the cards of automatic mode approved for this card, or <c>null</c>: the variables of this one
+        /// run (laid over those of the start-up), and the revision of the project that it expects, which is checked here, with the
+        /// execution slot held, before anything is started.
+        /// </param>
         /// <returns>What came of it; <see cref="AutoModeRunReport.NotAdmitted"/> when nothing ran.</returns>
-        private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen, Func<bool> isStillWanted = null)
+        private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen, Func<bool> isStillWanted = null, AutoModeApproval approval = null)
         {
+            // The report variables of an approval (REPORTTARGETPATH, REPORTTEMPLATEFILE) are read as for any run of the host, before
+            // anything is admitted (the program was told when it approved if they are not usable), and they are the report of this one card:
+            // they do not become the report of the next one.
+            string approvedReportPath = null;
+            string approvedReportTemplate = null;
+
+            if (approval != null)
+            {
+                try
+                {
+                    ReportVariables.Resolve(approval.Variables, out approvedReportPath, out approvedReportTemplate);
+                }
+                catch (ArgumentException)
+                {
+                    Log.ForContext<MainWindowViewModel>().Warning("The report variables of an approval cannot be used any more; the card is not run");
+
+                    return AutoModeRunReport.NotAdmitted;
+                }
+            }
+
+            var reportIsOfThisRun = approvedReportPath != null || approvedReportTemplate != null;
+
             if (!await TryBeginExecutionAfterAScanAsync(isStillWanted))
             {
                 Mouse.OverrideCursor = null;
                 return AutoModeRunReport.NotAdmitted;
             }
 
+            // A card that was approved is the card that was shown, and no other: the reader is looked at once more now that the window
+            // holds the execution slot, before anything is admitted. A card that cannot be told is not the one that was approved.
+            if (approval != null)
+            {
+                AutoModeRefusal cardRefusal;
+                bool stillWanted;
+
+                try
+                {
+                    cardRefusal = await VerifyTheApprovedCardAsync(approval);
+
+                    // The look took time: a mode that was stopped meanwhile (or whose client left), or a card that another run processed,
+                    // ends the request here, before anything is admitted.
+                    stillWanted = isStillWanted == null || isStillWanted();
+                }
+                catch (Exception)
+                {
+                    // The execution slot is held and the run has not started: whatever went wrong, the slot is let go of, or nothing
+                    // could run again until the application is restarted. The machine stops on the exception.
+                    _coordinator.EndExecution();
+
+                    throw;
+                }
+
+                if (cardRefusal != AutoModeRefusal.None)
+                {
+                    _coordinator.EndExecution();
+
+                    return cardRefusal == AutoModeRefusal.CardChanged ? AutoModeRunReport.CardChanged : AutoModeRunReport.NotAdmitted;
+                }
+
+                if (!stillWanted)
+                {
+                    _coordinator.EndExecution();
+
+                    return AutoModeRunReport.NotAdmitted;
+                }
+            }
+
+            // The window holds the execution slot, so nothing can change the project now. An approval that says which state of the
+            // project it was given for is held to it, and a state that cannot be told is not the one that was approved.
+            var revision = ReadTheProjectRevision(approval);
+
+            if (approval?.ExpectProjectRevision != null && !string.Equals(approval.ExpectProjectRevision, revision, StringComparison.Ordinal))
+            {
+                _coordinator.EndExecution();
+
+                return AutoModeRunReport.ProjectChanged;
+            }
+
             var runId = Guid.NewGuid().ToString("N");
 
             // A run by hand has no question to ask the mode ("isStillWanted" is for the requests of automatic mode only).
             _windowRuns.Begin(runId, isStillWanted == null ? RunSources.Gui : RunSources.AutoMode);
-            NoteTheProjectOfTheRun(runId);
+            NoteTheProjectOfTheRun(runId, revision, approval?.PresenceId);
+            approval?.NotifyRunAdmitted(runId);
             var startedAt = DateTimeOffset.UtcNow;
             var observations = new List<TaskExecutionObservation>();
             IReadOnlyList<object> snapshot = Array.Empty<object>();
@@ -1664,6 +1743,11 @@ namespace RFiDGear.ViewModel
 
             // The UID of the card the service's own read found; it stays null for a run that never gets that far.
             string? cardUid = null;
+
+            // The report of an approval is built in a work folder of its own: the writer keeps the report it is building in a file there,
+            // and the writer of the window (which lives from run to run) keeps its own in the folder of the application. Two writers in
+            // one folder would hand the fields of one card to the report of the next.
+            string reportWorkFolder = null;
 
             try
             {
@@ -1696,13 +1780,17 @@ namespace RFiDGear.ViewModel
                         cardUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
                         RememberCard(chip);
                     },
+
+                    // The card the tasks work on is the one that was approved: the service looks at it right after its own read, before
+                    // anything else is sent to the card, and ends the run before the first task when it is another one.
+                    ExpectedCardUid = approval?.Uid,
                     TaskHandler = taskHandler,
                     TreeViewParentNodes = treeViewParentNodes,
-                    VariablesFromArgs = variablesFromArgs,
+                    VariablesFromArgs = VariablesOfTheRun(approval),
                     Dialogs = Dialogs,
-                    ReportReaderWriter = reportReaderWriter,
-                    ReportOutputPath = reportOutputPath,
-                    ReportTemplateFile = reportTemplateFile,
+                    ReportReaderWriter = reportIsOfThisRun ? MakeTheReportWriterOfThisRun(runId, out reportWorkFolder) : reportReaderWriter,
+                    ReportOutputPath = approvedReportPath ?? reportOutputPath,
+                    ReportTemplateFile = approvedReportTemplate ?? reportTemplateFile,
                     SelectedSetupViewModel = SelectedSetupViewModel,
                     RunSelectedOnly = _runSelectedOnly,
                     UpdateSelectedSetupViewModel = vm => SelectedSetupViewModel = vm,
@@ -1713,9 +1801,13 @@ namespace RFiDGear.ViewModel
 
                 var result = await taskExecutionService.ExecuteOnceAsync(request, CancellationToken.None);
 
-                reportReaderWriter = result.ReportReaderWriter;
-                reportOutputPath = result.ReportOutputPath;
-                reportTemplateFile = result.ReportTemplateFile;
+                if (!reportIsOfThisRun)
+                {
+                    reportReaderWriter = result.ReportReaderWriter;
+                    reportOutputPath = result.ReportOutputPath;
+                    reportTemplateFile = result.ReportTemplateFile;
+                }
+
                 _runSelectedOnly = result.RunSelectedOnly;
                 SelectedSetupViewModel = result.SelectedSetupViewModel;
 
@@ -1740,29 +1832,108 @@ namespace RFiDGear.ViewModel
                 _windowRuns.End(runId);
                 _coordinator.EndExecution();
                 Mouse.OverrideCursor = null;
+                DeleteTheReportWorkFolder(reportWorkFolder);
             }
 
             return new AutoModeRunReport(admitted: true, execResult, abandoned);
         }
 
-        // The window holds the execution slot, so nothing can change the project now: the revision it has is the one the run
-        // starts with, and the result of the run (made later, by the bridge) says so. Only while the bridge listens for it, and it
-        // never affects the run.
-        private void NoteTheProjectOfTheRun(string runId)
+        // A writer for the report of one run, with a folder of its own for the file in which it builds the report.
+        private static ReportReaderWriter MakeTheReportWriterOfThisRun(string runId, out string workFolder)
         {
-            if (!_runFacts.IsWanted || extensionHost?.Project is not IProjectRevisionSource source)
+            workFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", "report-work", runId);
+
+            return new ReportReaderWriter(new ProjectManager(workFolder));
+        }
+
+        private static void DeleteTheReportWorkFolder(string folder)
+        {
+            if (folder == null)
             {
                 return;
             }
 
             try
             {
-                _runFacts.Remember(runId, new RunFact(source.GetProjectRevision()));
+                if (Directory.Exists(folder))
+                {
+                    Directory.Delete(folder, recursive: true);
+                }
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                Log.ForContext<MainWindowViewModel>().Debug("The work folder of a report could not be removed ({ExceptionType})", e.GetType().FullName);
+            }
+        }
+
+        // Looks at the reader once (the same look automatic mode takes) and says whether the card on it is the one an approval was given
+        // for. Nothing is changed on the card; a reader that cannot say is a refusal to run, and the card is tried again.
+        private async Task<AutoModeRefusal> VerifyTheApprovedCardAsync(AutoModeApproval approval)
+        {
+            var poll = await PollReaderForAutoModeAsync();
+
+            if (!poll.HasValue || poll.Value.State != ReaderScanState.Ready)
+            {
+                return AutoModeRefusal.NotAdmitted;
+            }
+
+            return string.Equals(poll.Value.Uid, approval.Uid, StringComparison.Ordinal) ? AutoModeRefusal.None : AutoModeRefusal.CardChanged;
+        }
+
+        // The revision of the project, read only when somebody needs it: the bridge listens for the results of the runs of the mode, or
+        // an approval says which state it was given for. It never affects the run (a state that cannot be told is null).
+        private string ReadTheProjectRevision(AutoModeApproval approval)
+        {
+            if ((!_runFacts.IsWanted && approval?.ExpectProjectRevision == null) || extensionHost?.Project is not IProjectRevisionSource source)
+            {
+                return null;
+            }
+
+            try
+            {
+                return source.GetProjectRevision();
             }
             catch (Exception e)
             {
-                Log.ForContext<MainWindowViewModel>().Debug("The revision of the project could not be noted for run {RunId} ({ExceptionType})", runId, e.GetType().FullName);
+                Log.ForContext<MainWindowViewModel>().Debug("The revision of the project could not be read for a run ({ExceptionType})", e.GetType().FullName);
+
+                return null;
             }
+        }
+
+        // What the window knows about the run when it takes it: the revision the run starts with, and the presence the run was
+        // approved for. The result of the run (made later, by the bridge) says so. Only while the bridge listens for it.
+        private void NoteTheProjectOfTheRun(string runId, string revision, string presenceId)
+        {
+            if (_runFacts.IsWanted)
+            {
+                _runFacts.Remember(runId, new RunFact(revision, presenceId));
+            }
+        }
+
+        // The variables of a run: those of the start-up, and for a card that a program approved, the variables of that approval laid
+        // over them (the approval wins), in a table of its own so that nothing of it stays for the next card. Names are compared
+        // without regard to case, as the bridge does for the variables of startRun.
+        private Dictionary<string, string> VariablesOfTheRun(AutoModeApproval approval)
+        {
+            if (approval == null || approval.Variables.Count == 0)
+            {
+                return variablesFromArgs;
+            }
+
+            var merged = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var pair in variablesFromArgs)
+            {
+                merged[pair.Key] = pair.Value;
+            }
+
+            foreach (var pair in approval.Variables)
+            {
+                merged[pair.Key] = pair.Value;
+            }
+
+            return merged;
         }
 
         /// <summary>

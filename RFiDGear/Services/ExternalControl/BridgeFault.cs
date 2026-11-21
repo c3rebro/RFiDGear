@@ -91,6 +91,11 @@ namespace RFiDGear.Services.ExternalControl
         internal static BridgeFault AutoModeActive() =>
             new BridgeFault(BridgeErrorCodes.AutoModeActive, BridgeErrorKinds.AutoModeActive, neverStarted: true);
 
+        /// <summary>No card of this client waits for an approval under that id.</summary>
+        /// <returns>The fault; the call did nothing, so it is marked as never started.</returns>
+        internal static BridgeFault ApprovalNotPending() =>
+            new BridgeFault(BridgeErrorCodes.ApprovalNotPending, BridgeErrorKinds.ApprovalNotPending, neverStarted: true);
+
         /// <summary>The project file does not exist.</summary>
         /// <returns>The fault.</returns>
         internal static BridgeFault ProjectNotFound() => new BridgeFault(BridgeErrorCodes.ProjectNotFound, BridgeErrorKinds.ProjectNotFound);

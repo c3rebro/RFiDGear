@@ -21,6 +21,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <returns>What came of it; only <see cref="AutoModeStartResult.Started"/> changed anything.</returns>
         AutoModeStartResult TryStart(out int session);
 
+        /// <summary>
+        /// Starts automatic mode for a program that decides about every card: the mode shows each card to <paramref name="approval"/> and runs
+        /// it only if it approves it (see <see cref="AutoModeController.TryStart(bool, bool, IAutoModeApproval?, out int)"/>). Everything else
+        /// is as for <see cref="TryStart(out int)"/>.
+        /// </summary>
+        /// <param name="approval">The program that decides about every card, or <see langword="null"/> for a mode that runs every card.</param>
+        /// <param name="session">The number of the start the mode is in; 0 when it was refused and the mode is off.</param>
+        /// <returns>What came of it; only <see cref="AutoModeStartResult.Started"/> changed anything.</returns>
+        AutoModeStartResult TryStart(IAutoModeApproval? approval, out int session);
+
         /// <summary>Gets the number of the latest start, 0 if there was none. It grows with every start.</summary>
         int CurrentSession { get; }
 

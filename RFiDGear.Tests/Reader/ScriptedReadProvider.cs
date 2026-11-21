@@ -22,6 +22,7 @@ namespace RFiDGear.Tests.Reader
         private readonly List<TaskCompletionSource<bool>> _started = new List<TaskCompletionSource<bool>>();
         private int _reads;
         private int _lastReadThreadId;
+        private int _desfireListings;
 
         /// <summary>Gets or sets whether the reader reports itself as connected.</summary>
         public bool Connected { get; set; } = true;
@@ -62,6 +63,33 @@ namespace RFiDGear.Tests.Reader
 
         /// <summary>Gets how many reads were started.</summary>
         public int ReadCount => Volatile.Read(ref _reads);
+
+        /// <summary>Gets how often the applications of a DESFire card were listed (on a PC/SC reader the listing can authenticate with a default key).</summary>
+        public int DesfireListings => Volatile.Read(ref _desfireListings);
+
+        /// <summary>Gets or sets whether the next release of the reader fails, as the release of a real reader can.</summary>
+        public bool ThrowOnNextDispose { get; set; }
+
+        /// <inheritdoc />
+        public override async Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
+        {
+            Interlocked.Increment(ref _desfireListings);
+
+            return await base.GetMiFareDESFireChipAppIDs(_appMasterKey, _keyTypeAppMasterKey).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public override void Dispose()
+        {
+            if (ThrowOnNextDispose)
+            {
+                ThrowOnNextDispose = false;
+
+                throw new InvalidOperationException("The reader could not be released.");
+            }
+
+            base.Dispose();
+        }
 
         /// <summary>Gets, for each read, whether the shared chip was empty (no UID, no children) when the read started.</summary>
         public IReadOnlyList<bool> ChipWasEmptyAtStart

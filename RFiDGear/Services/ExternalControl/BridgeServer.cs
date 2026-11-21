@@ -149,13 +149,22 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="name">The wire name of the event.</param>
         /// <param name="durable"><see langword="true"/> for an event that must not be merged or lost (a result); a client that lets them pile up is disconnected.</param>
         /// <param name="create">Makes the event when it is about to be sent.</param>
-        internal void Publish(string name, bool durable, BridgeEventFactory create)
+        /// <param name="onlyToSession">
+        /// The connection the event is for, or <see langword="null"/> for whoever is connected. An event that belongs to one
+        /// connection (a card shown to the client that started automatic mode) is dropped when another client has connected since.
+        /// </param>
+        internal void Publish(string name, bool durable, BridgeEventFactory create, string? onlyToSession = null)
         {
             BridgeSession? session;
 
             lock (_gate)
             {
                 session = _session;
+            }
+
+            if (session != null && onlyToSession != null && !string.Equals(session.SessionId, onlyToSession, StringComparison.Ordinal))
+            {
+                return;
             }
 
             // Only what this client asked for counts towards the limit of results waiting: a client that subscribed to nothing

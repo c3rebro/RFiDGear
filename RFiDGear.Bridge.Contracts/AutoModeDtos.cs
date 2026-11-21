@@ -15,6 +15,24 @@ namespace RFiDGear.Bridge
         /// </summary>
         [JsonPropertyName("stopOnDisconnect")]
         public bool StopOnDisconnect { get; init; } = true;
+
+        /// <summary>
+        /// Gets whether RFiDGear runs a card only after this client approved it (<see cref="BridgeCapabilities.AutoModeApproval"/>): it
+        /// tells the client about every card that is put on the reader (<see cref="BridgeEvents.CardPresented"/>) and waits for
+        /// <see cref="BridgeMethods.ApproveCard"/>. It needs <see cref="StopOnDisconnect"/>: a mode that waits for a client must not go
+        /// on without it. The default is <see langword="false"/>, and then the field is not sent at all (a host that does not know it rejects it).
+        /// </summary>
+        [JsonPropertyName("requireApproval")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool RequireApproval { get; init; }
+
+        /// <summary>
+        /// Gets how long RFiDGear waits for the approval of one card, in milliseconds, from <see cref="BridgeProtocol.MinApprovalTimeoutMs"/>
+        /// to <see cref="BridgeProtocol.MaxApprovalTimeoutMs"/>; <see cref="BridgeProtocol.DefaultApprovalTimeoutMs"/> when it is not given.
+        /// Only with <see cref="RequireApproval"/>.
+        /// </summary>
+        [JsonPropertyName("approvalTimeoutMs")]
+        public int? ApprovalTimeoutMs { get; init; }
     }
 
     /// <summary>The answer to <c>startAutoMode</c>.</summary>
@@ -31,6 +49,63 @@ namespace RFiDGear.Bridge
         /// <summary>Gets whether the mode is switched off when the connection ends, as agreed now.</summary>
         [JsonPropertyName("stopOnDisconnect")]
         public bool StopOnDisconnect { get; init; }
+
+        /// <summary>Gets whether the mode waits for the approval of every card, as agreed now; left out while it does not.</summary>
+        [JsonPropertyName("requireApproval")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool RequireApproval { get; init; }
+
+        /// <summary>Gets how long the approval of a card is waited for, in milliseconds, as agreed now; nothing without <see cref="RequireApproval"/>.</summary>
+        [JsonPropertyName("approvalTimeoutMs")]
+        public int? ApprovalTimeoutMs { get; init; }
+    }
+
+    /// <summary>The parameters of <c>approveCard</c>.</summary>
+    public sealed record ApproveCardRequest
+    {
+        /// <summary>Gets the id of the card as <see cref="CardPresentedEvent.PresenceId"/> said it. An approval is for one presence and is used up by it.</summary>
+        [JsonPropertyName("presenceId")]
+        public string PresenceId { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Gets the revision of the project the client approved the card for (see <see cref="BridgeCapabilities.ProjectRevision"/>), or
+        /// nothing. When it is given and the project is in another state when RFiDGear is about to run the card, nothing is run
+        /// (<see cref="PresentationEndReasons.ProjectChanged"/>). It is optional: the card is then run on the project as it is.
+        /// </summary>
+        [JsonPropertyName("expectProjectRevision")]
+        public string? ExpectProjectRevision { get; init; }
+
+        /// <summary>
+        /// Gets the variables of this one run, laid over those of the start-up of RFiDGear, as for <c>startRun</c> (the same rules and
+        /// limits): the way to give the project the UID that was approved (<c>$EXPECTEDUID</c>), which its Check UID task compares with
+        /// the card that the run reads itself.
+        /// </summary>
+        [JsonPropertyName("variables")]
+        public IReadOnlyList<VariablePair>? Variables { get; init; }
+    }
+
+    /// <summary>The answer to <c>approveCard</c>: the approval was taken and RFiDGear goes on with the card; how that ends is told by <see cref="BridgeEvents.CardPresentationEnded"/>.</summary>
+    public sealed record ApproveCardResponse
+    {
+        /// <summary>Gets the id of the presence that was approved.</summary>
+        [JsonPropertyName("presenceId")]
+        public string PresenceId { get; init; } = string.Empty;
+    }
+
+    /// <summary>The parameters of <c>declineCard</c>.</summary>
+    public sealed record DeclineCardRequest
+    {
+        /// <summary>Gets the id of the card as <see cref="CardPresentedEvent.PresenceId"/> said it.</summary>
+        [JsonPropertyName("presenceId")]
+        public string PresenceId { get; init; } = string.Empty;
+    }
+
+    /// <summary>The answer to <c>declineCard</c>: nothing will be run for the card, and it is not offered again until it was taken away.</summary>
+    public sealed record DeclineCardResponse
+    {
+        /// <summary>Gets the id of the presence that was declined.</summary>
+        [JsonPropertyName("presenceId")]
+        public string PresenceId { get; init; } = string.Empty;
     }
 
     /// <summary>The parameters of <c>stopAutoMode</c>. There are none yet; the type exists so that an optional field can be added later.</summary>
@@ -62,6 +137,15 @@ namespace RFiDGear.Bridge
         /// <summary>Gets why the mode last stopped, one of <see cref="AutoModeStopReasons"/>.</summary>
         [JsonPropertyName("lastStopReason")]
         public string LastStopReason { get; init; } = AutoModeStopReasons.None;
+
+        /// <summary>Gets whether the mode waits for the approval of every card; only for a mode that this bridge switched on, and left out while it does not.</summary>
+        [JsonPropertyName("requireApproval")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool RequireApproval { get; init; }
+
+        /// <summary>Gets the id of the card that RFiDGear waits for an answer about right now, if there is one.</summary>
+        [JsonPropertyName("pendingPresenceId")]
+        public string? PendingPresenceId { get; init; }
     }
 
     /// <summary>The parameters of <c>listRunResults</c>.</summary>

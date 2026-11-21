@@ -25,6 +25,7 @@ namespace RFiDGear.Tests.ExternalControl
     public class BridgeAutoModeRealHostTests
     {
         private const string CardA = "0123456789";
+        private const string CardB = "9876543210";
 
         private static readonly Func<Action, Task> RunAtOnce = action =>
         {
@@ -147,6 +148,429 @@ namespace RFiDGear.Tests.ExternalControl
             });
         }
 
+        private static StartAutoModeRequest WithApproval() =>
+            new StartAutoModeRequest { StopOnDisconnect = true, RequireApproval = true };
+
+        [Fact]
+        public async Task ACardThatTheClientApproves_RunsWithTheVariablesOfThatApprovalOnly_AndItsResultNamesThePresence()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, _, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded, BridgeEvents.AutoRunCompleted);
+                var revision = ((IProjectRevisionSource)viewModel.ExtensionHost.Project).GetProjectRevision();
+                await client.Service.StartAutoMode(WithApproval());
+
+                // The first card is approved with a variable, the second (the same card, put back) without any.
+                provider.Card = Card(CardA);
+                var firstTick = viewModel.AutoMode.TickAsync();
+                var firstShown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+                await client.Service.ApproveCard(new ApproveCardRequest
+                {
+                    PresenceId = firstShown.PresenceId,
+                    ExpectProjectRevision = revision,
+                    Variables = new[] { new VariablePair { Name = "$EXPECTEDUID", Value = CardA } },
+                });
+                await AutoModeMainWindowTests.Within(firstTick);
+
+                provider.Card = new RFiDGear.Models.GenericChipModel();
+                await AutoModeMainWindowTests.Within(viewModel.AutoMode.TickAsync());
+                provider.Card = Card(CardA);
+                var secondTick = viewModel.AutoMode.TickAsync();
+                var secondShown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(4))[3]);
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = secondShown.PresenceId });
+                await AutoModeMainWindowTests.Within(secondTick);
+                var events = await client.WaitForEventsAsync(6);
+
+                Assert.Equal(2, exec.Requests.Count);
+                Assert.Equal(CardA, exec.Requests[0].VariablesFromArgs["$EXPECTEDUID"]);
+                Assert.False(exec.Requests[1].VariablesFromArgs.ContainsKey("$EXPECTEDUID"));
+                Assert.NotEqual(firstShown.PresenceId, secondShown.PresenceId);
+                Assert.Equal(revision, firstShown.ProjectRevision);
+
+                // The presence ends with the run that was admitted for it, and the result of that run says for which presence it ran.
+                var ended = Assert.IsType<CardPresentationEndedEvent>(events[1]);
+                var completed = Assert.IsType<AutoRunCompletedEvent>(events[2]);
+                Assert.Equal((firstShown.PresenceId, PresentationEndReasons.Approved, exec.Requests[0].RunId), (ended.PresenceId, ended.Reason, ended.RunId));
+                Assert.Equal((exec.Requests[0].RunId, firstShown.PresenceId), (completed.Result.RunId, completed.Result.PresenceId));
+
+                // The check of the revision is exact, so the run started in the very state the approval named, and says so.
+                Assert.Equal(revision, completed.Result.ProjectRevision);
+                Assert.Equal(secondShown.PresenceId, Assert.IsType<AutoRunCompletedEvent>(events[5]).Result.PresenceId);
+            });
+        }
+
+        [Fact]
+        public async Task TheReportVariablesOfAnApproval_AreTheReportOfThatCardOnly()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, _, provider, exec, _) =>
+            {
+                var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+                System.IO.Directory.CreateDirectory(folder);
+
+                try
+                {
+                    var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                    using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                    Assert.True(service.Start());
+                    service.MarkStartupComplete();
+                    using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                    await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                    await client.Service.StartAutoMode(WithApproval());
+                    var target = System.IO.Path.Combine(folder, "report.pdf");
+
+                    // What the real service does with the report state of its request: it keeps it in its result (and makes a writer when
+                    // there is none), and the window keeps it for the next run unless it was the report of one card only.
+                    var defaultFolder = new RFiDGear.Infrastructure.FileAccess.ProjectManager().AppDataPath;
+                    var writerOfTheFirstRun = new RFiDGear.Infrastructure.FileAccess.ReportReaderWriter(
+                        new RFiDGear.Infrastructure.FileAccess.ProjectManager(System.IO.Path.Combine(folder, "window")));
+                    string workFolderOfTheApprovedRun = null;
+
+                    exec.OnExecute = request =>
+                    {
+                        // The writer of the report that an approval named: where does it build its report, and does it use that folder?
+                        if (request.ReportOutputPath != null && request.ReportReaderWriter != null)
+                        {
+                            var manager = (RFiDGear.Infrastructure.FileAccess.ProjectManager)typeof(RFiDGear.Infrastructure.FileAccess.ReportReaderWriter)
+                                .GetField("projectManager", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                                .GetValue(request.ReportReaderWriter)!;
+                            workFolderOfTheApprovedRun = manager.AppDataPath;
+
+                            // Never in the folder of the application (a regression would write there for real).
+                            if (!string.Equals(manager.AppDataPath, defaultFolder, StringComparison.OrdinalIgnoreCase))
+                            {
+                                System.IO.File.WriteAllText(manager.GetTemporaryReportTemplatePath(), "the report of the approved card");
+                            }
+                        }
+
+                        return new TaskExecutionResult
+                        {
+                            TerminalStatus = TaskLoopTerminalStatus.Success,
+                            ReportOutputPath = request.ReportOutputPath,
+                            ReportReaderWriter = request.ReportReaderWriter ?? writerOfTheFirstRun,
+                        };
+                    };
+
+                    // A card is put on the reader (after the card before it was taken away), shown, approved with the variables and run.
+                    var shownBefore = 0;
+
+                    async Task RunACardAsync(params VariablePair[] variables)
+                    {
+                        provider.Card = new RFiDGear.Models.GenericChipModel();
+                        await AutoModeMainWindowTests.Within(viewModel.AutoMode.TickAsync());
+                        provider.Card = Card(CardA);
+                        var tick = viewModel.AutoMode.TickAsync();
+                        var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(shownBefore + 1))[shownBefore]);
+                        await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = shown.PresenceId, Variables = variables });
+                        await AutoModeMainWindowTests.Within(tick);
+
+                        // The presented notice and the one that ends it.
+                        await client.WaitForEventsAsync(shownBefore + 2);
+                        shownBefore += 2;
+                    }
+
+                    await RunACardAsync();
+                    await RunACardAsync(new VariablePair { Name = "REPORTTARGETPATH", Value = target });
+                    await RunACardAsync();
+
+                    // The report of the second card is its own: not what the window had, and not what the third card finds.
+                    Assert.Equal(3, exec.Requests.Count);
+                    Assert.Null(exec.Requests[0].ReportOutputPath);
+                    Assert.Equal(target, exec.Requests[1].ReportOutputPath);
+                    Assert.Null(exec.Requests[2].ReportOutputPath);
+                    Assert.Same(writerOfTheFirstRun, exec.Requests[2].ReportReaderWriter);
+
+                    // The report of the approved card is built by a writer of its own, in a work folder of its own (not the folder of the
+                    // application and not the one of the writer of the window), and the folder is gone when the run is over.
+                    Assert.NotNull(exec.Requests[1].ReportReaderWriter);
+                    Assert.NotSame(writerOfTheFirstRun, exec.Requests[1].ReportReaderWriter);
+                    Assert.NotNull(workFolderOfTheApprovedRun);
+                    Assert.NotEqual(defaultFolder, workFolderOfTheApprovedRun, StringComparer.OrdinalIgnoreCase);
+                    Assert.NotEqual(System.IO.Path.Combine(folder, "window"), workFolderOfTheApprovedRun, StringComparer.OrdinalIgnoreCase);
+                    Assert.False(System.IO.Directory.Exists(workFolderOfTheApprovedRun));
+                }
+                finally
+                {
+                    System.IO.Directory.Delete(folder, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ACardThatTheClientDeclines_IsNeverRun_AndNotAskedAgainWhileItStays()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = shown.PresenceId });
+                await AutoModeMainWindowTests.Within(tick);
+                await AutoModeMainWindowTests.Within(viewModel.AutoMode.TickAsync());
+                await Task.Delay(200);
+
+                Assert.Empty(exec.Requests);
+                Assert.Equal(2, client.Events.Count);
+                Assert.Equal(PresentationEndReasons.Declined, Assert.IsType<CardPresentationEndedEvent>(client.Events[1]).Reason);
+                Assert.True(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AnApprovalForAnotherStateOfTheProject_RunsNothing_AndTheSameCardIsOfferedAgainWithANewPresence()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var first = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = first.PresenceId, ExpectProjectRevision = "ffffffffffffffffffffffffffffffff" });
+                await AutoModeMainWindowTests.Within(tick);
+                var events = await client.WaitForEventsAsync(2);
+
+                // Nothing ran. The card is still there and the mode is on, so the next look offers it again, as a presence of its own.
+                var secondTick = viewModel.AutoMode.TickAsync();
+                var second = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(3))[2]);
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = second.PresenceId });
+                await AutoModeMainWindowTests.Within(secondTick);
+
+                Assert.Empty(exec.Requests);
+                var ended = Assert.IsType<CardPresentationEndedEvent>(events[1]);
+                Assert.Equal((first.PresenceId, PresentationEndReasons.ProjectChanged, null), (ended.PresenceId, ended.Reason, ended.RunId));
+                Assert.NotEqual(first.PresenceId, second.PresenceId);
+                Assert.True(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task ACardThatIsReplacedAfterTheApproval_IsNotRunOnIt_AndTheOtherCardIsOfferedNext()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                await client.Service.StartAutoMode(WithApproval());
+
+                // Another card is put on the reader before the answer, and no tick looked at the reader in between: the window looks
+                // once more before it admits the run, and the approval was given for the card that was shown.
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var first = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+                provider.Card = Card(CardB);
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = first.PresenceId });
+                await AutoModeMainWindowTests.Within(tick);
+                var events = await client.WaitForEventsAsync(2);
+
+                var secondTick = viewModel.AutoMode.TickAsync();
+                var second = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(3))[2]);
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = second.PresenceId });
+                await AutoModeMainWindowTests.Within(secondTick);
+
+                Assert.Empty(exec.Requests);
+                var ended = Assert.IsType<CardPresentationEndedEvent>(events[1]);
+                Assert.Equal((first.PresenceId, PresentationEndReasons.CardChanged, null), (ended.PresenceId, ended.Reason, ended.RunId));
+                Assert.Equal(CardB, second.Uid);
+                Assert.NotEqual(first.PresenceId, second.PresenceId);
+                Assert.True(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AReaderThatCannotBeLookedAtBeforeTheRun_IsNoProofOfTheCard_NothingRunsAndTheCardIsOfferedAgain()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var first = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+
+                // The look that the window takes before it admits the run fails: a card that cannot be told is not the one that was approved.
+                provider.Script(RFiDGear.Infrastructure.ERROR.NoError, failure: new InvalidOperationException("The reader failed."));
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = first.PresenceId });
+                await AutoModeMainWindowTests.Within(tick);
+                var events = await client.WaitForEventsAsync(2);
+
+                var secondTick = viewModel.AutoMode.TickAsync();
+                var second = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(3))[2]);
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = second.PresenceId });
+                await AutoModeMainWindowTests.Within(secondTick);
+
+                Assert.Empty(exec.Requests);
+                Assert.Equal(PresentationEndReasons.NotAdmitted, Assert.IsType<CardPresentationEndedEvent>(events[1]).Reason);
+                Assert.Equal((CardA, true), (second.Uid, second.PresenceId != first.PresenceId));
+                Assert.True(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AModeThatIsStoppedWhileTheWindowLooksAtTheReader_RunsNothing_EvenWhenTheLookSucceeds()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+
+                // The look that the window takes before it admits the run is held; the mode is stopped while it is outstanding, and then
+                // the look ends with the right card. The request is no longer wanted, so nothing may be admitted.
+                var slowLook = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                provider.Script(RFiDGear.Infrastructure.ERROR.NoError, Card(CardA), slowLook.Task);
+                var nextRead = provider.ReadCount + 1;
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = shown.PresenceId });
+                await AutoModeMainWindowTests.Within(provider.ReadStarted(nextRead));
+                await client.Service.StopAutoMode(new StopAutoModeRequest());
+                slowLook.SetResult(true);
+                await AutoModeMainWindowTests.Within(tick);
+                var events = await client.WaitForEventsAsync(2);
+
+                Assert.Empty(exec.Requests);
+                Assert.Equal(PresentationEndReasons.NotAdmitted, Assert.IsType<CardPresentationEndedEvent>(events[1]).Reason);
+                Assert.False(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task ACardThatIsReplacedWhileTheClientDecides_IsWithdrawnByTheNextTick_AndALateApprovalIsRefused()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var first = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+
+                // The clock goes on ticking while the client decides: the tick that waits holds the machine, and this one only looks.
+                provider.Card = Card(CardB);
+                await AutoModeMainWindowTests.Within(viewModel.AutoMode.TickAsync());
+                await AutoModeMainWindowTests.Within(tick);
+                var events = await client.WaitForEventsAsync(2);
+                var late = await Assert.ThrowsAsync<StreamJsonRpc.RemoteInvocationException>(() => client.Service.ApproveCard(new ApproveCardRequest { PresenceId = first.PresenceId }));
+
+                var secondTick = viewModel.AutoMode.TickAsync();
+                var second = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(3))[2]);
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = second.PresenceId });
+                await AutoModeMainWindowTests.Within(secondTick);
+
+                Assert.Empty(exec.Requests);
+                Assert.Equal(PresentationEndReasons.CardChanged, Assert.IsType<CardPresentationEndedEvent>(events[1]).Reason);
+                Assert.Equal(BridgeErrorCodes.ApprovalNotPending, (int)late.ErrorCode);
+                Assert.Equal(CardB, second.Uid);
+                Assert.True(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AnApprovedRun_IsToldWhichCardItIsFor_SoThatItsOwnReadCanHoldItToIt_AndARunWithoutApprovalIsNot()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = shown.PresenceId });
+                await AutoModeMainWindowTests.Within(tick);
+
+                // The mode that was started with approval goes off, and the same card is run by a mode that runs every card.
+                await client.Service.StopAutoMode(new StopAutoModeRequest());
+                await client.Service.StartAutoMode(new StartAutoModeRequest());
+                provider.Card = new RFiDGear.Models.GenericChipModel();
+                await AutoModeMainWindowTests.Within(viewModel.AutoMode.TickAsync());
+                provider.Card = Card(CardA);
+                await AutoModeMainWindowTests.Within(viewModel.AutoMode.TickAsync());
+
+                // The run's own read is held to the card that was approved (the service checks it before it sends anything else to
+                // the card); a run that nobody approved is held to nothing.
+                Assert.Equal(2, exec.Requests.Count);
+                Assert.Equal(CardA, exec.Requests[0].ExpectedCardUid);
+                Assert.Null(exec.Requests[1].ExpectedCardUid);
+                Assert.True(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task AnExceptionWhileTheWindowLooksAtTheReaderBeforeTheRun_GivesTheExecutionSlotBack_AndStopsTheMode()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, coordinator) =>
+            {
+                var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                Assert.True(service.Start());
+                service.MarkStartupComplete();
+                using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                await client.HelloAsync(BridgeEvents.CardPresented);
+                await client.Service.StartAutoMode(WithApproval());
+
+                provider.Card = Card(CardA);
+                var tick = viewModel.AutoMode.TickAsync();
+                var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(1))[0]);
+
+                // Releasing the reader after the look fails. The window holds the execution slot at that moment and has not started the
+                // run: the slot has to be given back, or nothing could run again until the application is restarted.
+                provider.ThrowOnNextDispose = true;
+                await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = shown.PresenceId });
+                await AutoModeMainWindowTests.Within(tick);
+
+                Assert.True(coordinator.IsIdle);
+                Assert.Empty(exec.Requests);
+                Assert.False(host.IsAutoModeEnabled);
+                Assert.Equal(AutoModeStopReason.RunAborted, host.LastStopReason);
+            });
+        }
         [Fact]
         public async Task AModeAClientStarted_EndsWhenItsConnectionEnds_AndTheMenuAndTheModeAgree()
         {

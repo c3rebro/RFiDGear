@@ -666,9 +666,14 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         public int CurrentSession => Volatile.Read(ref _session);
 
-        public AutoModeStartResult TryStart() => TryStart(out _);
+        public AutoModeStartResult TryStart() => TryStart(null, out _);
 
-        public AutoModeStartResult TryStart(out int session)
+        public AutoModeStartResult TryStart(out int session) => TryStart(null, out session);
+
+        /// <summary>Gets the approval the mode was started with, which a test plays the machine against; <see langword="null"/> for a mode that runs every card.</summary>
+        public IAutoModeApproval? Approval { get; private set; }
+
+        public AutoModeStartResult TryStart(IAutoModeApproval? approval, out int session)
         {
             Interlocked.Increment(ref _startCalls);
             session = 0;
@@ -686,6 +691,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
 
             IsAutoModeEnabled = true;
+            Approval = approval;
             LastStopReason = AutoModeStopReason.None;
             session = Interlocked.Increment(ref _session);
             BeforeStartEventIsRaised?.Invoke();

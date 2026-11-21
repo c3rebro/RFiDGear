@@ -494,6 +494,86 @@ passed with a real reader; until then a snapshot may be re-baselined.
   owns is a claim on one START of the mode (`AutoModeController.CurrentSession`,
   `StopIfSession`), never on "the mode", so a mode the user switched on is never
   stopped for a client.
+- **Automatic mode that waits for approval** (`autoMode.approval`):
+  `startAutoMode` with `requireApproval` shows every card to the client that
+  started the mode and runs it only when that client approves it. It needs
+  `stopOnDisconnect` (nobody would be left to answer otherwise); an
+  `approvalTimeoutMs` of 2 to 120 s (default 15 s) is allowed only with it. The
+  machine (`AutoModeController`) asks an `IAutoModeApproval`, which on the
+  bridge is the `AutoModeApprovalGate` of that start, for each presence: a card
+  put on the reader gets a new `presenceId`, also the same card put back. The
+  gate publishes `cardPresented`; the answer is `approveCard` (optional
+  `expectProjectRevision`, and `variables` that are merged over the start-up
+  variables for that one run and for no other) or `declineCard`. Only the
+  connection that started the mode can answer, once, for the card that is
+  waited for; every other answer is `approvalNotPending`. What the gate says
+  is addressed to that connection (`BridgeServer.Publish` takes it): a client
+  that connects after it left never sees a card, or the end of a card, of the
+  start that ended, and a card that arrives after the start ended is not shown:
+  the check that the start has not ended and the hand-over of `cardPresented`
+  to the queue are one step under the lock that a cancel takes, so nothing is
+  shown after the notice that the mode stopped. The wait ends at the time
+  `cardPresented` announced (`expiresAt`), not a whole limit after the revision
+  was read.
+- What each end of the wait does (`cardPresentationEnded` says it, with the
+  run id for `approved`): declined, not answered in time (`expired`), overtaken
+  by a stop, a connection that ended (`clientLost`): nothing runs, and the card
+  stays remembered, so it is not offered again until a poll found the reader
+  empty. A run that was not admitted (`notAdmitted`) or a project that is not
+  the revision the approval named (`projectChanged`) does not run either, but
+  the card is offered again with a new presence id. A request that fails before
+  it was admitted (an exception) is told as `notAdmitted` too, so that the
+  program does not wait for the end of the presence, and the mode stops; a run
+  that was admitted is never told as refused. The revision is checked in
+  `RunAllOnceCoreAsync` after the window holds the execution slot, so nothing
+  can change the project between the check and the run. The check is exact (no
+  lineage as for `startRun`): when the approval names a revision, the run
+  starts only in that very state, and its result carries that same revision (it
+  is the one the run started with). A run changes the project (the tasks write
+  some of their own settings), so the revision differs from card to card: the
+  one in `cardPresented` is read when the card is shown, after the run of the
+  card before it, and a client names that one, not one it read earlier. The
+  result of the run carries the `presenceId`. A start with approval is never
+  agreed on again (`AutoModeActive`), and the mode of a user is never taken
+  over for approval.
+- **The card is held to the approval.** While the program decides, the ticks
+  that come meanwhile still look at the reader (`WatchPendingCardAsync`; the
+  tick that waits holds the machine, and a look takes the scan slot): a card
+  that is gone or replaced withdraws the wait (`cardChanged`) and ends the
+  presence as an empty poll does, so a card put back is a new presence. What a
+  look saw counts even if the program approved while it was under way, unless
+  something was written down since (the card stamp says that): the approval is
+  then refused at admission. The approval carries the UID it was given
+  for (`AutoModeApproval.Uid`). The window looks at the reader once more, with
+  the execution slot held, before it admits the run
+  (`VerifyTheApprovedCardAsync`): another card is `cardChanged`, a reader that
+  cannot tell is `notAdmitted`, and both offer the card again. The run's own
+  read is held to the UID too (`TaskExecutionRequest.ExpectedCardUid`): the
+  service compares it right after its public read and before anything else is
+  sent to the card, because the PC/SC listing of the applications of a DESFire
+  card can authenticate with a default key. Another card, or none, ends the run
+  before the first task (`ApprovedCardChangedException`: a fault, which stops
+  the mode). The execution slot that the window holds during its look is given
+  back if the look throws.
+  A run that another path made on the card while the program decided (the card
+  stamp changed) is not repeated for the approval (`cardChanged`; the card stays
+  processed). The gate refuses an answer after the time limit itself, whether or
+  not its timer has fired (it looks at the clock again after checking the
+  variables), and a gate that was cancelled shows no card that arrives later. A
+  removal and a return between two ticks are not seen, as everywhere in the
+  mode.
+- **The report variables of an approval** (`REPORTTARGETPATH`,
+  `REPORTTEMPLATEFILE` and their aliases) mean what they mean for any run: the
+  execution service reads the report paths from the fields of its request, so
+  `ReportVariables` (one resolver, also used by `TaskExecHostImpl`) turns them
+  into those fields. The gate checks them when the program approves (an unusable
+  one is `invalidRequest` and the card keeps waiting), the window applies them
+  to that one run and keeps them out of its own report state, and builds the
+  report with a writer that has a work folder of its own
+  (`report-work\<runId>` in the application folder, removed after the run): the
+  writer keeps the report it is building in a file in its folder, and two
+  writers in one folder would hand the fields of one card to the report of the
+  next.
 - Card keys: the built-in secure key provider `bridge-client`
   (`BridgeKeyProvider`) is bound to the connected client that called
   `registerKeyProvider`; RFiDGear then calls `resolveKey` on the client inside

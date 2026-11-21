@@ -263,6 +263,10 @@ namespace RFiDGear.Tests.ExternalControl
 
             public Task<RegisterKeyProviderResponse> RegisterKeyProvider(RegisterKeyProviderRequest request) => throw NotUsed(request);
 
+            public Task<ApproveCardResponse> ApproveCard(ApproveCardRequest request) => throw NotUsed(request);
+
+            public Task<DeclineCardResponse> DeclineCard(DeclineCardRequest request) => throw NotUsed(request);
+
             // The methods of the contract that these tests do not call.
             private static NotSupportedException NotUsed(object request)
             {

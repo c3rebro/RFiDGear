@@ -51,6 +51,15 @@ namespace RFiDGear.Bridge
         /// <summary>The longest time a lookup may wait for a result, in milliseconds.</summary>
         public const int MaxWaitMs = 30000;
 
+        /// <summary>How long RFiDGear waits for the approval of a card when the client does not say, in milliseconds.</summary>
+        public const int DefaultApprovalTimeoutMs = 15000;
+
+        /// <summary>The shortest time a client may ask RFiDGear to wait for the approval of a card, in milliseconds.</summary>
+        public const int MinApprovalTimeoutMs = 2000;
+
+        /// <summary>The longest time a client may ask RFiDGear to wait for the approval of a card, in milliseconds.</summary>
+        public const int MaxApprovalTimeoutMs = 120000;
+
         /// <summary>The longest key RFiDGear accepts from a client, in bytes (the longest card key is 24).</summary>
         public const int MaxKeyBytes = 32;
 

@@ -47,6 +47,8 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Func<bool> _isShuttingDown;
         private readonly Func<string?> _busyActivity;
         private readonly RunFacts? _facts;
+        private readonly Func<string?> _readRevision;
+        private readonly Action<string, string, bool, BridgeEventFactory> _publishToSession;
         private readonly EventHandler _stateChangedHandler;
         private readonly EventHandler _runningChangedHandler;
         private readonly EventHandler<ExecResult> _runCompletedHandler;
@@ -62,7 +64,13 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="publish">Hands an event to the client that is connected (name, whether it is durable, the maker of the event).</param>
         /// <param name="isShuttingDown">Says whether RFiDGear is closing.</param>
         /// <param name="busyActivity">Says what the application is busy with, for the hint in a "busy" refusal.</param>
-        /// <param name="facts">What the main window noted about its runs when it took them (the revision of the project), or <see langword="null"/> for none.</param>
+        /// <param name="facts">What the main window noted about its runs when it took them (the revision of the project, the presence they were approved for), or <see langword="null"/> for none.</param>
+        /// <param name="readRevision">Reads the revision of the project as it is now, on the thread of the main window (the machine asks from there); <see langword="null"/> for none.</param>
+        /// <param name="publishToSession">
+        /// Hands an event to one connection only (the connection, the name, whether it is durable, the maker of the event): what belongs to
+        /// the client that started a mode that waits for approval must never reach another client that has connected since. Without it
+        /// the events go to whoever is connected, as <paramref name="publish"/> does.
+        /// </param>
         internal AutoModeBridge(
             IRFiDGearExtensionHost host,
             IAutoModeControl control,
@@ -70,7 +78,9 @@ namespace RFiDGear.Services.ExternalControl
             Action<string, bool, BridgeEventFactory> publish,
             Func<bool> isShuttingDown,
             Func<string?> busyActivity,
-            RunFacts? facts = null)
+            RunFacts? facts = null,
+            Func<string?>? readRevision = null,
+            Action<string, string, bool, BridgeEventFactory>? publishToSession = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _control = control ?? throw new ArgumentNullException(nameof(control));
@@ -79,6 +89,8 @@ namespace RFiDGear.Services.ExternalControl
             _isShuttingDown = isShuttingDown ?? throw new ArgumentNullException(nameof(isShuttingDown));
             _busyActivity = busyActivity ?? throw new ArgumentNullException(nameof(busyActivity));
             _facts = facts;
+            _readRevision = readRevision ?? (() => null);
+            _publishToSession = publishToSession ?? ((_, name, durable, create) => publish(name, durable, create));
             _stateChangedHandler = (_, _) => OnStateChanged();
             _runningChangedHandler = (_, _) => OnRunningChanged();
             _runCompletedHandler = (_, result) => OnRunCompleted(result);
@@ -88,15 +100,21 @@ namespace RFiDGear.Services.ExternalControl
         // once the start has returned (0 until then).
         private sealed class ClientStart
         {
-            internal ClientStart(string sessionId, bool stopOnDisconnect)
+            internal ClientStart(string sessionId, bool stopOnDisconnect, AutoModeApprovalGate? gate = null)
             {
                 SessionId = sessionId;
                 StopOnDisconnect = stopOnDisconnect;
+                Gate = gate;
             }
 
             internal string SessionId { get; }
 
             internal bool StopOnDisconnect { get; }
+
+            // The one that decides about every card, for a start that waits for approval; null for a start that runs every card.
+            internal AutoModeApprovalGate? Gate { get; }
+
+            internal bool RequireApproval => Gate != null;
 
             internal int Generation { get; set; }
         }
@@ -149,6 +167,12 @@ namespace RFiDGear.Services.ExternalControl
             _host.AutoMode.AutoModeRunCompleted -= _runCompletedHandler;
             _host.Execution.IsRunningChanged -= _runningChangedHandler;
 
+            // Nobody is left to answer: a card that is waited for is not run.
+            lock (_gate)
+            {
+                _clientStart?.Gate?.Cancel(PresentationEndReasons.Stopped);
+            }
+
             if (_facts != null)
             {
                 _facts.IsWanted = false;
@@ -171,7 +195,32 @@ namespace RFiDGear.Services.ExternalControl
                 throw BridgeFault.ShuttingDown();
             }
 
-            var mine = new ClientStart(sessionId, request.StopOnDisconnect);
+            // A mode that waits for a client must not go on without it, and the time limit is one the client can live with.
+            if (request.RequireApproval)
+            {
+                if (!request.StopOnDisconnect)
+                {
+                    throw BridgeFault.InvalidRequest("stopOnDisconnect");
+                }
+
+                if (request.ApprovalTimeoutMs is { } asked && (asked < BridgeProtocol.MinApprovalTimeoutMs || asked > BridgeProtocol.MaxApprovalTimeoutMs))
+                {
+                    throw BridgeFault.InvalidRequest("approvalTimeoutMs");
+                }
+            }
+            else if (request.ApprovalTimeoutMs != null)
+            {
+                throw BridgeFault.InvalidRequest("approvalTimeoutMs");
+            }
+
+            var gate = request.RequireApproval
+                ? new AutoModeApprovalGate(
+                    sessionId,
+                    TimeSpan.FromMilliseconds(request.ApprovalTimeoutMs ?? BridgeProtocol.DefaultApprovalTimeoutMs),
+                    _readRevision,
+                    (name, durable, create) => _publishToSession(sessionId, name, durable, create))
+                : null;
+            var mine = new ClientStart(sessionId, request.StopOnDisconnect, gate);
             AutoModeStartResult result;
             int generation;
 
@@ -179,7 +228,7 @@ namespace RFiDGear.Services.ExternalControl
 
             try
             {
-                result = _control.TryStart(out generation);
+                result = _control.TryStart(gate, out generation);
             }
             finally
             {
@@ -196,9 +245,19 @@ namespace RFiDGear.Services.ExternalControl
                         mine.Generation = generation;
                     }
 
-                    Logger.Information("External control: automatic mode was switched on by a client (stopOnDisconnect {StopOnDisconnect})", mine.StopOnDisconnect);
+                    Logger.Information(
+                        "External control: automatic mode was switched on by a client (stopOnDisconnect {StopOnDisconnect}, requireApproval {RequireApproval})",
+                        mine.StopOnDisconnect,
+                        mine.RequireApproval);
 
-                    return new StartAutoModeResponse { Enabled = true, AlreadyEnabled = false, StopOnDisconnect = mine.StopOnDisconnect };
+                    return new StartAutoModeResponse
+                    {
+                        Enabled = true,
+                        AlreadyEnabled = false,
+                        StopOnDisconnect = mine.StopOnDisconnect,
+                        RequireApproval = mine.RequireApproval,
+                        ApprovalTimeoutMs = gate == null ? null : (int)gate.Timeout.TotalMilliseconds,
+                    };
 
                 case AutoModeStartResult.AlreadyEnabled:
                     lock (_gate)
@@ -206,6 +265,13 @@ namespace RFiDGear.Services.ExternalControl
                         // The user's mode is the user's. Only the start that a client switched on can be agreed on again, by whichever
                         // client asks now: the agreement for its end then belongs to that client.
                         if (_clientStart == null || _clientStart.Generation != generation)
+                        {
+                            throw BridgeFault.AutoModeActive();
+                        }
+
+                        // A mode that waits for approval is not agreed on again, and a mode that runs every card does not turn into one
+                        // by a second start: the client stops the mode and starts the one it means.
+                        if (mine.RequireApproval || _clientStart.RequireApproval)
                         {
                             throw BridgeFault.AutoModeActive();
                         }
@@ -224,6 +290,43 @@ namespace RFiDGear.Services.ExternalControl
 
                 default:
                     throw BridgeFault.Busy(_busyActivity() ?? BusyActivities.Other);
+            }
+        }
+
+        /// <summary>Takes the approval of the card that is waited for, once; only from the connection that started the mode.</summary>
+        /// <param name="sessionId">The connection that answers.</param>
+        /// <param name="request">The answer.</param>
+        /// <returns>That the approval was taken.</returns>
+        internal ApproveCardResponse ApproveCard(string sessionId, ApproveCardRequest request)
+        {
+            if (request == null)
+            {
+                throw BridgeFault.InvalidRequest("request");
+            }
+
+            return (GateOfTheMode() ?? throw BridgeFault.ApprovalNotPending()).Approve(sessionId, request);
+        }
+
+        /// <summary>Declines the card that is waited for; only from the connection that started the mode.</summary>
+        /// <param name="sessionId">The connection that answers.</param>
+        /// <param name="request">The answer.</param>
+        /// <returns>That the card was declined.</returns>
+        internal DeclineCardResponse DeclineCard(string sessionId, DeclineCardRequest request)
+        {
+            if (request == null)
+            {
+                throw BridgeFault.InvalidRequest("request");
+            }
+
+            return (GateOfTheMode() ?? throw BridgeFault.ApprovalNotPending()).Decline(sessionId, request);
+        }
+
+        // The one that decides about the cards of the mode that is on, when a client started it with approval.
+        private AutoModeApprovalGate? GateOfTheMode()
+        {
+            lock (_gate)
+            {
+                return ClaimOnTheRunningMode()?.Gate;
             }
         }
 
@@ -253,6 +356,8 @@ namespace RFiDGear.Services.ExternalControl
                     StartedBy = enabled ? (client != null ? RunSources.Bridge : RunSources.Other) : null,
                     StopOnDisconnect = client?.StopOnDisconnect ?? false,
                     LastStopReason = BridgeMapper.ToWire(_host.AutoMode.LastStopReason),
+                    RequireApproval = client?.RequireApproval ?? false,
+                    PendingPresenceId = client?.Gate?.PendingPresenceId,
                 };
             }
         }
@@ -266,6 +371,7 @@ namespace RFiDGear.Services.ExternalControl
         internal void OnSessionEnded(string sessionId)
         {
             int generation;
+            AutoModeApprovalGate? gateOfTheClient;
 
             lock (_gate)
             {
@@ -277,7 +383,11 @@ namespace RFiDGear.Services.ExternalControl
                 }
 
                 generation = claim.Generation;
+                gateOfTheClient = claim.Gate;
             }
+
+            // The card that is waited for is not run: nobody is left to say that it may be, and the mode ends with the connection.
+            gateOfTheClient?.Cancel(PresentationEndReasons.ClientLost);
 
             // Not "stop the mode": the user may have stopped this start and switched on another one since the lock was left, and
             // only the state machine can decide that and stop in one step.
@@ -299,6 +409,7 @@ namespace RFiDGear.Services.ExternalControl
         {
             var starting = s_starting;
             bool enabled;
+            AutoModeApprovalGate? endedGate = null;
 
             lock (_gate)
             {
@@ -312,8 +423,15 @@ namespace RFiDGear.Services.ExternalControl
 
                 // A run that is going on when the client's mode is stopped is still the client's until it ends.
                 _drainingClientRun = hadClaim && _host.Execution.IsRunning;
+                endedGate = _clientStart?.Gate;
                 _clientStart = starting;
                 enabled = starting != null || _host.AutoMode.IsAutoModeEnabled;
+            }
+
+            // A mode that was stopped (or ended some other way) does not run a card that was waited for.
+            if (endedGate != null && !ReferenceEquals(endedGate, starting?.Gate))
+            {
+                endedGate.Cancel(PresentationEndReasons.Stopped);
             }
 
             var startedBy = enabled ? (starting != null ? RunSources.Bridge : RunSources.Other) : null;
@@ -360,8 +478,8 @@ namespace RFiDGear.Services.ExternalControl
             var runId = string.IsNullOrEmpty(result.RunId) ? Guid.NewGuid().ToString("N") : result.RunId;
             // The revision the run started with: the window read it when it took the run, before the first task, and the result
             // is made much later (the same revision that a run of a client has).
-            var revision = _facts?.Take(runId)?.ProjectRevision;
-            var dto = _registry.RecordUnrequested(seq => BridgeMapper.ToDto(result, runId, null, seq, RunSources.AutoMode, revision));
+            var fact = _facts?.Take(runId);
+            var dto = _registry.RecordUnrequested(seq => BridgeMapper.ToDto(result, runId, null, seq, RunSources.AutoMode, fact?.ProjectRevision, fact?.PresenceId));
 
             // No UID and no path: the number, the status and the counts.
             Logger.Information(

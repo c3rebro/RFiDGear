@@ -68,6 +68,15 @@ namespace RFiDGear.Bridge
         public const string EventsAutoMode = "events.autoMode";
 
         /// <summary>
+        /// Automatic mode that waits for the client's approval of every card before it runs one: <c>startAutoMode</c> takes
+        /// <c>requireApproval</c>, RFiDGear tells the client about a card that was put on the reader (<see cref="BridgeEvents.CardPresented"/>)
+        /// and starts a run for it only when the client answers with <see cref="BridgeMethods.ApproveCard"/>, once, within the time limit.
+        /// What the approval carries (the variables of that one run, the revision of the project it expects) is used for that run
+        /// and for no other. No answer, a refusal, a lost connection or a stopped mode runs nothing.
+        /// </summary>
+        public const string AutoModeApproval = "autoMode.approval";
+
+        /// <summary>
         /// Supplying card keys from the client's own vault: the client registers, and RFiDGear asks it for the key of a task that
         /// names one by reference (see <see cref="IBridgeClientKeys"/>), so that no key is ever stored in a project, a file or a command line.
         /// </summary>
@@ -145,6 +154,7 @@ namespace RFiDGear.Bridge
             ExecutionJournal,
             ExecutionVerificationDetails,
             AutoMode,
+            AutoModeApproval,
             EventsExecution,
             EventsRunning,
             EventsReader,
@@ -205,6 +215,12 @@ namespace RFiDGear.Bridge
 
         /// <summary>Registers the client as the supplier of card keys for the life of the connection.</summary>
         public const string RegisterKeyProvider = "registerKeyProvider";
+
+        /// <summary>Approves the card that automatic mode is waiting for, once.</summary>
+        public const string ApproveCard = "approveCard";
+
+        /// <summary>Declines the card that automatic mode is waiting for.</summary>
+        public const string DeclineCard = "declineCard";
     }
 
     /// <summary>The names of the calls the host makes on the client, as they are written on the wire (JSON-RPC <c>method</c>).</summary>
@@ -240,6 +256,12 @@ namespace RFiDGear.Bridge
         /// <summary>Automatic mode was switched on or off.</summary>
         public const string AutoModeChanged = "autoModeChanged";
 
+        /// <summary>Automatic mode that waits for approval found a card, and waits for the client's answer.</summary>
+        public const string CardPresented = "cardPresented";
+
+        /// <summary>The wait for the answer about a card ended, and how (<see cref="PresentationEndReasons"/>).</summary>
+        public const string CardPresentationEnded = "cardPresentationEnded";
+
         /// <summary>Automatic mode processed a card. Sent exactly once per run of the mode.</summary>
         public const string AutoRunCompleted = "autoRunCompleted";
 
@@ -254,7 +276,42 @@ namespace RFiDGear.Bridge
             ShuttingDown,
             AutoModeChanged,
             AutoRunCompleted,
+            CardPresented,
+            CardPresentationEnded,
         };
+    }
+
+    /// <summary>The values of <see cref="CardPresentationEndedEvent.Reason"/>: how the wait for the answer about a card ended.</summary>
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = WireConstants.Justification)]
+    public static class PresentationEndReasons
+    {
+        /// <summary>The client approved the card and the run was admitted; <see cref="CardPresentationEndedEvent.RunId"/> says which.</summary>
+        public const string Approved = "approved";
+
+        /// <summary>The client declined the card. Nothing was run, and the card is not offered again until it was taken away.</summary>
+        public const string Declined = "declined";
+
+        /// <summary>No answer came within the time limit. Nothing was run, and the card is not offered again until it was taken away.</summary>
+        public const string Expired = "expired";
+
+        /// <summary>Automatic mode was stopped while RFiDGear waited. Nothing was run.</summary>
+        public const string Stopped = "stopped";
+
+        /// <summary>The connection of the client ended while RFiDGear waited. Nothing was run, and the mode ends with the connection.</summary>
+        public const string ClientLost = "clientLost";
+
+        /// <summary>The project is not in the state the approval expected (<see cref="ApproveCardRequest.ExpectProjectRevision"/>). Nothing was run.</summary>
+        public const string ProjectChanged = "projectChanged";
+
+        /// <summary>
+        /// The card on the reader is no longer the one that was shown: it was taken away or replaced while RFiDGear waited or before the
+        /// run started, or another run was made on it meanwhile. Nothing was run. A card that is on the reader and was not processed
+        /// otherwise is offered again with a new presence id.
+        /// </summary>
+        public const string CardChanged = "cardChanged";
+
+        /// <summary>The card was approved, but the run could not be admitted (something else held the execution slot). Nothing was run; the card is offered again with a new presence id.</summary>
+        public const string NotAdmitted = "notAdmitted";
     }
 
     /// <summary>The values of <see cref="ResolveKeyRequest.Algorithm"/>: what kind of key is asked for.</summary>

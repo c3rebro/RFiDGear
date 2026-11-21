@@ -130,7 +130,9 @@ namespace RFiDGear.Services.ExternalControl
                     (name, durable, create) => _server!.Publish(name, durable, create),
                     () => Volatile.Read(ref _shutdown) != 0,
                     () => busyActivity?.Invoke(),
-                    runFacts);
+                    runFacts,
+                    () => (host.Project as IProjectRevisionSource)?.GetProjectRevision(),
+                    (sessionId, name, durable, create) => _server!.Publish(name, durable, create, sessionId));
             }
 
             var autoMode = _autoMode;
@@ -182,6 +184,7 @@ namespace RFiDGear.Services.ExternalControl
             {
                 capabilities.Add(BridgeCapabilities.AutoMode);
                 capabilities.Add(BridgeCapabilities.EventsAutoMode);
+                capabilities.Add(BridgeCapabilities.AutoModeApproval);
             }
 
             if (keyProvider != null)
@@ -212,6 +215,8 @@ namespace RFiDGear.Services.ExternalControl
                 ListRunResults = supervisor == null ? null : request => Task.FromResult(supervisor.ListResults(request, _instanceId)),
                 StartAutoMode = autoMode == null ? null : (sessionId, request) => Task.FromResult(autoMode.Start(sessionId, request)),
                 StopAutoMode = autoMode == null ? null : _ => Task.FromResult(autoMode.Stop()),
+                ApproveCard = autoMode == null ? null : (sessionId, request) => Task.FromResult(autoMode.ApproveCard(sessionId, request)),
+                DeclineCard = autoMode == null ? null : (sessionId, request) => Task.FromResult(autoMode.DeclineCard(sessionId, request)),
                 RegisterKeyProvider = keyProvider == null ? null : request => Task.FromResult(new RegisterKeyProviderResponse
                 {
                     ProviderId = BridgeKeyProvider.ProviderId,

@@ -202,6 +202,13 @@ namespace RFiDGear.Bridge
         [JsonPropertyName("projectRevision")]
         public string? ProjectRevision { get; init; }
 
+        /// <summary>
+        /// Gets the id of the presence of the card that this run was approved for (<see cref="CardPresentedEvent.PresenceId"/>), for a run
+        /// of automatic mode that waited for approval. Nothing for any other run.
+        /// </summary>
+        [JsonPropertyName("presenceId")]
+        public string? PresenceId { get; init; }
+
         /// <summary>Gets the results of the tasks, in order.</summary>
         [JsonPropertyName("taskOutcomes")]
         public IReadOnlyList<TaskOutcomeDto> TaskOutcomes { get; init; } = Array.Empty<TaskOutcomeDto>();
