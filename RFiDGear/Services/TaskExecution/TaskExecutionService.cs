@@ -680,8 +680,7 @@ namespace RFiDGear.Services.TaskExecution
 
             // Only for a card that this run's own read found: a read that failed leaves the chip of an earlier card, which must not be
             // listed (the listing can authenticate with a default key).
-            if (readFoundACard && !string.IsNullOrEmpty(genericChip.UID) &&
-                genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
+            if (readFoundACard && IsDesfireCard(genericChip))
             {
                 await device.GetMiFareDESFireChipAppIDs();
                 genericChip = device.GenericChip ?? genericChip;
@@ -691,9 +690,10 @@ namespace RFiDGear.Services.TaskExecution
             return new ChipHydrationResult(genericChip, readFoundACard ? genericChip : new GenericChipModel());
         }
 
-        // The same rule that decides whether the applications of a card are listed.
+        // The rule that decides whether the applications of a card are listed and whether a common task gets the DESFire data. The name of
+        // the type is compared without regard to the culture (the "I" of DESFire is no "i" in Turkish).
         private static bool IsDesfireCard(GenericChipModel chip) =>
-            !string.IsNullOrEmpty(chip?.UID) && chip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire");
+            !string.IsNullOrEmpty(chip?.UID) && chip.CardType.ToString().Contains("desfire", StringComparison.OrdinalIgnoreCase);
 
         // A run that was given the card it is meant for does not go on with another card, or with none.
         private static void RequireTheExpectedCard(string expectedCardUid, string uidOfTheRead)
