@@ -37,6 +37,9 @@ namespace RFiDGear.Tests.ExternalControl
         [InlineData("--approve-with=$X extra")]
         [InlineData("--approve-with=X")]
         [InlineData("--approve-with=$")]
+        [InlineData("--approve-with=$EXPECTEDUID!")]
+        [InlineData("--approve-with=$EXPECTED-UID")]
+        [InlineData("--approve-with=$ÄB")]
         [InlineData("--approve-with=$X --wait=abc")]
         [InlineData("--approve-with=$X --wait=601")]
         [InlineData("--approve-with=$X --wait=-1")]
@@ -120,6 +123,20 @@ namespace RFiDGear.Tests.ExternalControl
         {
             Assert.True(ApprovalPolicy.IsPlainMode(Array.Empty<string>()));
             Assert.False(ApprovalPolicy.IsPlainMode(Split(line)));
+        }
+
+        [Fact]
+        public void TheVariableOfTheUid_IsOneThatTheCheckUidTaskCanRead()
+        {
+            var longest = "$" + new string('A', 64);
+
+            Assert.True(ApprovalPolicy.TryRead(new[] { "--approve-with=" + longest }, out _, out _, out _));
+            Assert.False(ApprovalPolicy.TryRead(new[] { "--approve-with=" + longest + "A" }, out var decide, out _, out var error));
+            Assert.Null(decide);
+            Assert.NotEmpty(error);
+            Assert.True(ApprovalPolicy.IsUidVariable("$EXPECTED_UID_2"));
+            Assert.False(ApprovalPolicy.IsUidVariable(null));
+            Assert.False(ApprovalPolicy.IsUidVariable("EXPECTEDUID"));
         }
 
         [Fact]

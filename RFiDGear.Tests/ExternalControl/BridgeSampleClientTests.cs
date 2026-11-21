@@ -1197,11 +1197,11 @@ namespace RFiDGear.Tests.ExternalControl
                 (_, _) => Task.FromResult(CardDecision.ApproveWith()),
                 wrap: real =>
                 {
-                    stand = ServiceStandIn.Wrap(real, out var service);
+                    stand = ServiceStandIn.Wrap(real);
                     stand.Replace(nameof(IBridgeService.ApproveCard), (target, arguments) =>
                         Interlocked.Increment(ref approvals) == 1 ? Hang(hang.Task) : target.ApproveCard((ApproveCardRequest)arguments[0]!));
 
-                    return service;
+                    return stand.Service;
                 },
                 grace: TimeSpan.FromMilliseconds(300));
 
@@ -1223,6 +1223,46 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(2, stand!.CallsOf(nameof(IBridgeService.ApproveCard)));
         }
 
+        [Fact]
+        public async Task TheLoop_ReportsTheEndOfACard_WhoseAnswerFailsOnceItsWaitHasEnded()
+        {
+            // The approval is still out when RFiDGear ends the wait for the card, and it fails while the loop gives it a moment to reply.
+            var hang = new TaskCompletionSource<bool>();
+            var approvals = 0;
+            var (client, host, loop, stop, seen) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.ApproveCard), (target, arguments) =>
+                        Interlocked.Increment(ref approvals) == 1 ? Hang(hang.Task) : target.ApproveCard((ApproveCardRequest)arguments[0]!));
+
+                    return standIn.Service;
+                },
+                grace: TimeSpan.FromSeconds(10));
+
+            // The loop's own handler comes first, so the end of the wait is queued before the failure of the request is.
+            client.EventReceived += e =>
+            {
+                if (e is CardPresentationEndedEvent)
+                {
+                    hang.TrySetException(new InvalidOperationException("The connection of the request broke."));
+                }
+            };
+
+            var first = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref approvals) == 1);
+            await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+            Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(5)));
+            var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            next!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            // What RFiDGear said about the card is reported although the request failed, and the loop went on.
+            Assert.Equal(("p-1", "failed", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
+            Assert.Equal(("p-2", "approved", PresentationEndReasons.Approved), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+        }
+
         private static async Task<ApproveCardResponse> Hang(Task until)
         {
             await until;
@@ -1241,10 +1281,11 @@ namespace RFiDGear.Tests.ExternalControl
                 (_, _) => Task.FromResult(CardDecision.ApproveWith()),
                 wrap: real =>
                 {
-                    ServiceStandIn.Wrap(real, out var service).Replace(nameof(IBridgeService.GetStatus), (_, _) =>
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.GetStatus), (_, _) =>
                         Task.FromResult(new StatusResponse { AutoMode = new AutoModeStatusDto { Enabled = enabled, StartedBy = startedBy, RequireApproval = requireApproval } }));
 
-                    return service;
+                    return standIn.Service;
                 });
 
             stop.Cancel();
@@ -1256,10 +1297,11 @@ namespace RFiDGear.Tests.ExternalControl
         // What RFiDGear says about the mode that is on: the approval mode of a client, whoever's it is.
         private static IBridgeService ThatSaysTheModeIsTheApprovalModeOfAClient(IBridgeService real)
         {
-            ServiceStandIn.Wrap(real, out var service).Replace(nameof(IBridgeService.GetStatus), (_, _) =>
+            var standIn = ServiceStandIn.Wrap(real);
+            standIn.Replace(nameof(IBridgeService.GetStatus), (_, _) =>
                 Task.FromResult(new StatusResponse { AutoMode = new AutoModeStatusDto { Enabled = true, StartedBy = RunSources.Bridge, RequireApproval = true } }));
 
-            return service;
+            return standIn.Service;
         }
 
         [Fact]

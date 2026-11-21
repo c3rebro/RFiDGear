@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,6 +24,9 @@ namespace RFiDGear.Bridge.SampleClient
     /// </summary>
     public static class ApprovalPolicy
     {
+        // The form of a variable that the Check UID task can read: a dollar sign and a name of letters, digits and underscores.
+        private static readonly Regex UidVariablePattern = new Regex(@"^\$[A-Za-z0-9_]{1,64}\z", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
         /// <summary>The option that approves every card with a variable set to its UID.</summary>
         private const string ApproveWithOption = "--approve-with=";
 
@@ -43,6 +47,11 @@ namespace RFiDGear.Bridge.SampleClient
 
         /// <summary>The longest <c>--wait</c> that is taken, in seconds.</summary>
         private const int LongestWaitSeconds = 600;
+
+        /// <summary>Tells whether a name is a variable that the Check UID task can read for the UID of a card: a dollar sign and 1 to 64 letters, digits or underscores.</summary>
+        /// <param name="name">The name, with its dollar sign.</param>
+        /// <returns><see langword="true"/> when a project can name the UID by it.</returns>
+        public static bool IsUidVariable(string? name) => name != null && UidVariablePattern.IsMatch(name);
 
         /// <summary>
         /// Tells whether <c>auto</c> is the plain mode, which runs every card: only a bare <c>auto</c> is. Any argument after it, a
@@ -145,9 +154,9 @@ namespace RFiDGear.Bridge.SampleClient
             description = string.Empty;
             error = string.Empty;
 
-            if (!variable.StartsWith('$') || variable.Length < 2)
+            if (!IsUidVariable(variable))
             {
-                error = "The variable is a dollar sign and a name, such as $EXPECTEDUID.";
+                error = "The variable is a dollar sign and a name of up to 64 letters, digits or underscores, such as $EXPECTEDUID.";
 
                 return false;
             }

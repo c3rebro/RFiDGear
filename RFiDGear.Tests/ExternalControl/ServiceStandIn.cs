@@ -19,14 +19,15 @@ namespace RFiDGear.Tests.ExternalControl
         private readonly Dictionary<string, int> _calls = new Dictionary<string, int>(StringComparer.Ordinal);
         private IBridgeService? _target;
 
+        /// <summary>Gets the service to give to the code under test: this stand-in itself.</summary>
+        public IBridgeService Service => (IBridgeService)(object)this;
+
         /// <summary>Puts a stand-in in front of a service.</summary>
         /// <param name="target">The real service.</param>
-        /// <param name="service">The service to give to the code under test.</param>
-        /// <returns>The stand-in, to replace methods and to count calls.</returns>
-        public static ServiceStandIn Wrap(IBridgeService target, out IBridgeService service)
+        /// <returns>The stand-in, to replace methods and to count calls; its <see cref="Service"/> goes to the code under test.</returns>
+        public static ServiceStandIn Wrap(IBridgeService target)
         {
-            service = Create<IBridgeService, ServiceStandIn>();
-            var stand = (ServiceStandIn)(object)service;
+            var stand = (ServiceStandIn)(object)Create<IBridgeService, ServiceStandIn>();
             stand._target = target;
 
             return stand;

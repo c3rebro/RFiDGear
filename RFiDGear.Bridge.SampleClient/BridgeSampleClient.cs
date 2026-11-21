@@ -7,7 +7,6 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Security.Principal;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -49,8 +48,6 @@ namespace RFiDGear.Bridge.SampleClient
 
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
 
-        // The form of a variable a project can name for an approved UID: a dollar sign and a name, as the Check UID task reads it.
-        private static readonly Regex UidVariablePattern = new Regex(@"^\$[A-Za-z0-9_]{1,64}\z", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
         private readonly NamedPipeClientStream _pipe;
         private readonly JsonRpc _rpc;
@@ -306,7 +303,7 @@ namespace RFiDGear.Bridge.SampleClient
             ArgumentException.ThrowIfNullOrEmpty(requestId);
             ArgumentNullException.ThrowIfNull(approve);
 
-            if (uidVariable == null || !UidVariablePattern.IsMatch(uidVariable))
+            if (!ApprovalPolicy.IsUidVariable(uidVariable))
             {
                 throw new ArgumentException("The variable of the approved UID is a dollar sign and a name, such as $EXPECTEDUID.", nameof(uidVariable));
             }

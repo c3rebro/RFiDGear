@@ -32,7 +32,7 @@ namespace RFiDGear.Bridge.SampleClient
     /// <summary>How a card that was shown ended: what this client answered, and what RFiDGear said about the end.</summary>
     /// <param name="PresenceId">The presence of the card (a card that is taken away and put back is another one).</param>
     /// <param name="Uid">The UID that was shown.</param>
-    /// <param name="Answer">What this client sent: <c>approved</c>, <c>declined</c>, <c>late</c> (RFiDGear no longer waited for the card when the answer came), <c>pending</c> (the answer was sent and RFiDGear had not replied to it when the wait ended; its reply is not waited for any longer), or <c>none</c> (the wait ended, or the loop was cancelled, before the program had decided: nothing was sent).</param>
+    /// <param name="Answer">What this client sent: <c>approved</c>, <c>declined</c>, <c>late</c> (RFiDGear no longer waited for the card when the answer came), <c>pending</c> (the answer was sent and RFiDGear had not replied to it when the wait ended; its reply is not waited for any longer), <c>none</c> (the wait ended, or the loop was cancelled, before the program had decided: nothing was sent), or <c>failed</c> (the request failed after the wait had ended; what RFiDGear says about the card is <paramref name="Reason"/>).</param>
     /// <param name="Reason">How RFiDGear ended the wait (<see cref="PresentationEndReasons"/>): the truth about what happened to the card.</param>
     /// <param name="RunId">The run that was admitted for an approved card.</param>
     public sealed record CardOutcome(string PresenceId, string Uid, string Answer, string Reason, string? RunId);
@@ -208,6 +208,9 @@ namespace RFiDGear.Bridge.SampleClient
                     case CardPresentationEndedEvent ended:
                         Report(await EndAsync(ended).ConfigureAwait(false));
                         break;
+                    default:
+                        // Whatever else was queued is no business of the loop.
+                        break;
                 }
             }
 
@@ -246,6 +249,11 @@ namespace RFiDGear.Bridge.SampleClient
                     catch (TimeoutException)
                     {
                         answered = "pending";
+                    }
+                    catch (Exception)
+                    {
+                        // The request failed after the wait for the card had ended: what RFiDGear says about the card is still reported.
+                        answered = "failed";
                     }
                     finally
                     {
