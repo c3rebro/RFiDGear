@@ -5177,7 +5177,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 keys.Hex(SecureKeySlots.DesfireAppCurrent),
                                 SelectedDesfireAppKeyEncryptionTypeCurrent);
 
-                        desfireChip.FreeMemory = device.DesfireChip.FreeMemory;
+                        // A listing that failed (a reader that is gone) may have made no model.
+                        if (device.DesfireChip != null)
+                        {
+                            desfireChip.FreeMemory = device.DesfireChip.FreeMemory;
+                        }
+
                         //desfireChip.UID = device.GenericChip.Select(x => x.UID).UID;
 
                         // Check if specified App "AppNumberNewAsInt" exists

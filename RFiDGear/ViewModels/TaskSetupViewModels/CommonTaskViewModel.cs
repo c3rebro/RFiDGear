@@ -1079,7 +1079,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             if (temporaryContent.Contains("%LISTAPPS"))
                             {
-                                temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
+                                temporaryContent = temporaryContent.Replace("%LISTAPPS", DesfireChip?.AppList == null ? "" : string.Join(", ", DesfireChip.AppList.Select(x => x.appID)));
                                 hasVariable = true;
                             }
 
