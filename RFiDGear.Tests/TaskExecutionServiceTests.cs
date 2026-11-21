@@ -1368,6 +1368,66 @@ namespace RFiDGear.Tests
             Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
         }
 
+        // ── a common task names the card of this run ──
+        // A program task or a report names the UID, the type and the DESFire data of the card (%UID, %CHIPTYPE, %FREEMEM, %LISTAPPS,
+        // %COUNTAPPS). A reader keeps the chip of an earlier card when a read finds none, and keeps its DESFire data for ever.
+
+        // A task of the common kind that the loop hands the chip to and that does nothing to the card or the machine.
+        private static CommonTaskViewModel CommonTaskThatLooks(string index) => new CommonTaskViewModel
+        {
+            CurrentTaskIndex = index,
+            SelectedTaskType = TaskType_CommonTask.CheckLogicCondition,
+            SelectedLogicCondition = LOGIC_STATE.AND
+        };
+
+        [Fact]
+        public async Task ACommonTask_GetsTheChipOfTheCardThatTheRunRead()
+        {
+            var tasks = new List<CommonTaskViewModel>();
+
+            await RunProjectAsync(() => Added(tasks, CommonTaskThatLooks("0")));
+
+            Assert.Equal("0123456789", tasks[0].GenericChip.UID);
+        }
+
+        [Fact]
+        public async Task ACommonTask_GetsNoChip_WhenTheReadOfTheRunFoundNoCard_AndTheReaderStillHoldsTheOneOfAnEarlierCard()
+        {
+            var tasks = new List<CommonTaskViewModel>();
+
+            await RunProjectAsync(
+                new Dictionary<string, string>(),
+                reader =>
+                {
+                    reader.Pcsc = true;
+                    reader.Card = null;
+                    reader.Script(ERROR.TransportError);
+                },
+                () => Added(tasks, CommonTaskThatLooks("0")));
+
+            Assert.True(string.IsNullOrEmpty(tasks[0].GenericChip.UID), "The task was given the UID of an earlier card: " + tasks[0].GenericChip.UID);
+        }
+
+        [Fact]
+        public async Task TheDesfireDataOfAnEarlierCard_IsNotHandedToACommonTaskOfTheNextRun()
+        {
+            var tasks = new List<CommonTaskViewModel>();
+
+            await RunProjectAsync(
+                new Dictionary<string, string>(),
+                reader =>
+                {
+                    // A DESFire card was listed in an earlier run; this run's card is no DESFire card.
+                    reader.DesfireChip = new MifareDesfireChipModel("04AABBCC", CARD_TYPE.DESFire) { FreeMemory = 4096 };
+                    reader.DesfireChip.AppList.Add(new MifareDesfireAppModel(1));
+                    reader.DesfireChip.AppList.Add(new MifareDesfireAppModel(2));
+                },
+                () => Added(tasks, CommonTaskThatLooks("0")));
+
+            Assert.Empty(tasks[0].DesfireChip.AppList);
+            Assert.Equal(0u, tasks[0].DesfireChip.FreeMemory);
+        }
+
         private static object Added<T>(List<T> list, T task)
         {
             list.Add(task);

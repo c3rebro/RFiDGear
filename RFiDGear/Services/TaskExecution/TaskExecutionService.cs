@@ -661,6 +661,11 @@ namespace RFiDGear.Services.TaskExecution
                 return new ChipHydrationResult(new GenericChipModel());
             }
 
+            // The DESFire data that a reader holds (the list of applications, the free memory) is the data of a card that was listed
+            // before: a run starts with none, so that a program task or a report never names the data of an earlier card. The listing
+            // below fills it for a DESFire card, and the tasks of the run for what they read.
+            device.DesfireChip = new MifareDesfireChipModel();
+
             // Always ReadChipPublic first: it reconnects the reader if the session
             // has lapsed since the last read (required by the Elatec SDK before any
             // DESFire command — connect then search-tag).
@@ -856,7 +861,10 @@ namespace RFiDGear.Services.TaskExecution
                             switch (taskOfThePosition)
                             {
                                 case CommonTaskViewModel commonTask:
-                                    executedTask = await HandleCommonTaskAsync(commonTask, request, result, descriptors, genericChip, device);
+                                    // A common task names the card of this run (%UID, %CHIPTYPE): when the run's own read found no card, the chip
+                                    // that the reader still holds is the one of an earlier card, and the task gets none.
+                                    executedTask = await HandleCommonTaskAsync(
+                                        commonTask, request, result, descriptors, cardUid == null ? new GenericChipModel() : genericChip, device);
                                     break;
                                 case GenericChipTaskViewModel genericTask:
                                     executedTask = await HandleGenericChipTaskAsync(genericTask, request, descriptors, device, cardUid);
