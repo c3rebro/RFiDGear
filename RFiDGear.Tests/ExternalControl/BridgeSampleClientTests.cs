@@ -947,6 +947,153 @@ namespace RFiDGear.Tests.ExternalControl
             await Assert.ThrowsAsync<NotSupportedException>(() => other.RegisterKeyProviderAsync());
         }
 
+        // ── The loop of a program that decides about every card (autoMode.approval) ──
+
+        // Starts the loop against the real bridge and waits until the mode is on; the test plays the machine against the approval the
+        // host was given (what the main window does when a card is put on the reader).
+        private async Task<(BridgeSampleClient Client, FakeExtensionHost Host, Task<IReadOnlyList<CardOutcome>> Loop, CancellationTokenSource Stop, List<CardOutcome> Seen)> StartLoopAsync(
+            Func<CardPresentedEvent, CancellationToken, Task<CardDecision>> decide,
+            string? revision = "rev-1")
+        {
+            var (_, pipe, host, _) = Start();
+            host.ProjectHost.Revision = revision;
+            var client = await ConnectAsync(pipe);
+            var stop = new CancellationTokenSource();
+            _disposables.Add(stop);
+            var seen = new List<CardOutcome>();
+            var loop = new ApprovalModeLoop(client).RunAsync(decide, onOutcome: outcome => { lock (seen) { seen.Add(outcome); } }, cancellationToken: stop.Token);
+            await WaitUntilAsync(() => host.AutoModeHost.Approval != null);
+
+            return (client, host, loop, stop, seen);
+        }
+
+        private static Task<AutoModeApproval?> Present(FakeExtensionHost host, string presenceId, string uid) =>
+            Task.Run(() => host.AutoModeHost.Approval!.RequestAsync(new AutoModePresence(presenceId, uid), CancellationToken.None));
+
+        private static async Task<IReadOnlyList<CardOutcome>> EndTheLoopAsync(Task<IReadOnlyList<CardOutcome>> loop, CancellationTokenSource stop, List<CardOutcome> seen, int outcomes)
+        {
+            await WaitUntilAsync(() => { lock (seen) { return seen.Count >= outcomes; } });
+            stop.Cancel();
+
+            return await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public async Task TheLoop_ApprovesACardWithItsVariablesAndTheStateItWasShownWith_AndTellsHowItEnded()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync((shown, _) => Task.FromResult(CardDecision.ApproveWith(new Dictionary<string, string> { ["$EXPECTEDUID"] = shown.Uid })));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            approval!.NotifyRunAdmitted("run-1");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Equal("04AA", approval.Variables["$EXPECTEDUID"]);
+            Assert.Equal("rev-1", approval.ExpectProjectRevision);
+            Assert.Equal(new CardOutcome("p-1", "04AA", "approved", PresentationEndReasons.Approved, "run-1"), Assert.Single(outcomes));
+
+            // The mode is stopped when the loop ends: nothing is left running that nobody decides about.
+            Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardTheProgramDoesNotApprove_AndANotApprovedCardRunsNothing()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.Decline));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Null(approval);
+            Assert.Equal(("declined", PresentationEndReasons.Declined), (outcomes[0].Answer, outcomes[0].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardWhenTheDecisionThrows_ThatIsNoApproval()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync((_, _) => throw new InvalidOperationException("The list of written cards could not be read."));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Null(approval);
+            Assert.Equal("declined", outcomes[0].Answer);
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardWhoseProjectStateCannotBeHeldTo_AndApprovesItWhenTheProgramDoesNotAskForThat()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync(
+                (shown, _) => Task.FromResult(shown.Uid == "04AA" ? CardDecision.ApproveWith() : CardDecision.ApproveWith(pinRevision: false)),
+                revision: null);
+
+            var pinned = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var notPinned = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            notPinned!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            // The state of the project cannot be told, so an approval that insists on it is no approval; one that does not is taken as it is.
+            Assert.Null(pinned);
+            Assert.Null(notPinned.ExpectProjectRevision);
+            Assert.Equal(new[] { "declined", "approved" }, outcomes.Select(o => o.Answer));
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardWhoseApprovalRFiDGearRefusesForWhatItSays_InsteadOfLeavingItToExpire()
+        {
+            // A report target that is no full path: the host refuses the approval, and the card is still waited for.
+            var (_, host, loop, stop, seen) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith(new Dictionary<string, string> { ["REPORTTARGETPATH"] = "report.pdf" })));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Null(approval);
+            Assert.Equal(("declined", PresentationEndReasons.Declined), (outcomes[0].Answer, outcomes[0].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_ToleratesALateAnswer_AndGoesOnWithTheNextCard()
+        {
+            CardPresentedEvent? first = null;
+            BridgeSampleClient? clientOfTheTest = null;
+            var (client, host, loop, stop, seen) = await StartLoopAsync(async (shown, _) =>
+            {
+                if (first == null)
+                {
+                    // The first card is given up (declined from elsewhere) while the program is still deciding; its answer comes late.
+                    first = shown;
+                    await clientOfTheTest!.Service.DeclineCard(new DeclineCardRequest { PresenceId = shown.PresenceId });
+                }
+
+                return CardDecision.ApproveWith();
+            });
+            clientOfTheTest = client;
+
+            var late = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            next!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            Assert.Null(late);
+            Assert.Equal(("p-1", "late", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
+            Assert.Equal(("p-2", "approved", PresentationEndReasons.Approved), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_EndsWhenRFiDGearStopsTheMode_AndWhenTheConnectionEnds()
+        {
+            var (_, host, loop, _, _) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith()));
+
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+            var endedByTheMode = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var (client, _, secondLoop, _, _) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith()));
+            await client.DisposeAsync();
+            var endedByTheConnection = await secondLoop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Empty(endedByTheMode);
+            Assert.Empty(endedByTheConnection);
+        }
+
         private static SecureKeyRequest Request(string reference) => new SecureKeyRequest
         {
             SlotId = "desfire.app.current",

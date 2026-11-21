@@ -18,7 +18,9 @@ namespace RFiDGear.Bridge.SampleClient
     [SupportedOSPlatform("windows")]
     internal static class Program
     {
+        private const string ApproveWithOption = "--approve-with=";
         private const string ExpectRevisionOption = "--expect-revision=";
+        private const string NoPinOption = "--no-pin";
         private const string OwnRunsOnlyOption = "--own-runs-only";
         private const string RunOption = "--run=";
         private const string VariableOption = "--variable=";
@@ -29,7 +31,7 @@ namespace RFiDGear.Bridge.SampleClient
             "RFiDGear.Bridge.SampleClient run <requestId> [<project.rfPrj>] [--expect-revision=<revision>] [$NAME=value ...]\n" +
             "RFiDGear.Bridge.SampleClient result <requestId>\n" +
             "RFiDGear.Bridge.SampleClient results [<afterResultSeq>]\n" +
-            "RFiDGear.Bridge.SampleClient auto\n" +
+            "RFiDGear.Bridge.SampleClient auto [--approve-with=$NAME [--no-pin]]\n" +
             "RFiDGear.Bridge.SampleClient keys <reference> [--own-runs-only] [--run=<requestId>]\n" +
             "RFiDGear.Bridge.SampleClient approved-run <requestId> <project.rfPrj> [--variable=$NAME] [--yes]";
 
@@ -57,7 +59,7 @@ namespace RFiDGear.Bridge.SampleClient
                     "run" when args.Length >= 2 => await RunAsync(args, stop.Token),
                     "result" when args.Length == 2 => await ResultAsync(args[1], stop.Token),
                     "results" => await ResultsAsync(args.Length > 1 ? long.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 0, stop.Token),
-                    "auto" => await AutoAsync(stop.Token),
+                    "auto" => await AutoAsync(args, stop.Token),
                     "keys" when args.Length >= 2 => await KeysAsync(args, stop.Token),
                     "approved-run" when args.Length >= 3 => await ApprovedRunAsync(args, stop.Token),
                     _ => Fail(Usage),
@@ -260,8 +262,19 @@ namespace RFiDGear.Bridge.SampleClient
             return 0;
         }
 
-        private static async Task<int> AutoAsync(CancellationToken cancellationToken)
+        // With --approve-with=$NAME the mode waits for approval: every card that is put on the reader is shown, and this command approves
+        // it with the variable set to its UID and the project held to the state the card was shown with (--no-pin leaves that out). It
+        // approves EVERY card, because it is a way to try the flow by hand: a program that writes cards decides here, with its job and
+        // its list of cards (see ApprovalModeLoop and the guide).
+        private static async Task<int> AutoAsync(string[] args, CancellationToken cancellationToken)
         {
+            var approveWith = args.FirstOrDefault(arg => arg.StartsWith(ApproveWithOption, StringComparison.Ordinal));
+
+            if (approveWith != null)
+            {
+                return await ApprovalAutoAsync(approveWith.Substring(ApproveWithOption.Length), !args.Contains(NoPinOption), cancellationToken);
+            }
+
             var events = new[] { BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted };
             await using var client = await BridgeSampleClient.ConnectAsync(events: events, cancellationToken: cancellationToken);
             client.EventReceived += e =>
@@ -288,6 +301,39 @@ namespace RFiDGear.Bridge.SampleClient
             }
 
             await client.Service.StopAutoMode(new StopAutoModeRequest());
+
+            return 0;
+        }
+
+        private static async Task<int> ApprovalAutoAsync(string variable, bool pinRevision, CancellationToken cancellationToken)
+        {
+            if (!variable.StartsWith('$') || variable.Length < 2)
+            {
+                return Fail("The variable is a dollar sign and a name, such as $EXPECTEDUID.");
+            }
+
+            var events = new[] { BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted };
+            await using var client = await BridgeSampleClient.ConnectAsync(events: events, cancellationToken: cancellationToken);
+            client.EventReceived += e =>
+            {
+                if (e is CardPresentedEvent shown)
+                {
+                    Console.WriteLine("card " + shown.Uid + " shown (presence " + shown.PresenceId + ")");
+                }
+                else if (e is AutoRunCompletedEvent completed)
+                {
+                    Console.WriteLine("card processed: #" + completed.Result.ResultSeq + " " + completed.Result.Status + ", card " + completed.Result.CardUid);
+                }
+            };
+
+            Console.WriteLine("automatic mode waits for approval; every card is approved with " + variable + " = its UID" + (pinRevision ? " and the state of the project" : string.Empty) + ". Ctrl+C ends it");
+
+            var outcomes = await new ApprovalModeLoop(client).RunAsync(
+                (shown, _) => Task.FromResult(CardDecision.ApproveWith(new Dictionary<string, string> { [variable] = shown.Uid }, pinRevision)),
+                onOutcome: outcome => Console.WriteLine("card " + outcome.Uid + ": answered " + outcome.Answer + ", RFiDGear says " + outcome.Reason + (outcome.RunId != null ? ", run " + outcome.RunId : string.Empty)),
+                cancellationToken: cancellationToken);
+
+            Console.WriteLine(outcomes.Count + " cards were shown");
 
             return 0;
         }

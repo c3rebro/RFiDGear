@@ -139,9 +139,11 @@ namespace RFiDGear.Bridge.SampleClient
         /// <summary>Connects to RFiDGear and makes the handshake.</summary>
         /// <param name="pipeName">The pipe name; the one of the current user when <see langword="null"/>.</param>
         /// <param name="events">
-        /// The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent. The notice that ends a card
-        /// (<see cref="BridgeEvents.CardPresentationEnded"/>) is always added: the client's own check of whose run it is learns the runs of the
-        /// cards it approved from it. A RFiDGear that does not offer it ignores the name, and it is only ever sent in a mode that waits for approval.
+        /// The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent. The cards that automatic mode shows
+        /// for approval (<see cref="BridgeEvents.CardPresented"/>) and the notice that ends each of them
+        /// (<see cref="BridgeEvents.CardPresentationEnded"/>) are always added, and so is <see cref="BridgeEvents.AutoModeChanged"/> (the loop ends
+        /// when RFiDGear stops the mode): <see cref="ApprovalModeLoop"/> and the client's own check of whose run it is need them. A RFiDGear that
+        /// does not offer them ignores the names, and the first two are only ever sent in a mode that waits for approval.
         /// </param>
         /// <param name="connectTimeout">How long to wait for the pipe; ten seconds when <see langword="null"/>.</param>
         /// <param name="cancellationToken">Cancels the connection.</param>
@@ -579,9 +581,12 @@ namespace RFiDGear.Bridge.SampleClient
             return false;
         }
 
-        // The events the caller asked for, and the one the client's own check cannot do without.
+        // The events the caller asked for, and the ones that the approval loop and the client's own check cannot do without.
         private static IReadOnlyList<string> WithTheNoticesTheClientNeeds(IReadOnlyList<string>? events) =>
-            (events ?? Array.Empty<string>()).Concat(new[] { BridgeEvents.CardPresentationEnded }).Distinct(StringComparer.Ordinal).ToList();
+            (events ?? Array.Empty<string>())
+                .Concat(new[] { BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded, BridgeEvents.AutoModeChanged })
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
 
         private void NoteApprovedRun(string runId)
         {
