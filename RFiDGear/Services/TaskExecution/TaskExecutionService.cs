@@ -662,9 +662,10 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             // The DESFire data that a reader holds (the list of applications, the free memory) is the data of a card that was listed
-            // before: a run starts with none, so that a program task or a report never names the data of an earlier card. The listing
-            // below fills it for a DESFire card, and the tasks of the run for what they read.
-            device.DesfireChip = new MifareDesfireChipModel();
+            // before: a run starts with none (as the application does at its start), so that a program task or a report never names the
+            // data of an earlier card, and a free memory that was never read is no measured zero. The listing below fills it for a DESFire
+            // card, and the tasks of the run for what they read.
+            device.DesfireChip = null;
 
             // Always ReadChipPublic first: it reconnects the reader if the session
             // has lapsed since the last read (required by the Elatec SDK before any
@@ -683,10 +684,19 @@ namespace RFiDGear.Services.TaskExecution
             // Before anything else is sent to the card: the listing of the applications below can authenticate with a default key.
             RequireTheExpectedCard(expectedCardUid, readFoundACard ? RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.PrimaryUidOf(genericChip) : null);
 
-            if (!string.IsNullOrEmpty(genericChip.UID) &&
+            // Only for a card that this run's own read found: a read that failed leaves the chip of an earlier card, which must not be
+            // listed (the listing can authenticate with a default key).
+            if (readFoundACard && !string.IsNullOrEmpty(genericChip.UID) &&
                 genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
             {
-                await device.GetMiFareDESFireChipAppIDs();
+                var listing = await device.GetMiFareDESFireChipAppIDs();
+
+                // A listing that failed may have left a part of the list (or the list twice): the data of a failed listing is not published.
+                if (listing != ERROR.NoError)
+                {
+                    device.DesfireChip = null;
+                }
+
                 genericChip = device.GenericChip ?? genericChip;
             }
 

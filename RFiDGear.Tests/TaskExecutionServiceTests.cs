@@ -1424,8 +1424,53 @@ namespace RFiDGear.Tests
                 },
                 () => Added(tasks, CommonTaskThatLooks("0")));
 
-            Assert.Empty(tasks[0].DesfireChip.AppList);
-            Assert.Equal(0u, tasks[0].DesfireChip.FreeMemory);
+            // None at all: the free memory of a card that was not read is no measured zero.
+            Assert.Null(tasks[0].DesfireChip);
+        }
+
+        [Fact]
+        public async Task AStaleDesfireChip_OfAReadThatFoundNoCard_IsNotListed()
+        {
+            var tasks = new List<CommonTaskViewModel>();
+            RFiDGear.Tests.Reader.ScriptedReadProvider scripted = null;
+
+            await RunProjectAsync(
+                new Dictionary<string, string>(),
+                reader =>
+                {
+                    // A PC/SC reader that found no card leaves the chip of the DESFire card before it.
+                    scripted = reader;
+                    reader.Pcsc = true;
+                    reader.Card = null;
+                    reader.GenericChip = new RFiDGear.Models.GenericChipModel("04AABBCC", CARD_TYPE.DESFire);
+                    reader.Script(ERROR.TransportError);
+                },
+                () => Added(tasks, CommonTaskThatLooks("0")));
+
+            Assert.Equal(0, scripted.DesfireListings);
+            Assert.Null(tasks[0].DesfireChip);
+        }
+
+        [Fact]
+        public async Task TheDataOfAListingThatFailed_IsNotPublishedToACommonTask()
+        {
+            var tasks = new List<CommonTaskViewModel>();
+            RFiDGear.Tests.Reader.ScriptedReadProvider scripted = null;
+
+            await RunProjectAsync(
+                new Dictionary<string, string>(),
+                reader =>
+                {
+                    // A DESFire card is on the reader; the reader of this test cannot list it (no hardware), whatever it left behind.
+                    scripted = reader;
+                    var chip = new RFiDGear.Models.GenericChipModel("04AABBCC", CARD_TYPE.DESFire);
+                    reader.GenericChip = chip;
+                    reader.Card = chip;
+                },
+                () => Added(tasks, CommonTaskThatLooks("0")));
+
+            Assert.Equal(1, scripted.DesfireListings);
+            Assert.Null(tasks[0].DesfireChip);
         }
 
         private static object Added<T>(List<T> list, T task)
