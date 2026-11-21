@@ -1497,6 +1497,10 @@ namespace RFiDGear.ViewModel
 
         private void ResetReportTaskDirectoryCore()
         {
+            // What the window remembers of the report target is forgotten whether or not the project has a task that makes a report.
+            reportOutputPath = null;
+            reportOutputPattern = null;
+
             try
             {
                 foreach (var chipTask in taskHandler.TaskCollection)
@@ -1505,8 +1509,6 @@ namespace RFiDGear.ViewModel
                     {
                         case CommonTaskViewModel ssVM:
                             ssVM.IsTaskCompletedSuccessfully = null;
-                            reportOutputPath = null;
-                            reportOutputPattern = null;
                             reportReaderWriter.ReportOutputPath = null;
                             reportReaderWriter.ReportTemplateFile = null;
                             ssVM.CurrentTaskErrorLevel = ERROR.Empty;

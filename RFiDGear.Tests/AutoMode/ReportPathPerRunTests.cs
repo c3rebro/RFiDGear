@@ -104,6 +104,63 @@ namespace RFiDGear.Tests.AutoMode
         }
 
         [Fact]
+        public async Task APatternWithATextAfterTheQuestionMarks_GivesTheNextFreeNumberForEveryRun()
+        {
+            await WithWindowAsync(async (viewModel, exec, folder) =>
+            {
+                StartWith(viewModel, Path.Combine(folder, "card-???-result.pdf"));
+
+                await RunAsync(viewModel, 3);
+
+                Assert.Equal(
+                    new[] { "card-001-result.pdf", "card-002-result.pdf", "card-003-result.pdf" }.Select(name => Path.Combine(folder, name)),
+                    PathsOf(exec));
+            });
+        }
+
+        [Fact]
+        public void ThePatternIsMatchedByWhatStandsBeforeAndAfterTheQuestionMarks()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+
+            try
+            {
+                foreach (var name in new[] { "card-001-result.pdf", "card-007-result.pdf", "card-abc-result.pdf", "card-009-other.pdf", "card-010.pdf", "x-card-020-result.pdf" })
+                {
+                    File.WriteAllText(Path.Combine(folder, name), "x");
+                }
+
+                // Only the files of the shape card-<digits>-result.pdf count: the highest is 7.
+                Assert.Equal(Path.Combine(folder, "card-008-result.pdf"), StartupArgumentProcessor.NormalizeReportTargetPath(Path.Combine(folder, "card-???-result.pdf")));
+                Assert.Equal(Path.Combine(folder, "card-11.pdf"), StartupArgumentProcessor.NormalizeReportTargetPath(Path.Combine(folder, "card-??.pdf")));
+            }
+            finally
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+        }
+
+        [Fact]
+        public async Task ResettingTheReportTargetPaths_ForgetsThePatternAlsoInAProjectWithoutAReportTask()
+        {
+            await WithWindowAsync(async (viewModel, exec, folder) =>
+            {
+                StartWith(viewModel, Path.Combine(folder, "card-???.pdf"));
+
+                await RunAsync(viewModel, 1);
+
+                // The project has no task of the kind that makes a report while the paths are reset.
+                viewModel.ChipTasks.TaskCollection.Clear();
+                await viewModel.ResetReportTaskDirectoryCommand.ExecuteAsync(null);
+                viewModel.ChipTasks.TaskCollection.Add(new CommonTaskViewModel());
+                await RunAsync(viewModel, 1);
+
+                Assert.Equal(new string?[] { Path.Combine(folder, "card-001.pdf"), null }, PathsOf(exec));
+            });
+        }
+
+        [Fact]
         public async Task AFixedPathOfTheStartUpArguments_IsTheSameForEveryRun()
         {
             await WithWindowAsync(async (viewModel, exec, folder) =>

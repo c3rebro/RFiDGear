@@ -195,18 +195,43 @@ namespace RFiDGear.Services
             return !string.IsNullOrEmpty(directory) && Directory.Exists(directory);
         }
 
+        // The number that a file name holds in the place of the question marks of the pattern, or -1 when the file is not one of the pattern.
+        // What stands before the question marks and what stands after them (card-???-result.pdf) both have to match; ".pdf" at the end of
+        // either is left out, as it always was.
         private static int ExtractNumber(string pattern, string fileName)
         {
-            var sanitizedPattern = pattern.ToLowerInvariant()
-                .Replace("?", string.Empty)
-                .Replace(".pdf", string.Empty);
+            var patternName = WithoutPdf(Path.GetFileName(pattern));
+            var name = WithoutPdf(Path.GetFileName(fileName));
 
-            var sanitizedFileName = fileName.ToLowerInvariant()
-                .Replace(".pdf", string.Empty)
-                .Replace(sanitizedPattern, string.Empty);
+            var start = patternName.IndexOf('?');
+            if (start < 0)
+            {
+                return -1;
+            }
 
-            return int.TryParse(sanitizedFileName, out var n) ? n : -1;
+            var end = start;
+            while (end < patternName.Length && patternName[end] == '?')
+            {
+                end++;
+            }
+
+            var prefix = patternName.Substring(0, start);
+            var suffix = patternName.Substring(end);
+
+            if (name.Length <= prefix.Length + suffix.Length
+                || !name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                || !name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                return -1;
+            }
+
+            var digits = name.Substring(prefix.Length, name.Length - prefix.Length - suffix.Length);
+
+            return digits.All(c => c is >= '0' and <= '9') && int.TryParse(digits, out var n) ? n : -1;
         }
+
+        private static string WithoutPdf(string name) =>
+            name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ? name.Substring(0, name.Length - ".pdf".Length) : name;
 
         private static void PersistLastProjectPath(string filePath)
         {
