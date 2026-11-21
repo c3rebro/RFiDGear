@@ -3309,6 +3309,14 @@ namespace RFiDGear.ViewModel
             }
 
             reportOutputPattern = startupArguments.ReportOutputPattern ?? reportOutputPattern;
+
+            // A processor that only resolved the target (a stand-in, or one from before the pattern was kept) has nothing but that path: it
+            // is the target, as it always was.
+            if (startupArguments.ReportOutputPattern == null && startupArguments.ReportOutputPath != null)
+            {
+                reportOutputPath = startupArguments.ReportOutputPath;
+            }
+
             reportTemplateFile = startupArguments.ReportTemplateFile ?? reportTemplateFile;
 
             variablesFromArgs.Clear();

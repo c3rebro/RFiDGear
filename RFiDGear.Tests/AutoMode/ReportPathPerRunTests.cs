@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using RFiDGear.Services;
+using RFiDGear.Services.Interfaces;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.Tests.Reader;
 using RFiDGear.ViewModel;
@@ -179,6 +180,22 @@ namespace RFiDGear.Tests.AutoMode
                 await RunAsync(viewModel, 1);
 
                 Assert.Equal(new string?[] { Path.Combine(folder, "card-001.pdf"), null }, PathsOf(exec));
+            });
+        }
+
+        [Fact]
+        public async Task AProcessorThatOnlyGivesAResolvedPath_StillSetsTheTargetOfEveryRun()
+        {
+            await WithWindowAsync(async (viewModel, exec, folder) =>
+            {
+                var resolved = Path.Combine(folder, "resolved.pdf");
+
+                // A processor of its own (an injected one) that does not know the pattern: all it has is the path.
+                viewModel.ApplyStartupArguments(new StartupArgumentResult { ReportOutputPath = resolved });
+
+                await RunAsync(viewModel, 2);
+
+                Assert.Equal(new[] { resolved, resolved }, PathsOf(exec));
             });
         }
 
