@@ -30,7 +30,5 @@ namespace RFiDGear.Models
             UID = chip.UID;
             Childs = chip.Childs;
         }
-
-        public uint FreeMemory { get; set; }
     }
 }

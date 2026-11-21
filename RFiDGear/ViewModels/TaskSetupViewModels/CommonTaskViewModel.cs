@@ -81,9 +81,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public MifareDesfireChipModel DesfireChip { get; set; }
 
         [XmlIgnore]
-        public MifareClassicChipModel ClassicChip { get; set; }
-
-        [XmlIgnore]
         public Dictionary<string, string> Args { get; set; }
         #endregion
 
@@ -1067,12 +1064,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             if (temporaryContent.Contains("%FREEMEM"))
                             {
                                 temporaryContent = temporaryContent.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString(CultureInfo.CurrentCulture) ?? "");
-                                hasVariable = true;
-                            }
-
-                            if (temporaryContent.Contains("%FREECLASSICMEM"))
-                            {
-                                temporaryContent = temporaryContent.Replace("%FREECLASSICMEM", ClassicChip?.FreeMemory.ToString(CultureInfo.CurrentCulture) ?? "");
                                 hasVariable = true;
                             }
 
