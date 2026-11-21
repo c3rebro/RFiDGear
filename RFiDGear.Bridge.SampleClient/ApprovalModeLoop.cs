@@ -513,54 +513,6 @@ namespace RFiDGear.Bridge.SampleClient
                 }
             }
 
-            // A card whose decision is under way: what was shown, the source of the token of the decision, and what the decision will
-            // have answered.
-            private sealed class PendingCard
-            {
-                private readonly CancellationTokenSource _cancel;
-                private int _dropped;
-
-                internal PendingCard(string uid, CancellationTokenSource cancel, Task<string> answer)
-                {
-                    Uid = uid;
-                    _cancel = cancel;
-                    Answer = answer;
-                }
-
-                internal string Uid { get; }
-
-                internal Task<string> Answer { get; }
-
-                // Cancels the token of the decision without waiting for the callbacks that the program registered on it: Cancel runs them
-                // on the calling thread, and one that blocks would hold up the events and the stop of the mode, one that throws would end
-                // the loop. The source is let go of once they have run. Doing it twice does nothing.
-                internal void Drop()
-                {
-                    if (Interlocked.Exchange(ref _dropped, 1) != 0)
-                    {
-                        return;
-                    }
-
-                    _ = Task.Run(CancelAndDispose);
-                }
-
-                private void CancelAndDispose()
-                {
-                    try
-                    {
-                        _cancel.Cancel();
-                    }
-                    catch (Exception)
-                    {
-                        // The token is cancelled all the same, and what the callbacks threw is of no interest to anybody.
-                    }
-                    finally
-                    {
-                        _cancel.Dispose();
-                    }
-                }
-            }
-
             // What the loop is told when the answer for a card failed (the connection, RFiDGear): it ends the loop with that failure.
             private sealed record AnswerFailed(string PresenceId, Exception Error);
         }
