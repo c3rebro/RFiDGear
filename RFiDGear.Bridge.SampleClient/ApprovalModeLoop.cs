@@ -267,7 +267,7 @@ namespace RFiDGear.Bridge.SampleClient
                     return null;
                 }
 
-                var answered = "none";
+                string answered;
 
                 try
                 {
