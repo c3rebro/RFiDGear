@@ -861,6 +861,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         internal static Action<int> ApplicationExit { get; set; } = Environment.Exit;
 
+        /// <summary>
+        /// Starts the program of a program task and says whether it was started. Tests replace it so that no program is started;
+        /// the application leaves it alone.
+        /// </summary>
+        internal static Func<ProcessStartInfo, bool> ProgramStarter { get; set; } = info =>
+        {
+            using var process = new Process { StartInfo = info };
+            return process.Start();
+        };
+
         /// <summary>Gets whether the text of a program task asks for the application to close (<c>%EXIT</c>, in any case).</summary>
         internal bool IsExitRequest => string.Equals(ProgramToExecute, "%exit", StringComparison.OrdinalIgnoreCase);
 
@@ -1638,38 +1648,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             try
             {
-                var p = new Process();
-                ProcessStartInfo info;
-
-                //InitOnFirstRun Program from RFiDGear Argument 
-                if (ProgramToExecute.Contains('$'))
-                {
-                    var argArr = ProgramToExecute.Split('\"');
-
-                    info = new ProcessStartInfo()
-                    {
-                        FileName = argArr[1],
-                        UseShellExecute =
-                        ProgramToExecute.Contains("bat") ||
-                        ProgramToExecute.Contains("exe") ||
-                        ProgramToExecute.Contains("msi") ? false : true
-                    };
-
-                    argArr = argArr.Where(arg => !string.IsNullOrWhiteSpace(arg))
-                                 .Skip(1) // Skip the first argument (position of the running executable)
-                                 .ToArray();
-
-                    var joinedArgs = string.Join(" ", argArr);
-
-                    foreach(KeyValuePair<string,string> argToReplace in Args.Where(arg => arg.Key.Contains('$')))
-                    {
-                        joinedArgs = joinedArgs.Replace(argToReplace.Key, argToReplace.Value);
-                    }
-
-                    info.Arguments = joinedArgs;
-                }
-
-                else if (IsExitRequest)
+                if (IsExitRequest)
                 {
                     // The project asks for RFiDGear to close, for example as the last task of a check that another program
                     // started. Nothing is logged after this, so say it first.
@@ -1679,64 +1658,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     return Task.CompletedTask;
                 }
 
-                else
+                // The placeholders are replaced in a copy: the text of the task stays as it was typed, so the next run (the next
+                // card) replaces them again with its own values.
+                var start = ProgramCommandLine.Build(ProgramToExecute, ProgramValues())
+                    ?? throw new FormatException("The program of the task is not a file name in quotation marks followed by its arguments.");
+
+                var info = new ProcessStartInfo()
                 {
-                    var fileName = ProgramToExecute.Split('\"')[1];
-                    var args = ProgramToExecute.Split('\"')[2];
+                    FileName = start.FileName,
+                    Arguments = start.Arguments,
+                    UseShellExecute = start.UseShellExecute
+                };
 
-                    if (ProgramToExecute.Contains("%UID"))
-                    {
-                        ProgramToExecute = ProgramToExecute.Replace("%UID", GenericChip?.UID ?? "");
-                    }
-
-                    if (ProgramToExecute.Contains("%CHIPTYPE"))
-                    {
-                        ProgramToExecute = ProgramToExecute.Replace("%CHIPTYPE", ResourceLoader.GetResource(
-                        string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip.CardType))) ?? "");
-                    }
-
-                    if (ProgramToExecute.Contains("%DATETIME"))
-                    {
-                        ProgramToExecute = ProgramToExecute.Replace("%DATETIME", DateTime.Now.ToString(CultureInfo.CurrentCulture) ?? "");
-                    }
-
-                    if (ProgramToExecute.Contains("%DATE"))
-                    {
-                        ProgramToExecute = ProgramToExecute.Replace("%DATE", DateTime.Now.ToString("dd/MM/yyyy") ?? "");
-                    }
-
-                    if (ProgramToExecute.Contains("%FREEMEM"))
-                    {
-                        ProgramToExecute = ProgramToExecute.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString(CultureInfo.CurrentCulture) ?? "");
-                    }
-
-                    if (ProgramToExecute.Contains("%LISTAPPS"))
-                    {
-                        ProgramToExecute = ProgramToExecute.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
-                    }
-
-                    if (ProgramToExecute.Contains("%COUNTAPPS"))
-                    {
-                        ProgramToExecute = ProgramToExecute.Replace("%COUNTAPPS", DesfireChip?.AppList?.Count.ToString(CultureInfo.CurrentCulture));
-                    }
-
-                    info = new ProcessStartInfo()
-                    {
-                        FileName = string.IsNullOrWhiteSpace(fileName) ? ProgramToExecute : fileName,
-                        Arguments = string.IsNullOrWhiteSpace(args) ? "" : args,
-                        UseShellExecute = (fileName != null) ? (
-                        fileName.Contains("bat") ||
-                        fileName.Contains("exe") ||
-                        fileName.Contains("msi") ? false : true) : false,
-                    };
-                }
-
-                p.StartInfo = info;
-
-                if(p.Start())
+                if (ProgramStarter(info))
                 {
                     CurrentTaskErrorLevel = ERROR.NoError;
                     IsTaskCompletedSuccessfully = true;
+                }
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                    IsTaskCompletedSuccessfully = false;
                 }
             }
 
@@ -1748,6 +1690,26 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
 
             return Task.CompletedTask;
+        }
+
+        // What %UID, %CHIPTYPE, %FREEMEM, %LISTAPPS, %COUNTAPPS and the variables of the run stand for, as of this moment. A card
+        // or a DESFire chip that is not known gives an empty text.
+        private ProgramTaskValues ProgramValues()
+        {
+            var applications = DesfireChip?.AppList;
+
+            return new ProgramTaskValues
+            {
+                Uid = GenericChip?.UID ?? string.Empty,
+                ChipType = GenericChip == null
+                    ? string.Empty
+                    : ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip.CardType))) ?? string.Empty,
+                Now = DateTime.Now,
+                FreeMemory = DesfireChip == null ? string.Empty : DesfireChip.FreeMemory.ToString(CultureInfo.CurrentCulture),
+                ApplicationIds = applications == null ? string.Empty : string.Join(", ", applications.Select(x => x.appID)),
+                ApplicationCount = applications == null ? string.Empty : applications.Count.ToString(CultureInfo.CurrentCulture),
+                Variables = Args
+            };
         }
 
         /// <summary>
