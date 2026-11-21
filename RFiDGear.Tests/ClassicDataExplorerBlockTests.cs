@@ -105,6 +105,26 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task SwitchingToASectorOf16Blocks_TellsTheViewThatTheRowsAreNew()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var vm = NewViewModel("1");
+                var changed = new System.Collections.Generic.List<string>();
+                vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? string.Empty);
+
+                vm.SelectedClassicSectorCurrent = "32";
+
+                // The grids are bound to these two nodes; they are new objects for a sector of 16 blocks.
+                Assert.Contains(nameof(vm.ChildNodeViewModelTemp), changed);
+                Assert.Contains(nameof(vm.ChildNodeViewModelFromChip), changed);
+                Assert.Equal(16, vm.ChildNodeViewModelTemp.Children.Count);
+
+                return Task.CompletedTask;
+            });
+        }
+
+        [Fact]
         public async Task TheFocusOnTheTrailer_FollowsTheSectorFromFourBlocksToSixteenAndBack()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>

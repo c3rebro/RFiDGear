@@ -1473,6 +1473,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
                         childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
 
+                        // The grids of the dialog are bound to the two nodes: they show the 16 rows of the new ones only when they are told.
+                        OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
+                        OnPropertyChanged(nameof(ChildNodeViewModelTemp));
+
                     }
                     else
                     {
