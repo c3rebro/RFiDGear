@@ -161,7 +161,13 @@ namespace RFiDGear.Services
                 return null;
             }
 
+            // A path without a question mark is the target as it is: no folder is read for it, for every card of a series.
             var matcher = NumberMatcherOf(path);
+            if (matcher == null)
+            {
+                return path;
+            }
+
             var numbersInFileNames = Directory.GetFiles(directoryPath)
                 .Select(file => ExtractNumber(matcher, file))
                 .Where(n => n >= 0)

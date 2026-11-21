@@ -143,6 +143,25 @@ namespace RFiDGear.Tests.AutoMode
         }
 
         [Fact]
+        public void APathWithoutAQuestionMark_IsTheTargetAsItIs()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(folder, "report-007.pdf"), "x");
+
+                Assert.Equal(Path.Combine(folder, "report.pdf"), StartupArgumentProcessor.NormalizeReportTargetPath(Path.Combine(folder, "report.pdf")));
+                Assert.Null(StartupArgumentProcessor.NormalizeReportTargetPath(Path.Combine(folder, "missing", "report.pdf")));
+            }
+            finally
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+        }
+
+        [Fact]
         public void APatternWithSeveralPlaces_IsMatchedByTheFilesItMadeBefore()
         {
             var folder = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
