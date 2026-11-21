@@ -121,6 +121,7 @@ namespace RFiDGear.Bridge.SampleClient
             private readonly Dictionary<string, PendingCard> _pending = new Dictionary<string, PendingCard>(StringComparer.Ordinal);
             private readonly List<CardOutcome> _outcomes = new List<CardOutcome>();
             private bool _weStartedTheMode;
+            private CancellationToken _callerToken;
 
             internal Run(ApprovalModeLoop owner, Func<CardPresentedEvent, CancellationToken, Task<CardDecision>> decide, Action<CardOutcome>? onOutcome)
             {
@@ -132,6 +133,7 @@ namespace RFiDGear.Bridge.SampleClient
             internal async Task<IReadOnlyList<CardOutcome>> RunAsync(TimeSpan? approvalTimeout, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                _callerToken = cancellationToken;
 
                 // The handler only queues: it must be short and never call RFiDGear (that is what the loop below is for).
                 void Queue(BridgeEvent e) => _queue.Writer.TryWrite(e);
@@ -247,16 +249,16 @@ namespace RFiDGear.Bridge.SampleClient
             // surface in the caller. The loop cancels it itself, when the wait for the card ends or the loop does.
             private PendingCard StartDeciding(CardPresentedEvent shown)
             {
-                var cancel = new CancellationTokenSource();
-                var answer = Task.Run(() => AnswerAsync(shown, cancel.Token), CancellationToken.None);
+                var card = new PendingCard(shown.Uid, new CancellationTokenSource());
+                card.Answer = Task.Run(() => AnswerAsync(shown, card), CancellationToken.None);
 
-                _ = answer.ContinueWith(
+                _ = card.Answer.ContinueWith(
                     task => _queue.Writer.TryWrite(new AnswerFailed(shown.PresenceId, task.Exception!.GetBaseException())),
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
 
-                return new PendingCard(shown.Uid, cancel, answer);
+                return card;
             }
 
             // The wait for a card ended: a decision that is still under way is dropped, and nothing is answered for the card. An answer
@@ -279,7 +281,9 @@ namespace RFiDGear.Bridge.SampleClient
                 }
                 catch (TimeoutException)
                 {
-                    answered = "pending";
+                    // Pending means that an answer was sent and RFiDGear has not replied to it. A decision that never finished (held up by
+                    // a callback of the program, say) sent nothing, and never will: the token is cancelled.
+                    answered = card.Sent ? "pending" : "none";
                 }
                 catch (Exception)
                 {
@@ -399,7 +403,7 @@ namespace RFiDGear.Bridge.SampleClient
             {
                 if (item is CardPresentedEvent shown && !_pending.ContainsKey(shown.PresenceId))
                 {
-                    _pending[shown.PresenceId] = new PendingCard(shown.Uid, new CancellationTokenSource(), Task.FromResult("none"));
+                    _pending[shown.PresenceId] = new PendingCard(shown.Uid, new CancellationTokenSource());
                 }
                 else if (item is CardPresentationEndedEvent ended && await EndAsync(ended).ConfigureAwait(false) is { } outcome)
                 {
@@ -430,8 +434,9 @@ namespace RFiDGear.Bridge.SampleClient
             }
 
             // Decides, and sends the answer. Returns what was sent (none when the card was given up before the program had decided).
-            private async Task<string> AnswerAsync(CardPresentedEvent shown, CancellationToken cardToken)
+            private async Task<string> AnswerAsync(CardPresentedEvent shown, PendingCard card)
             {
+                var cardToken = card.Token;
                 CardDecision decision;
 
                 try
@@ -464,11 +469,19 @@ namespace RFiDGear.Bridge.SampleClient
                     decision = CardDecision.Decline;
                 }
 
-                return cardToken.IsCancellationRequested ? "none" : await SendAsync(shown, decision).ConfigureAwait(false);
+                return GivenUp(cardToken) ? "none" : await SendAsync(shown, decision, card).ConfigureAwait(false);
             }
 
-            private async Task<string> SendAsync(CardPresentedEvent shown, CardDecision decision)
+            // The wait for the card ended, the decision was dropped, or the caller has cancelled: whether or not the loop has looked at
+            // that yet, nothing is sent any more. (The token of the caller is looked at itself: it is cancelled when Cancel starts, and
+            // the token of the decision only once the loop has got to dropping it.)
+            private bool GivenUp(CancellationToken cardToken) => cardToken.IsCancellationRequested || _callerToken.IsCancellationRequested;
+
+            private async Task<string> SendAsync(CardPresentedEvent shown, CardDecision decision, PendingCard card)
             {
+                // Noted before the request goes out: from then on it cannot be called back, whatever happens to the card.
+                card.MarkSent();
+
                 try
                 {
                     if (!decision.Approve)

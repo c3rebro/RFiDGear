@@ -1604,13 +1604,51 @@ namespace RFiDGear.Tests.ExternalControl
                 Assert.Null(await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5)));
                 var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
 
-                Assert.Equal(("p-1", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Reason));
+                // Nothing was sent for the first card: its decision never finished, held up by the callback, and the answer says so.
+                Assert.Equal(("p-1", "none", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
                 Assert.Equal(("p-2", "declined", PresentationEndReasons.Declined), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
             }
             finally
             {
                 gate.Set();
             }
+        }
+
+        [Fact]
+        public async Task TheLoop_SendsNoApprovalOnceTheCallerHasCancelled_EvenBeforeTheLoopHasLookedAtIt()
+        {
+            var release = new TaskCompletionSource<bool>();
+            var asked = new TaskCompletionSource<bool>();
+            ServiceStandIn? standIn = null;
+            var (_, host, loop, stop, _) = await StartLoopAsync(
+                async (_, _) =>
+                {
+                    asked.TrySetResult(true);
+                    await release.Task;
+
+                    return CardDecision.ApproveWith();
+                },
+                wrap: real =>
+                {
+                    standIn = ServiceStandIn.Wrap(real);
+
+                    return standIn.Service;
+                });
+
+            _ = Present(host, "p-1", "04AA");
+            await asked.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // Inside the Cancel of the caller, before anything else sees it (callbacks run last in, first out): the token of the caller
+            // is cancelled, the loop has not got to its own decision yet, and the program's decision finishes now.
+            stop.Token.Register(() =>
+            {
+                release.TrySetResult(true);
+                Thread.Sleep(300);
+            });
+            stop.Cancel();
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(0, standIn!.CallsOf(nameof(IBridgeService.ApproveCard)));
         }
 
         [Fact]

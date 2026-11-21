@@ -29,7 +29,7 @@ namespace RFiDGear.Tests.ExternalControl
                     var cancel = new CancellationTokenSource();
                     cancel.Token.Register(() => gate.Wait());
 
-                    new PendingCard("04AA", cancel, Task.FromResult("none")).Drop();
+                    new PendingCard("04AA", cancel).Drop();
 
                     Assert.True(cancel.Token.IsCancellationRequested, "The token was not cancelled when Drop returned (attempt " + attempt + ").");
                 }
@@ -47,7 +47,7 @@ namespace RFiDGear.Tests.ExternalControl
             var cancel = new CancellationTokenSource();
             cancel.Token.Register(() => gate.Wait());
 
-            new PendingCard("04AA", cancel, Task.FromResult("none")).Drop();
+            new PendingCard("04AA", cancel).Drop();
             await Task.Delay(200);
 
             Assert.False(IsDisposed(cancel), "The source was let go of while a callback was still running.");
@@ -68,7 +68,7 @@ namespace RFiDGear.Tests.ExternalControl
         {
             var cancel = new CancellationTokenSource();
             cancel.Token.Register(() => throw new InvalidOperationException("The callback of the decision threw."));
-            var card = new PendingCard("04AA", cancel, Task.FromResult("none"));
+            var card = new PendingCard("04AA", cancel);
 
             Assert.Null(Record.Exception(card.Drop));
             Assert.True(cancel.Token.IsCancellationRequested);
