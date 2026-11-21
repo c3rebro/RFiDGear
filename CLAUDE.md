@@ -620,11 +620,15 @@ passed with a real reader; until then a snapshot may be re-baselined.
   drops the decision when the wait for its card ends or the loop does
   (`PendingCard.Drop`: `CancelAsync`, so the token is cancelled when it
   returns, the callbacks run elsewhere, and the source is disposed after
-  them), and nothing is sent once the token of the card or the caller's is
-  cancelled (`GivenUp`: the caller's token is cancelled when its `Cancel`
-  starts, before the loop has looked at it). It fails closed: a decision that
-  throws (a time limit of its own too), or a pin on a state that RFiDGear did
-  not tell, is a decline; a late answer (`approvalNotPending`) is tolerated.
+  them), and starts no request once the token of the card or the caller's is
+  cancelled (`GivenUp`, looked at right before a request goes out; the
+  caller's token is cancelled when its `Cancel` starts, before the loop has
+  looked at it). That is a check before the send and no recall: a request
+  that has gone out stays out, and the decline that follows an approval that
+  RFiDGear refused as `invalidRequest` is not checked again. It fails closed:
+  a decision that throws (a time limit of its own too), or a pin on a state
+  that RFiDGear did not tell, is a decline; a late answer
+  (`approvalNotPending`) is tolerated.
   `CardOutcome.Answer` says what was sent: `approved`, `declined`, `late`,
   `failed` (the request failed after the wait ended), `none` (nothing was
   sent) or `pending` (a request went out and RFiDGear has not replied; the
@@ -658,12 +662,13 @@ passed with a real reader; until then a snapshot may be re-baselined.
   grammar of `ExpectedUid` (`$` and 1 to 64 letters, digits or underscores)
   and is shared with `RunApprovedCardAsync`. The tests
   (`BridgeSampleClientTests` `TheLoop_...`, `PendingCardTests`,
-  `ApprovalPolicyTests`) put a stand-in
-  between the loop and RFiDGear (`ServiceStandIn`, a `DispatchProxy` over
-  `IBridgeService`; the sample client lets `RFiDGear.Tests` see its internals)
-  to make a request slow or have RFiDGear say something it does not, and
+  `ApprovalPolicyTests`) put a stand-in between the loop and RFiDGear
+  (`ServiceStandIn`, a `DispatchProxy` over `IBridgeService`; the sample
+  client lets `RFiDGear.Tests` see its internals) to make a request slow or
+  have RFiDGear say something it does not, and
   `client.CardPresentationEnded(...)` injects a late notice. The test filter of
-  a mutation run has to name every new test class.- Logs hold method names, request and run ids, numbers and error kinds. Never a
+  a mutation run has to name every new test class.
+- Logs hold method names, request and run ids, numbers and error kinds. Never a
   variable, a path, a UID, a key or the text of an exception (`SanitizedException`
   is for the existing logs; the bridge logs only the type). Errors on the wire
   carry an `errorId` that matches the log.
