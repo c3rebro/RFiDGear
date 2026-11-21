@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Methods and events</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Methods and events</h1>
+
+<p>Every method takes one request and answers with one response. The capability is in brackets.</p>
+
+<h2>Methods</h2>
+
+<table>
+<tr><th>Method</th><th>Effect</th><th>Main fields</th></tr>
+<tr><td><code>hello</code> (session)</td><td>negotiates the protocol and delivers the capabilities, the chosen events, the <code>instanceId</code> and the limits</td>
+<td>Request: <code>clientName</code>, <code>clientVersion</code>, <code>protocolMajorMin</code>, <code>protocolMajorMax</code>, <code>events</code>. Response: <code>product</code>, <code>appVersion</code>, <code>instanceId</code>, <code>protocol</code>, <code>sessionId</code>, <code>capabilities</code>, <code>limits</code></td></tr>
+<tr><td><code>getStatus</code> (status)</td><td>says what is possible right now; it answers within two seconds even when the main window does not (<code>stale</code> is then set)</td>
+<td><code>startupComplete</code>, <code>readerInitializing</code>, <code>uiResponsive</code>, <code>stale</code>, <code>project</code> (<code>loaded</code>, <code>path</code>, <code>taskCount</code>, <code>revision</code>), <code>isRunning</code>, <code>activeRun</code>, <code>reader</code>, <code>lastResultSeq</code>, <code>autoMode</code></td></tr>
+<tr><td><code>loadProject</code> (project.load)</td><td>replaces the loaded project with a file; unsaved changes in the window are lost. The path has to be a full path</td>
+<td>Request: <code>path</code>. Response: <code>path</code>, <code>taskCount</code>, <code>revision</code></td></tr>
+<tr><td><code>startRun</code> (execution.run)</td><td>runs the task list once and answers as soon as the run is admitted, not when it ends</td>
+<td>Request: <code>requestId</code> (1 to 64 characters of <code>A-Z a-z 0-9 . _ : -</code>), <code>variables</code> (up to 64 pairs of <code>name</code>/<code>value</code>), <code>expectProjectPath</code>, <code>expectTaskCount</code>, <code>expectProjectRevision</code>.
+Response: <code>requestId</code>, <code>runId</code>, <code>state</code>, <code>duplicate</code></td></tr>
+<tr><td><code>cancelRun</code> (execution.cancel)</td><td>asks a run to stop between two tasks</td><td>Request: <code>requestId</code>. Response: <code>state</code>, <code>cancelRequested</code></td></tr>
+<tr><td><code>getRunResult</code> (execution.resultLookup)</td><td>the state and the result of a run by request id or run id, optionally waiting for the end</td>
+<td>Request: <code>requestId</code> or <code>runId</code>, <code>waitMs</code> (up to 30000). Response: <code>state</code>, <code>result</code></td></tr>
+<tr><td><code>listRunResults</code> (execution.resultLog)</td><td>the results of all runs, those of automatic mode too, from a number onward, with an explicit <code>gap</code></td>
+<td>Request: <code>afterResultSeq</code>, <code>limit</code>. Response: <code>instanceId</code>, <code>results</code>, <code>gap</code>, <code>lastResultSeq</code></td></tr>
+<tr><td><code>scanReader</code> (reader.scan)</td><td>reads the reader now</td><td>Response: <code>reader</code> (<code>name</code>, <code>state</code>, <code>hasCard</code>, <code>credentials</code> with <code>uid</code>, <code>typeCode</code>, <code>displayName</code>, <code>isPrimary</code>)</td></tr>
+<tr><td><code>startAutoMode</code>, <code>stopAutoMode</code> (autoMode)</td><td>continuous processing of cards</td>
+<td><code>stopOnDisconnect</code> (on by default), <code>requireApproval</code>, <code>approvalTimeoutMs</code> (2000 to 120000, default 15000)</td></tr>
+<tr><td><code>approveCard</code>, <code>declineCard</code> (autoMode.approval)</td><td>the answer about the card that was shown, once, for that <code>presenceId</code>, from the connection that started the mode</td>
+<td><code>presenceId</code>; <code>approveCard</code> also <code>variables</code> and <code>expectProjectRevision</code></td></tr>
+<tr><td><code>registerKeyProvider</code> (keys.provider)</td><td>makes the client the supplier of card keys for the rest of the connection</td>
+<td>Request: <code>ownRunsOnly</code>. Response: <code>providerId</code>, <code>timeoutMs</code>, <code>interactiveTimeoutMs</code>, <code>ownRunsOnly</code></td></tr>
+</table>
+
+<h2>The call from RFiDGear to the client</h2>
+
+<p><code>resolveKey</code> (keys.provider), on <code>IBridgeClientKeys</code>: RFiDGear asks a client that registered for a card key. The rules are on the page
+<a href="bridge_keys.html">Keys through external control</a>.</p>
+
+<h2>Events</h2>
+
+<p>Events are notifications. A client names in <code>hello</code> the ones it wants, and only those are sent; each carries <code>seq</code>, <code>sessionId</code> and <code>at</code>.</p>
+
+<table>
+<tr><th>Event</th><th>Capability</th><th>Meaning</th></tr>
+<tr><td><code>runStarted</code>, <code>runCompleted</code></td><td>events.execution</td><td>a run that this interface started; <code>runCompleted</code> is sent once per run</td></tr>
+<tr><td><code>runningChanged</code></td><td>events.running</td><td>a run from anywhere started or ended</td></tr>
+<tr><td><code>readerChanged</code></td><td>events.reader</td><td>the reader changed</td></tr>
+<tr><td><code>projectChanged</code></td><td>events.project</td><td>the project changed</td></tr>
+<tr><td><code>autoModeChanged</code>, <code>autoRunCompleted</code></td><td>events.autoMode</td><td>the mode was switched on or off; a card was processed. The result of the run that stops the mode comes before the notice that it stopped</td></tr>
+<tr><td><code>cardPresented</code>, <code>cardPresentationEnded</code></td><td>autoMode.approval</td><td>a card was shown and waits for the answer (<code>presenceId</code>, <code>uid</code>, <code>projectRevision</code>, <code>expiresAt</code>); the wait ended, with a reason. Both go only to the connection that started the mode</td></tr>
+<tr><td><code>shuttingDown</code></td><td>events.lifecycle</td><td>RFiDGear is closing. Best effort: a connection that ends without this notice proves nothing</td></tr>
+</table>
+
+<div class="warn">Events are hints. Nothing is replayed after a reconnect; the truth is <code>getStatus</code>, <code>getRunResult</code> and <code>listRunResults</code>. Keep the event handler short and never call RFiDGear from it:
+the notifications are delivered one after the other, and a handler that waits holds up the rest. Do not depend on the order of events of different kinds either.</div>
+
+<div class="nav">Previous page: <a href="bridge_protocol.html">The protocol</a> &middot; Next page: <a href="bridge_results.html">The result of a run</a></div>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Was erprobt ist und was nicht</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Was erprobt ist und was nicht</h1>
+
+<p>Diese Seite sagt ehrlich, worauf Sie sich verlassen k&ouml;nnen und was bisher nur im Test oder gar nicht gelaufen ist. Sie folgt den Hinweisen im Quellcode-Repository; wo die dortigen Dateien neuer sind, gelten sie.</p>
+
+<h2>Die externe Steuerung</h2>
+
+<ul>
+<li><strong>Das Protokoll ist nicht eingefroren.</strong> Es wird eingefroren, wenn die Pr&uuml;fliste <code>RFiDGear.HIL.Tests/EXTERNAL-CONTROL.md</code> mit einem echten Leser bestanden ist. Bis dahin kann sich ein Name noch &auml;ndern; danach wird innerhalb der Hauptversion 1 nichts entfernt oder umgedeutet, und ein Client liest, was ein neueres RFiDGear hinzuf&uuml;gt, als optional.</li>
+<li><strong>Getestet gegen einen nachgebildeten Leser:</strong> das Grundger&uuml;st, die Revision des Projekts, die Herkunft einer Schl&uuml;sselanfrage und der Modus mit Freigabe. Die Tests lassen die echte Schnittstelle auf einer echten Pipe, die echte Zustandsmaschine des automatischen Modus und das echte Hauptfenster gegen einen Leser laufen, der ein Skript abspielt.
+Ein <strong>echter Leser und eine echte Karte</strong> sind n&ouml;tig, um zu sehen, wie ein echter Leser eine Karte meldet, die zwischen zwei Abfragen weggenommen wird, wie lange ein echtes Lesen gegen die Zeit dauert, die Sie erlauben, und was eine echte Aufgabe mit einer echten Karte tut. Die F&auml;lle ab 52 in <code>EXTERNAL-CONTROL.md</code> sind daf&uuml;r da.</li>
+<li>Der <strong>Beispielclient</strong> und seine Tests belegen, dass der Rat in dieser Hilfe mit der Schnittstelle zusammen funktioniert; sie belegen nicht, dass Ihr Client es richtig macht.</li>
+</ul>
+
+<h2>Die Aufgaben und Leser</h2>
+
+<table>
+<tr><th>Bereich</th><th>Stand</th></tr>
+<tr><td>MIFARE Classic</td><td>Mit einem PC/SC-Leser ist an einer 4K-Karte das Lesen (und das Wiederausw&auml;hlen) ausprobiert. Die Schichten f&uuml;r Schreiben und MAD, und die Dialoge, sind nur an einer Chip-Nachbildung im Speicher gepr&uuml;ft; mit einem Elatec TWN4 ist keine Karte probiert worden. Pr&uuml;fliste: <code>CLASSIC.md</code>.</td></tr>
+<tr><td>Ultralight, Ultralight C, EV1 und NTAG</td><td>Die Leserschichten wurden mit einem NTAG215 an einem Elatec-Leser (Lesen, Schreiben, ein abgelehntes Passwort) und an einem PC/SC-Leser (der den Chip nicht kennt) gepr&uuml;ft. Die Aufgabe, der Dialog und die Hardwaref&auml;lle sind an keiner Karte gelaufen; ein einfacher Ultralight, ein Ultralight C und ein EV1 gar nicht. Pr&uuml;fliste: <code>ULTRALIGHT.md</code>.</td></tr>
+<tr><td>MIFARE SAM AV3</td><td>Aktivierung, Anmeldung als Host, Schreiben und Zur&uuml;cklesen eines Schl&uuml;sseleintrags sind an einer echten SAM gelaufen, auch &uuml;ber einen TWN4 der Hardware-Revision G. Die Schl&uuml;sselwechsel einer DESFire-Karte mit Schl&uuml;sseln der SAM sind mit einem TWN4 und einer Testkarte durchgespielt worden. Das Fenster der Einrichtung ist mit einer echten SAM nicht durchgeklickt worden, und durch das Fenster der Aufgabe ist noch nichts gelaufen. Pr&uuml;flisten: <code>SAM-AV3.md</code>, <code>SAM-PICC.md</code>.</td></tr>
+<tr><td>Schl&uuml;ssel in der Anmeldeinformationsverwaltung</td><td>Die Bausteine sind getestet; die Pr&uuml;fliste mit echtem Leser ist <code>SECURE-KEYS.md</code>.</td></tr>
+<tr><td>Erweiterungspakete</td><td>Die Signatur wird angezeigt, nicht erzwungen: ein Paket wird angenommen, wenn der SHA-256 jeder Datei der ist, den es nennt. Wo Pakete ver&ouml;ffentlicht werden, ist nicht entschieden.</td></tr>
+</table>
+
+<h2>Wie sich das in Ihrer Arbeit auswirkt</h2>
+
+<ul>
+<li>Schreiben Sie mit der externen Steuerung erst dann in Serie, wenn Sie den Ablauf mit Ihrem Projekt an Testkarten von Hand durchgespielt haben (der Beispielclient hilft dabei), und pr&uuml;fen Sie das Ergebnis jeder Karte selbst: ein positives Ende der Aufgabenliste ist nicht dasselbe wie eine Karte, die enth&auml;lt, was gemeint war.</li>
+<li>Bauen Sie einen Client so, dass er mit einem Namen zurechtkommt, der sich noch &auml;ndert: lesen Sie die F&auml;higkeiten, nicht die Version.</li>
+<li>Was die Hilfe als &bdquo;nicht umgesetzt&ldquo; oder &bdquo;ohne Funktion&ldquo; nennt, nutzen Sie nicht.</li>
+</ul>
+
+<div class="nav">Vorherige Seite: <a href="build_test.html">Bauen und testen</a> &middot; N&auml;chste Seite: <a href="glossary.html">Glossar</a></div>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Erweiterungen schreiben</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Erweiterungen schreiben</h1>
+
+<p>Eine Erweiterung verweist nur auf zwei Assemblies, nie auf <code>RFiDGear.exe</code>:</p>
+
+<table>
+<tr><th>Assembly</th><th>Inhalt</th></tr>
+<tr><td><code>RFiDGear.Contracts</code></td><td>die Dienste des Hosts (<code>IRFiDGearExtensionHost</code> und die Dienste f&uuml;r Projekt, Ausf&uuml;hrung, Leser und Kultur). Keine MEF-Abh&auml;ngigkeit.</td></tr>
+<tr><td><code>RFiDGear.ExtensionSdk</code></td><td>die MEF-seitige Schnittstelle: <code>[UiExtension]</code>, <code>HostPlacement</code>, <code>IUIExtension</code>, <code>IUIExtensionDetails</code>, <code>IApplicationUIExtension</code>, <code>[SecureKeyProvider]</code> und <code>ISecureKeyProviderMetadata</code></td></tr>
+</table>
+
+<p>Beide behalten die Assemblyversion <code>1.0.0.0</code> (sie &auml;ndert sich nur bei einem Bruch, nie mit der Version der Anwendung), und ihre &ouml;ffentliche Fl&auml;che ist durch freigegebene Schnappsch&uuml;sse im Test festgehalten. Eine &Auml;nderung l&auml;sst den Test scheitern und wird durch ein neues Erzeugen des Schnappschusses angenommen
+(<code>RFIDGEAR_UPDATE_API_SNAPSHOT=1</code>). Die alten Orte der SDK-Typen in <code>RFiDGear.exe</code> leiten weiter, damit schon gebaute Erweiterungen weiter laufen.</p>
+
+<h2>Eine Erweiterung mit eigenem Fenster</h2>
+
+<p>Eine Erweiterung mit <code>HostPlacement.Application</code> implementiert <code>IApplicationUIExtension</code>. RFiDGear erzeugt die exportierte Klasse beim ersten Klick auf ihren Eintrag im Men&uuml; <strong>Erweiterungen</strong>, nie beim Start, und ruft jedes Mal, wenn der Benutzer sie &ouml;ffnet,
+<code>CreateContent(IRFiDGearExtensionHost host)</code> auf dem Thread der Benutzeroberfl&auml;che auf; das Ergebnis ist ein neues Steuerelement f&uuml;r das Fenster. Der Host gibt diesen Inhalt (und einen anderen <code>IDisposable</code>-Datenkontext) einmal frei, wenn das Fenster schlie&szlig;t. Der Card Check Assistant
+(<code>RFiDGear.Extensions.CardCheckAssistant</code>) ist die erste Erweiterung und das Vorbild.</p>
+
+<h2>Die Regeln</h2>
+
+<ul>
+<li><strong>Entdeckung nur beim Start</strong> aus <code>%ProgramData%\RFiDGear\Extensions\RFiDGear.Extensions*.dll</code> und aus dem Ordner der installierten Pakete des Benutzers. Es gibt kein Laden im Betrieb: eine neue oder entfernte Erweiterung braucht einen Neustart.</li>
+<li><code>RFiDGear.Contracts.dll</code>, <code>RFiDGear.ExtensionSdk.dll</code> und die MEF-Laufzeit geh&ouml;ren dem Host. Eine Erweiterung darf keine eigenen Kopien mitbringen.</li>
+<li><strong>Importieren Sie nicht <code>IRFiDGearExtensionHost</code>.</strong> Der Dienst existiert noch nicht, wenn MEF die Erweiterungen zusammensetzt, ist also nicht exportiert, und MEF l&auml;sst eine Erweiterung mit einem Import, den es nicht erf&uuml;llen kann, ohne jeden Fehler aus. Nehmen Sie den Dienst aus dem Argument von <code>CreateContent</code>.</li>
+<li>Die exportierte Klasse entsteht beim ersten Klick und wird danach geteilt: halten Sie sie zustandslos und legen Sie den Zustand je Fenster in den Inhalt. Wirft ein Konstruktor oder <code>CreateContent</code>, wird es protokolliert und dem Benutzer gezeigt, und der n&auml;chste Klick versucht es noch einmal.</li>
+<li>Eine Erweiterung, die nur eine Seite braucht, kann sie mit <code>Uri</code> nennen und nur <code>IUIExtension</code> implementieren: sie &ouml;ffnet sich in einem Rahmen, und ihre Klasse wird nie erzeugt. Setzen Sie <code>Uri</code> nicht bei einer Erweiterung, die <code>IApplicationUIExtension</code> implementiert: die Seite gewinnt, und <code>CreateContent</code> wird nicht gerufen.</li>
+<li>Eine kaputte Erweiterung h&auml;lt weder die anderen noch die Anwendung auf: <code>MefHelper</code> pr&uuml;ft jede DLL (Teile, Metadaten, Importe), bevor sie in den Container kommt, protokolliert einen Fehler und &uuml;berspringt die Datei.</li>
+</ul>
+
+<h2>Eine Unterst&uuml;tzungsbibliothek</h2>
+
+<p>Code, den eine Erweiterung &uuml;ber den Vertrag hinaus braucht (Dienste, ein Datenbanktreiber, eine PDF-Engine), kommt in eine Bibliothek namens <code>RFiDGear.ExtensionLibraries.&lt;Name&gt;</code>. <strong>Der Name darf nie mit <code>RFiDGear.Extensions</code> beginnen, in keiner Schreibweise:</strong> der Host &uuml;bergibt jede
+<code>RFiDGear.Extensions*.dll</code> an MEF, eine Bibliothek <code>RFiDGear.ExtensionsNative.*</code> w&uuml;rde also bei jedem Start als Erweiterung geladen. Die Bibliothek ist <code>net10.0</code> (kein WPF), verweist auf kein anderes RFiDGear-Projekt, kompiliert gegen die Pakete des Hosts (Serilog, GemBox.Pdf), ohne eine Kopie davon mitzuliefern, und liegt
+flach neben der Erweiterung, die sie braucht. Halten Sie Typen der Bibliothek aus den Mitgliedern und dem Konstruktor der exportierten Klasse heraus: die Pr&uuml;fung von MEF kann eine fehlende Bibliothek nicht sehen, der Fehler zeigt sich dann erst, wenn die Klasse erzeugt oder verwendet wird.</p>
+
+<p>Was die Bibliothek au&szlig;erdem neben sich braucht, ist die <strong>Nutzlast</strong> der Erweiterung: beim Card Check Assistant der SQL-Treiber (<code>System.Data.SqlClient.dll</code> und die <code>sni.dll</code> der Plattform). Die Bibliothek nennt die Dateien, der Bau der Erweiterung kopiert sie in ihren Ausgabeordner, und von dort nehmen sie der Deploy-Schritt
+und die Installer mit.</p>
+
+<h2>Eine Erweiterung beim Entwickeln ausprobieren</h2>
+
+<p>RFiDGear liest seine Erweiterungen einmal beim Start. Nach einem Bau kann der Bau die Erweiterung und ihre Bibliotheken nach <code>%ProgramData%\RFiDGear\Extensions</code> kopieren, sodass Sie nur RFiDGear neu starten. Das ist <strong>aus, solange Sie es nicht verlangen</strong>, weil ein Bau nicht immer Ihr eigener ist (Testl&auml;ufe,
+saubere Checkouts und Werkzeuge, die ge&auml;nderten Code bauen, w&uuml;rden sonst ihre Ausgabe in ein echtes RFiDGear legen):</p>
+
+<ul>
+<li><code>dotnet build RFiDGear.Extensions/CardCheckAssistant -c Debug -p:DeployExtensionsToRFiDGear=true</code>, oder</li>
+<li>die Datei <code>RFiDGear.Extensions/deploy.local.props</code> (nicht im Repository; ein zweiter Klon braucht eine eigene) mit <code>&lt;DeployExtensionsToRFiDGear&gt;true&lt;/DeployExtensionsToRFiDGear&gt;</code>, oder</li>
+<li>die Umgebungsvariable <code>RFIDGEAR_DEPLOY_EXTENSIONS=true</code>.</li>
+</ul>
+
+<p>Kopiert werden nur die Erweiterung, ihre Bibliotheken, deren Symbole und ihre Nutzlast, nie der Vertrag, das SDK oder der Host. L&auml;sst sich die Erweiterung nicht ersetzen (RFiDGear l&auml;uft und h&auml;lt sie), ist das eine Warnung, und nichts anderes wird kopiert: schlie&szlig;en Sie RFiDGear und bauen Sie noch einmal. Die Kopie hat die Plattform des Baus: ein x64-Bau l&auml;dt nicht in ein x86-RFiDGear.</p>
+
+<div class="nav">Vorherige Seite: <a href="key_providers.html">Schl&uuml;sselanbieter schreiben</a> &middot; N&auml;chste Seite: <a href="extension_packages.html">Erweiterungspakete (.rfext)</a></div>
+
+</body>
+</html>

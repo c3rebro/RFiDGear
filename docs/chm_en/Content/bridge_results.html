@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>The result of a run</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>The result of a run</h1>
+
+<p>A result (<code>RunResultDto</code>) says how a run ended. A client trusts it only when <code>taskOutcomes</code> has exactly <code>totalTasks</code> entries: an incomplete result is never passed off as a complete one, but comes with the reason
+<code>bridgeFault</code>.</p>
+
+<h2>The fields</h2>
+
+<table>
+<tr><th>Field</th><th>Content</th></tr>
+<tr><td><code>requestId</code>, <code>runId</code></td><td>the request id (when a client started the run) and the run id</td></tr>
+<tr><td><code>source</code></td><td><code>bridge</code> or <code>autoMode</code></td></tr>
+<tr><td><code>status</code></td><td><code>success</code>, <code>completedWithIntentionalFailures</code>, <code>failure</code>, <code>cancelled</code> or <code>timedOut</code></td></tr>
+<tr><td><code>failureReason</code></td><td><code>none</code>, <code>cancelled</code>, <code>timedOut</code>, <code>faulted</code>, <code>bridgeFault</code> or <code>unknown</code></td></tr>
+<tr><td><code>totalTasks</code>, <code>failedTasks</code></td><td>the counts</td></tr>
+<tr><td><code>startedAt</code>, <code>completedAt</code></td><td>the times</td></tr>
+<tr><td><code>cardUid</code></td><td>the UID of the card that the run itself read at its start, when it is known</td></tr>
+<tr><td><code>resultSeq</code></td><td>the number in the one sequence of results (runs of clients and of automatic mode); RFiDGear keeps the last 64</td></tr>
+<tr><td><code>projectRevision</code></td><td>the revision of the project that the run started with</td></tr>
+<tr><td><code>presenceId</code></td><td>for a card that was approved in automatic mode</td></tr>
+<tr><td><code>taskOutcomes</code></td><td>one entry per task (below)</td></tr>
+</table>
+
+<h2>When a run has succeeded</h2>
+
+<table>
+<tr><th><code>status</code></th><th>When</th></tr>
+<tr><td><code>success</code></td><td>every task that ran ended without an error, and all tasks were reached</td></tr>
+<tr><td><code>completedWithIntentionalFailures</code></td><td>a check said "no", or a task failed and a later one caught that with an execute condition.. <code>CardNotExpected</code> can never end like this</td></tr>
+<tr><td><code>failure</code></td><td>a task failed and no later one reacted to it; <code>CardNotExpected</code> occurred; or the run ended before all tasks were reached</td></tr>
+<tr><td><code>cancelled</code>, <code>timedOut</code></td><td>the run was stopped or took too long</td></tr>
+</table>
+
+<div class="warn">A positive end of the task list is not the same as a card that holds what was meant. Check the card itself, and treat a run as confirmed only when <code>cardUid</code> is also the UID that you approved
+(see <a href="bridge_approval.html">One card, one approval, one run</a>).</div>
+
+<h2>A task in the result</h2>
+
+<table>
+<tr><th>Field</th><th>Content</th></tr>
+<tr><td><code>position</code></td><td>the place in the result, from 0: first the tasks the run reached, in the order it reached them, then the ones it did not reach</td></tr>
+<tr><td><code>projectTaskIndex</code></td><td>the task number as the project writes it (free text: do not parse it)</td></tr>
+<tr><td><code>taskTypeName</code></td><td>the kind of task</td></tr>
+<tr><td><code>isSuccess</code></td><td><code>true</code> when it ran and succeeded; <code>false</code> when it ran and failed; missing when it did not run or its result is not known</td></tr>
+<tr><td><code>normalizedErrorCode</code></td><td>the normalized error code (<code>NoError</code>, <code>AuthFailure</code>, <code>PermissionDenied</code>, <code>ProtocolConstraint</code>, <code>TransportError</code>, <code>Unknown</code>, <code>KeyUnavailable</code>, <code>CardNotExpected</code>, ...); it never holds key material</td></tr>
+<tr><td><code>skipReason</code></td><td>why the task did not run, when it did not</td></tr>
+<tr><td><code>verificationDetails</code></td><td>what a task that compares values compared (below)</td></tr>
+</table>
+
+<h2>The states of a lookup</h2>
+
+<p><code>getRunResult</code> answers with a state:</p>
+
+<table>
+<tr><th><code>state</code></th><th>Meaning</th></tr>
+<tr><td><code>running</code></td><td>the run is going on; ask again</td></tr>
+<tr><td><code>completed</code></td><td>it ended; the result is there unless the history dropped it (then you know it ended, but not how)</td></tr>
+<tr><td><code>interruptedByRestart</code></td><td>RFiDGear was closed or died while the run was going on. The card may have been written</td></tr>
+<tr><td><code>unknown</code></td><td>RFiDGear does not know the id: the request never arrived, or it is older than the last 1024. <strong>That is no proof that nothing was started.</strong></td></tr>
+</table>
+
+<h2>Why a check failed: <code>verificationDetails</code></h2>
+
+<p>A task that compares values can say what it compared, so that the record of a failed check holds more than "failed". Today only the DESFire task "Check: File Settings" has such details (kind <code>desfire.fileSettings</code>).
+They hold <code>schemaVersion</code> (1), <code>kind</code>, <code>overallMatch</code>, <code>compareMode</code> (<code>all</code> or <code>any</code>), <code>applicationId</code>, <code>fileNumber</code>, <code>errorCode</code> (<code>notRead</code>) and <code>checks</code>: one entry per setting in a
+fixed order (<code>fileType</code>, <code>fileSize</code>, <code>communicationMode</code>, <code>accessRead</code>, <code>accessWrite</code>, <code>accessReadWrite</code>, <code>accessChange</code>) with <code>compared</code> and <code>result</code>
+(<code>match</code>, <code>mismatch</code>, <code>notRead</code> or <code>notCompared</code>); a compared setting has <code>expected</code> and, when it could be read, <code>actual</code>, both as numbers (the size also has <code>rule</code>: <code>exact</code>,
+<code>atLeast</code>, <code>atMost</code>). Only numbers and fixed words, never a key, a text or the content of a file.</p>
+
+<p>Something that a client does not know (another <code>kind</code>, a later <code>schemaVersion</code>, a new result word) is no error: show it as it is, and never decide anything on a word you do not know.</p>
+
+<div class="nav">Previous page: <a href="bridge_methods.html">Methods and events</a> &middot; Next page: <a href="bridge_safe_runs.html">Requesting runs safely</a></div>
+
+</body>
+</html>

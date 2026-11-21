@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Methoden und Ereignisse</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Methoden und Ereignisse</h1>
+
+<p>Jede Methode nimmt eine Anfrage und antwortet mit einer Antwort. In Klammern steht die F&auml;higkeit.</p>
+
+<h2>Methoden</h2>
+
+<table>
+<tr><th>Methode</th><th>Wirkung</th><th>Wichtige Felder</th></tr>
+<tr><td><code>hello</code> (session)</td><td>handelt das Protokoll aus und liefert die F&auml;higkeiten, die gew&auml;hlten Ereignisse, die <code>instanceId</code> und die Grenzen</td>
+<td>Anfrage: <code>clientName</code>, <code>clientVersion</code>, <code>protocolMajorMin</code>, <code>protocolMajorMax</code>, <code>events</code>. Antwort: <code>product</code>, <code>appVersion</code>, <code>instanceId</code>, <code>protocol</code>, <code>sessionId</code>, <code>capabilities</code>, <code>limits</code></td></tr>
+<tr><td><code>getStatus</code> (status)</td><td>sagt, was jetzt m&ouml;glich ist; antwortet innerhalb von zwei Sekunden auch dann, wenn das Hauptfenster es nicht tut (<code>stale</code> ist dann gesetzt)</td>
+<td><code>startupComplete</code>, <code>readerInitializing</code>, <code>uiResponsive</code>, <code>stale</code>, <code>project</code> (<code>loaded</code>, <code>path</code>, <code>taskCount</code>, <code>revision</code>), <code>isRunning</code>, <code>activeRun</code>, <code>reader</code>, <code>lastResultSeq</code>, <code>autoMode</code></td></tr>
+<tr><td><code>loadProject</code> (project.load)</td><td>ersetzt das geladene Projekt durch eine Datei; nicht gespeicherte &Auml;nderungen im Fenster gehen verloren. Der Pfad muss vollst&auml;ndig sein</td>
+<td>Anfrage: <code>path</code>. Antwort: <code>path</code>, <code>taskCount</code>, <code>revision</code></td></tr>
+<tr><td><code>startRun</code> (execution.run)</td><td>f&uuml;hrt die Aufgabenliste einmal aus und antwortet, sobald der Lauf zugelassen ist, nicht, wenn er endet</td>
+<td>Anfrage: <code>requestId</code> (1 bis 64 Zeichen aus <code>A-Z a-z 0-9 . _ : -</code>), <code>variables</code> (bis 64 Paare <code>name</code>/<code>value</code>), <code>expectProjectPath</code>, <code>expectTaskCount</code>, <code>expectProjectRevision</code>.
+Antwort: <code>requestId</code>, <code>runId</code>, <code>state</code>, <code>duplicate</code></td></tr>
+<tr><td><code>cancelRun</code> (execution.cancel)</td><td>bittet, den Lauf zwischen zwei Aufgaben anzuhalten</td><td>Anfrage: <code>requestId</code>. Antwort: <code>state</code>, <code>cancelRequested</code></td></tr>
+<tr><td><code>getRunResult</code> (execution.resultLookup)</td><td>Zustand und Ergebnis eines Laufs nach Request-ID oder Lauf-ID, wahlweise mit Warten bis zum Ende</td>
+<td>Anfrage: <code>requestId</code> oder <code>runId</code>, <code>waitMs</code> (bis 30000). Antwort: <code>state</code>, <code>result</code></td></tr>
+<tr><td><code>listRunResults</code> (execution.resultLog)</td><td>die Ergebnisse aller L&auml;ufe, auch die des automatischen Modus, ab einer Nummer, mit ausdr&uuml;cklichem <code>gap</code></td>
+<td>Anfrage: <code>afterResultSeq</code>, <code>limit</code>. Antwort: <code>instanceId</code>, <code>results</code>, <code>gap</code>, <code>lastResultSeq</code></td></tr>
+<tr><td><code>scanReader</code> (reader.scan)</td><td>liest den Leser jetzt</td><td>Antwort: <code>reader</code> (<code>name</code>, <code>state</code>, <code>hasCard</code>, <code>credentials</code> mit <code>uid</code>, <code>typeCode</code>, <code>displayName</code>, <code>isPrimary</code>)</td></tr>
+<tr><td><code>startAutoMode</code>, <code>stopAutoMode</code> (autoMode)</td><td>fortlaufende Verarbeitung von Karten</td>
+<td><code>stopOnDisconnect</code> (Voreinstellung an), <code>requireApproval</code>, <code>approvalTimeoutMs</code> (2000 bis 120000, Voreinstellung 15000)</td></tr>
+<tr><td><code>approveCard</code>, <code>declineCard</code> (autoMode.approval)</td><td>die Antwort auf die gezeigte Karte, einmal, f&uuml;r diese <code>presenceId</code>, von der Verbindung, die den Modus gestartet hat</td>
+<td><code>presenceId</code>; bei <code>approveCard</code> auch <code>variables</code> und <code>expectProjectRevision</code></td></tr>
+<tr><td><code>registerKeyProvider</code> (keys.provider)</td><td>macht den Client f&uuml;r den Rest der Verbindung zum Lieferanten von Kartenschl&uuml;sseln</td>
+<td>Anfrage: <code>ownRunsOnly</code>. Antwort: <code>providerId</code>, <code>timeoutMs</code>, <code>interactiveTimeoutMs</code>, <code>ownRunsOnly</code></td></tr>
+</table>
+
+<h2>Der Aufruf von RFiDGear an den Client</h2>
+
+<p><code>resolveKey</code> (keys.provider), auf <code>IBridgeClientKeys</code>: RFiDGear fragt einen Client, der sich angemeldet hat, nach einem Kartenschl&uuml;ssel. Die Regeln stehen auf der Seite
+<a href="bridge_keys.html">Schl&uuml;ssel &uuml;ber die externe Steuerung</a>.</p>
+
+<h2>Ereignisse</h2>
+
+<p>Ereignisse sind Benachrichtigungen. Ein Client nennt in <code>hello</code> die, die er will, und nur diese werden gesendet; jedes tr&auml;gt <code>seq</code>, <code>sessionId</code> und <code>at</code>.</p>
+
+<table>
+<tr><th>Ereignis</th><th>F&auml;higkeit</th><th>Bedeutung</th></tr>
+<tr><td><code>runStarted</code>, <code>runCompleted</code></td><td>events.execution</td><td>ein Lauf, den diese Schnittstelle gestartet hat; <code>runCompleted</code> kommt einmal je Lauf</td></tr>
+<tr><td><code>runningChanged</code></td><td>events.running</td><td>ein Lauf von irgendwoher hat begonnen oder geendet</td></tr>
+<tr><td><code>readerChanged</code></td><td>events.reader</td><td>der Leser hat sich ge&auml;ndert</td></tr>
+<tr><td><code>projectChanged</code></td><td>events.project</td><td>das Projekt hat sich ge&auml;ndert</td></tr>
+<tr><td><code>autoModeChanged</code>, <code>autoRunCompleted</code></td><td>events.autoMode</td><td>der Modus wurde ein- oder ausgeschaltet; eine Karte wurde verarbeitet. Das Ergebnis des Laufs, der den Modus anh&auml;lt, kommt vor der Meldung, dass er anhielt</td></tr>
+<tr><td><code>cardPresented</code>, <code>cardPresentationEnded</code></td><td>autoMode.approval</td><td>eine Karte wurde gezeigt und wartet auf die Antwort (<code>presenceId</code>, <code>uid</code>, <code>projectRevision</code>, <code>expiresAt</code>); das Warten endete mit einem Grund. Beide gehen nur an die Verbindung, die den Modus gestartet hat</td></tr>
+<tr><td><code>shuttingDown</code></td><td>events.lifecycle</td><td>RFiDGear schlie&szlig;t. Nach bestem Bem&uuml;hen: eine Verbindung, die ohne diese Meldung endet, beweist nichts</td></tr>
+</table>
+
+<div class="warn">Ereignisse sind Hinweise. Nach einer neuen Verbindung wird nichts wiederholt; die Wahrheit sind <code>getStatus</code>, <code>getRunResult</code> und <code>listRunResults</code>. Halten Sie den Ereignisbehandler kurz und rufen Sie aus ihm nie RFiDGear
+auf: die Meldungen werden nacheinander zugestellt, und ein wartender Behandler h&auml;lt die &uuml;brigen auf. Verlassen Sie sich auch nicht auf die Reihenfolge von Ereignissen verschiedener Art.</div>
+
+<div class="nav">Vorherige Seite: <a href="bridge_protocol.html">Das Protokoll</a> &middot; N&auml;chste Seite: <a href="bridge_results.html">Das Ergebnis eines Laufs</a></div>
+
+</body>
+</html>

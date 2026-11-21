@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Schl&uuml;sselanbieter schreiben</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Schl&uuml;sselanbieter schreiben</h1>
+
+<p>Ein Schl&uuml;sselanbieter liefert Kartenschl&uuml;ssel, die ein Projekt &uuml;ber eine <em>Referenz</em> nennt, statt sie zu enthalten. Als Erweiterung schreiben Sie ihn gegen <code>ISecureKeyProvider</code> aus <code>RFiDGear.Contracts</code> und exportieren ihn mit <code>[SecureKeyProvider("id", "Anzeigename")]</code> aus
+<code>RFiDGear.ExtensionSdk</code>. (Ein Programm, das sich mit RFiDGear verbindet, liefert Schl&uuml;ssel stattdessen &uuml;ber die externe Steuerung: siehe <a href="bridge_keys.html">Schl&uuml;ssel &uuml;ber die externe Steuerung</a>.)</p>
+
+<h2>Wie RFiDGear Anbieter verwendet</h2>
+
+<ul>
+<li>DESFire-, MIFARE-Classic- und Ultralight-Aufgaben fragen die Anbieter nach den Schl&uuml;sseln ihrer gebundenen Pl&auml;tze, <strong>alle vor dem ersten Befehl an die Karte</strong>, je einmal je Aufgabenlauf. Ein Platz ist durch einen Eintrag in der Projektdatei gebunden (Platz, Anbieter-ID, Referenz). In den Aufgabendialogen bindet die Schaltfl&auml;che der Schl&uuml;sselverwaltung ihn.</li>
+<li><code>SecureKeyRegistry</code> ist der einzige Weg, einen Anbieter aufzurufen. Sie erzeugt jeden Anbieter einmal, ruft ihn von Arbeitsthreads unter einem Zeitlimit auf, macht aus allem, was ein Anbieter falsch macht, eine gescheiterte Antwort, protokolliert nur den <em>Typ</em> der Ausnahme eines Anbieters (nie die Meldung) und verwirft einen Schl&uuml;ssel, der zu sp&auml;t kommt.</li>
+<li>Kann ein Schl&uuml;ssel nicht beschafft werden, endet die Aufgabe, bevor die Karte ber&uuml;hrt wird (<code>KeyUnavailable</code>). Bei einer MIFARE-Classic-Aufgabe gilt &bdquo;alles oder nichts&ldquo;: der Leser f&auml;hrt nie mit Schl&uuml;ssel A allein fort.</li>
+<li>Der eingebaute Anbieter ist <code>windows-credential-manager</code> (er liest einen Schl&uuml;ssel aus einer allgemeinen Anmeldeinformation mit dem Pr&auml;fix <code>RFiDGear/key/</code>); keine Erweiterung kann seine ID &uuml;bernehmen. Ebenfalls eingebaut: <code>bridge-client</code> und <code>sam</code> (eine Referenz auf einen Schl&uuml;sseleintrag einer MIFARE SAM AV3, ohne Schl&uuml;sselbytes).</li>
+</ul>
+
+<h2>Die Regeln f&uuml;r einen Anbieter</h2>
+
+<table>
+<tr><th>Gegenstand</th><th>Regel</th></tr>
+<tr><td>ID</td><td>1 bis 64 aus <code>a-z</code>, <code>0-9</code>, <code>.</code>, <code>_</code> und <code>-</code>. Sie steht in Projektdateien und &auml;ndert sich nie. Eine andere ID wird mit einem Protokolleintrag &uuml;bergangen; verwenden zwei Erweiterungen eine ID, wird keine verwendet.</td></tr>
+<tr><td>Referenz</td><td>f&uuml;r RFiDGear undurchsichtig bis auf ihre Form: 1 bis 128 aus <code>A-Z</code>, <code>a-z</code>, <code>0-9</code>, <code>.</code>, <code>_</code>, <code>:</code>, <code>/</code> und <code>-</code>. Eine Bindung mit anderer Form scheitert vor jedem Aufruf. Was sie bedeutet, bestimmt der Anbieter.</td></tr>
+<tr><td>Erzeugung</td><td>eine Instanz je Anbieter, auf dem Thread der Benutzeroberfl&auml;che, wenn der Host seine Registratur baut: der Konstruktor muss schnell sein und darf nichts anzeigen und auf nichts warten.</td></tr>
+<tr><td>Threads</td><td>der Host ruft von Arbeitsthreads auf, m&ouml;glicherweise mehrere zugleich, nie mit einem Synchronisationskontext. Seien Sie threadsicher.</td></tr>
+<tr><td>Antwort</td><td>eine neue <code>SecureKeyLease</code> je Aufruf. Der Host besitzt sie und gibt sie frei; sie ist angeheftet und wird beim Freigeben genullt. Behalten Sie keine Kopien. <code>ToHexString()</code> macht eine Zeichenkette, die niemand nullen kann.</td></tr>
+<tr><td>Gleiche Anfrage</td><td>derselbe Schl&uuml;ssel innerhalb eines Laufs (<code>RunId</code>). Wechseln Sie Schl&uuml;ssel zwischen L&auml;ufen, nie mitten in einem.</td></tr>
+<tr><td>Fehler</td><td>ein Fehler ist eine Antwort: <code>SecureKeyResolution.Failed(grund)</code>. Ein Anbieter, der eine Ausnahme wirft, z&auml;hlt als <code>ProviderUnavailable</code>. Schreiben Sie eigene Diagnosen und halten Sie Schl&uuml;ssel aus ihnen heraus.</td></tr>
+<tr><td>Zeit</td><td>beachten Sie das Abbruchzeichen: der Host wartet 10 Sekunden (5 Minuten bei einer <code>Interactive</code>-Anfrage) und verwirft einen Schl&uuml;ssel, der sp&auml;ter kommt. Eine Anfrage mit <code>Interactive = false</code> darf keine Eingabeaufforderung zeigen.</td></tr>
+<tr><td>Unbekannter Algorithmus</td><td>antworten Sie <code>Unsupported</code>. Der Host pr&uuml;ft die L&auml;nge jeder Antwort und beendet die Aufgabe mit <code>KeyUnavailable</code>, wenn sie nicht passt.</td></tr>
+</table>
+
+<h2>Die Pl&auml;tze und Algorithmen</h2>
+
+<table>
+<tr><th>Aufgabe</th><th>Anfrage</th></tr>
+<tr><td>MIFARE Classic</td><td><code>Algorithm</code> ist <code>Classic6Byte</code> (6 Bytes); der Bereich hat weder Applikation noch Schl&uuml;sselnummer; <code>Usage</code> ist <code>Authenticate</code> f&uuml;r Schl&uuml;ssel, die einen Sektor &ouml;ffnen, und <code>ChangeKeyNew</code> f&uuml;r die, die in einen Sector Trailer geschrieben werden. Der Sektor geh&ouml;rt nicht zur Anfrage, weil eine MAD-Operation einen Schl&uuml;ssel f&uuml;r mehrere Sektoren verwendet.</td></tr>
+<tr><td>Ultralight C</td><td>Platz <code>ultralight.c.key</code>, <code>TripleDes2K</code> (16 Bytes), <code>Usage</code> <code>Authenticate</code></td></tr>
+<tr><td>Ultralight EV1 und NTAG</td><td>Platz <code>ultralight.password</code> (<code>UltralightPassword</code>, 4 Bytes) und <code>ultralight.pack</code> (<code>UltralightPack</code>, 2 Bytes)</td></tr>
+<tr><td>DESFire</td><td>die Schl&uuml;ssel von PICC und Applikation; ein Platz, der an die SAM gebunden ist, ist kein Schl&uuml;ssel und hat keine Bytes</td></tr>
+</table>
+
+<div class="warn">Eine Erweiterung l&auml;uft in RFiDGear mit den Rechten des Benutzers und kann lesen, was die Anwendung lesen kann. Ein Anbieter ist keine Sicherheitsgrenze. Installieren Sie nur Anbieter, denen Sie vertrauen.</div>
+
+<div class="nav">Vorherige Seite: <a href="bridge_sample_client.html">Der Beispielclient</a> &middot; N&auml;chste Seite: <a href="extensions.html">Erweiterungen schreiben</a></div>
+
+</body>
+</html>

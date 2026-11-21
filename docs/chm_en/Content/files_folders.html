@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Files and folders</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Files and folders</h1>
+
+<p>Where RFiDGear keeps something, and what is in it.</p>
+
+<h2>The folders</h2>
+
+<table>
+<tr><th>Place</th><th>Content</th></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\settings.xml</code></td><td>the settings (XML), also the default keys of the settings window <strong>in plain text</strong></td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\runtime-defaults.json</code></td><td>the first values at the first start: reader choice, language, COM ports, default keys for MIFARE, behavior of the update. The settings window saves to <code>settings.xml</code></td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\log\</code></td><td>the log (Serilog, rolling files, 30 days). Errors go only there, not to the Windows event log</td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\bridge\</code></td><td>the journal of external control: a run is written down there before it begins, so that after a restart the admitted request ids are still known</td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\report-work\&lt;runId&gt;</code></td><td>the work folder of a report that the approval of a card triggers; it is removed after the run</td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\InstalledExtensions\&lt;id&gt;\&lt;version&gt;</code></td><td>the extensions that the user installed as a package (see <a href="extension_packages.html">Extension packages</a>)</td></tr>
+<tr><td><code>%ProgramData%\RFiDGear\Extensions\</code></td><td>the extensions for all users; a normal user cannot write there</td></tr>
+<tr><td>the folder of <code>RFiDGear.exe</code></td><td>the program, <code>RFiDGear.Bridge.Contracts.dll</code> for clients of external control and the help (<code>RFiDGear_de.chm</code>, <code>RFiDGear_en.chm</code>)</td></tr>
+<tr><td>Windows Credential Manager, names under <code>RFiDGear/key/</code></td><td>the stored card keys (see <a href="keys.html">Keys</a>)</td></tr>
+</table>
+
+<h2>Project files</h2>
+
+<ul>
+<li><code>.rfPrj</code>: a zip archive with the tasks as versioned XML. RFiDGear writes a project straight into its archive; no plain copy with typed keys stays in <code>%LocalAppData%</code>.</li>
+<li><code>.xml</code>: a project as a plain XML file.</li>
+<li>The revision of a project (external control) is a hash of the text that a save would write, with a key that RFiDGear makes at start and never writes: a typed key cannot be found out from it, and it is valid for one process only.</li>
+</ul>
+
+<h2>What to know when you change something</h2>
+
+<ul>
+<li>Creating a <code>DatabaseReaderWriter</code> deletes files in the root folder of its project manager. Moving the keys of a project therefore runs on a project manager of its own.</li>
+<li>No log line of RFiDGear holds a key, a reference, a reader name, the serial number of a SAM or the text of an exception of the SAM library. The own trace of LibLogicalAccess (<code>config.log.enabled</code> with <code>seecommunication</code>) would write the whole answer: leave it off while a SAM is in a reader.</li>
+<li>The file <code>hil.settings.json</code> of the hardware tests sits next to <code>Run-HilTests.bat</code> and is not in git.</li>
+</ul>
+
+<div class="nav">Previous page: <a href="extension_packages.html">Extension packages (.rfext)</a> &middot; Next page: <a href="build_test.html">Building and testing</a></div>
+
+</body>
+</html>

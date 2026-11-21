@@ -6,6 +6,10 @@
 </HEAD><BODY>
 <UL>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value=".rfext">
+		<param name="Local" value="Content\extension_packages.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value=".rfPrj">
 		<param name="Local" value="Content\projects.html">
 		</OBJECT>
@@ -23,6 +27,10 @@
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="$EXPECTEDUID">
+		<param name="Local" value="Content\bridge_approval.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="$EXPECTEDUID">
 		<param name="Local" value="Content\tasks_generic_chip.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
@@ -36,6 +44,10 @@
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Anmeldeinformationsverwaltung">
 		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="API-Schnappschuss">
+		<param name="Local" value="Content\build_test.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Applikation">
@@ -62,6 +74,10 @@
 		<param name="Local" value="Content\running_tasks.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Aufgabenergebnis">
+		<param name="Local" value="Content\bridge_results.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Aufgabenliste">
 		<param name="Local" value="Content\main_window.html">
 		</OBJECT>
@@ -78,12 +94,20 @@
 		<param name="Local" value="Content\tasks_overview.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Aufholen">
+		<param name="Local" value="Content\bridge_safe_runs.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Ausf&uuml;hrungsbedingung">
 		<param name="Local" value="Content\tasks_overview.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Automatischer Modus">
 		<param name="Local" value="Content\running_tasks.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Automatischer Modus mit Freigabe">
+		<param name="Local" value="Content\bridge_approval.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="AUTOMODE">
@@ -94,20 +118,52 @@
 		<param name="Local" value="Content\command_line.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Bauen">
+		<param name="Local" value="Content\build_test.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Befehle">
+		<param name="Local" value="Content\bridge_sample_client.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Begriffe">
 		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Beispielclient">
+		<param name="Local" value="Content\bridge_sample_client.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Bereitstellung beim Entwickeln">
+		<param name="Local" value="Content\extensions.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Bericht">
 		<param name="Local" value="Content\reports.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="bridge-client">
+		<param name="Local" value="Content\bridge_keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Capabilities">
+		<param name="Local" value="Content\bridge_protocol.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Card Check Assistant">
 		<param name="Local" value="Content\updates_extensions.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="cardPresented">
+		<param name="Local" value="Content\bridge_approval.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Changelog">
 		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Check UID">
+		<param name="Local" value="Content\bridge_approval.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Check UID">
@@ -142,6 +198,14 @@
 		<param name="Local" value="Content\tasks_classic.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="dotnet build">
+		<param name="Local" value="Content\build_test.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="dotnet test">
+		<param name="Local" value="Content\build_test.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Einmalig ausf&uuml;hren">
 		<param name="Local" value="Content\running_tasks.html">
 		</OBJECT>
@@ -152,6 +216,14 @@
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Elatec TWN4">
 		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Entwickler">
+		<param name="Local" value="Content\dev_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Ereignisse">
+		<param name="Local" value="Content\bridge_methods.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Ergebnis einer Aufgabe">
@@ -171,6 +243,14 @@
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Erweiterung">
+		<param name="Local" value="Content\dev_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Erweiterung">
+		<param name="Local" value="Content\extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Erweiterung">
 		<param name="Local" value="Content\updates_extensions.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
@@ -178,8 +258,32 @@
 		<param name="Local" value="Content\updates_extensions.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Erweiterungspaket">
+		<param name="Local" value="Content\extension_packages.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="extension.json">
+		<param name="Local" value="Content\extension_packages.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="ExtensionSdk">
+		<param name="Local" value="Content\extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="EXTERNALCONTROL">
+		<param name="Local" value="Content\bridge_start.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="EXTERNALCONTROL">
 		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Externe Steuerung">
+		<param name="Local" value="Content\bridge_start.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Externe Steuerung">
+		<param name="Local" value="Content\dev_overview.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Extras-Men&uuml;">
@@ -190,6 +294,14 @@
 		<param name="Local" value="Content\about_this_help.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="F&auml;higkeiten">
+		<param name="Local" value="Content\bridge_protocol.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Fehlercodes">
+		<param name="Local" value="Content\bridge_protocol.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Fehlermeldungen">
 		<param name="Local" value="Content\troubleshooting.html">
 		</OBJECT>
@@ -198,20 +310,72 @@
 		<param name="Local" value="Content\troubleshooting.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Freigabe">
+		<param name="Local" value="Content\bridge_approval.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Gesch&uuml;tzte Seiten">
 		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="getRunResult">
+		<param name="Local" value="Content\bridge_methods.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="getStatus">
+		<param name="Local" value="Content\bridge_methods.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Glossar">
 		<param name="Local" value="Content\glossary.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Grenzen">
+		<param name="Local" value="Content\bridge_protocol.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Grenzen">
+		<param name="Local" value="Content\maturity.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Hardwaretests">
+		<param name="Local" value="Content\maturity.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Hauptfenster">
 		<param name="Local" value="Content\main_window.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="hello">
+		<param name="Local" value="Content\bridge_start.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="HIL-Tests">
+		<param name="Local" value="Content\build_test.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Hilfe &ouml;ffnen">
 		<param name="Local" value="Content\about_this_help.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="IApplicationUIExtension">
+		<param name="Local" value="Content\extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="ISecureKeyProvider">
+		<param name="Local" value="Content\key_providers.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Journal">
+		<param name="Local" value="Content\bridge_safe_runs.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Journal">
+		<param name="Local" value="Content\files_folders.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="JSON-RPC">
+		<param name="Local" value="Content\bridge_start.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="JSON-RPC Pipe Server">
@@ -262,6 +426,18 @@
 		<param name="Local" value="Content\glossary.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Lauf-Ergebnis">
+		<param name="Local" value="Content\bridge_results.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="loadProject">
+		<param name="Local" value="Content\bridge_methods.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="LocalAppData">
+		<param name="Local" value="Content\files_folders.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Logikbaustein">
 		<param name="Local" value="Content\tasks_common.html">
 		</OBJECT>
@@ -270,8 +446,16 @@
 		<param name="Local" value="Content\tasks_classic.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="MEF">
+		<param name="Local" value="Content\extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Men&uuml;s">
 		<param name="Local" value="Content\menus.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Methoden">
+		<param name="Local" value="Content\bridge_methods.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="MIFARE Classic">
@@ -286,12 +470,32 @@
 		<param name="Local" value="Content\tasks_ultralight.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="minHostVersion">
+		<param name="Local" value="Content\extension_packages.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Multitechnologiekarte">
 		<param name="Local" value="Content\tasks_generic_chip.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Named Pipe">
+		<param name="Local" value="Content\bridge_start.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="nicht eingefroren">
+		<param name="Local" value="Content\maturity.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="NTAG">
 		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Ordner">
+		<param name="Local" value="Content\files_folders.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="ownRunsOnly">
+		<param name="Local" value="Content\bridge_keys.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="PACK">
@@ -312,6 +516,10 @@
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="PICC-Masterschl&uuml;ssel">
 		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Pipe">
+		<param name="Local" value="Content\dev_overview.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Port nicht zugreifbar">
@@ -338,6 +546,18 @@
 		<param name="Local" value="Content\projects.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Projektrevision">
+		<param name="Local" value="Content\bridge_safe_runs.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Protokoll">
+		<param name="Local" value="Content\bridge_protocol.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Protokoll">
+		<param name="Local" value="Content\files_folders.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Protokolldatei">
 		<param name="Local" value="Content\troubleshooting.html">
 		</OBJECT>
@@ -355,7 +575,19 @@
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Referenz">
+		<param name="Local" value="Content\key_providers.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Referenz">
 		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="registerKeyProvider">
+		<param name="Local" value="Content\bridge_keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Reifegrad">
+		<param name="Local" value="Content\maturity.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Reihenfolge">
@@ -372,6 +604,22 @@
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="REPORTTARGETPATH">
 		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Request-ID">
+		<param name="Local" value="Content\bridge_safe_runs.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="resolveKey">
+		<param name="Local" value="Content\bridge_keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="resultSeq">
+		<param name="Local" value="Content\bridge_results.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="runtime-defaults.json">
+		<param name="Local" value="Content\files_folders.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="SAM">
@@ -394,6 +642,14 @@
 		<param name="Local" value="Content\sam_setup.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SampleClient">
+		<param name="Local" value="Content\bridge_sample_client.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="scanReader">
+		<param name="Local" value="Content\bridge_methods.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Schl&uuml;ssel">
 		<param name="Local" value="Content\keys.html">
 		</OBJECT>
@@ -410,8 +666,20 @@
 		<param name="Local" value="Content\keys.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Schl&uuml;sselanbieter">
+		<param name="Local" value="Content\dev_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Schl&uuml;sselanbieter">
+		<param name="Local" value="Content\key_providers.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Schl&uuml;sseleintrag">
 		<param name="Local" value="Content\sam_setup.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Schl&uuml;sselkontext">
+		<param name="Local" value="Content\bridge_keys.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Schl&uuml;sselverwaltung">
@@ -434,12 +702,28 @@
 		<param name="Local" value="Content\tasks_classic.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SecureKeyLease">
+		<param name="Local" value="Content\key_providers.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Seiten lesen und schreiben">
 		<param name="Local" value="Content\tasks_ultralight.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Sektor">
 		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="settings.xml">
+		<param name="Local" value="Content\files_folders.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Signatur">
+		<param name="Local" value="Content\extension_packages.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Slot">
+		<param name="Local" value="Content\key_providers.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Sprache">
@@ -462,8 +746,20 @@
 		<param name="Local" value="Content\command_line.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="startRun">
+		<param name="Local" value="Content\bridge_methods.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Status">
+		<param name="Local" value="Content\bridge_results.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Statusleiste">
 		<param name="Local" value="Content\main_window.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="StreamJsonRpc">
+		<param name="Local" value="Content\bridge_start.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Systemvoraussetzungen">
@@ -474,8 +770,16 @@
 		<param name="Local" value="Content\menus.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Tests">
+		<param name="Local" value="Content\bridge_sample_client.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="&Uuml;ber RFiDGear">
 		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Unterst&uuml;tzungsbibliothek">
+		<param name="Local" value="Content\extensions.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Update">
@@ -494,8 +798,28 @@
 		<param name="Local" value="Content\reports.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Verbinden">
+		<param name="Local" value="Content\bridge_start.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="verificationDetails">
+		<param name="Local" value="Content\bridge_results.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Versionierung">
+		<param name="Local" value="Content\bridge_protocol.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Wiederholung">
+		<param name="Local" value="Content\bridge_safe_runs.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Willkommen">
 		<param name="Local" value="Content\welcome.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="xunit">
+		<param name="Local" value="Content\build_test.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Z&auml;hler im Dateinamen">
@@ -504,6 +828,10 @@
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Zugriffsbits">
 		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Zweifel">
+		<param name="Local" value="Content\bridge_safe_runs.html">
 		</OBJECT>
 </UL>
 </BODY></HTML>

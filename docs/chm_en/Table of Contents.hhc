@@ -97,10 +97,75 @@
 				<param name="Name" value="Troubleshooting">
 				<param name="Local" value="Content\troubleshooting.html">
 				</OBJECT>
+		</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Part 2: For developers">
+		</OBJECT>
+		<UL>
 			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Glossary">
-				<param name="Local" value="Content\glossary.html">
+				<param name="Name" value="Overview for developers">
+				<param name="Local" value="Content\dev_overview.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="External control: quick start">
+				<param name="Local" value="Content\bridge_start.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="The protocol">
+				<param name="Local" value="Content\bridge_protocol.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Methods and events">
+				<param name="Local" value="Content\bridge_methods.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="The result of a run">
+				<param name="Local" value="Content\bridge_results.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Requesting runs safely">
+				<param name="Local" value="Content\bridge_safe_runs.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="One card, one approval, one run">
+				<param name="Local" value="Content\bridge_approval.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Keys through external control">
+				<param name="Local" value="Content\bridge_keys.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="The sample client">
+				<param name="Local" value="Content\bridge_sample_client.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Writing a key provider">
+				<param name="Local" value="Content\key_providers.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Writing an extension">
+				<param name="Local" value="Content\extensions.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Extension packages (.rfext)">
+				<param name="Local" value="Content\extension_packages.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Files and folders">
+				<param name="Local" value="Content\files_folders.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Building and testing">
+				<param name="Local" value="Content\build_test.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="What is proven and what is not">
+				<param name="Local" value="Content\maturity.html">
 				</OBJECT>
 		</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Glossary">
+		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
 </UL>
 </BODY></HTML>

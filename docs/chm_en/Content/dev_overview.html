@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Overview for developers</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Overview for developers</h1>
+
+<p>Part 2 of this help is for everyone who builds RFiDGear into their own software. It is a short version with reference tables. The full texts that it follows are in the source repository (see below);
+where this help and the files there differ, the files are right.</p>
+
+<h2>What you want, and where it is</h2>
+
+<table>
+<tr><th>I want to ...</th><th>The way</th><th>Page</th></tr>
+<tr><td>load a project from my program, run it on a card and read the result</td><td>external control (a named pipe, JSON-RPC)</td>
+<td><a href="bridge_start.html">External control: quick start</a></td></tr>
+<tr><td>make sure that a card is never written twice or by mistake</td><td>request ids, project revision, journal</td>
+<td><a href="bridge_safe_runs.html">Requesting runs safely</a></td></tr>
+<tr><td>approve every card myself before it is written</td><td>Check UID with a variable, automatic mode with approval</td>
+<td><a href="bridge_approval.html">One card, one approval, one run</a></td></tr>
+<tr><td>supply card keys from my program</td><td>the key provider <code>bridge-client</code> of external control</td>
+<td><a href="bridge_keys.html">Keys through external control</a></td></tr>
+<tr><td>supply card keys from a store of my own, without a program having to be connected</td><td>a key provider as an extension</td>
+<td><a href="key_providers.html">Writing a key provider</a></td></tr>
+<tr><td>add a window or a function to RFiDGear</td><td>an extension with <code>RFiDGear.Contracts</code> and <code>RFiDGear.ExtensionSdk</code></td>
+<td><a href="extensions.html">Writing an extension</a></td></tr>
+<tr><td>ship a new version of an extension</td><td>an extension package (<code>.rfext</code>)</td>
+<td><a href="extension_packages.html">Extension packages</a></td></tr>
+</table>
+
+<h2>The principles</h2>
+
+<ul>
+<li><strong>One attempt.</strong> RFiDGear never repeats on its own a command that changes a card (write, authenticate, format). A program that drives RFiDGear does not either: if RFiDGear does not say expressly
+"never started" after a doubt, ask for the result of the same job instead of sending it again.</li>
+<li><strong>One process, one user.</strong> One RFiDGear instance runs per Windows session. The pipe of external control can be reached only by the Windows user who started RFiDGear.</li>
+<li><strong>Contracts as assemblies.</strong> A client of external control uses <code>RFiDGear.Bridge.Contracts.dll</code>, an extension <code>RFiDGear.Contracts.dll</code> and <code>RFiDGear.ExtensionSdk.dll</code>;
+both groups keep the assembly version <code>1.0.0.0</code> so that programs built earlier keep binding. The public surface is held by approved snapshots in the tests.</li>
+<li><strong>Nothing secret in the protocol.</strong> RFiDGear writes no variable, path, UID, key or exception text of a client to its log.</li>
+</ul>
+
+<h2>The documents in the repository</h2>
+
+<table>
+<tr><th>File</th><th>Content</th></tr>
+<tr><td><code>RFiDGear.Bridge.Contracts/README.md</code></td><td>the protocol of external control: methods, events, errors, limits</td></tr>
+<tr><td><code>RFiDGear.Bridge.Contracts/CLIENT-GUIDE.md</code></td><td>the guide for authors of a client: what a client has to do and above all what it must not</td></tr>
+<tr><td><code>RFiDGear.Bridge.SampleClient/README.md</code></td><td>a working sample client</td></tr>
+<tr><td><code>RFiDGear.ExtensionSdk/README.md</code></td><td>the SDK part for extensions and key providers</td></tr>
+<tr><td><code>DEVELOPER_NOTES.md</code></td><td>facts that bite when you change something: error codes, the Credential Manager, packages, release, tests</td></tr>
+<tr><td><code>RFiDGear.HIL.Tests/*.md</code></td><td>the checklists for trying things with a real reader and real cards</td></tr>
+</table>
+
+<div class="note">How far all this is proven is on the page <a href="maturity.html">What is proven and what is not</a>. The protocol of external control is not frozen yet.</div>
+
+<div class="nav">Previous page: <a href="troubleshooting.html">Troubleshooting</a> &middot; Next page: <a href="bridge_start.html">External control: quick start</a></div>
+
+</body>
+</html>

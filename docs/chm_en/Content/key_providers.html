@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Writing a key provider</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Writing a key provider</h1>
+
+<p>A key provider supplies card keys that a project names by a <em>reference</em> instead of containing them. As an extension you write it against <code>ISecureKeyProvider</code> from <code>RFiDGear.Contracts</code> and export it with <code>[SecureKeyProvider("id", "Display name")]</code> from
+<code>RFiDGear.ExtensionSdk</code>. (A program that connects to RFiDGear supplies keys through external control instead: see <a href="bridge_keys.html">Keys through external control</a>.)</p>
+
+<h2>How RFiDGear uses providers</h2>
+
+<ul>
+<li>DESFire, MIFARE Classic and Ultralight tasks ask the providers for the keys of their bound slots, <strong>all of them before the first command to the card</strong>, each once per task run. A slot is bound by an entry in the project file (slot, provider id, reference). In the task dialogs the button of the key manager binds it.</li>
+<li><code>SecureKeyRegistry</code> is the only way to call a provider. It creates each provider once, calls it from worker threads under a time limit, turns anything a provider does wrong into a failed answer, logs only the <em>type</em> of a provider's exception (never the message) and disposes a key that arrives late.</li>
+<li>If a key cannot be had, the task ends before the card is touched (<code>KeyUnavailable</code>). For a MIFARE Classic task it is all or none: the reader never goes on with key A alone.</li>
+<li>The built-in provider is <code>windows-credential-manager</code> (it reads a key from a generic credential with the prefix <code>RFiDGear/key/</code>); no extension can take over its id. Also built in: <code>bridge-client</code> and <code>sam</code> (a reference to a key entry of a MIFARE SAM AV3, without key bytes).</li>
+</ul>
+
+<h2>The rules for a provider</h2>
+
+<table>
+<tr><th>Item</th><th>Rule</th></tr>
+<tr><td>Id</td><td>1 to 64 of <code>a-z</code>, <code>0-9</code>, <code>.</code>, <code>_</code> and <code>-</code>. It is stored in project files and never changes. Another id is ignored with a log entry; if two extensions use one id, neither is used.</td></tr>
+<tr><td>Reference</td><td>opaque to RFiDGear except for its shape: 1 to 128 of <code>A-Z</code>, <code>a-z</code>, <code>0-9</code>, <code>.</code>, <code>_</code>, <code>:</code>, <code>/</code> and <code>-</code>. A binding with another shape fails before any call. What it means is up to the provider.</td></tr>
+<tr><td>Creation</td><td>one instance per provider, on the user-interface thread, when the host builds its registry: the constructor must be quick and must not show anything or wait.</td></tr>
+<tr><td>Threads</td><td>the host calls from worker threads, possibly several at once, never with a synchronization context. Be thread-safe.</td></tr>
+<tr><td>Answer</td><td>a new <code>SecureKeyLease</code> for every call. The host owns it and disposes it; it is pinned memory that is zeroed on dispose. Do not keep copies. <code>ToHexString()</code> makes a string that nobody can zero.</td></tr>
+<tr><td>Same request</td><td>the same key within one run (<code>RunId</code>). Rotate keys between runs, never in the middle of one.</td></tr>
+<tr><td>Failure</td><td>failure is an answer: <code>SecureKeyResolution.Failed(reason)</code>. A provider that throws counts as <code>ProviderUnavailable</code>. Write your own diagnostics and keep keys out of them.</td></tr>
+<tr><td>Time</td><td>honor the cancellation token: the host waits 10 seconds (5 minutes for an <code>Interactive</code> request) and disposes a key that arrives late. A request with <code>Interactive = false</code> must not show a prompt.</td></tr>
+<tr><td>Unknown algorithm</td><td>answer <code>Unsupported</code>. The host checks the length of every answer and ends the task with <code>KeyUnavailable</code> when it does not fit.</td></tr>
+</table>
+
+<h2>The slots and algorithms</h2>
+
+<table>
+<tr><th>Task</th><th>Request</th></tr>
+<tr><td>MIFARE Classic</td><td><code>Algorithm</code> is <code>Classic6Byte</code> (6 bytes); the scope has neither an application nor a key number; <code>Usage</code> is <code>Authenticate</code> for keys that open a sector and <code>ChangeKeyNew</code> for the ones written into a sector trailer. The sector is not part of the request, because one MAD operation uses a key for several sectors.</td></tr>
+<tr><td>Ultralight C</td><td>slot <code>ultralight.c.key</code>, <code>TripleDes2K</code> (16 bytes), <code>Usage</code> <code>Authenticate</code></td></tr>
+<tr><td>Ultralight EV1 and NTAG</td><td>slot <code>ultralight.password</code> (<code>UltralightPassword</code>, 4 bytes) and <code>ultralight.pack</code> (<code>UltralightPack</code>, 2 bytes)</td></tr>
+<tr><td>DESFire</td><td>the keys of the PICC and of an application; a slot that is bound to the SAM is no key and has no bytes</td></tr>
+</table>
+
+<div class="warn">An extension runs inside RFiDGear with the rights of the user and can read whatever the application can. A provider is not a security boundary. Install only providers you trust.</div>
+
+<div class="nav">Previous page: <a href="bridge_sample_client.html">The sample client</a> &middot; Next page: <a href="extensions.html">Writing an extension</a></div>
+
+</body>
+</html>

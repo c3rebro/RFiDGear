@@ -22,12 +22,13 @@ newer RFiDGear adds as optional.
 
 **Switching it on:**
 
-RFiDGear listens only when you ask it to: the setting "Allow another program of
-this Windows user to control RFiDGear (external control)" in the settings
-dialog, or the start-up argument `EXTERNALCONTROL=1` for one run. Either one is
-enough. A change of the setting takes effect after a restart. There is one
-RFiDGear per Windows session; a second one exits at once, so a program connects
-to the one that runs, or starts exactly one.
+RFiDGear listens only when you ask it to: the setting "Enable JSON-RPC pipe
+server" (German: "JSON-RPC Pipe Server aktivieren") on the tab
+"Miscellaneous Settings" of the settings dialog, or the start-up argument
+`EXTERNALCONTROL=1` for one run. Either one is enough. A change of the setting
+takes effect after a restart. There is one RFiDGear per Windows session; a
+second one exits at once, so a program connects to the one that runs, or starts
+exactly one.
 
 **The connection:**
 

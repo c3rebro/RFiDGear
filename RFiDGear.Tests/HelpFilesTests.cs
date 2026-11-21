@@ -209,6 +209,52 @@ namespace RFiDGear.Tests
         private static IReadOnlyList<string> LinkTargetsOf(string page) =>
             Regex.Matches(page, "<a href=\"([^\"]+)\"").Select(match => match.Groups[1].Value).OrderBy(target => target, StringComparer.Ordinal).ToList();
 
+        private static string ResourceOf(string language, string key)
+        {
+            var path = Path.Combine(DotNetTool.RepositoryRoot(), "RFiDGear", "Resources", "Manifest." + language + ".resx");
+            var value = XDocument.Load(path).Root!.Elements("data").Single(data => (string?)data.Attribute("name") == key).Element("value")!.Value;
+
+            return value.Trim();
+        }
+
+        [Theory]
+        [InlineData("de")]
+        [InlineData("en")]
+        public void TheSettingThatSwitchesExternalControlOn_IsNamedAsTheSettingsWindowNamesIt(string language)
+        {
+            // A developer looks for this setting by its name: the page and the protocol README must say what the window says.
+            var setting = ResourceOf(language, "labelEnableExternalControl");
+            var tab = ResourceOf(language, "tabPageHeaderMisc");
+            var page = File.ReadAllText(Path.Combine(FolderOf(language), "Content", "bridge_start.html"));
+
+            Assert.Contains("<strong>" + setting + "</strong>", page);
+            Assert.Contains("<strong>" + tab + "</strong>", page);
+
+            var readme = File.ReadAllText(Path.Combine(DotNetTool.RepositoryRoot(), "RFiDGear.Bridge.Contracts", "README.md"));
+            var flattened = Regex.Replace(readme, "\\s+", " ");
+
+            Assert.Contains("\"" + ResourceOf("en", "labelEnableExternalControl") + "\"", flattened);
+        }
+
+        [Theory]
+        [InlineData("de")]
+        [InlineData("en")]
+        public void TheProtocolPage_NamesEveryCapabilityOfTheContract(string language)
+        {
+            var page = File.ReadAllText(Path.Combine(FolderOf(language), "Content", "bridge_protocol.html"));
+            var capabilities = typeof(RFiDGear.Bridge.BridgeCapabilities).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+                .Select(field => (string)field.GetRawConstantValue()!)
+                .ToList();
+
+            Assert.NotEmpty(capabilities);
+
+            foreach (var capability in capabilities)
+            {
+                Assert.True(page.Contains("<code>" + capability + "</code>", StringComparison.Ordinal), "the capability '" + capability + "' of the contract is not on the page bridge_protocol.html (" + language + ")");
+            }
+        }
+
         [Theory]
         [InlineData("de")]
         [InlineData("en")]

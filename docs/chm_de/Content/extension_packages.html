@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Erweiterungspakete (.rfext)</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Erweiterungspakete (.rfext)</h1>
+
+<p>Eine Erweiterung hat einen eigenen Ver&ouml;ffentlichungsrhythmus, und <code>%ProgramData%\RFiDGear\Extensions</code> ist f&uuml;r einen normalen Benutzer nicht beschreibbar (und die DLLs eines laufenden RFiDGear sind dort gesperrt). Ein Update ist deshalb ein <strong>Paket</strong>, das die Person im Men&uuml;
+<strong>Datei &gt; Erweiterungs-Update installieren...</strong> f&uuml;r ihren eigenen Benutzer installiert: ohne Administrator und ohne einen Ordner anzufahren. Die Seite <a href="updates_extensions.html">Updates und Erweiterungen</a> beschreibt das aus der Sicht des Benutzers.</p>
+
+<h2>Ein Paket bauen (die Seite des Anbieters)</h2>
+
+<pre>dotnet build RFiDGear.Extensions/CardCheckAssistant -c Release -p:Platform=x64 -p:PackExtension=true</pre>
+
+<p>schreibt <code>bin\package\&lt;id&gt;-&lt;version&gt;-&lt;platform&gt;.rfext</code> (<code>PackExtension.targets</code>; aus, solange es nicht verlangt wird). Das Paket gilt f&uuml;r <strong>eine Plattform</strong>, weil die Nutzlast einer Erweiterung (die native <code>sni.dll</code>) es ist; ein Bau f&uuml;r AnyCPU mit nativen
+Nutzlastdateien wird mit einer Meldung abgelehnt. Es enth&auml;lt die Assembly der Erweiterung, <code>RFiDGear.ExtensionLibraries.*.dll</code> und die <code>ExtensionPayloadFile</code>-Eintr&auml;ge des Projekts, keine Symbole. Das Projekt setzt <code>Version</code>, <code>ExtensionDisplayName</code> und wahlweise <code>ExtensionMinHostVersion</code>;
+<strong>die Dateiversion der Assembly muss dieselbe Zahl wie <code>Version</code> sein</strong>, sonst wird das Paket bei der Installation abgelehnt. Nichts in einem Paket wird ausgef&uuml;hrt.</p>
+
+<h2>Das Format</h2>
+
+<p>Eine Zip-Datei mit <code>extension.json</code> an oberster Stelle:</p>
+
+<table>
+<tr><th>Feld</th><th>Inhalt</th></tr>
+<tr><td><code>schema</code></td><td>1</td></tr>
+<tr><td><code>id</code></td><td>der Assemblyname, <code>RFiDGear.Extensions.&lt;...&gt;</code></td></tr>
+<tr><td><code>displayName</code>, <code>version</code></td><td>Name und Version</td></tr>
+<tr><td><code>platform</code></td><td>wahlweise <code>x64</code> oder <code>x86</code> (vom Bau geschrieben); <code>AnyCPU</code> oder keines hei&szlig;t: nichts Natives darin. RFiDGear weist ein Paket der anderen Plattform zur&uuml;ck.</td></tr>
+<tr><td><code>minHostVersion</code>, <code>notes</code></td><td>wahlweise: das &auml;lteste RFiDGear, das das Paket braucht, und Hinweise des Anbieters</td></tr>
+<tr><td><code>files</code></td><td>je Datei <code>name</code> und das <code>sha256</code> ihres Inhalts</td></tr>
+</table>
+
+<p>Die Grenzen: nur <code>.dll</code>- und <code>.pdb</code>-Dateien mit schlichten Namen; keine Assembly, die dem Host geh&ouml;rt, und keine andere <code>RFiDGear.Extensions*</code>-Assembly; das Archiv enth&auml;lt genau die aufgef&uuml;hrten Dateien und keine mehr; h&ouml;chstens 64 Dateien, 64 MB je Datei und 256 MB insgesamt. Die Gr&ouml;&szlig;en, die ein Archiv angibt, werden
+nicht geglaubt: es wird bis zur Grenze gelesen. Vor dem &Ouml;ffnen pr&uuml;ft RFiDGear das Ende des Zip-Verzeichnisses und weist Archive mit zu vielen Eintr&auml;gen, zu gro&szlig;em Verzeichnis, Zip64-Markern oder mehreren Datentr&auml;gern ab. Nichts wird unter den Namen im Archiv entpackt.</p>
+
+<h2>Das Installieren</h2>
+
+<ol>
+<li>RFiDGear liest und pr&uuml;ft das Paket, pr&uuml;ft, dass dieses RFiDGear mindestens <code>minHostVersion</code> ist und dass die Version <strong>h&ouml;her als die jetzt verwendete</strong> ist (die des gemeinsamen Ordners oder die des Benutzers).</li>
+<li>Es entpackt in <code>%LocalAppData%\RFiDGear\InstalledExtensions\.staging\&lt;guid&gt;</code>, pr&uuml;ft die Dateiversion der Assembly und liest den Authenticode-Unterzeichner.</li>
+<li>Es fragt die Person (Name, neue und installierte Version, Unterzeichner oder &bdquo;nicht signiert&ldquo;, die Hinweise des Anbieters und dass eine Erweiterung ein Programm ist, das mit ihren Rechten l&auml;uft).</li>
+<li>Dann verschiebt es den Ordner mit einer einzigen Umbenennung nach <code>InstalledExtensions\&lt;id&gt;\&lt;version&gt;</code>. Ein Versionsordner wird nie &uuml;berschrieben und danach nie ver&auml;ndert; die neue Version wird ab dem n&auml;chsten Start verwendet.</li>
+</ol>
+
+<h2>Vertrauen</h2>
+
+<ul>
+<li>Der SHA-256 im Manifest sch&uuml;tzt gegen ein besch&auml;digtes oder vertauschtes Paket; er sagt nicht, wer es gemacht hat (das Manifest liegt im selben Archiv).</li>
+<li>Der Dialog zeigt, <strong>wer die Assembly signiert hat</strong> und ob die Signatur h&auml;lt. Das pr&uuml;ft Windows (<code>WinVerifyTrust</code> mit der allgemeinen Aktion, ohne Fenster und ohne Netz f&uuml;r eine Sperrliste). Es ist eine Information f&uuml;r die Person und kein Tor: ein unsigniertes Paket, oder eines, dessen Signatur nicht h&auml;lt, l&auml;sst sich nach der Frage installieren.
+Der Hash im Manifest ist nicht an die Signatur gebunden: sie sagt, wer die Assembly signiert hat, nicht, dass das ganze Paket das ist, was signiert wurde.</li>
+</ul>
+
+<h2>Das Laden</h2>
+
+<ul>
+<li>Beim Start wird der gemeinsame Ordner wie bisher durchsucht, dazu der h&ouml;chste g&uuml;ltige Versionsordner jeder Erweiterung unter <code>InstalledExtensions</code>. Eine Erweiterung, die in beiden ist, wird <strong>einmal</strong> geladen: die h&ouml;here Dateiversion gewinnt, bei Gleichheit die Kopie des gemeinsamen Ordners; l&auml;sst sich die gew&auml;hlte nicht laden, wird die andere versucht.</li>
+<li>Ein Versionsordner, dessen Erweiterung die Pr&uuml;fung nicht bestand, bekommt eine Marke <code>.failed</code> und wird ab dem n&auml;chsten Start nicht mehr gew&auml;hlt: die n&auml;chst&auml;ltere installierte Version oder die Kopie des gemeinsamen Ordners wird verwendet. Eine Marke <code>.loaded</code> bezeichnet die neueste Version, die geladen war.</li>
+<li>RFiDGear r&auml;umt auf: Staging-Ordner, die &auml;lter als einen Tag sind, die gescheiterten Versionen und alle au&szlig;er den zwei neuesten funktionierenden Versionen (plus der neuesten, die bekanntlich geladen war). Nur der Prozess, der die Sperrdatei <code>.lock</code> in <code>InstalledExtensions</code> h&auml;lt, r&auml;umt auf.</li>
+</ul>
+
+<div class="note">Offen ist, wo Pakete ver&ouml;ffentlicht werden. Ein Release von RFiDGear tr&auml;gt genau die drei Dateien von <code>Pack-Release.ps1</code>, und ein Release nur f&uuml;r eine Erweiterung darf nicht das &bdquo;neueste&ldquo; Release des Repositorys werden (es w&uuml;rde <code>releases/latest/download/update.xml</code> brechen). Ein Paket als vierte Datei oder in einem eigenen Release ist eine
+Entscheidung des Betreuers. Eine installierte Erweiterung l&auml;sst sich nicht &uuml;ber das Men&uuml; entfernen: l&ouml;schen Sie ihren Ordner unter <code>InstalledExtensions</code>.</div>
+
+<div class="nav">Vorherige Seite: <a href="extensions.html">Erweiterungen schreiben</a> &middot; N&auml;chste Seite: <a href="files_folders.html">Dateien und Ordner</a></div>
+
+</body>
+</html>

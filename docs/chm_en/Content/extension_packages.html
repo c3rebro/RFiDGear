@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Extension packages (.rfext)</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Extension packages (.rfext)</h1>
+
+<p>An extension has its own release cycle, and <code>%ProgramData%\RFiDGear\Extensions</code> is not writable for a normal user (and the DLLs of a running RFiDGear are locked there). An update is therefore a <strong>package</strong> that the person installs from the menu
+<strong>File &gt; Install extension update...</strong> for their own user: with no administrator and no visit to a folder. The page <a href="updates_extensions.html">Updates and extensions</a> describes this from the point of view of the user.</p>
+
+<h2>Making a package (the side of the provider)</h2>
+
+<pre>dotnet build RFiDGear.Extensions/CardCheckAssistant -c Release -p:Platform=x64 -p:PackExtension=true</pre>
+
+<p>writes <code>bin\package\&lt;id&gt;-&lt;version&gt;-&lt;platform&gt;.rfext</code> (<code>PackExtension.targets</code>; off unless asked). The package is for <strong>one platform</strong>, because the payload of an extension (the native <code>sni.dll</code>) is; a build for AnyCPU with native
+payload files is refused with a message. It holds the assembly of the extension, <code>RFiDGear.ExtensionLibraries.*.dll</code> and the <code>ExtensionPayloadFile</code> items of the project, no symbols. The project sets <code>Version</code>, <code>ExtensionDisplayName</code> and optionally <code>ExtensionMinHostVersion</code>;
+<strong>the file version of the assembly has to be the same number as <code>Version</code></strong>, or the package is refused at install. Nothing in a package is executed.</p>
+
+<h2>The format</h2>
+
+<p>A zip file with <code>extension.json</code> at the top:</p>
+
+<table>
+<tr><th>Field</th><th>Content</th></tr>
+<tr><td><code>schema</code></td><td>1</td></tr>
+<tr><td><code>id</code></td><td>the assembly name, <code>RFiDGear.Extensions.&lt;...&gt;</code></td></tr>
+<tr><td><code>displayName</code>, <code>version</code></td><td>name and version</td></tr>
+<tr><td><code>platform</code></td><td>optional <code>x64</code> or <code>x86</code> (written by the build); <code>AnyCPU</code> or none means nothing native in it. RFiDGear refuses a package of the other platform.</td></tr>
+<tr><td><code>minHostVersion</code>, <code>notes</code></td><td>optional: the oldest RFiDGear that the package needs, and notes of the provider</td></tr>
+<tr><td><code>files</code></td><td>for each file the <code>name</code> and the <code>sha256</code> of its content</td></tr>
+</table>
+
+<p>The limits: only <code>.dll</code> and <code>.pdb</code> files with plain names; none of the assemblies the host owns and no other <code>RFiDGear.Extensions*</code> assembly; the archive holds exactly the listed files and no more; at most 64 files, 64 MB each and 256 MB in all. The sizes that an archive declares are not
+believed: it is read to the limit. Before it opens the archive, RFiDGear checks the end of the zip directory and refuses archives with too many entries, a directory that is too large, Zip64 markers or several disks. Nothing is extracted by the names in the archive.</p>
+
+<h2>Installing</h2>
+
+<ol>
+<li>RFiDGear reads and checks the package, checks that this RFiDGear is at least <code>minHostVersion</code> and that the version is <strong>higher than the one that is used now</strong> (the machine-wide one or the user's).</li>
+<li>It unpacks into <code>%LocalAppData%\RFiDGear\InstalledExtensions\.staging\&lt;guid&gt;</code>, checks the file version of the assembly and reads the Authenticode signer.</li>
+<li>It asks the person (name, new and installed version, signer or "not signed", the notes of the provider, and that an extension is a program that runs with their rights).</li>
+<li>Then it moves the folder to <code>InstalledExtensions\&lt;id&gt;\&lt;version&gt;</code> in one rename. A version folder is never overwritten and never changed afterwards; the new version is used from the next start.</li>
+</ol>
+
+<h2>Trust</h2>
+
+<ul>
+<li>The SHA-256 in the manifest protects against a damaged or mixed-up package; it does not say who made it (the manifest is in the same archive).</li>
+<li>The dialog shows <strong>who signed the assembly</strong> and whether the signature holds. Windows checks that (<code>WinVerifyTrust</code> with the generic action, no window, and no network for a revocation list). It is information for the person and no gate: an unsigned package, or one whose signature does not hold, can be installed after the question.
+The hash in the manifest is not tied to the signature: it says who signed the assembly, not that the whole package is the one that was signed.</li>
+</ul>
+
+<h2>Loading</h2>
+
+<ul>
+<li>At start-up the machine-wide folder is scanned as before, and the highest valid version folder of each extension under <code>InstalledExtensions</code>. An extension that is in both is loaded <strong>once</strong>: the higher file version wins, the machine-wide copy when they are equal; if the chosen one cannot be loaded, the other is tried.</li>
+<li>A version folder whose extension failed the probe gets a marker <code>.failed</code> and is not chosen from the next start on: the next older installed version or the machine-wide copy is used. A marker <code>.loaded</code> names the newest version that was loaded.</li>
+<li>RFiDGear tidies up: staging folders older than a day, the versions that failed and all but the two newest working versions (plus the newest one that is known to have loaded). Only the process that holds the lock file <code>.lock</code> in <code>InstalledExtensions</code> tidies.</li>
+</ul>
+
+<div class="note">Open is where packages are published. A release of RFiDGear carries exactly the three files of <code>Pack-Release.ps1</code>, and a release for an extension only must not become the "latest" release of the repository (it would break <code>releases/latest/download/update.xml</code>). A package as a fourth file or in a release of its own is a decision for the
+maintainer. An installed extension cannot be removed from the menu: delete its folder under <code>InstalledExtensions</code>.</div>
+
+<div class="nav">Previous page: <a href="extensions.html">Writing an extension</a> &middot; Next page: <a href="files_folders.html">Files and folders</a></div>
+
+</body>
+</html>

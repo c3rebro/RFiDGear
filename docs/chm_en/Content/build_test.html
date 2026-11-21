@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Building and testing</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Building and testing</h1>
+
+<h2>Prerequisites</h2>
+
+<ul>
+<li>Everything targets .NET 10: the host, the test projects, the sample plugin, the contracts and the Card Check Assistant as <code>net10.0-windows</code>, the sample client and the <code>CardCheck</code> library as <code>net10.0</code>. <code>global.json</code> pins the SDK to 10.0.x (a newer preview SDK on the machine would otherwise be picked up).</li>
+<li>Visual Studio 2022 cannot target <code>net10.0</code>: use Visual Studio 2026 or the <code>dotnet</code> command line.</li>
+<li>The project is a WPF program for Windows (x64 and x86).</li>
+</ul>
+
+<h2>Commands</h2>
+
+<pre>dotnet build RFiDGear.sln -c Debug
+dotnet build RFiDGear.sln -c Release
+
+dotnet test RFiDGear.Tests/RFiDGear.Tests.csproj
+dotnet test RFiDGear.Tests/RFiDGear.Tests.csproj --filter "FullyQualifiedName~MyClass.MyMethod"</pre>
+
+<h2>The tests</h2>
+
+<ul>
+<li><code>RFiDGear.Tests</code> are the unit and integration tests, without a reader. They run on xunit.v3 (the package <code>xunit.v3.mtp-off</code>; the .NET 10 SDK otherwise refuses to run a project that is built on Microsoft.Testing.Platform through the VSTest path of <code>dotnet test</code>). The test projects are therefore executables; <code>dotnet test</code> and <code>--filter</code> work as usual.</li>
+<li>A test that touches WPF needs an STA thread (<code>StaTestRunner.cs</code>). A test that builds a main window passes a temporary journal folder and a unique pipe name.</li>
+<li><strong>Approved snapshots</strong> hold the public surface of the contracts (<code>RFiDGear.Tests/ApiSurface/</code>). A change fails the test; you accept it by regenerating the snapshot: <code>RFIDGEAR_UPDATE_API_SNAPSHOT=1</code> and the filter <code>BridgeContractsApiSurface</code> (or <code>ExtensionSdkApiSurface</code>). A mutation run that changes the contracts has to have <code>FullyQualifiedName~ApiSurface</code> in its filter.</li>
+<li><code>BridgeSamples</code> and <code>BridgeGolden</code> hold one value of every message of external control and its JSON: a change of the wire is a difference in a test.</li>
+<li>The tests of the help (<code>HelpFilesTests</code>, <code>HelpFileTests</code>) read the real files under <code>docs</code>.</li>
+</ul>
+
+<h2>Hardware tests</h2>
+
+<p><code>RFiDGear.HIL.Tests</code> run against a real reader and real cards. They are not part of the normal test run; the solution only compiles them. Start them with <code>Run-HilTests.bat</code>;
+<code>hil.settings.json</code> next to it switches the cases on: <code>readerScan</code>, <code>interactive</code>, <code>secureKeys</code>, <code>cardWrites</code> and <code>readerKind</code> (<code>auto</code>, <code>elatec</code> or <code>pcsc</code>). The checklists are in <code>EXTERNAL-CONTROL.md</code>, <code>CLASSIC.md</code>, <code>ULTRALIGHT.md</code>, <code>SECURE-KEYS.md</code>,
+<code>SAM-AV3.md</code> and <code>SAM-PICC.md</code>. Cases with <code>cardWrites</code> write to cards: use cards you no longer need.</p>
+
+<h2>Extensions, help, installers</h2>
+
+<ul>
+<li>Trying extensions while you develop and making packages: see <a href="extensions.html">Writing an extension</a> and <a href="extension_packages.html">Extension packages</a>.</li>
+<li>The help is built by <code>docs/Build-Help.ps1</code> with <code>hhc.exe</code> of HTML Help Workshop; the compiled <code>.chm</code> files sit next to their sources in the repository, because a normal build (and every test) does not need HTML Help Workshop.</li>
+<li>The installers (<code>RFiDGearBundleSetup</code> and the two MSI projects) use WiX 3.14 and are built separately, not with <code>dotnet build</code>: first the host and the sample plugin in Release for the platform, then the MSI projects, then the bundle, with the MSBuild of Visual Studio 2026. A release is made by <code>RFiDGearBundleSetup\Build-Release.ps1</code>, then <code>Sign-Release.ps1</code> and <code>Pack-Release.ps1</code>
+(<code>Make-Release.bat</code> runs the three). The version is written by hand in <code>RFiDGear.csproj</code>, <code>Bundle.wxs</code> and <code>update.xml</code>; a test stops a release in which they differ. The certificate is not in the repository (<code>RFIDGEAR_SIGN_PFX</code>, <code>RFIDGEAR_SIGN_PASSWORD</code>).</li>
+</ul>
+
+<div class="nav">Previous page: <a href="files_folders.html">Files and folders</a> &middot; Next page: <a href="maturity.html">What is proven and what is not</a></div>
+
+</body>
+</html>

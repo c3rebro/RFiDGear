@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Keys through external control</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Keys through external control</h1>
+
+<p>A project can name a key by a reference to a provider instead of containing it (see <a href="keys.html">Keys</a>). The built-in provider <code>bridge-client</code> belongs to the connected client that called <code>registerKeyProvider</code>; RFiDGear then calls
+<code>resolveKey</code> on the client, inside the limits of the key registry. Without a registered client, a task that names the provider ends with <code>KeyUnavailable</code> and does not touch the card; the key typed into the project is no fallback.</p>
+
+<h2>How to register</h2>
+
+<ol>
+<li>Call <code>registerKeyProvider</code> after <code>hello</code>. The answer gives the provider id (<code>bridge-client</code>), the time you have to answer (<code>timeoutMs</code>, <code>interactiveTimeoutMs</code>) and whether <code>ownRunsOnly</code> is in force.</li>
+<li>A person binds a key slot in a task dialog to that provider and types a reference of your choosing, such as <code>orders/4711</code>.</li>
+<li>When a task needs the key, RFiDGear calls <code>resolveKey</code> on you, with the reference, what the key is for (algorithm, usage, application, key number), the run, the task and the UID of the card.</li>
+<li>The registration ends with the connection; register again after you reconnect.</li>
+</ol>
+
+<h2>The rules for <code>resolveKey</code></h2>
+
+<ul>
+<li>Implement it asynchronously and honor the token. It is canceled when the time is up (10 seconds, 5 minutes when a person may be asked) or the run is given up; a key that arrives later is thrown away.</li>
+<li><strong>Check the reference against what you serve.</strong> Any program of the user can put any reference in a project, and every run asks you while you are registered, whoever started it. Answer <code>notAuthorized</code> for a reference you do not recognize, and <code>notFound</code> for one you recognize without a key.</li>
+<li>The answer is <code>resolved</code> with the key as base64 (1 to 32 bytes) or one of <code>notFound</code>, <code>notAuthorized</code>, <code>invalidKey</code>, <code>unsupported</code>. Anything else, or an exception, is a failure of your side.</li>
+<li>RFiDGear does not ask you for the password or the PACK of a MIFARE Ultralight EV1 or an NTAG: this protocol has no name for those two kinds of key yet, so a slot of that kind that is bound to <code>bridge-client</code> ends with <code>KeyUnavailable</code>, and no <code>resolveKey</code> call is made. The key of an Ultralight C is a <code>tripleDes2K</code> key.</li>
+<li>Never log the request or the answer, and do not keep the key longer than the answer needs. RFiDGear does neither, and keeps its copy only for the card operation, in a buffer that it erases. <strong>Neither side can erase the JSON text of the message:</strong> this protects against logs, files and command lines, not against a memory dump of a process of the same user.</li>
+</ul>
+
+<h2>Where a run comes from (<code>keys.context</code>)</h2>
+
+<p>When RFiDGear offers <code>keys.context</code>, every request for a key says where its run comes from:</p>
+
+<table>
+<tr><th>Field</th><th>Content</th></tr>
+<tr><td><code>source</code></td><td><code>bridge</code> (a run of a client of this interface, any client: compare the <code>requestId</code>), <code>autoMode</code>, <code>gui</code> (a run that the user started in the main window or with a start-up argument) or <code>other</code> (an extension, a button in a task dialog, a run that RFiDGear cannot place). A missing value reads as <code>other</code>.</td></tr>
+<tr><td><code>requestId</code></td><td>for a run of a client, the id that the client chose in <code>startRun</code>. Write it down before you call <code>startRun</code>, because the first request for a key can overtake the answer to <code>startRun</code>.</td></tr>
+<tr><td><code>projectRevision</code></td><td>for a run of a client, the revision that the run <em>started with</em>; compare it with the one you approved for that request</td></tr>
+</table>
+
+<p>These are information. Whether you are asked, and what you may answer, does not change if you ignore them; the decision stays with your vault. A vault that gives out a key only for a request that is <code>source: bridge</code>, whose <code>requestId</code> it sent, whose
+<code>projectRevision</code> it approved and whose <code>cardUid</code> is the card it approved, has a release that is bound to one job.</p>
+
+<p><code>ownRunsOnly</code> in <code>registerKeyProvider</code> (default off) goes one step further: RFiDGear then answers <code>notAuthorized</code> itself for every run that was not started over <strong>this connection</strong>, and does not call you for it. That includes a run that the user starts in the window, a button in a task dialog,
+and a run that an earlier connection left behind. The run of a card that <em>you</em> approved in automatic mode is your own as well. The answer to the registration says whether the restriction is in force; check it. Send the field only when <code>keys.context</code> is offered: an older RFiDGear rejects a member it does not know.</p>
+
+<div class="warn"><strong>What this protects against, and what it does not.</strong> The fields and the restriction protect against mix-ups and mistakes: a run from the window while your job was meant, a run of automatic mode, a project that was changed after you approved it, a request for a card you did not approve.
+They do not protect against a hostile program of the same Windows user: it has the same rights as the user. Treat a release that is bound to a run as a second lock, not as the only one.</div>
+
+<div class="nav">Previous page: <a href="bridge_approval.html">One card, one approval, one run</a> &middot; Next page: <a href="bridge_sample_client.html">The sample client</a></div>
+
+</body>
+</html>

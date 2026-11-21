@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>The protocol</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>The protocol</h1>
+
+<p>The pipe speaks JSON-RPC 2.0 (StreamJsonRpc, <code>HeaderDelimitedMessageHandler</code> with <code>Content-Length</code> headers), UTF-8 JSON.</p>
+
+<h2>The form of the messages</h2>
+
+<ul>
+<li>The parameters are positional with exactly <strong>one</strong> object: the request type of the method.</li>
+<li>The names are camel case and are written explicitly in the contract (<code>BridgeJson</code> has the options). RFiDGear rejects members it does not know; a client skips members it does not know.</li>
+<li>A message longer than 1 MiB ends the connection.</li>
+<li>A client that does not read for ten seconds is disconnected, and so is one that lets more than 64 results wait. The results stay in the history; you catch up after you reconnect.</li>
+</ul>
+
+<h2>Rules that hold for every call</h2>
+
+<ul>
+<li><code>hello</code> comes first. Anything else before it ends with <code>handshakeRequired</code>.</li>
+<li>A method whose capability this RFiDGear does not offer ends with <code>capabilityNotSupported</code>. A client decides what it may call from the capabilities in the answer to <code>hello</code>, never from the version of the application.</li>
+<li>Until RFiDGear has finished starting, everything but <code>hello</code> and <code>getStatus</code> ends with <code>notReady</code>.</li>
+<li>RFiDGear never repeats a card operation, and a client must not either (see <a href="bridge_safe_runs.html">Requesting runs safely</a>).</li>
+</ul>
+
+<h2>The capabilities</h2>
+
+<table>
+<tr><th>Capability</th><th>What it offers</th></tr>
+<tr><td><code>session</code></td><td><code>hello</code>: negotiation of the protocol version, capabilities, events, limits</td></tr>
+<tr><td><code>status</code></td><td><code>getStatus</code></td></tr>
+<tr><td><code>project.load</code></td><td><code>loadProject</code></td></tr>
+<tr><td><code>execution.run</code>, <code>execution.cancel</code></td><td><code>startRun</code>, <code>cancelRun</code></td></tr>
+<tr><td><code>execution.resultLookup</code>, <code>execution.resultLog</code></td><td><code>getRunResult</code>, <code>listRunResults</code></td></tr>
+<tr><td><code>reader.scan</code></td><td><code>scanReader</code></td></tr>
+<tr><td><code>autoMode</code>, <code>autoMode.approval</code></td><td><code>startAutoMode</code>, <code>stopAutoMode</code>; with approval: <code>approveCard</code>, <code>declineCard</code></td></tr>
+<tr><td><code>keys.provider</code></td><td><code>registerKeyProvider</code> and the call <code>resolveKey</code> from RFiDGear to the client</td></tr>
+<tr><td><code>events.execution</code>, <code>events.running</code>, <code>events.reader</code>, <code>events.project</code>, <code>events.autoMode</code>, <code>events.lifecycle</code></td><td>the groups of events</td></tr>
+<tr><td><code>project.revision</code></td><td>guarantee: the revision of the loaded project</td></tr>
+<tr><td><code>execution.journal</code></td><td>guarantee: a run is written down before it starts; after a restart the admitted request ids are still known</td></tr>
+<tr><td><code>execution.verificationDetails</code></td><td>guarantee: a task that compares values says what it compared</td></tr>
+<tr><td><code>keys.context</code></td><td>guarantee: a request for a key says where its run comes from; with <code>ownRunsOnly</code> RFiDGear answers foreign runs itself</td></tr>
+</table>
+
+<p>Every method and every event has exactly <em>one</em> capability; the answer to <code>hello</code> is generated from those statements, so a capability cannot be offered without its method. A new field in a request ships only with a new
+capability that a client has seen.</p>
+
+<h2>Errors</h2>
+
+<p>An error is a JSON-RPC error with an application code; <code>error.data</code> holds <code>kind</code>, an optional <code>errorId</code> (it also appears in the log of RFiDGear), <code>neverStarted</code> and <code>details</code>.
+The text of the error is never an exception message. An unknown method and a request that does not fit reach a client as <code>-32601</code> and <code>-32602</code>.</p>
+
+<table>
+<tr><th>Code</th><th>Kind (<code>kind</code>)</th><th>Meaning</th></tr>
+<tr><td>1001</td><td><code>handshakeRequired</code></td><td><code>hello</code> is missing</td></tr>
+<tr><td>1002</td><td><code>incompatibleProtocol</code></td><td>the details carry the range that RFiDGear speaks</td></tr>
+<tr><td>1003</td><td><code>capabilityNotSupported</code></td><td>the capability is not offered</td></tr>
+<tr><td>1004</td><td><code>invalidRequest</code></td><td>the details name the field, never its value</td></tr>
+<tr><td>1005</td><td><code>notReady</code></td><td>RFiDGear is still starting</td></tr>
+<tr><td>1006</td><td><code>busy</code></td><td>the details say with what: <code>run</code>, <code>load</code>, <code>edit</code>, <code>scan</code> or <code>other</code></td></tr>
+<tr><td>1007</td><td><code>autoModeActive</code></td><td>automatic mode is on</td></tr>
+<tr><td>1008 to 1012</td><td><code>projectNotFound</code>, <code>projectUnsupportedFormat</code>, <code>projectLoadFailed</code>, <code>noProjectLoaded</code>, <code>projectMismatch</code></td><td>the project</td></tr>
+<tr><td>1013</td><td><code>requestIdConflict</code></td><td>the same id with other content</td></tr>
+<tr><td>1014, 1015</td><td><code>uiUnresponsive</code>, <code>shuttingDown</code></td><td>the window does not answer; RFiDGear is closing</td></tr>
+<tr><td>1016, 1017</td><td><code>internalError</code>, <code>noReader</code></td><td>a fault inside RFiDGear; no reader</td></tr>
+<tr><td>1018</td><td><code>approvalNotPending</code></td><td>an answer about a card that is not waited for (any more), that was answered already, or that comes from another connection</td></tr>
+</table>
+
+<p><code>neverStarted: true</code> says that the request did not touch a card and a new attempt is safe. An error without it does not say the opposite: ask.</p>
+
+<h2>Limits</h2>
+
+<p>Also in <code>hello</code>: 1 MiB per message, 64 variables, 128 characters per name, 2048 per value, 4096 per path, 64 results and 1024 request ids kept, 30 seconds of waiting per <code>getRunResult</code>, 32 bytes per key.</p>
+
+<h2>Versioning</h2>
+
+<p>The protocol has a major version (1 today), which the client names in <code>hello</code> as a range. Within the major version nothing is removed or re-meant once the protocol is frozen; a client reads what a newer RFiDGear adds as optional.
+The assembly version of the contract stays <code>1.0.0.0</code>.</p>
+
+<div class="nav">Previous page: <a href="bridge_start.html">External control: quick start</a> &middot; Next page: <a href="bridge_methods.html">Methods and events</a></div>
+
+</body>
+</html>

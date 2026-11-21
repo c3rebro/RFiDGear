@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>&Uuml;berblick f&uuml;r Entwickler</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>&Uuml;berblick f&uuml;r Entwickler</h1>
+
+<p>Teil 2 dieser Hilfe ist f&uuml;r alle, die RFiDGear in eigene Software einbinden. Er ist eine Kurzfassung mit Nachschlagetabellen. Die ausf&uuml;hrlichen Texte, an denen er sich h&auml;lt, liegen im Quellcode-Repository
+(siehe unten); wo diese Hilfe und die Dateien dort sich unterscheiden, gelten die Dateien.</p>
+
+<h2>Was Sie wollen, und wo es steht</h2>
+
+<table>
+<tr><th>Ich will ...</th><th>Der Weg</th><th>Seite</th></tr>
+<tr><td>aus meinem Programm ein Projekt laden, es an einer Karte ausf&uuml;hren und das Ergebnis lesen</td><td>die externe Steuerung (eine Named Pipe, JSON-RPC)</td>
+<td><a href="bridge_start.html">Externe Steuerung: Schnellstart</a></td></tr>
+<tr><td>sicher stellen, dass nie eine Karte doppelt oder ungewollt geschrieben wird</td><td>Request-IDs, Projektrevision, Journal</td>
+<td><a href="bridge_safe_runs.html">L&auml;ufe sicher anfordern</a></td></tr>
+<tr><td>jede Karte vor dem Schreiben selbst freigeben</td><td>Pr&uuml;fung der UID mit einer Variablen, automatischer Modus mit Freigabe</td>
+<td><a href="bridge_approval.html">Eine Karte, eine Freigabe, ein Lauf</a></td></tr>
+<tr><td>Kartenschl&uuml;ssel aus meinem Programm liefern</td><td>der Schl&uuml;sselanbieter <code>bridge-client</code> der externen Steuerung</td>
+<td><a href="bridge_keys.html">Schl&uuml;ssel &uuml;ber die externe Steuerung</a></td></tr>
+<tr><td>Kartenschl&uuml;ssel aus einem eigenen Speicher liefern, ohne dass ein Programm verbunden sein muss</td><td>ein Schl&uuml;sselanbieter als Erweiterung</td>
+<td><a href="key_providers.html">Schl&uuml;sselanbieter schreiben</a></td></tr>
+<tr><td>RFiDGear um ein Fenster oder eine Funktion erweitern</td><td>eine Erweiterung mit <code>RFiDGear.Contracts</code> und <code>RFiDGear.ExtensionSdk</code></td>
+<td><a href="extensions.html">Erweiterungen schreiben</a></td></tr>
+<tr><td>eine neue Version einer Erweiterung ausliefern</td><td>ein Erweiterungspaket (<code>.rfext</code>)</td>
+<td><a href="extension_packages.html">Erweiterungspakete</a></td></tr>
+</table>
+
+<h2>Die Grunds&auml;tze</h2>
+
+<ul>
+<li><strong>Ein Versuch.</strong> RFiDGear wiederholt nie von selbst einen Befehl, der eine Karte &auml;ndert (schreiben, authentifizieren, formatieren). Ein Programm, das RFiDGear steuert, tut es auch nicht:
+meldet RFiDGear nach einem Zweifel nicht ausdr&uuml;cklich &bdquo;nie gestartet&ldquo;, fragen Sie nach dem Ergebnis desselben Auftrags, statt ihn neu zu schicken.</li>
+<li><strong>Ein Prozess, ein Benutzer.</strong> Es l&auml;uft eine RFiDGear-Instanz je Windows-Sitzung. Die Pipe der externen Steuerung erreicht nur der Windows-Benutzer, der RFiDGear gestartet hat.</li>
+<li><strong>Vertr&auml;ge als Assemblies.</strong> Ein Client der externen Steuerung verwendet <code>RFiDGear.Bridge.Contracts.dll</code>, eine Erweiterung <code>RFiDGear.Contracts.dll</code> und <code>RFiDGear.ExtensionSdk.dll</code>;
+beide Gruppen behalten ihre Assemblyversion <code>1.0.0.0</code>, damit fr&uuml;her gebaute Programme weiter binden. Die &ouml;ffentliche Fl&auml;che ist durch freigegebene Schnappsch&uuml;sse im Test festgehalten.</li>
+<li><strong>Nichts Geheimes im Protokoll.</strong> RFiDGear schreibt weder eine Variable noch einen Pfad, eine UID, einen Schl&uuml;ssel noch den Text einer Ausnahme eines Clients in sein Protokoll.</li>
+</ul>
+
+<h2>Die Dokumente im Repository</h2>
+
+<table>
+<tr><th>Datei</th><th>Inhalt</th></tr>
+<tr><td><code>RFiDGear.Bridge.Contracts/README.md</code></td><td>das Protokoll der externen Steuerung: Methoden, Ereignisse, Fehler, Grenzen</td></tr>
+<tr><td><code>RFiDGear.Bridge.Contracts/CLIENT-GUIDE.md</code></td><td>der Leitfaden f&uuml;r Autoren eines Clients: was ein Client tun muss und vor allem, was nicht</td></tr>
+<tr><td><code>RFiDGear.Bridge.SampleClient/README.md</code></td><td>ein lauff&auml;higer Beispielclient</td></tr>
+<tr><td><code>RFiDGear.ExtensionSdk/README.md</code></td><td>der SDK-Teil f&uuml;r Erweiterungen und Schl&uuml;sselanbieter</td></tr>
+<tr><td><code>DEVELOPER_NOTES.md</code></td><td>Fakten, die beim &Auml;ndern st&ouml;ren: Fehlercodes, Anmeldeinformationsverwaltung, Pakete, Release, Tests</td></tr>
+<tr><td><code>RFiDGear.HIL.Tests/*.md</code></td><td>die Pr&uuml;flisten f&uuml;r Versuche mit echtem Leser und echten Karten</td></tr>
+</table>
+
+<div class="note">Wie weit das alles erprobt ist, steht auf der Seite <a href="maturity.html">Was erprobt ist und was nicht</a>. Das Protokoll der externen Steuerung ist noch nicht eingefroren.</div>
+
+<div class="nav">Vorherige Seite: <a href="troubleshooting.html">Fehlersuche</a> &middot; N&auml;chste Seite: <a href="bridge_start.html">Externe Steuerung: Schnellstart</a></div>
+
+</body>
+</html>
