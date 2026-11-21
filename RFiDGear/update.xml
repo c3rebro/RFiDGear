@@ -61,6 +61,11 @@ New:
   header on every step, the order list remembers its grouping, the closed groups and a
   new "Sort by" choice, and a check that answered "No" is shown as "No" instead of
   "Failed". The setup carries this version (Custom or Complete, as before).
+- A new help in German and English, opened with F1 or Help > Help. It describes the main
+  window, the menus, the settings, projects, every task type, reports, keys, the SAM
+  setup, the start-up arguments and troubleshooting. The old help file came from another
+  program and could not be opened from RFiDGear at all; the setup carries RFiDGear_de.chm
+  and RFiDGear_en.chm next to RFiDGear.exe.
 - External control, for programs that drive RFiDGear such as SIE Encode (the protocol,
   the client guide and the sample client are in RFiDGear.Bridge.Contracts):
   + The loaded project has a revision. loadProject and getStatus tell it, startRun can

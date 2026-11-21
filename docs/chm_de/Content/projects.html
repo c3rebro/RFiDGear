@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Projekte</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Projekte</h1>
+
+<p>Ein <em>Projekt</em> ist die gespeicherte Aufgabenliste. Es enth&auml;lt die Aufgaben mit all ihren Einstellungen, auch die
+Ausf&uuml;hrungsbedingungen, Pr&uuml;fpunkte der Berichte und Logikbausteine. Der Chip-Baum geh&ouml;rt nicht zum Projekt.</p>
+
+<h2>Dateien</h2>
+
+<table>
+<tr><th>Endung</th><th>Inhalt</th></tr>
+<tr><td><code>.rfPrj</code></td><td>die &uuml;bliche Projektdatei, ein Archiv mit den Aufgaben als XML</td></tr>
+<tr><td><code>.xml</code></td><td>ein Projekt als reine XML-Datei</td></tr>
+</table>
+
+<p>Beim Speichern beh&auml;lt RFiDGear die Endung <code>.rfPrj</code> oder <code>.xml</code> (ein reines XML-Projekt) und erg&auml;nzt <code>.rfPrj</code> bei jedem anderen Dateinamen. <strong>Projekt Speichern unter...</strong> fragt, bevor es eine vorhandene Datei ersetzt;
+<strong>Projekt Speichern</strong> schreibt die Datei des ge&ouml;ffneten Projekts ohne R&uuml;ckfrage.</p>
+
+<div class="warn">Ein Schl&uuml;ssel, den Sie in eine Aufgabe eingetippt haben, steht in der Projektdatei. Geben Sie die Datei nur an Personen
+weiter, die den Schl&uuml;ssel kennen d&uuml;rfen. Ein Schl&uuml;ssel, den eine Aufgabe &uuml;ber eine Referenz benennt, steht nicht in der Datei (siehe
+<a href="keys.html">Schl&uuml;ssel</a>).</div>
+
+<h2>&Ouml;ffnen und speichern</h2>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>Datei &gt; Projekt &ouml;ffnen...</strong> (<kbd>Strg</kbd> + <kbd>O</kbd>)</td><td>ersetzt die Aufgabenliste durch die Aufgaben der Datei und
+merkt sich die Datei als zuletzt verwendetes Projekt</td></tr>
+<tr><td><strong>Datei &gt; Projekt Speichern</strong></td><td>schreibt in die Datei des ge&ouml;ffneten Projekts. Ist die Datei verschoben oder gel&ouml;scht, fragt RFiDGear
+nach einem neuen Namen, damit es nicht ein anderes Projekt &uuml;berschreibt</td></tr>
+<tr><td><strong>Datei &gt; Projekt Speichern unter...</strong> (<kbd>Strg</kbd> + <kbd>S</kbd>)</td><td>fragt nach einem Dateinamen und danach, ob das Projekt als
+Voreinstellung dienen und beim Start automatisch geladen werden soll (das setzt die Einstellung <strong>Zuletzt verwendetes Projekt mit
+Pragrammstart laden</strong> voraus)</td></tr>
+<tr><td><strong>Datei &gt; Chipliste exportieren</strong></td><td>speichert die Chips des Chip-Baums als XML-Datei (<strong>Chip-Dateien (*.xml)</strong>)</td></tr>
+</table>
+
+<p>Ein Projekt l&auml;sst sich auch beim Start laden: als Argument mit dem Pfad einer <code>.rfPrj</code>-Datei, oder automatisch als zuletzt verwendetes
+Projekt. Siehe <a href="command_line.html">Startargumente</a>.</p>
+
+<h2>Die Liste &auml;ndern</h2>
+
+<p>Solange ein Lauf, das Laden eines Projekts oder eine andere &Auml;nderung der Liste aktiv ist, l&auml;sst sich die Liste nicht &auml;ndern. RFiDGear zeigt
+dann den Hinweis <em>Die Aufgabenliste kann nicht ge&auml;ndert werden...</em>; versuchen Sie es nach dem Ende erneut.</p>
+
+<h2>Ein Projekt f&uuml;r mehrere Karten</h2>
+
+<p>Das Projekt gilt f&uuml;r jede Karte der Serie. Was von Karte zu Karte wechselt, steht nicht im Projekt, sondern kommt als Variable in den
+Lauf: die erwartete UID einer Karte (<code>$EXPECTEDUID</code>), der Zielpfad eines Berichts und andere Werte. Siehe
+<a href="command_line.html">Startargumente</a> und <a href="tasks_generic_chip.html">Typunabh&auml;ngige Chip-Aufgaben</a>.</p>
+
+<div class="nav">Vorherige Seite: <a href="settings.html">Einstellungen</a> &middot; N&auml;chste Seite: <a href="tasks_overview.html">Aufgaben im &Uuml;berblick</a></div>
+
+</body>
+</html>

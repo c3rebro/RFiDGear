@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Einstellungen</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Einstellungen</h1>
+
+<p>Die Einstellungen &ouml;ffnen Sie mit <strong>Extras &gt; Einstellungen...</strong>. Das Fenster hat drei Reiter. Mit
+<strong>Speichern + Schlie&szlig;en</strong> &uuml;bernehmen Sie die &Auml;nderungen, mit <strong>Abbrechen</strong> verwerfen Sie sie. Die Einstellungen
+liegen in Dateien unter <code>%LocalAppData%\RFiDGear\</code>.</p>
+
+<h2>Reiter &bdquo;Kartenleser Einstellungen&ldquo;</h2>
+
+<table>
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td><strong>Verf&uuml;gbare Kartenleseranbieter</strong></td><td>die Art des Lesers. Unterst&uuml;tzt sind <strong>Elatec TWN4</strong> und <strong>PCSC</strong>;
+die Liste enth&auml;lt weitere Namen, die RFiDGear nicht bedient. <strong>Kein Leser ausgew&auml;hlt</strong> schaltet den Leser ab.</td></tr>
+<tr><td><strong>Ausgew&auml;hlter Kartenleser:</strong></td><td>zeigt den Leser, der gespeichert ist</td></tr>
+<tr><td><strong>Gefundene PC/SC-Leseger&auml;te</strong></td><td>nur bei PCSC: der Leser, in dem die Karte liegt</td></tr>
+<tr><td><strong>SAM-Leser:</strong></td><td>nur bei PCSC: der Leser, in dem eine MIFARE SAM AV3 steckt (siehe unten). <strong>(keiner)</strong>, wenn keine SAM
+verwendet wird</td></tr>
+<tr><td><strong>Kartenleser Status:</strong></td><td>das Ergebnis des letzten Versuchs, sich zu verbinden</td></tr>
+<tr><td><strong>Com Port:</strong>, <strong>Baudrate:</strong></td><td>RFiDGear speichert beide Werte, verwendet sie aber heute nicht: ein Elatec-Leser wird
+selbst gefunden.</td></tr>
+<tr><td><strong>Verbinden</strong></td><td>probiert den Leser aus und liest dabei einen Chip: legen Sie vorher einen Chip auf den Leser</td></tr>
+</table>
+
+<h3>Elatec TWN4</h3>
+
+<p>RFiDGear findet den Leser selbst. H&auml;lt ein anderes Programm oder ein zweites RFiDGear-Fenster den
+Anschluss, meldet das Fenster <strong>(Port nicht zugreifbar)</strong> und erkl&auml;rt, dass der COM-Port von einem anderen Programm
+verwendet werden kann: schlie&szlig;en Sie das andere Programm und klicken Sie <strong>Verbinden</strong> erneut.</p>
+
+<h3>PCSC</h3>
+
+<p>W&auml;hlen Sie unter <strong>Gefundene PC/SC-Leseger&auml;te</strong> den Leser, in dem die Karte liegt. Bei einem Leserpaar wie dem
+OMNIKEY 5422 mit Kontaktschacht und Kontaktlos-Schacht ist das der Kontaktlos-Schacht.</p>
+
+<p>Eine <strong>MIFARE SAM AV3</strong> steckt in einem eigenen Leser, bei einem Paar im Kontaktschacht. W&auml;hlen Sie ihn unter
+<strong>SAM-Leser:</strong>. RFiDGear nimmt diesen Leser nie f&uuml;r die Karte. W&auml;hlen Sie zwei verschiedene Leser: nennen Sie denselben Leser
+f&uuml;r Karte und SAM, warnt das Fenster, dass die Karte dann nie gelesen wird. Ohne eine SAM lassen Sie <strong>(keiner)</strong> stehen. Einen
+Elatec TWN4 ab Hardware-Revision G, der selbst SAM-Steckpl&auml;tze hat, brauchen Sie daf&uuml;r nicht einzustellen.</p>
+
+<div class="warn">In einer Remotedesktop-Sitzung sind PC/SC-Leser nur sichtbar, wenn die Smartcard-Umleitung der Verbindung eingeschaltet ist
+(<code>redirectsmartcards:i:1</code> in der <code>.rdp</code>-Datei oder in den Einstellungen des Remotedesktop-Clients), und der Leser muss
+am lokalen Rechner stecken. Sonst zeigt RFiDGear <strong>RDP: PC/SC nicht verf&uuml;gbar</strong>, und PCSC l&auml;sst sich nicht w&auml;hlen.</div>
+
+<h2>Reiter &bdquo;Erweiterte Einstellungen&ldquo;</h2>
+
+<table>
+<tr><th>Schalter</th><th>Wirkung</th></tr>
+<tr><td><strong>Zuletzt verwendetes Projekt mit Pragrammstart laden</strong></td><td>l&auml;dt beim Start das Projekt, das Sie zuletzt ge&ouml;ffnet oder als Voreinstellung gespeichert haben
+(siehe <a href="projects.html">Projekte</a>)</td></tr>
+<tr><td><strong>Beim Start auf Updates pr&uuml;fen</strong></td><td>fragt beim Start die Update-Quelle (siehe <a href="updates_extensions.html">Updates und
+Erweiterungen</a>)</td></tr>
+<tr><td><strong>JSON-RPC Pipe Server aktivieren</strong></td><td>&ouml;ffnet die externe Steuerung: eine benannte Pipe, die nur dieser Windows-Benutzer erreicht.
+Ein Programm, das sich verbindet, sieht den Zustand von RFiDGear, kann ein Projekt laden und dessen Aufgaben ausf&uuml;hren. Die &Auml;nderung wirkt nach
+einem Neustart. Siehe Teil 2 dieser Hilfe. Das Startargument <code>EXTERNALCONTROL=1</code> schaltet die Pipe f&uuml;r einen Lauf ein.</td></tr>
+</table>
+
+<h2>Reiter &bdquo;Standardschl&uuml;ssel&ldquo;</h2>
+
+<p>Diese Schl&uuml;ssel verwendet die <strong>Schnellpr&uuml;fung</strong> (<kbd>Strg</kbd> + <kbd>Q</kbd>), um einen Chip zu &ouml;ffnen.</p>
+
+<table>
+<tr><th>Gruppe</th><th>Inhalt</th></tr>
+<tr><td><strong>Vor Quick-Check nach Schl&uuml;sseln fragen</strong></td><td>ist der Schalter an, &ouml;ffnet die Schnellpr&uuml;fung vor dem Lesen das Fenster <strong>Standardschl&uuml;ssel
+konfigurieren</strong>, in dem Sie die Schl&uuml;ssel &auml;ndern k&ouml;nnen. W&auml;hlen Sie dort <strong>Nicht mehr fragen</strong>, schaltet das den Schalter aus.</td></tr>
+<tr><td><strong>DESFire-Standardschl&uuml;ssel</strong></td><td>je ein Schl&uuml;ssel f&uuml;r <strong>PICC-Masterschl&uuml;ssel</strong>, <strong>Anwendungs-Masterschl&uuml;ssel</strong>,
+<strong>Leseschl&uuml;ssel</strong> und <strong>Schreibschl&uuml;ssel</strong>: die <strong>Verschl&uuml;sselung</strong> und der Wert in Hex</td></tr>
+<tr><td><strong>MIFARE Classic-Schl&uuml;ssel</strong></td><td>eine Liste von Schl&uuml;sseln, getrennt durch Komma, je 12 Hex-Zeichen (zum Beispiel
+<code>FFFFFFFFFFFF</code>). Das Feld ist gr&uuml;n, solange die Liste g&uuml;ltig ist, und rot, sobald ein Schl&uuml;ssel nicht stimmt; mit einem
+ung&uuml;ltigen Schl&uuml;ssel l&auml;sst sich nicht speichern.</td></tr>
+</table>
+
+<div class="warn">Diese Standardschl&uuml;ssel stehen im Klartext in der Datei <code>settings.xml</code> (die ersten Werte kommen aus <code>runtime-defaults.json</code>). Tragen Sie hier nur Schl&uuml;ssel ein, die als
+Standard oder zum Ausprobieren gelten. Echte Schl&uuml;ssel geh&ouml;ren in die Schl&uuml;sselverwaltung (siehe <a href="keys.html">Schl&uuml;ssel</a>).</div>
+
+<div class="nav">Vorherige Seite: <a href="menus.html">Die Men&uuml;s und Tastenk&uuml;rzel</a> &middot; N&auml;chste Seite: <a href="projects.html">Projekte</a></div>
+
+</body>
+</html>

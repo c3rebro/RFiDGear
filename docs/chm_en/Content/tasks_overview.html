@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Tasks at a glance</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Tasks at a glance</h1>
+
+<p>A <em>task</em> is a step that RFiDGear carries out on a chip, for example checking a UID, reading a sector, changing a key or
+writing a report. The tasks stand in a list (the project) and run from top to bottom.</p>
+
+<h2>The kinds of tasks</h2>
+
+<table>
+<tr><th>Menu entry (Edit &gt; Add / Edit Task(s))</th><th>What for</th><th>Page</th></tr>
+<tr><td>Add / Edit Generic (Non-Chip) Task...</td><td>Create a report, logic block, run an application: tasks that need no chip</td>
+<td><a href="tasks_common.html">Generic tasks</a></td></tr>
+<tr><td>Add / Edit Generic Chip Task...</td><td>Check UID, check type of chip, check for a multi-technology card</td>
+<td><a href="tasks_generic_chip.html">Chip tasks for any card</a></td></tr>
+<tr><td>Add/Edit Mifare Classic Task</td><td>read and write blocks and sectors (the sector trailer with the keys and access bits too), MAD</td>
+<td><a href="tasks_classic.html">MIFARE Classic</a></td></tr>
+<tr><td>Add/Edit Mifare Desfire Task</td><td>applications, files and keys of a DESFire card</td>
+<td><a href="tasks_desfire.html">MIFARE DESFire</a></td></tr>
+<tr><td>Add/Edit Mifare Ultralight / NTAG Task</td><td>read and write pages of an Ultralight or NTAG chip</td>
+<td><a href="tasks_ultralight.html">MIFARE Ultralight and NTAG</a></td></tr>
+</table>
+
+<p>The dialogs of the chip tasks open only when a reader is connected.</p>
+
+<h2>Add and change a task</h2>
+
+<ol>
+<li>Choose the task type in the menu <strong>Edit &gt; Add / Edit Task(s)</strong>, or in the context menu of the list
+(<strong>Add New Task</strong>).</li>
+<li>Set up the task in the dialog and confirm it.</li>
+<li>To change it, open a row with a double click or with <strong>Edit Task...</strong> in the context menu.</li>
+</ol>
+
+<h2>What every task dialog has</h2>
+
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td><strong>Task Index</strong></td><td>a whole number from 0 that no other task has. Execute conditions, logic blocks and reports refer to a task by
+its number. RFiDGear rejects a duplicate number.</td></tr>
+<tr><td><strong>Task Type</strong></td><td>what the task does</td></tr>
+<tr><td><strong>Task Description</strong></td><td>your own text; it appears in the list</td></tr>
+<tr><td><strong>Execute Condition for this Task</strong></td><td>see below</td></tr>
+</table>
+
+<h2>The order</h2>
+
+<p>The list is ordered by task number, and the tasks run from top to bottom, that is in ascending number. A click on a column heading changes only how the list is shown: the tasks still run in the order of their numbers, so a list that is shown in descending order does not run backwards. After you add or change a task, RFiDGear
+sorts the list again.</p>
+
+<p>If you drag a row to another place with the mouse, the task gets the first free number between its new neighbors. If no number is free there,
+RFiDGear shows a warning (<em>Task Index Update</em>) and the row stays where it was.</p>
+
+<div class="note">Leave gaps when you number (10, 20, 30, ...), so that you can insert tasks in between later.</div>
+
+<h2>The execute condition</h2>
+
+<p>With an execute condition a task runs only if an earlier task ended with a certain result. You set two fields in the dialog:</p>
+
+<ul>
+<li><strong>Targeted Task Index</strong>: the number of the earlier task.</li>
+<li><strong>Target Result</strong>: the result it has to have.</li>
+</ul>
+
+<p>If the earlier task had another result, RFiDGear skips the task. That is not an error. This is how you build branches: one task checks whether an
+application exists; a second one runs only if that check ended with <strong>Is Not True</strong>, and creates the application. The condition refers
+to a task that runs before this one.</p>
+
+<h2>The results of a task</h2>
+
+<p>Every task ends with a result. The icon in the list shows only succeeded or failed; the result itself is named by the selection fields of the
+execute condition and of the checkpoints.</p>
+
+<table>
+<tr><th>Result</th><th>Meaning</th></tr>
+<tr><td><strong>No Error</strong></td><td>succeeded</td></tr>
+<tr><td><strong>Is Not True</strong></td><td>a check answered "no": its condition did not hold. That is the answer of the check, not a fault of the reader or
+the card.</td></tr>
+<tr><td><strong>Is Not False</strong></td><td>the counterpart, which can be chosen in conditions and checkpoints; no task of this version ends with it</td></tr>
+<tr><td><strong>Authentication Failed</strong></td><td>the card refused the key</td></tr>
+<tr><td><strong>Permission Denied</strong></td><td>the card forbids this operation with the current access rights</td></tr>
+<tr><td><strong>Protocol Constraint</strong></td><td>the reader or the card cannot do that, for example an NTAG on a PC/SC reader</td></tr>
+<tr><td><strong>Transport Error</strong></td><td>the connection broke, for example because the card was removed</td></tr>
+<tr><td><strong>Unknown Error</strong></td><td>the outcome is not known, for example when a block that was written does not read back as written</td></tr>
+<tr><td><strong>Out Of Memory Error</strong></td><td>there is no room left on the card</td></tr>
+<tr><td><strong>Key unavailable</strong></td><td>a key that the task names by a reference could not be fetched from its key store; no command was sent to the card for it. A failure of a SAM is another case. See
+<a href="keys.html">Keys</a>.</td></tr>
+<tr><td><strong>Card not expected</strong></td><td>the card on the reader is not the one the caller expects (<a href="tasks_generic_chip.html">Check UID</a>
+with a variable)</td></tr>
+</table>
+
+<div class="warn">Tasks that write to the chip change it without a question and without a way back. RFiDGear never repeats a write attempt on its own: if
+it stops, the result says what happened, and you decide how to go on.</div>
+
+<div class="nav">Previous page: <a href="projects.html">Projects</a> &middot; Next page: <a href="tasks_common.html">Generic tasks: report, logic, program</a></div>
+
+</body>
+</html>

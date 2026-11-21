@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>MIFARE Ultralight and NTAG</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>MIFARE Ultralight and NTAG</h1>
+
+<p>Add the task with <strong>Edit &gt; Add / Edit Task(s) &gt; Mifare &gt; Add/Edit Mifare Ultralight / NTAG Task</strong>. It applies to the chips of the family with pages of 4 bytes each: MIFARE Ultralight,
+Ultralight C, Ultralight EV1 (MF0UL11, MF0UL21) and NTAG213, NTAG215, NTAG216. The dialog opens only when a reader is connected.</p>
+
+<p>The task <strong>reads and writes pages</strong>. Setting lock pages, counters, signatures and changing a key or a password are not tasks of RFiDGear.</p>
+
+<h2>The task types</h2>
+
+<table>
+<tr><th>Task type</th><th>Effect</th></tr>
+<tr><td><strong>Read Data</strong></td><td>reads the pages given</td></tr>
+<tr><td><strong>Write Data</strong></td><td>writes the pages of the table, each with exactly 8 hex digits (4 bytes)</td></tr>
+</table>
+
+<h2>The tabs</h2>
+
+<h3>Chip and authentication</h3>
+
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td><strong>Expected chip</strong></td><td><strong>Any chip (the one that is found)</strong>, <strong>Mifare Ultralight</strong>, <strong>Mifare Ultralight C</strong>, <strong>Mifare Ultralight EV1 (MF0UL11)</strong>,
+<strong>Mifare Ultralight EV1 (MF0UL21)</strong>, <strong>NTAG213</strong>, <strong>NTAG215</strong> or <strong>NTAG216</strong>. A task that authenticates or writes protected pages has to name the chip.
+If another chip is on the reader, the task ends without writing.</td></tr>
+<tr><td><strong>Authentication</strong></td><td><strong>No authentication</strong>, <strong>Key of an Ultralight C</strong> or <strong>Password and PACK (EV1, NTAG)</strong></td></tr>
+<tr><td><strong>Allow writing protected pages</strong></td><td>the switch that releases pages 0 to 3 and the lock, configuration, password and key pages. It applies only when the chip is named.</td></tr>
+</table>
+
+<h3>Keys</h3>
+
+<p>Only the keys of the authentication that is chosen on the first tab are used.</p>
+
+<table>
+<tr><th>Group</th><th>Field</th><th>Length</th></tr>
+<tr><td><strong>Ultralight C</strong></td><td><strong>Key</strong></td><td>32 hex digits</td></tr>
+<tr><td><strong>Ultralight EV1 and NTAG</strong></td><td><strong>Password</strong> and <strong>PACK</strong></td><td>8 and 4 hex digits</td></tr>
+</table>
+
+<p>Like those of other tasks, the key fields can be bound to a stored key (see <a href="keys.html">Keys</a>). There is no default key for an Ultralight C in the program. An external application
+cannot supply a password or a PACK: such a field ends with <strong>Key unavailable</strong>.</p>
+
+<div class="warn">Never send the factory password <code>FFFFFFFF</code> of an NTAG to a card: a failed attempt counts against the limit of attempts that are allowed.</div>
+
+<h3>Pages</h3>
+
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td><strong>First page</strong>, <strong>Number of pages</strong></td><td>the range that <strong>Read Data</strong> reads</td></tr>
+<tr><td>Table <strong>Page</strong> and <strong>Data (8 hexadecimal digits)</strong></td><td>the pages that <strong>Write Data</strong> writes. <strong>Add page</strong> and <strong>Remove</strong> change the table.
+As long as a row is not a whole page, the task is incomplete and does not run.</td></tr>
+<tr><td>Group <strong>Run now</strong></td><td>runs the task at once on the chip that is on the reader, as it is set up here; a read shows in the table what the chip gave</td></tr>
+</table>
+
+<p>The status field says what happened: <em>Read N page(s) from page P</em>, <em>Wrote ...</em> or <em>The operation ended with ... (pages done: x of y)</em>. While an operation runs, the dialog cannot be closed.</p>
+
+<h2>Which readers can do what</h2>
+
+<ul>
+<li>The <strong>Elatec TWN4</strong> reads and writes every chip of this family.</li>
+<li>A <strong>PC/SC reader</strong> knows only the plain Ultralight and the Ultralight C. An EV1 or an NTAG ends there with <strong>Protocol Constraint</strong>; nothing is sent to the card.</li>
+</ul>
+
+<div class="warn">Protected pages are pages 0 to 3 and the lock, configuration, password and key pages of the chip. A wrong write there can lock the chip or its password for good.</div>
+
+<div class="note">So far only an NTAG215 has been read and written, with an Elatec reader; the task itself and its dialog have not run on a card yet, and a plain Ultralight, an Ultralight C or an EV1 has not been
+tried at all.</div>
+
+<div class="nav">Previous page: <a href="tasks_desfire.html">MIFARE DESFire</a> &middot; Next page: <a href="running_tasks.html">Running tasks</a></div>
+
+</body>
+</html>

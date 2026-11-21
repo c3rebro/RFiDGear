@@ -13,11 +13,30 @@ Language=0x407 Deutsch (Deutschland)
 Title=RFiDGear Hilfe
 
 [WINDOWS]
-Main="RFiDGear Hilfe","Table of Contents.hhc","rfidgear_de.hhk","Content\welcome.html","Content\welcome.html",,,,,0x23520,200,0x387E,[100,100,980,720],0xB0000,,,,,,0
+Main="RFiDGear Hilfe","Table of Contents.hhc","rfidgear_de.hhk","Content\welcome.html","Content\welcome.html",,,,,0x23520,300,0x387E,[100,100,980,720],0xB0000,,,,,,0
 
 [FILES]
 Content\help.css
 Content\welcome.html
 Content\about_this_help.html
+Content\first_steps.html
+Content\main_window.html
+Content\menus.html
+Content\settings.html
+Content\projects.html
+Content\tasks_overview.html
+Content\tasks_common.html
+Content\tasks_generic_chip.html
+Content\tasks_classic.html
+Content\tasks_desfire.html
+Content\tasks_ultralight.html
+Content\running_tasks.html
+Content\reports.html
+Content\keys.html
+Content\sam_setup.html
+Content\command_line.html
+Content\updates_extensions.html
+Content\troubleshooting.html
+Content\glossary.html
 
 [INFOTYPES]

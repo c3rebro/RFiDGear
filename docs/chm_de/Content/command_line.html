@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Startargumente</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Startargumente</h1>
+
+<p>RFiDGear nimmt Argumente beim Start an. Damit laden Sie ein Projekt, starten einen Lauf von einem Skript oder einem anderen Programm aus und geben dem Lauf Werte mit, die von Karte zu Karte wechseln.
+Es l&auml;uft immer nur eine Instanz von RFiDGear.</p>
+
+<h2>Die Form</h2>
+
+<p>Ein Argument ist <code>NAME=Wert</code>, ohne Leerzeichen um das <code>=</code>. Der Name der bekannten Argumente gilt unabh&auml;ngig von der Gro&szlig;- und Kleinschreibung. Ein Wert darf selbst ein <code>=</code> enthalten. Enth&auml;lt
+ein Argument Leerzeichen, setzen Sie das ganze Argument in Anf&uuml;hrungszeichen.</p>
+
+<h2>Die Argumente</h2>
+
+<table>
+<tr><th>Argument</th><th>Wirkung</th></tr>
+<tr><td><code>C:\Pfad\Projekt.rfPrj</code></td><td>l&auml;dt dieses Projekt. Das Argument ist ein Pfad, der auf <code>.rfPrj</code> endet; die Datei muss existieren.</td></tr>
+<tr><td><code>CUSTOMPROJECTFILE=Pfad</code></td><td>wie oben, f&uuml;r eine Projektdatei mit einer anderen Endung; die Datei muss existieren</td></tr>
+<tr><td><code>LASTUSEDPROJECTPATH=Pfad</code></td><td>setzt das zuletzt verwendete Projekt der Einstellungen (siehe <a href="projects.html">Projekte</a>) und speichert es</td></tr>
+<tr><td><code>AUTORUN=1</code></td><td>l&auml;dt das Projekt, setzt die Ergebnisse zur&uuml;ck, liest die Karte auf dem Leser und f&uuml;hrt alle Aufgaben einmal aus. Es gibt dem Programm, das RFiDGear gestartet hat, kein Ergebnis zur&uuml;ck. RFiDGear bleibt danach offen, es sei denn, das Projekt endet
+mit einer Programmaufgabe <code>%EXIT</code> (siehe <a href="tasks_common.html">Allgemeine Aufgaben</a>).</td></tr>
+<tr><td><code>AUTOMODE=1</code></td><td>schaltet den automatischen Modus ein (siehe <a href="running_tasks.html">Aufgaben ausf&uuml;hren</a>)</td></tr>
+<tr><td><code>EXTERNALCONTROL=1</code></td><td>&ouml;ffnet die externe Steuerung f&uuml;r diesen Lauf, auch wenn sie in den Einstellungen ausgeschaltet ist (siehe Teil 2 dieser Hilfe)</td></tr>
+<tr><td><code>REPORTTARGETPATH=Pfad</code>, <code>REPORTOUTPUTPATH=Pfad</code></td><td>die Datei, in die der Bericht geschrieben wird. Der Ordner muss existieren; <code>?</code>, <code>??</code> oder <code>???</code> im Dateinamen steht f&uuml;r die n&auml;chste freie Nummer, die einmal beim Start gew&auml;hlt und f&uuml;r sp&auml;tere L&auml;ufe gemerkt wird
+(siehe <a href="reports.html">Berichte</a>)</td></tr>
+<tr><td><code>REPORTTEMPLATEFILE=Pfad</code>, <code>REPORTTEMPLATEPATH=Pfad</code></td><td>die PDF-Vorlage des Berichts, statt der im Dialog eingestellten. Die Datei muss existieren.</td></tr>
+<tr><td><code>$NAME=Wert</code></td><td>eine Variable des Laufs. Jedes Argument, dessen Name ein <code>$</code> enth&auml;lt, ist eine. Die Aufgaben k&ouml;nnen sie lesen: die Pr&uuml;fung der UID (<code>$EXPECTEDUID</code>), ein Bericht,
+eine Programmaufgabe und ein Logikbaustein.</td></tr>
+</table>
+
+<p>Die Schalter (<code>AUTORUN</code>, <code>AUTOMODE</code>, <code>EXTERNALCONTROL</code>) gelten nur mit dem Wert genau <code>1</code>.</p>
+
+<h2>Beispiele</h2>
+
+<p>Ein Projekt laden und einmal ausf&uuml;hren, mit dem Bericht in einem durchnummerierten Ordner (Eingabeaufforderung):</p>
+
+<pre>RFiDGear.exe "C:\Projekte\Auslieferung.rfPrj" AUTORUN=1 "REPORTTARGETPATH=C:\Berichte\karte-???.pdf"</pre>
+
+<p>Eine Karte erwarten (PowerShell; die einfachen Anf&uuml;hrungszeichen verhindern, dass PowerShell das <code>$</code> auswertet):</p>
+
+<pre>.\RFiDGear.exe "C:\Projekte\Auslieferung.rfPrj" AUTORUN=1 '$EXPECTEDUID=04A1B2C3D4E5F6'</pre>
+
+<p>Liegt eine andere Karte auf dem Leser, endet die Aufgabe <strong>Pr&uuml;fung der UID</strong> mit <strong>Karte nicht erwartet</strong>, und der Lauf ist fehlgeschlagen (siehe
+<a href="tasks_generic_chip.html">Typunabh&auml;ngige Chip-Aufgaben</a>).</p>
+
+<div class="note">Ein anderes Programm kann dieselben Variablen auch ohne Startargument mitgeben, wenn es einen Lauf &uuml;ber die externe Steuerung anfordert (Teil 2 dieser Hilfe). Das Projekt bleibt dabei von Karte zu Karte gleich.</div>
+
+<div class="nav">Vorherige Seite: <a href="sam_setup.html">MIFARE SAM AV3 einrichten</a> &middot; N&auml;chste Seite: <a href="updates_extensions.html">Updates und Erweiterungen</a></div>
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Glossar</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Glossar</h1>
+
+<p>Die Begriffe, wie RFiDGear sie verwendet. Wie die RFID-Techniken selbst funktionieren, erkl&auml;rt diese Hilfe nicht.</p>
+
+<table>
+<tr><th>Begriff</th><th>Bedeutung in RFiDGear</th></tr>
+<tr><td>Aufgabe</td><td>ein Schritt, den RFiDGear an einem Chip oder im Programm ausf&uuml;hrt; eine Zeile der Aufgabenliste</td></tr>
+<tr><td>Aufgabennummer</td><td>die ganze Zahl, mit der eine Aufgabe in der Liste steht und auf die andere sich beziehen; sie bestimmt die Reihenfolge</td></tr>
+<tr><td>Ausf&uuml;hrungsbedingung</td><td>die Bedingung, unter der eine Aufgabe l&auml;uft: eine fr&uuml;here Aufgabe muss mit einem bestimmten Ergebnis geendet haben</td></tr>
+<tr><td>Ergebnis (einer Aufgabe)</td><td>wie eine Aufgabe endete, zum Beispiel <strong>Kein Fehler</strong> oder <strong>Authentifizierung fehlgeschlagen</strong></td></tr>
+<tr><td>Projekt</td><td>die gespeicherte Aufgabenliste, eine <code>.rfPrj</code>- oder <code>.xml</code>-Datei</td></tr>
+<tr><td>Lauf</td><td>ein Durchgang der Aufgabenliste an einer Karte, oder einer einzelnen Aufgabe</td></tr>
+<tr><td>Chip-Baum</td><td>die Ansicht links im Hauptfenster: die gelesenen Chips mit ihren Sektoren, Applikationen, Dateien oder Seiten</td></tr>
+<tr><td>Schnellpr&uuml;fung</td><td>das Lesen eines Chips mit den Standardschl&uuml;sseln der Einstellungen, ohne Aufgaben</td></tr>
+<tr><td>Automatischer Modus</td><td>der Zustand, in dem f&uuml;r jede aufgelegte Karte die Liste einmal l&auml;uft</td></tr>
+<tr><td>Pr&uuml;fpunkt</td><td>ein Eintrag eines Berichts oder Logikbausteins: eine Aufgabe und das Ergebnis, das sie haben soll</td></tr>
+<tr><td>Logikbaustein</td><td>eine Aufgabe, die die Ergebnisse anderer Aufgaben auswertet</td></tr>
+<tr><td>Bericht</td><td>eine PDF-Datei, die aus einer Vorlage mit Formularfeldern entsteht</td></tr>
+<tr><td>Variable</td><td>ein Wert, der mit dem Lauf kommt und mit <code>$</code> beginnt (zum Beispiel <code>$EXPECTEDUID</code>); eine Aufgabe liest sie</td></tr>
+<tr><td>Startargument</td><td>ein Wert, den Sie RFiDGear beim Start mitgeben, in der Form <code>NAME=Wert</code></td></tr>
+<tr><td>Referenz</td><td>der Name eines Schl&uuml;ssels in einem Schl&uuml;sselspeicher; das Projekt enth&auml;lt die Referenz, nie den Schl&uuml;ssel</td></tr>
+<tr><td>Schl&uuml;sselspeicher</td><td>wo ein Schl&uuml;ssel liegt, den eine Referenz nennt: die Windows-Anmeldeinformationsverwaltung, eine verbundene Anwendung, eine SAM oder eine Erweiterung</td></tr>
+<tr><td>Externe Steuerung</td><td>die Named Pipe, &uuml;ber die ein anderes Programm RFiDGear steuert (Teil 2 dieser Hilfe)</td></tr>
+<tr><td>Erweiterung</td><td>ein zus&auml;tzliches Programmteil im Men&uuml; <strong>Erweiterungen</strong></td></tr>
+<tr><td>Erweiterungspaket</td><td>eine <code>.rfext</code>-Datei, mit der eine Erweiterung aktualisiert wird</td></tr>
+<tr><td>UID</td><td>die Kennung einer Karte, wie der Leser sie liest</td></tr>
+<tr><td>Sektor, Sector Trailer</td><td>MIFARE Classic: der Speicherbereich und sein letzter Block mit Schl&uuml;sseln und Zugriffsbits</td></tr>
+<tr><td>MAD</td><td>MIFARE Classic: das Verzeichnis, das sagt, welcher Sektor zu welcher Anwendung geh&ouml;rt</td></tr>
+<tr><td>PICC, Applikation, Datei</td><td>MIFARE DESFire: die Karte selbst, ein Bereich auf ihr mit eigenen Schl&uuml;sseln, und ein Inhalt darin</td></tr>
+<tr><td>Seite</td><td>Ultralight und NTAG: ein Speicherabschnitt von 4 Bytes</td></tr>
+<tr><td>SAM</td><td>ein Sicherheitsmodul (MIFARE SAM AV3), das Kartenschl&uuml;ssel in sich beh&auml;lt</td></tr>
+</table>
+
+<div class="nav">Vorherige Seite: <a href="troubleshooting.html">Fehlersuche</a></div>
+
+</body>
+</html>

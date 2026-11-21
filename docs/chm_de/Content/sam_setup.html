@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>MIFARE SAM AV3 einrichten</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>MIFARE SAM AV3 einrichten</h1>
+
+<p>Eine MIFARE SAM AV3 ist ein Sicherheitsmodul, das Kartenschl&uuml;ssel in sich beh&auml;lt: RFiDGear bekommt den Schl&uuml;ssel nie zu sehen, sondern l&auml;sst die SAM damit eine DESFire-Karte &ouml;ffnen oder ihre Schl&uuml;ssel
+wechseln. Dieses Fenster richtet eine SAM daf&uuml;r ein. Es braucht kein Projekt und &ouml;ffnet sich mit <strong>Extras &gt; MIFARE-SAM-AV3-Einrichtung...</strong>.</p>
+
+<h2>Voraussetzungen</h2>
+
+<ul>
+<li>Die SAM steckt in einem PC/SC-Leser (bei einem Leserpaar wie dem OMNIKEY 5422 im Kontaktschacht, die Karte im anderen Schacht) <em>oder</em> in einem SAM-Steckplatz eines Elatec TWN4. Ein TWN4 sieht eine SAM AV3 erst ab der
+<strong>Hardware-Revision G</strong> (TWN4 MultiTech 2, zwei SAM-Steckpl&auml;tze); &auml;ltere Revisionen sehen sie nie.</li>
+<li>Bei einem TWN4 muss der Elatec-Leser in den Einstellungen gew&auml;hlt und verbunden sein. Bei einem PC/SC-Leser gen&uuml;gt f&uuml;r das Einrichten der Fund; um die SAM sp&auml;ter in Aufgaben zu verwenden, w&auml;hlen Sie ihren Leser unter <strong>SAM-Leser:</strong> in den
+<a href="settings.html">Einstellungen</a>.</li>
+<li>Solange das Fenster offen ist, geh&ouml;rt der Leser ihm allein. H&auml;lt ein Lauf oder ein anderes Fenster den Leser, &ouml;ffnet es sich nicht.</li>
+</ul>
+
+<h2>Die Schritte</h2>
+
+<table>
+<tr><th>Schritt</th><th>Schaltfl&auml;che</th><th>Was geschieht</th></tr>
+<tr><td>1. Finden</td><td>(beim &Ouml;ffnen) <strong>Erneut suchen</strong></td><td>RFiDGear liest die R&uuml;cksetzantwort (ATR) jeder Karte in jedem Leser und Steckplatz und listet die SAMs unter <strong>SAM im Leser</strong>. Mit Karten wird dabei
+nichts verbunden. Findet es keine, steht <strong>Keine MIFARE SAM AV3 gefunden.</strong> da.</td></tr>
+<tr><td>2. Pr&uuml;fen</td><td><strong>SAM pr&uuml;fen</strong></td><td>verbindet sich mit der SAM und fragt nach ihrer Version. Es wird kein Schl&uuml;ssel verwendet und nichts ver&auml;ndert. Das Fenster zeigt <strong>Hardware-Information</strong> und
+<strong>Software-Information</strong>.</td></tr>
+<tr><td>3. Authentifizieren</td><td><strong>Authentifizieren</strong></td><td>meldet Sie als Host mit dem <strong>Hauptschl&uuml;ssel</strong> an (Schl&uuml;sseleintrag 0, Version 0). Der Schl&uuml;ssel ist der <strong>Werksschl&uuml;ssel</strong> (sechzehn Null-Bytes, bei einer neuen SAM), ein
+<strong>Gespeicherter Schl&uuml;ssel</strong> aus der Anmeldeinformationsverwaltung oder ein eingetippter Schl&uuml;ssel. Eine neue SAM antwortet, dass sie nie aktiviert wurde; dabei wird kein Schl&uuml;ssel verwendet, und die Schaltfl&auml;che <strong>SAM aktivieren...</strong> wird frei.</td></tr>
+<tr><td>4. Aktivieren (nur neue SAM)</td><td><strong>SAM aktivieren...</strong></td><td>erst, nachdem Schritt 3 &bdquo;nicht aktiviert&ldquo; meldete. RFiDGear fragt vorher; <strong>Nein</strong> ist die Voreinstellung. Danach authentifizieren Sie sich noch einmal (Schritt 3).</td></tr>
+<tr><td>5. Schl&uuml;ssel schreiben</td><td><strong>Schl&uuml;ssel schreiben</strong></td><td>erst nach einer gelungenen Authentifizierung: schreibt einen PICC-Schl&uuml;ssel in einen <strong>Schl&uuml;sseleintrag (1 bis 127)</strong> als Version 0. Der <strong>Schl&uuml;sseltyp:</strong> ist <strong>AES-128 (DESFire)</strong> f&uuml;r eine Karte mit AES-Schl&uuml;ssel oder
+<strong>DES / 2K3DES (DESFire nativ)</strong> f&uuml;r eine Karte mit dem alten Schl&uuml;sseltyp. Der Schl&uuml;ssel hat 32 Hexadezimalziffern.</td></tr>
+</table>
+
+<p>Das Feld <strong>Meldungen</strong> zeigt, was geschah. Jeder Schritt wird <strong>genau einmal</strong> versucht und nie wiederholt.</p>
+
+<div class="warn"><strong>Das Aktivieren ist endg&uuml;ltig.</strong> Es hat bei der einen SAM AV3, an der es erprobt wurde, funktioniert, und die SAM blieb aktiviert, auch nachdem sie herausgenommen und wieder eingesteckt wurde. Ein Zur&uuml;ck ist nicht
+bekannt. Tun Sie es nur bei einer neuen SAM, die Sie verwenden wollen, und mit ihrem Hauptschl&uuml;ssel. Ein falscher Schl&uuml;ssel beim Authentifizieren z&auml;hlt als Verwendung des Schl&uuml;ssels, wenn dem Eintrag ein Verwendungsz&auml;hler
+zugeordnet ist.</div>
+
+<h2>Nach dem Schreiben</h2>
+
+<p>RFiDGear liest den Schl&uuml;sseleintrag zur&uuml;ck und pr&uuml;ft, dass er <strong>aktiviert</strong> ist, den richtigen Typ hat und zur Klasse PICC geh&ouml;rt. Ein leerer Eintrag ist deaktiviert (SET-Bit 9), bis ein Schreiben ihn aktiviert: meldet das Fenster
+<em>Schl&uuml;sseleintrag ... ist deaktiviert</em>, schreiben Sie den Schl&uuml;ssel erneut. Der Schl&uuml;ssel selbst l&auml;sst sich nie zur&uuml;cklesen; die SAM gibt einen Schl&uuml;ssel nie wieder heraus.</p>
+
+<h2>Die SAM in Aufgaben verwenden</h2>
+
+<p>In einem Schl&uuml;sselfeld einer DESFire-Aufgabe w&auml;hlen Sie als Schl&uuml;sselspeicher <strong>MIFARE SAM AV3</strong> und geben <strong>Schl&uuml;sseleintrag und Version</strong> an, zum Beispiel <code>3:0</code> (siehe <a href="keys.html">Schl&uuml;ssel</a>). Vier
+Befehle k&ouml;nnen das: <strong>Pr&uuml;fung: App-Key</strong>, <strong>PICC Master Key &auml;ndern</strong>, <strong>App Key &auml;ndern</strong> und die Schaltfl&auml;che <strong>Mit PICC MasterKey Authentifizieren</strong> (siehe <a href="tasks_desfire.html">MIFARE DESFire</a>). Beim Wechseln eines Schl&uuml;ssels m&uuml;ssen
+<em>alle</em> Schl&uuml;ssel des Befehls aus der SAM kommen, denn die SAM bildet die Verschl&uuml;sselung des Wechsels aus dem alten und dem neuen Schl&uuml;ssel.</p>
+
+<p>Mit einem PC/SC-Leser verwendet RFiDGear den Leser, den die Einstellung <strong>SAM-Leser:</strong> nennt. Mit einem TWN4 findet es die SAM selbst; stecken in beiden Steckpl&auml;tzen SAMs, nimmt es keine (die Schl&uuml;ssel der beiden sind
+nicht gleich): entfernen Sie eine.</p>
+
+<div class="note">Das Fenster ist mit einer echten SAM bisher nicht durchgeklickt worden. Die Schl&uuml;sselwechsel selbst sind mit einem TWN4 und einer DESFire-Testkarte ohne Nutzdaten durchgespielt worden; durch das Fenster der Aufgabe ist noch nichts gelaufen.</div>
+
+<div class="nav">Vorherige Seite: <a href="keys.html">Schl&uuml;ssel</a> &middot; N&auml;chste Seite: <a href="command_line.html">Startargumente</a></div>
+
+</body>
+</html>

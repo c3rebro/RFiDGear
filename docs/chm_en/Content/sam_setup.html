@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Setting up a MIFARE SAM AV3</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Setting up a MIFARE SAM AV3</h1>
+
+<p>A MIFARE SAM AV3 is a security module that keeps card keys inside itself: RFiDGear never sees the key but has the SAM open a DESFire card with it or change its keys. This window sets up a SAM for that. It needs no project and
+opens with <strong>Tools &gt; MIFARE SAM AV3 setup...</strong>.</p>
+
+<h2>Prerequisites</h2>
+
+<ul>
+<li>The SAM sits in a PC/SC reader (with a reader pair such as the OMNIKEY 5422 in the contact slot, the card in the other slot) <em>or</em> in a SAM socket of an Elatec TWN4. A TWN4 sees a SAM AV3 only from
+<strong>hardware revision G</strong> (TWN4 MultiTech 2, two SAM sockets); older revisions never see it.</li>
+<li>With a TWN4 the Elatec reader must be selected and connected in the settings. With a PC/SC reader finding the SAM is enough for setting it up; to use the SAM in tasks later, choose its reader under <strong>SAM reader:</strong> in the
+<a href="settings.html">Settings</a>.</li>
+<li>While the window is open, it has the reader to itself. If a run or another window holds the reader, it does not open.</li>
+</ul>
+
+<h2>The steps</h2>
+
+<table>
+<tr><th>Step</th><th>Button</th><th>What happens</th></tr>
+<tr><td>1. Find</td><td>(on opening) <strong>Search again</strong></td><td>RFiDGear reads the answer to reset (ATR) of each card in each reader and socket and lists the SAMs under <strong>SAM in reader</strong>. It connects to no card while doing so.
+If it finds none, <strong>No MIFARE SAM AV3 found.</strong> is shown.</td></tr>
+<tr><td>2. Check</td><td><strong>Check SAM</strong></td><td>connects to the SAM and asks for its version. No key is used and nothing is changed. The window shows <strong>Hardware information</strong> and
+<strong>software information</strong>.</td></tr>
+<tr><td>3. Authenticate</td><td><strong>Authenticate</strong></td><td>logs you in as host with the <strong>Master key</strong> (key entry 0, version 0). The key is the <strong>Factory key</strong> (sixteen zero bytes, for a new SAM), a
+<strong>Stored key</strong> from the Credential Manager or a typed key. A new SAM answers that it was never activated; no key is used then, and the button <strong>Activate SAM...</strong> becomes available.</td></tr>
+<tr><td>4. Activate (new SAM only)</td><td><strong>Activate SAM...</strong></td><td>only after step 3 said "not activated". RFiDGear asks first; <strong>No</strong> is the default. Afterwards authenticate again (step 3).</td></tr>
+<tr><td>5. Write a key</td><td><strong>Write key</strong></td><td>only after a successful authentication: writes a PICC key into a <strong>Key entry (1 to 127)</strong> as version 0. The <strong>Key type:</strong> is <strong>AES-128 (DESFire)</strong> for a card with an AES key or
+<strong>DES / 2K3DES (DESFire native)</strong> for a card with the old key type. The key has 32 hexadecimal digits.</td></tr>
+</table>
+
+<p>The field <strong>Messages</strong> shows what happened. Every step is tried <strong>exactly once</strong> and never repeated.</p>
+
+<div class="warn"><strong>Activating is final.</strong> It worked on the one SAM AV3 it was tried on, and that SAM stayed activated even after it was taken out and put back. No way back is known. Do it only for a new SAM that you want to use, with its
+master key. A wrong key when authenticating counts as a use of the key if a usage counter is linked to the entry.</div>
+
+<h2>After writing</h2>
+
+<p>RFiDGear reads the key entry back and checks that it is <strong>enabled</strong>, has the right type and belongs to the PICC class. A blank entry is disabled (SET bit 9) until a write enables it: if the window says
+<em>key entry ... is disabled</em>, write the key again. The key itself can never be read back; a SAM never gives a key out.</p>
+
+<h2>Using the SAM in tasks</h2>
+
+<p>In a key field of a DESFire task choose <strong>MIFARE SAM AV3</strong> as the key store and give <strong>Key entry and version</strong>, for example <code>3:0</code> (see <a href="keys.html">Keys</a>). Four commands can do that:
+<strong>Check: App Key</strong>, <strong>Change PICC Master Key</strong>, <strong>Change Application Key</strong> and the button <strong>Authenticate with PICC MasterKey</strong> (see <a href="tasks_desfire.html">MIFARE DESFire</a>). When a key is changed,
+<em>all</em> keys of the command must come from the SAM, because the SAM forms the encryption of the change from the old and the new key.</p>
+
+<p>With a PC/SC reader RFiDGear uses the reader that the setting <strong>SAM reader:</strong> names. With a TWN4 it finds the SAM by itself; if SAMs sit in both sockets, it takes neither (the keys of the two are not the
+same): remove one.</p>
+
+<div class="note">The window has not yet been clicked through with a real SAM. The key changes themselves have been played through with a TWN4 and a DESFire test card without data; nothing has run through the window of the task yet.</div>
+
+<div class="nav">Previous page: <a href="keys.html">Keys</a> &middot; Next page: <a href="command_line.html">Start-up arguments</a></div>
+
+</body>
+</html>

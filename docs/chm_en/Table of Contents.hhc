@@ -16,5 +16,91 @@
 		<param name="Name" value="How this help is organized">
 		<param name="Local" value="Content\about_this_help.html">
 		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Part 1: Working with RFiDGear">
+		</OBJECT>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="First steps">
+				<param name="Local" value="Content\first_steps.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="The main window">
+				<param name="Local" value="Content\main_window.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="The menus and shortcuts">
+				<param name="Local" value="Content\menus.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Settings">
+				<param name="Local" value="Content\settings.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Projects">
+				<param name="Local" value="Content\projects.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Tasks">
+				</OBJECT>
+				<UL>
+					<LI> <OBJECT type="text/sitemap">
+						<param name="Name" value="Tasks at a glance">
+						<param name="Local" value="Content\tasks_overview.html">
+						</OBJECT>
+					<LI> <OBJECT type="text/sitemap">
+						<param name="Name" value="Generic tasks: report, logic, program">
+						<param name="Local" value="Content\tasks_common.html">
+						</OBJECT>
+					<LI> <OBJECT type="text/sitemap">
+						<param name="Name" value="Chip tasks for any card">
+						<param name="Local" value="Content\tasks_generic_chip.html">
+						</OBJECT>
+					<LI> <OBJECT type="text/sitemap">
+						<param name="Name" value="MIFARE Classic">
+						<param name="Local" value="Content\tasks_classic.html">
+						</OBJECT>
+					<LI> <OBJECT type="text/sitemap">
+						<param name="Name" value="MIFARE DESFire">
+						<param name="Local" value="Content\tasks_desfire.html">
+						</OBJECT>
+					<LI> <OBJECT type="text/sitemap">
+						<param name="Name" value="MIFARE Ultralight and NTAG">
+						<param name="Local" value="Content\tasks_ultralight.html">
+						</OBJECT>
+				</UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Running tasks">
+				<param name="Local" value="Content\running_tasks.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Reports (PDF)">
+				<param name="Local" value="Content\reports.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Keys">
+				<param name="Local" value="Content\keys.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Setting up a MIFARE SAM AV3">
+				<param name="Local" value="Content\sam_setup.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Start-up arguments">
+				<param name="Local" value="Content\command_line.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Updates and extensions">
+				<param name="Local" value="Content\updates_extensions.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Troubleshooting">
+				<param name="Local" value="Content\troubleshooting.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Glossary">
+				<param name="Local" value="Content\glossary.html">
+				</OBJECT>
+		</UL>
 </UL>
 </BODY></HTML>

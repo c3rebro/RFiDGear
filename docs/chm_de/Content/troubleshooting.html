@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Fehlersuche</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Fehlersuche</h1>
+
+<h2>Der Leser wird nicht gefunden</h2>
+
+<table>
+<tr><th>Zeichen</th><th>Ursache und Abhilfe</th></tr>
+<tr><td>Meldung <strong>Es konnte kein Leser gefunden werden</strong>, Status <strong>UNBEKANNT</strong></td><td>Pr&uuml;fen Sie Kabel und Anschluss. &Ouml;ffnen Sie <strong>Extras &gt; Einstellungen...</strong>, w&auml;hlen Sie den Anbieter
+(<strong>Elatec TWN4</strong> oder <strong>PCSC</strong>) und klicken Sie <strong>Verbinden</strong>, mit einem Chip auf dem Leser. Bei PCSC muss der Leser unter <strong>Gefundene PC/SC-Leseger&auml;te</strong> stehen; sonst
+pr&uuml;fen Sie den Dienst &bdquo;Smartcard&ldquo; von Windows.</td></tr>
+<tr><td><strong>(Port nicht zugreifbar)</strong> bei einem Elatec TWN4</td><td>Ein anderes Programm oder ein zweites RFiDGear-Fenster h&auml;lt den Anschluss des Lesers. Schlie&szlig;en Sie es und klicken Sie <strong>Verbinden</strong> erneut.</td></tr>
+<tr><td><strong>RDP: PC/SC nicht verf&uuml;gbar</strong>, PCSC l&auml;sst sich nicht w&auml;hlen</td><td>Sie arbeiten in einer Remotedesktop-Sitzung. Schalten Sie die Smartcard-Umleitung der Verbindung ein (<code>redirectsmartcards:i:1</code> in der <code>.rdp</code>-Datei
+oder in den Einstellungen des Remotedesktop-Clients); der Leser muss am lokalen Rechner stecken.</td></tr>
+<tr><td>Der Status bleibt <strong>INIT</strong></td><td>RFiDGear sucht den Leser noch. Dauert es lange, pr&uuml;fen Sie dieselben Punkte wie oben.</td></tr>
+<tr><td>Eine Karte wird gar nicht erkannt</td><td>Pr&uuml;fen Sie die Lage der Karte auf dem Leser. Mit einem Elatec TWN4 sucht RFiDGear alle Hochfrequenz-Kartentypen au&szlig;er HID iCLASS; eine iCLASS-Karte bleibt unsichtbar.</td></tr>
+<tr><td>Eine MIFARE SAM AV3 wird nicht gefunden</td><td>Ein TWN4 sieht sie erst ab der Hardware-Revision G (siehe <a href="sam_setup.html">MIFARE SAM AV3 einrichten</a>). Das Einrichtungsfenster sucht von selbst in allen PC/SC-Lesern und verwendet die Einstellung <strong>SAM-Leser:</strong> nicht; sie z&auml;hlt erst, wenn eine Aufgabe einen Schl&uuml;ssel der SAM verwendet.</td></tr>
+</table>
+
+<h2>Eine Aufgabe schl&auml;gt fehl</h2>
+
+<p>Das Ergebnis der Aufgabe nennt die Ursache. Alle Ergebnisse stehen auf der Seite <a href="tasks_overview.html">Aufgaben im &Uuml;berblick</a>. Die h&auml;ufigsten:</p>
+
+<table>
+<tr><th>Ergebnis</th><th>Was Sie tun</th></tr>
+<tr><td><strong>Authentifizierung fehlgeschlagen</strong></td><td>Die Karte lehnt den Schl&uuml;ssel ab. Pr&uuml;fen Sie den Schl&uuml;ssel und den Typ (DES, AES, ...). Bei MIFARE Classic h&auml;lt ein Chip nach einer Absage die Karte an: der n&auml;chste Befehl scheitert
+einmal. Nehmen Sie die Karte weg, legen Sie sie neu auf und f&uuml;hren Sie die Aufgabe erneut aus.</td></tr>
+<tr><td><strong>Zugriff verweigert</strong></td><td>Die Zugriffsrechte der Karte verbieten die Operation mit diesem Schl&uuml;ssel.</td></tr>
+<tr><td><strong>Protokolleinschr&auml;nkung</strong></td><td>Leser oder Karte k&ouml;nnen das nicht. Ein Ultralight EV1 oder NTAG l&auml;sst sich zum Beispiel nur mit einem Elatec TWN4 lesen und schreiben, nicht mit einem PC/SC-Leser.</td></tr>
+<tr><td><strong>Transportfehler</strong></td><td>Die Verbindung brach ab: Karte zu fr&uuml;h entfernt, Leser getrennt. Legen Sie die Karte wieder auf. Eine Aufgabe, die schrieb, kann teilweise geschrieben haben; pr&uuml;fen Sie die Karte, bevor Sie wiederholen.</td></tr>
+<tr><td><strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong></td><td>Ein Schl&uuml;ssel, den die Aufgabe &uuml;ber eine Referenz benennt, war aus seinem Schl&uuml;sselspeicher nicht zu bekommen. Daf&uuml;r ging kein Befehl an die Karte. Ein Fehler einer SAM ist ein anderer Fall. Siehe <a href="keys.html">Schl&uuml;ssel</a>.</td></tr>
+<tr><td><strong>Karte nicht erwartet</strong></td><td>Auf dem Leser liegt nicht die Karte, die der Aufrufer erwartet, oder der Variablen <code>$EXPECTEDUID</code> fehlt der Wert.</td></tr>
+<tr><td><strong>Ist Nicht Wahr</strong></td><td>Eine Pr&uuml;fung hat &bdquo;nein&ldquo; gesagt. Das ist eine Antwort, kein Defekt.</td></tr>
+</table>
+
+<h2>Weitere F&auml;lle</h2>
+
+<ul>
+<li><strong>Die Aufgabenliste l&auml;sst sich nicht &auml;ndern.</strong> Ein Lauf, das Laden eines Projekts oder eine andere &Auml;nderung ist aktiv. Warten Sie, bis der Status <strong>LEERLAUF</strong> zeigt.</li>
+<li><strong>Ein Bericht entsteht nicht.</strong> Die PDF-Vorlage muss existieren und Formularfelder haben, und der Ordner des Zielpfads muss existieren. Siehe <a href="reports.html">Berichte</a>.</li>
+<li><strong>Ein Projekt l&auml;sst sich nicht &ouml;ffnen.</strong> Die Datei muss ein <code>.rfPrj</code>-Archiv oder eine <code>.xml</code>-Projektdatei sein. Das Protokoll nennt den Grund.</li>
+<li><strong>Die Hilfe &ouml;ffnet sich nicht.</strong> Das Setup legt <code>RFiDGear_de.chm</code> und <code>RFiDGear_en.chm</code> neben <code>RFiDGear.exe</code>. Fehlt die Datei, meldet RFiDGear das. Zeigt die Hilfe leere Seiten, hat Windows die Datei
+gesperrt, weil sie aus dem Netz oder einem Download kommt: &ouml;ffnen Sie ihre Eigenschaften und w&auml;hlen Sie <strong>Zulassen</strong> (oder kopieren Sie RFiDGear auf ein lokales Laufwerk).</li>
+<li><strong>Eine Erweiterung fehlt.</strong> RFiDGear findet Erweiterungen nur beim Start; starten Sie neu. Siehe <a href="updates_extensions.html">Updates und Erweiterungen</a>.</li>
+</ul>
+
+<h2>Das Protokoll</h2>
+
+<p>RFiDGear schreibt ein Protokoll nach <code>%LocalAppData%\RFiDGear\log\</code>. Die Dateien rollen und werden 30 Tage aufbewahrt. Das Protokoll nennt Fehler und ihre Ursache; RFiDGear schreibt bewusst keine Schl&uuml;ssel hinein.</p>
+
+<h2>Fragen und Fehler melden</h2>
+
+<p>Das Projekt hat seine Seite auf GitHub: <code>https://github.com/c3rebro/RFiDGear</code>. Dort k&ouml;nnen Sie Fehler melden und nach Versionen suchen. Legen Sie einen Auszug des Protokolls und die Version aus
+<strong>Hilfe &gt; &Uuml;ber RFiDGear</strong> bei. Entfernen Sie vorher alles, was Sie nicht weitergeben m&ouml;chten.</p>
+
+<div class="nav">Vorherige Seite: <a href="updates_extensions.html">Updates und Erweiterungen</a> &middot; N&auml;chste Seite: <a href="glossary.html">Glossar</a></div>
+
+</body>
+</html>

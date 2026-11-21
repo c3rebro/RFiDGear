@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Troubleshooting</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Troubleshooting</h1>
+
+<h2>The reader is not found</h2>
+
+<table>
+<tr><th>Sign</th><th>Cause and remedy</th></tr>
+<tr><td>Message <strong>No Reader Found</strong>, status <strong>UNKNOWN</strong></td><td>Check the cable and the port. Open <strong>Tools &gt; Settings...</strong>, choose the provider
+(<strong>Elatec TWN4</strong> or <strong>PCSC</strong>) and click <strong>Connect</strong>, with a chip on the reader. With PCSC the reader has to be listed under <strong>Detected PC/SC Readers</strong>; if not,
+check the "Smart Card" service of Windows.</td></tr>
+<tr><td><strong>(port not accessible)</strong> with an Elatec TWN4</td><td>Another program or a second RFiDGear window holds the port of the reader. Close it and click <strong>Connect</strong> again.</td></tr>
+<tr><td><strong>RDP: PC/SC unavailable</strong>, PCSC cannot be selected</td><td>You are working in a Remote Desktop session. Switch on smart card redirection of the connection (<code>redirectsmartcards:i:1</code> in the <code>.rdp</code> file
+or in the settings of the Remote Desktop client); the reader must be attached to the local computer.</td></tr>
+<tr><td>The status stays <strong>INIT</strong></td><td>RFiDGear is still looking for the reader. If it takes long, check the same points as above.</td></tr>
+<tr><td>A card is not recognized at all</td><td>Check the position of the card on the reader. With an Elatec TWN4, RFiDGear searches for all high-frequency card types except HID iCLASS; an iCLASS card stays invisible.</td></tr>
+<tr><td>A MIFARE SAM AV3 is not found</td><td>A TWN4 sees it only from hardware revision G (see <a href="sam_setup.html">Setting up a MIFARE SAM AV3</a>). The setup window looks at all PC/SC readers by itself and does not use the setting <strong>SAM reader:</strong>; that setting matters only when a task uses a key of the SAM.</td></tr>
+</table>
+
+<h2>A task fails</h2>
+
+<p>The result of the task names the cause. All results are on the page <a href="tasks_overview.html">Tasks at a glance</a>. The most common:</p>
+
+<table>
+<tr><th>Result</th><th>What to do</th></tr>
+<tr><td><strong>Authentication Failed</strong></td><td>The card refuses the key. Check the key and the type (DES, AES, ...). With MIFARE Classic a chip halts the card after a refusal: the next command fails
+once. Take the card away, put it on again and run the task again.</td></tr>
+<tr><td><strong>Permission Denied</strong></td><td>The access rights of the card forbid the operation with this key.</td></tr>
+<tr><td><strong>Protocol Constraint</strong></td><td>The reader or the card cannot do that. An Ultralight EV1 or an NTAG, for example, can be read and written only with an Elatec TWN4, not with a PC/SC reader.</td></tr>
+<tr><td><strong>Transport Error</strong></td><td>The connection broke: card removed too early, reader unplugged. Put the card on again. A task that was writing may have written in part; check the card before you repeat.</td></tr>
+<tr><td><strong>Key unavailable</strong></td><td>A key that the task names by a reference could not be had from its key store. No command went to the card for it. A failure of a SAM is another case. See <a href="keys.html">Keys</a>.</td></tr>
+<tr><td><strong>Card not expected</strong></td><td>The card on the reader is not the one the caller expects, or the variable <code>$EXPECTEDUID</code> has no value.</td></tr>
+<tr><td><strong>Is Not True</strong></td><td>A check said "no". That is an answer, not a defect.</td></tr>
+</table>
+
+<h2>Other cases</h2>
+
+<ul>
+<li><strong>The task list cannot be changed.</strong> A run, the loading of a project or another change is in progress. Wait until the status shows <strong>IDLE</strong>.</li>
+<li><strong>A report is not made.</strong> The PDF template has to exist and have form fields, and the folder of the target path has to exist. See <a href="reports.html">Reports</a>.</li>
+<li><strong>A project cannot be opened.</strong> The file has to be an <code>.rfPrj</code> archive or an <code>.xml</code> project file. The log names the reason.</li>
+<li><strong>The help does not open.</strong> The setup puts <code>RFiDGear_de.chm</code> and <code>RFiDGear_en.chm</code> next to <code>RFiDGear.exe</code>. If the file is missing, RFiDGear says so. If the help shows blank pages,
+Windows has blocked the file because it came from the network or a download: open its properties and choose <strong>Unblock</strong> (or copy RFiDGear to a local drive).</li>
+<li><strong>An extension is missing.</strong> RFiDGear finds extensions only at start; restart it. See <a href="updates_extensions.html">Updates and extensions</a>.</li>
+</ul>
+
+<h2>The log</h2>
+
+<p>RFiDGear writes a log to <code>%LocalAppData%\RFiDGear\log\</code>. The files roll and are kept for 30 days. The log names errors and their cause; RFiDGear deliberately writes no keys into it.</p>
+
+<h2>Questions and bug reports</h2>
+
+<p>The project has its page on GitHub: <code>https://github.com/c3rebro/RFiDGear</code>. There you can report bugs and look for versions. Attach an excerpt of the log and the version from
+<strong>Help &gt; About RFiDGear</strong>. Remove everything first that you do not want to pass on.</p>
+
+<div class="nav">Previous page: <a href="updates_extensions.html">Updates and extensions</a> &middot; Next page: <a href="glossary.html">Glossary</a></div>
+
+</body>
+</html>
