@@ -82,6 +82,15 @@ namespace RFiDGear.Tests
         [InlineData("%FREEMEM>=1.5e3")]
         [InlineData("%FREEMEM>=")]
         [InlineData("%FREEMEM>=99999999999")]
+        [InlineData("%FREEMEM==.1000")]
+        [InlineData("%FREEMEM==1000,")]
+        [InlineData("%FREEMEM==1,,000")]
+        [InlineData("%FREEMEM==1,5")]
+        [InlineData("%FREEMEM==1.0000")]
+        [InlineData("%FREEMEM==1.00")]
+        [InlineData("%FREEMEM==1.000,000")]
+        [InlineData("%FREEMEM==10 00")]
+        [InlineData("%FREEMEM==1  000")]
         [InlineData("%COUNTAPPS==two")]
         [InlineData("%COUNTAPPS!=")]
         public void AValueThatIsNoWholeNumber_CannotBeEvaluated_AndIsNeverRead_AsZero(string expression)
@@ -127,6 +136,15 @@ namespace RFiDGear.Tests
             Assert.Equal(nameof(LogicCompareOutcome.True), Evaluate("$JOB!=J-8", variables));
             Assert.Equal(nameof(LogicCompareOutcome.True), Evaluate("  $JOB  ==  J-7 ", variables));
             Assert.Equal(nameof(LogicCompareOutcome.False), Evaluate("$JOB==j-7", variables));
+        }
+
+        [Fact]
+        public void ADollarSign_MayStandAnywhereInTheNameOfAVariable()
+        {
+            var variables = new Dictionary<string, string> { ["JOB$ID"] = "7" };
+
+            Assert.Equal(nameof(LogicCompareOutcome.True), Evaluate("JOB$ID==7", variables));
+            Assert.Equal(nameof(LogicCompareOutcome.False), Evaluate("JOB$ID!=7", variables));
         }
 
         [Fact]

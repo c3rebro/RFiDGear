@@ -29,8 +29,9 @@ namespace RFiDGear.Infrastructure.Tasks
     /// <list type="bullet">
     /// <item><description><c>%FREEMEM</c> (the free memory of the DESFire card) and <c>%COUNTAPPS</c> (the number of its applications)
     /// take <c>&gt;=</c>, <c>&lt;=</c>, <c>==</c> and <c>!=</c>, each meaning what it says, and a whole number as the value.</description></item>
-    /// <item><description>A variable of the run, <c>$NAME</c>, takes <c>==</c> and <c>!=</c> and a text as the value. A variable that
-    /// has no value is neither equal to anything nor different from anything: it cannot be evaluated.</description></item>
+    /// <item><description>A variable of the run, <c>$NAME</c> (any name with a dollar sign in it, as the start-up arguments accept
+    /// it), takes <c>==</c> and <c>!=</c> and a text as the value. A variable that has no value is neither equal to anything nor
+    /// different from anything: it cannot be evaluated.</description></item>
     /// </list>
     /// Spaces around the operand, the operator and the value do not matter.
     /// </summary>
@@ -61,7 +62,7 @@ namespace RFiDGear.Infrastructure.Tasks
                     return CompareNumber(applicationCount is >= 0 ? (uint)applicationCount.Value : null, op, value);
 
                 default:
-                    return operand.StartsWith('$') ? CompareVariable(operand, op, value, variables) : LogicCompareOutcome.NotEvaluable;
+                    return operand.Contains('$') ? CompareVariable(operand, op, value, variables) : LogicCompareOutcome.NotEvaluable;
             }
         }
 
@@ -131,17 +132,31 @@ namespace RFiDGear.Infrastructure.Tasks
             return equal == (op == "==") ? LogicCompareOutcome.True : LogicCompareOutcome.False;
         }
 
-        // Digits, with the dots, commas and spaces that people put between groups of them (4.096, 4,096, 4 096). Nothing else:
-        // a value such as "abc" or "12 bytes" is not a number, and it is never read as 0.
+        // Digits only (4096), or groups of three digits after one separator that is used throughout (4.096, 4,096, 4 096; 1 to 3
+        // digits come first). Nothing else: "abc", "12 bytes", "1,5" (a decimal), ".1000", "1000," and "1,,000" are not numbers,
+        // and a text that is no number is never read as 0.
         private static bool TryParseNumber(string value, out uint number)
         {
             number = 0;
 
-            var digits = new string(value.Where(c => c != '.' && c != ',' && !char.IsWhiteSpace(c)).ToArray());
+            if (value.Length == 0)
+            {
+                return false;
+            }
 
-            return digits.Length > 0
-                && digits.All(c => c is >= '0' and <= '9')
-                && uint.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out number);
+            var separator = value.FirstOrDefault(c => !IsDigit(c));
+            var groups = separator == default ? new[] { value } : value.Split(separator);
+
+            var wellFormed = separator == default
+                || (separator is '.' or ',' or ' ' or ' '
+                    && groups[0].Length is >= 1 and <= 3
+                    && groups.Skip(1).All(group => group.Length == 3));
+
+            return wellFormed
+                && groups.All(group => group.Length > 0 && group.All(IsDigit))
+                && uint.TryParse(string.Concat(groups), NumberStyles.None, CultureInfo.InvariantCulture, out number);
         }
+
+        private static bool IsDigit(char c) => c is >= '0' and <= '9';
     }
 }
