@@ -600,7 +600,11 @@ passed with a real reader; until then a snapshot may be re-baselined.
   it, so its source stays `autoMode`, but the gate notes the run id with its
   connection when the run is admitted (`ApprovedRunTable`, before the notice
   and the first task) and the resolver gives that connection back; a run of
-  the mode that nobody approved is nobody's. These are information and a
+  the mode that nobody approved is nobody's. The sample client's own check
+  (`StartedByThisClient`) knows these runs from the `cardPresentationEnded`
+  notices with the reason `approved` (the latest 64) and waits a little for a
+  late one (`ApprovedRunWait`): the key request and the notice travel on
+  different paths. These are information and a
   convenience, not protection against a hostile program of the same user (see
   the guide).
 - Logs hold method names, request and run ids, numbers and error kinds. Never a
