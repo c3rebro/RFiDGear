@@ -26,6 +26,7 @@ namespace RFiDGear.Tests
     /// assistant ends with this task. Started from the main window it closes RFiDGear, as it always did; started from an
     /// extension it ends the run, so that the page which started the run can show the result.
     /// </summary>
+    [Collection("CommonTaskStatics")]
     public class ProjectExitTaskTests
     {
         // Has no program in it: the task cannot parse the text and fails, without starting anything. A task of this kind
