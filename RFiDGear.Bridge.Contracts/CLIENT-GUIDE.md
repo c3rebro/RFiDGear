@@ -480,6 +480,12 @@ For every card:
   you start again.
 - A card that is taken away and put back faster than the reader is polled is
   not seen, and counts as the same presence.
+- Notices are hints, and the truth is `getStatus`. A notice that the mode
+  stopped can be about an earlier mode (you listen from before your own start,
+  so it can come first): ask the status before you give up the mode, as the
+  sample's loop does. The loop ends on that notice and does not poll; a program
+  that must not run on with a mode that ended without a notice asks `getStatus`
+  now and then as well.
 
 **Going from a project that writes to one that only reads:**
 
