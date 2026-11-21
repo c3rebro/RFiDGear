@@ -73,8 +73,7 @@ started; if the start fails, it ends with <strong>Is Not True</strong>.</p>
 <div class="note">The placeholders with a percent sign (<code>%UID</code>, <code>%DATE</code>, ...) are replaced in the fields of a report (see <a href="reports.html">Reports</a>), but <strong>not</strong> in the arguments of a program task in this version: they
 reach the program as they are typed. Pass such values as a <code>$NAME</code> variable.</div>
 
-<p>If the path is <code>%EXIT</code>, the task closes RFiDGear. Use that as the last task of a project that another program started and that should not stay open
-afterwards.</p>
+<p>If the path is <code>%EXIT</code>, the task closes RFiDGear when the project runs in the window, with <code>AUTORUN</code> or in the automatic mode of the menu. In a run that another program asks for (external control, an extension) it ends the run at that task instead and RFiDGear stays open: the tasks after it do not run, and they are not counted as failures. Use it as the last task of a project that was started with <code>AUTORUN</code> and should not stay open afterwards.</p>
 
 <div class="warn">A program that you enter here runs with the rights of the user who started RFiDGear. Do not open a project from an unknown source until you know its program
 tasks.</div>

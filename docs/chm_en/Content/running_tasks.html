@@ -50,7 +50,7 @@ wrote in part stays on the card, and the result says where they failed.</p>
 <tr><th>Result</th><th>When</th></tr>
 <tr><td>succeeded</td><td>every task that ran ended with <strong>No Error</strong>, and all tasks were reached</td></tr>
 <tr><td>succeeded, with intended failures</td><td>a check said "no" (<strong>Is Not True</strong>), or a task failed and a later task caught that with an execute condition</td></tr>
-<tr><td>failed</td><td>a task failed and no later task reacted to it; a program start failed; <strong>Card not expected</strong> occurred; or the run ended before all tasks were reached</td></tr>
+<tr><td>failed</td><td>a task failed and no later task reacted to it (a failed program start counts like any other failure); <strong>Card not expected</strong> occurred; or the run ended before all tasks were reached (a run that another program asked for and that ends at <code>%EXIT</code> excepted)</td></tr>
 </table>
 
 <p>A task that was skipped because of its execute condition is not an error.</p>

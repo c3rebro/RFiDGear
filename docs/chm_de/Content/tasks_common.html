@@ -74,8 +74,7 @@ wurde; schl&auml;gt der Start fehl, endet sie mit <strong>Ist Nicht Wahr</strong
 <div class="note">Die Platzhalter mit Prozentzeichen (<code>%UID</code>, <code>%DATE</code>, ...) werden in den Feldern eines Berichts ersetzt (siehe <a href="reports.html">Berichte</a>), in den Argumenten einer Programmaufgabe aber in dieser Version <strong>nicht</strong>: sie
 kommen so beim Programm an, wie Sie sie eingetippt haben. Geben Sie solche Werte als Variable <code>$NAME</code> mit.</div>
 
-<p>Lautet der Programmpfad <code>%EXIT</code>, beendet die Aufgabe RFiDGear. Verwenden Sie das als letzte Aufgabe eines Projekts, das ein anderes Programm
-gestartet hat und danach nicht mehr offen lassen m&ouml;chte.</p>
+<p>Lautet der Programmpfad <code>%EXIT</code>, beendet die Aufgabe RFiDGear, wenn das Projekt im Fenster, mit <code>AUTORUN</code> oder im automatischen Modus des Men&uuml;s l&auml;uft. In einem Lauf, den ein anderes Programm anfordert (externe Steuerung, eine Erweiterung), beendet sie stattdessen den Lauf an dieser Aufgabe, und RFiDGear bleibt offen: die Aufgaben danach laufen nicht und z&auml;hlen nicht als Fehlschlag. Verwenden Sie sie als letzte Aufgabe eines Projekts, das mit <code>AUTORUN</code> gestartet wurde und danach nicht mehr offen bleiben soll.</p>
 
 <div class="warn">Ein Programm, das Sie hier eintragen, l&auml;uft mit den Rechten des Benutzers, der RFiDGear gestartet hat. &Ouml;ffnen Sie ein Projekt aus einer
 fremden Quelle erst, wenn Sie seine Programmaufgaben kennen.</div>

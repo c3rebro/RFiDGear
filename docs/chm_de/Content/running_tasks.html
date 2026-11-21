@@ -52,8 +52,8 @@ danach den Lauf.</p>
 <tr><td>gelungen</td><td>jede Aufgabe, die lief, endete mit <strong>Kein Fehler</strong>, und alle Aufgaben wurden erreicht</td></tr>
 <tr><td>gelungen, mit gewollten Fehlern</td><td>eine Pr&uuml;fung hat &bdquo;nein&ldquo; gesagt (<strong>Ist Nicht Wahr</strong>), oder eine Aufgabe ist fehlgeschlagen und eine sp&auml;tere Aufgabe hat das mit einer
 Ausf&uuml;hrungsbedingung aufgefangen</td></tr>
-<tr><td>fehlgeschlagen</td><td>eine Aufgabe ist fehlgeschlagen und keine sp&auml;tere hat darauf reagiert; ein Programmstart ist gescheitert; <strong>Karte nicht erwartet</strong> trat auf; oder der Lauf
-endete, bevor alle Aufgaben erreicht waren</td></tr>
+<tr><td>fehlgeschlagen</td><td>eine Aufgabe ist fehlgeschlagen und keine sp&auml;tere hat darauf reagiert (auch ein gescheiterter Programmstart z&auml;hlt wie jeder andere Fehlschlag); <strong>Karte nicht erwartet</strong> trat auf; oder der Lauf
+endete, bevor alle Aufgaben erreicht waren (ein Lauf, den ein anderes Programm angefordert hat und der bei <code>%EXIT</code> endet, ausgenommen)</td></tr>
 </table>
 
 <p>Eine Aufgabe, die wegen ihrer Ausf&uuml;hrungsbedingung &uuml;bersprungen wurde, ist kein Fehler.</p>
