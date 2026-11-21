@@ -50,16 +50,18 @@ Ausf&uuml;hrungsbedingung verwenden.</p>
 <tr><td><strong>Vergleiche</strong></td><td>der <strong>Vergleicher Wert</strong> (ein Ausdruck) zutrifft</td></tr>
 </table>
 
-<p>Ein Ausdruck f&uuml;r <strong>Vergleiche</strong> hat die Form <em>Operand Operator Wert</em>. Nur diese Kombinationen funktionieren:</p>
+<p>Ein Ausdruck f&uuml;r <strong>Vergleiche</strong> hat die Form <em>Operand Operator Wert</em>. Leerzeichen um die drei sind gleichg&uuml;ltig. Es gibt diese Kombinationen:</p>
 
 <table>
 <tr><th>Operand</th><th>Operatoren, die funktionieren</th><th>Bedeutung</th></tr>
-<tr><td><code>$NAME</code></td><td><code>==</code>, <code>!=</code></td><td>eine Variable des Laufs (siehe <a href="command_line.html">Startargumente</a>), zum Beispiel <code>$EXPECTEDUID==04A1B2C3D4E5F6</code></td></tr>
-<tr><td><code>%FREEMEM</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code></td><td>der freie Speicher einer DESFire-Karte in Bytes, zum Beispiel <code>%FREEMEM&gt;=1024</code></td></tr>
-<tr><td><code>%COUNTAPPS</code></td><td><code>&gt;=</code></td><td>die Zahl der Applikationen einer DESFire-Karte: mindestens der Wert</td></tr>
+<tr><td><code>$NAME</code></td><td><code>==</code>, <code>!=</code></td><td>eine Variable des Laufs (siehe <a href="command_line.html">Startargumente</a>), als Text verglichen, zum Beispiel <code>$EXPECTEDUID==04A1B2C3D4E5F6</code>. <code>$NAME!=</code> ohne Wert danach sagt, dass die Variable nicht leer ist</td></tr>
+<tr><td><code>%FREEMEM</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code></td><td>der freie Speicher einer DESFire-Karte in Bytes, zum Beispiel <code>%FREEMEM&gt;=1024</code>. Der Wert ist eine ganze Zahl: <code>4096</code>, oder <code>4.096</code>, <code>4,096</code> oder <code>4 096</code></td></tr>
+<tr><td><code>%COUNTAPPS</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code></td><td>die Zahl der Applikationen einer DESFire-Karte, zum Beispiel <code>%COUNTAPPS==2</code></td></tr>
 </table>
 
-<div class="warn">Andere Kombinationen tun nicht, was sie sagen: <code>%FREEMEM!=</code> pr&uuml;ft auf Gleichheit, <code>%COUNTAPPS==</code> und <code>%COUNTAPPS!=</code> pr&uuml;fen auf &bdquo;mindestens&ldquo;, und <code>%COUNTAPPS&lt;=</code> ist nicht umgesetzt. Verwenden Sie sie nicht: sie k&ouml;nnen den falschen Zweig w&auml;hlen.</div>
+<p>Jeder Operator bedeutet, was er sagt. Ein Ausdruck, der sich nicht auswerten l&auml;sst, endet mit <strong>Ist Nicht Wahr</strong>, wie ein falscher, und das Protokoll sagt es (ohne den Text des Ausdrucks). Das gilt f&uuml;r: keinen Operator, einen Operanden, den RFiDGear nicht kennt, einen Wert, der keine ganze Zahl ist, eine Variable ohne Wert (sie ist weder gleich noch ungleich), <code>&gt;=</code> oder <code>&lt;=</code> bei einer Variablen und einen Lauf ohne DESFire-Karte.</p>
+
+<div class="note">Fr&uuml;here Versionen von RFiDGear werteten einiges davon falsch aus: <code>%FREEMEM!=</code> pr&uuml;fte auf Gleichheit, <code>%COUNTAPPS==</code> und <code>%COUNTAPPS!=</code> pr&uuml;ften auf &bdquo;mindestens&ldquo;, und <code>%COUNTAPPS&lt;=</code> gab kein Ergebnis. Ein Projekt, das f&uuml;r dieses Verhalten geschrieben wurde, muss gepr&uuml;ft werden.</div>
 
 <div class="note">Die Logikfunktionen <strong>Nicht</strong>, <strong>Nicht UND</strong> und <strong>Nicht ODER</strong> stehen zwar in der Auswahl, sind aber nicht
 fertig: verwenden Sie sie nicht.</div>
@@ -67,12 +69,18 @@ fertig: verwenden Sie sie nicht.</div>
 <h2>Programm ausf&uuml;hren</h2>
 
 <p>Das Feld <strong>Programmpfad (ggf. mit Argumenten)</strong> nimmt den Pfad des Programms in Anf&uuml;hrungszeichen, danach die Argumente, zum Beispiel
-<code>"C:\Tools\notify.exe" -job $JOBNUMMER</code>. RFiDGear ersetzt jedes <code>$NAME</code> in den Argumenten durch den Wert dieser Variablen des Laufs (zum Beispiel aus einem Startargument, siehe
-<a href="command_line.html">Startargumente</a>). Es startet das Programm und wartet nicht auf sein Ende. Die Aufgabe gilt als gelungen, wenn das Programm gestartet
+<code>"C:\Tools\notify.exe" -job $JOBNUMMER -uid %UID</code>. RFiDGear ersetzt im Pfad und in den Argumenten jedes <code>$NAME</code> durch den Wert dieser Variablen des Laufs (zum Beispiel aus einem Startargument, siehe
+<a href="command_line.html">Startargumente</a>; die Schreibweise des Namens ist gleichg&uuml;ltig) und diese Platzhalter. Es startet das Programm und wartet nicht auf sein Ende. Die Aufgabe gilt als gelungen, wenn das Programm gestartet
 wurde; schl&auml;gt der Start fehl, endet sie mit <strong>Ist Nicht Wahr</strong>.</p>
 
-<div class="note">Die Platzhalter mit Prozentzeichen (<code>%UID</code>, <code>%DATE</code>, ...) werden in den Feldern eines Berichts ersetzt (siehe <a href="reports.html">Berichte</a>), in den Argumenten einer Programmaufgabe aber in dieser Version <strong>nicht</strong>: sie
-kommen so beim Programm an, wie Sie sie eingetippt haben. Geben Sie solche Werte als Variable <code>$NAME</code> mit.</div>
+<table>
+<tr><th>Platzhalter</th><th>wird ersetzt durch</th></tr>
+<tr><td><code>%UID</code>, <code>%CHIPTYPE</code></td><td>die UID und den Typ der Karte, die der Lauf gelesen hat</td></tr>
+<tr><td><code>%DATE</code>, <code>%DATETIME</code></td><td>das Datum, <code>TT/MM/JJJJ</code>, und das Datum mit der Uhrzeit in der Schreibweise Ihres Windows</td></tr>
+<tr><td><code>%FREEMEM</code>, <code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>der freie Speicher einer DESFire-Karte, ihre Applikations-IDs (durch Komma getrennt) und deren Zahl</td></tr>
+</table>
+
+<p>Ein Wert, den es nicht gibt (der Lauf hat keine Karte gelesen, oder die Karte ist keine DESFire-Karte), wird durch nichts ersetzt. Der Text der Aufgabe wird nicht ver&auml;ndert: jeder Lauf ersetzt die Platzhalter von neuem, mit den Werten seiner eigenen Karte. Was nach dem schlie&szlig;enden Anf&uuml;hrungszeichen des Pfads steht, kommt so beim Programm an, wie es eingetippt wurde, Anf&uuml;hrungszeichen eingeschlossen.</p>
 
 <p>Lautet der Programmpfad <code>%EXIT</code>, beendet die Aufgabe RFiDGear, wenn das Projekt im Fenster, mit <code>AUTORUN</code> oder im automatischen Modus des Men&uuml;s l&auml;uft. In einem Lauf, den ein anderes Programm anfordert (externe Steuerung, eine Erweiterung), beendet sie stattdessen den Lauf an dieser Aufgabe, und RFiDGear bleibt offen: die Aufgaben danach laufen nicht und z&auml;hlen nicht als Fehlschlag. Verwenden Sie sie als letzte Aufgabe eines Projekts, das mit <code>AUTORUN</code> gestartet wurde und danach nicht mehr offen bleiben soll.</p>
 

@@ -18,7 +18,7 @@ bar at the bottom. The divider between tree and list can be moved with the mouse
 <p>The tree shows the chips that were read. A new chip is added; a chip that is read again is only selected, so its node keeps what was read before. <strong>Edit &gt; Remove Cards</strong> empties the tree. The top node carries the <strong>ChipType:</strong> and the UID. Below it are,
 depending on the chip, sectors, applications, files and pages. The color of a node tells how the chip was handled: green
 stands for a node that could be opened with its key, red for one that could not, violet for one that was changed since it was read.
-The top node is yellow while a run works on it; the result of the run shows in the rows of the task list.</p>
+The top node is yellow while a run works on it. When the run has ended it is green if the run succeeded (also when every failure was meant, because a task of the project handles it) and red if it failed. The next run clears the color, and a run that was cancelled leaves none. The rows of the task list show the result of each task.</p>
 
 <p>The menus in the tree:</p>
 
