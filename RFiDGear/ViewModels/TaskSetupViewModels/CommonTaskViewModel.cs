@@ -1019,6 +1019,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                         foreach (var checkpoint in Checkpoints)
                         {
+                            // A checkpoint without a target is a plain field (a date, a UID, a fixed text) and is always written. A target
+                            // that names a task that does not exist (it was deleted, or the tasks were renumbered) has no result to hold the
+                            // field to: nothing is written, and the content is not even looked at. The log says which task number is missing
+                            // (never the content).
+                            var hasTarget = !string.IsNullOrWhiteSpace(checkpoint.TaskIndex);
+                            var targetIndex = -1;
+
+                            if (hasTarget && !checkpointDictionary.TryGetValue(checkpoint.TaskIndex, out targetIndex))
+                            {
+                                Logger.Warning("A checkpoint of the report names task {TaskIndex}, which does not exist: its field is not written.", checkpoint.TaskIndex);
+                                skippedCheckpointTargets.Add(checkpoint.TaskIndex);
+
+                                continue;
+                            }
+
                             var hasVariable = false;
                             var concatenate = false;
 
@@ -1076,7 +1091,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             if (temporaryContent.Contains("%LISTAPPS"))
                             {
-                                temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
+                                temporaryContent = temporaryContent.Replace("%LISTAPPS", DesfireChip?.AppList == null ? "" : string.Join(", ", DesfireChip.AppList.Select(x => x.appID)));
                                 hasVariable = true;
                             }
 
@@ -1132,24 +1147,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 concatenate = true;
                             }
 
-                            // A checkpoint with a target task writes its field only when that task ended with the result the checkpoint
-                            // names. A checkpoint without a target is a plain field (a date, a UID, a fixed text) and is always written.
-                            // A target that names a task that does not exist (it was deleted, or the tasks were renumbered) has no result to
-                            // hold the field to: nothing is written, and the log says which task number is missing (never the content).
-                            if (!string.IsNullOrWhiteSpace(checkpoint.TaskIndex))
+                            // A checkpoint with a target writes its field only when that task ended with the result the checkpoint names.
+                            if (hasTarget && (AvailableTasks[targetIndex] as IGenericTask).CurrentTaskErrorLevel != checkpoint.ErrorLevel)
                             {
-                                if (!checkpointDictionary.TryGetValue(checkpoint.TaskIndex, out var targetIndex))
-                                {
-                                    Logger.Warning("A checkpoint of the report names task {TaskIndex}, which does not exist: its field is not written.", checkpoint.TaskIndex);
-                                    skippedCheckpointTargets.Add(checkpoint.TaskIndex);
-
-                                    continue;
-                                }
-
-                                if ((AvailableTasks[targetIndex] as IGenericTask).CurrentTaskErrorLevel != checkpoint.ErrorLevel)
-                                {
-                                    continue;
-                                }
+                                continue;
                             }
 
                             if (concatenate)

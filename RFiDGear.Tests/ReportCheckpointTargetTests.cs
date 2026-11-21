@@ -114,6 +114,41 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ACheckpointWhoseTargetDoesNotExist_IsNotLookedInto_SoItsContentCannotFailTheReport()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var kit = new ReportTestKit();
+
+                // The task has no DESFire chip: the list of applications of the content could not be made.
+                var task = ReportTask(Mark("A", "apps: %LISTAPPS", "7", ERROR.NoError), Mark("B", "still written", string.Empty));
+
+                var report = await kit.RunAsync(task, kit.Template("A", "B"));
+
+                Assert.True(string.IsNullOrEmpty(Value(report, "A")));
+                Assert.Equal("still written", Value(report, "B"));
+                Assert.Equal(new[] { "7" }, task.SkippedCheckpointTargets);
+                Assert.Equal(ERROR.NoError, task.CurrentTaskErrorLevel);
+            });
+        }
+
+        [Fact]
+        public async Task TheListOfApplications_WithoutADesfireChip_IsEmpty_AndNoFailureOfTheReport()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var kit = new ReportTestKit();
+                var task = ReportTask(Mark("A", "apps: %LISTAPPS", string.Empty), Mark("B", "count: %COUNTAPPS", string.Empty));
+
+                var report = await kit.RunAsync(task, kit.Template("A", "B"));
+
+                Assert.Equal("apps: ", Value(report, "A"));
+                Assert.Equal("count: ", Value(report, "B"));
+                Assert.Equal(ERROR.NoError, task.CurrentTaskErrorLevel);
+            });
+        }
+
+        [Fact]
         public async Task TheSkippedTargetsOfARun_AreForgottenByTheNextRun()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
