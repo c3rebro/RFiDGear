@@ -880,6 +880,36 @@ because creating a `DatabaseReaderWriter` deletes files in the root of its
 project manager. A task that has typed keys
 implements `IKeyMigrationHost` as well (see `DEVELOPER_NOTES.md`).
 
+### Help
+
+F1 and Help > Help open a compiled help (CHM) per language, `RFiDGear_de.chm`
+or `RFiDGear_en.chm` next to `RFiDGear.exe`, chosen by `DefaultLanguage`
+(`HelpFile`, any letter case; anything but German is English). It must be
+started with the shell (`UseShellExecute = true`): a process that is no shell
+cannot open a document, and the old code failed that way unseen. The window is
+recognised by its title (`Title=` of the `.hhp`, `RFiDGear Hilfe` / `RFiDGear
+Help`), not by "any window that says Help".
+
+The sources are `docs/chm_de` and `docs/chm_en`: HTML pages with the same file
+names in both, a table of contents (`Table of Contents.hhc`) and an index
+(`.hhk`) each, one `help.css`, no screenshots. Everything is ASCII with
+entities (`&auml;`), because the contents and the index are read in the code
+page of the project language. The compiled files are committed beside the
+sources; `RFiDGear.csproj` copies them to the output, and the WiX harvest of
+that folder carries them into every MSI (no installer file names them).
+
+`docs/Build-Help.ps1` compiles both with `hhc.exe` of HTML Help Workshop (the
+compiler behind `hhw.exe`; its exit code 1 means success and 0 failure, and the
+script also fails on any `HHCxxxx` error or warning). Run it after a change of a
+page and commit the `.chm` with it; `-Check` compiles a copy and leaves the
+repository alone. Nothing in a normal build needs HTML Help Workshop (the tests
+build the host), which is why the compiled files are committed. `HelpFilesTests`
+pin the rules: every listed file exists, German and English have the same pages,
+every page is in the table of contents, links resolve, sources are ASCII, the
+window title is the one the program looks for, and the csproj copies both files.
+A page of the old help of another product ("Event Messenger") must not
+come back.
+
 ## Key Dependencies
 
 | Package | Purpose |
