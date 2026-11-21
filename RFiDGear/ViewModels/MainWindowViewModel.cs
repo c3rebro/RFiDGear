@@ -1777,7 +1777,10 @@ namespace RFiDGear.ViewModel
                 snapshot = taskHandler?.TaskCollection?.ToList() ?? new List<object>();
 
                 // The next free number of the pattern of the start-up arguments, for this run (null without a pattern, or when its folder is gone).
-                var reportPathOfThePattern = reportOutputPattern == null ? null : StartupArgumentProcessor.NormalizeReportTargetPath(reportOutputPattern);
+                // It is looked up only when nothing of higher priority names the report: the target of an approval, or the path that a person chose.
+                var reportPathOfThePattern = approvedReportPath == null && reportOutputPath == null && reportOutputPattern != null
+                    ? StartupArgumentProcessor.NormalizeReportTargetPath(reportOutputPattern)
+                    : null;
 
                 var request = new TaskExecutionRequest
                 {
