@@ -123,7 +123,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         public GenericChipModel GenericChip { get; set; }
         public MifareDesfireChipModel DesfireChip { get; set; }
-        public MifareClassicChipModel ClassicChip { get; set; }
 
         public ReaderTypes ReaderProvider { get; set; }
         public string ReaderUnitName { get; set; }
