@@ -2285,7 +2285,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             {
                                 StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
                                                                         DateTime.Now,
-                                                                        childNodeViewModelFromChip.Children[blockIndex].DataBlockNumber,
+                                                                        blockIndex,
                                                                         CustomConverter.HexToString(blockData));
                                 CurrentTaskErrorLevel = ERROR.NoError;
                             }
