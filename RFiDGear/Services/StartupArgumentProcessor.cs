@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using RFiDGear;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Services.Interfaces;
@@ -43,6 +45,7 @@ namespace RFiDGear.Services
                     case "REPORTOUTPUTPATH":
                         result.Variables[key] = value;
                         result.ReportOutputPath = NormalizeReportTargetPath(value);
+                        result.ReportOutputPattern = value;
                         break;
 
                     case "REPORTTEMPLATEFILE":
@@ -158,8 +161,15 @@ namespace RFiDGear.Services
                 return null;
             }
 
+            // A path without a question mark is the target as it is: no folder is read for it, for every card of a series.
+            var matcher = NumberMatcherOf(path);
+            if (matcher == null)
+            {
+                return path;
+            }
+
             var numbersInFileNames = Directory.GetFiles(directoryPath)
-                .Select(file => ExtractNumber(path, file))
+                .Select(file => ExtractNumber(matcher, file))
                 .Where(n => n >= 0)
                 .ToArray();
 
@@ -194,18 +204,52 @@ namespace RFiDGear.Services
             return !string.IsNullOrEmpty(directory) && Directory.Exists(directory);
         }
 
-        private static int ExtractNumber(string pattern, string fileName)
+        // What a file name of the pattern looks like. The placeholder that is replaced is the longest kind that the pattern holds
+        // (??? before ??, ?), as NormalizeReportTargetPath replaces it, and every place of it gets the same number: card-???-result.pdf is
+        // matched by card-007-result.pdf, ??-??.pdf by 07-07.pdf. The text around the places has to match too. ".pdf" at the end is left out,
+        // as it always was. Null when the pattern holds no question mark.
+        private static Regex NumberMatcherOf(string pattern)
         {
-            var sanitizedPattern = pattern.ToLowerInvariant()
-                .Replace("?", string.Empty)
-                .Replace(".pdf", string.Empty);
+            var name = WithoutPdf(Path.GetFileName(pattern));
+            var kind = name.Contains("???") ? "???" : name.Contains("??") ? "??" : "?";
 
-            var sanitizedFileName = fileName.ToLowerInvariant()
-                .Replace(".pdf", string.Empty)
-                .Replace(sanitizedPattern, string.Empty);
+            var texts = name.Split(kind);
+            if (texts.Length < 2)
+            {
+                return null;
+            }
 
-            return int.TryParse(sanitizedFileName, out var n) ? n : -1;
+            var expression = new StringBuilder("^").Append(Regex.Escape(texts[0])).Append("(?<n>[0-9]+)");
+            for (var i = 1; i < texts.Length; i++)
+            {
+                expression.Append(Regex.Escape(texts[i]));
+                if (i < texts.Length - 1)
+                {
+                    expression.Append("\\k<n>");
+                }
+            }
+
+            return new Regex(
+                expression.Append('$').ToString(),
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+                TimeSpan.FromSeconds(1));
         }
+
+        // The number that a file name holds in the place of the question marks, or -1 when the file is not one of the pattern.
+        private static int ExtractNumber(Regex matcher, string fileName)
+        {
+            if (matcher == null)
+            {
+                return -1;
+            }
+
+            var match = matcher.Match(WithoutPdf(Path.GetFileName(fileName)));
+
+            return match.Success && int.TryParse(match.Groups["n"].Value, out var n) ? n : -1;
+        }
+
+        private static string WithoutPdf(string name) =>
+            name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ? name.Substring(0, name.Length - ".pdf".Length) : name;
 
         private static void PersistLastProjectPath(string filePath)
         {

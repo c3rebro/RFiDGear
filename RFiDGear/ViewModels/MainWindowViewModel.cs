@@ -118,6 +118,11 @@ namespace RFiDGear.ViewModel
         private protected DispatcherTimer triggerReadChip;
         private protected DispatcherTimer taskTimeout;
         private protected string reportOutputPath;
+
+        // The report target of the start-up arguments as it was typed ("C:\Reports\card-???.pdf"). The number of a pattern is looked up
+        // for each run, so that a series of cards does not write one file again and again. reportOutputPath is only what a person chose in the
+        // window: it stays what it is until the report target paths are reset.
+        private string reportOutputPattern;
         private protected string reportTemplateFile;
         private protected ChipTaskHandlerModel taskHandler;
         private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
@@ -1492,6 +1497,10 @@ namespace RFiDGear.ViewModel
 
         private void ResetReportTaskDirectoryCore()
         {
+            // What the window remembers of the report target is forgotten whether or not the project has a task that makes a report.
+            reportOutputPath = null;
+            reportOutputPattern = null;
+
             try
             {
                 foreach (var chipTask in taskHandler.TaskCollection)
@@ -1500,7 +1509,6 @@ namespace RFiDGear.ViewModel
                     {
                         case CommonTaskViewModel ssVM:
                             ssVM.IsTaskCompletedSuccessfully = null;
-                            reportOutputPath = null;
                             reportReaderWriter.ReportOutputPath = null;
                             reportReaderWriter.ReportTemplateFile = null;
                             ssVM.CurrentTaskErrorLevel = ERROR.Empty;
@@ -1770,6 +1778,12 @@ namespace RFiDGear.ViewModel
                 // The positions of the observations index into the list as it is now; the live one may change meanwhile.
                 snapshot = taskHandler?.TaskCollection?.ToList() ?? new List<object>();
 
+                // The next free number of the pattern of the start-up arguments, for this run (null without a pattern, or when its folder is gone).
+                // It is looked up only when nothing of higher priority names the report: the target of an approval, or the path that a person chose.
+                var reportPathOfThePattern = approvedReportPath == null && reportOutputPath == null && reportOutputPattern != null
+                    ? StartupArgumentProcessor.NormalizeReportTargetPath(reportOutputPattern)
+                    : null;
+
                 var request = new TaskExecutionRequest
                 {
                     RunId = runId,
@@ -1789,7 +1803,7 @@ namespace RFiDGear.ViewModel
                     VariablesFromArgs = VariablesOfTheRun(approval),
                     Dialogs = Dialogs,
                     ReportReaderWriter = reportIsOfThisRun ? MakeTheReportWriterOfThisRun(runId, out reportWorkFolder) : reportReaderWriter,
-                    ReportOutputPath = approvedReportPath ?? reportOutputPath,
+                    ReportOutputPath = approvedReportPath ?? reportOutputPath ?? reportPathOfThePattern,
                     ReportTemplateFile = approvedReportTemplate ?? reportTemplateFile,
                     SelectedSetupViewModel = SelectedSetupViewModel,
                     RunSelectedOnly = _runSelectedOnly,
@@ -1804,7 +1818,14 @@ namespace RFiDGear.ViewModel
                 if (!reportIsOfThisRun)
                 {
                     reportReaderWriter = result.ReportReaderWriter;
-                    reportOutputPath = result.ReportOutputPath;
+
+                    // The path that the pattern gave is of this run only. A path that came from elsewhere (a person chose it in the window
+                    // when the run had none) is kept for the runs after it.
+                    if (!string.Equals(result.ReportOutputPath, reportPathOfThePattern, StringComparison.Ordinal))
+                    {
+                        reportOutputPath = result.ReportOutputPath;
+                    }
+
                     reportTemplateFile = result.ReportTemplateFile;
                 }
 
@@ -3280,14 +3301,22 @@ namespace RFiDGear.ViewModel
             }
         }
 
-        private void ApplyStartupArguments(StartupArgumentResult startupArguments)
+        internal void ApplyStartupArguments(StartupArgumentResult startupArguments)
         {
             if (startupArguments == null)
             {
                 return;
             }
 
-            reportOutputPath = startupArguments.ReportOutputPath ?? reportOutputPath;
+            reportOutputPattern = startupArguments.ReportOutputPattern ?? reportOutputPattern;
+
+            // A processor that only resolved the target (a stand-in, or one from before the pattern was kept) has nothing but that path: it
+            // is the target, as it always was.
+            if (startupArguments.ReportOutputPattern == null && startupArguments.ReportOutputPath != null)
+            {
+                reportOutputPath = startupArguments.ReportOutputPath;
+            }
+
             reportTemplateFile = startupArguments.ReportTemplateFile ?? reportTemplateFile;
 
             variablesFromArgs.Clear();
