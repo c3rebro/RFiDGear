@@ -154,7 +154,7 @@ namespace RFiDGear.Tests
 
             Assert.Equal(Cannot, Evaluate("$OTHER==J-7", variables));
             Assert.Equal(Cannot, Evaluate("$OTHER!=J-7", variables));
-            Assert.Equal(Cannot, Evaluate("$JOB==J-7", null));
+            Assert.Equal(Cannot, Evaluate("$JOB==J-7"));
             Assert.Equal(Cannot, Evaluate("$JOB!=J-7", new Dictionary<string, string>()));
         }
 
