@@ -31,10 +31,10 @@ opens with <strong>Tools &gt; MIFARE SAM AV3 setup...</strong>.</p>
 If it finds none, <strong>No MIFARE SAM AV3 found.</strong> is shown.</td></tr>
 <tr><td>2. Check</td><td><strong>Check SAM</strong></td><td>connects to the SAM and asks for its version. No key is used and nothing is changed. The window shows <strong>Hardware information</strong> and
 <strong>software information</strong>.</td></tr>
-<tr><td>3. Activate</td><td><strong>Activate SAM...</strong></td><td>only for a <em>new</em> SAM that says "not activated". RFiDGear asks first; <strong>No</strong> is the default.</td></tr>
-<tr><td>4. Authenticate</td><td><strong>Authenticate</strong></td><td>logs you in as host with the <strong>Master key</strong> (key entry 0, version 0). The key is the <strong>Factory key</strong> (sixteen zero bytes, for a new SAM), a
-<strong>Stored key</strong> from the Credential Manager or a typed key.</td></tr>
-<tr><td>5. Write a key</td><td><strong>Write key</strong></td><td>writes a PICC key into a <strong>Key entry (1 to 127)</strong> as version 0. The <strong>Key type:</strong> is <strong>AES-128 (DESFire)</strong> for a card with an AES key or
+<tr><td>3. Authenticate</td><td><strong>Authenticate</strong></td><td>logs you in as host with the <strong>Master key</strong> (key entry 0, version 0). The key is the <strong>Factory key</strong> (sixteen zero bytes, for a new SAM), a
+<strong>Stored key</strong> from the Credential Manager or a typed key. A new SAM answers that it was never activated; no key is used then, and the button <strong>Activate SAM...</strong> becomes available.</td></tr>
+<tr><td>4. Activate (new SAM only)</td><td><strong>Activate SAM...</strong></td><td>only after step 3 said "not activated". RFiDGear asks first; <strong>No</strong> is the default. Afterwards authenticate again (step 3).</td></tr>
+<tr><td>5. Write a key</td><td><strong>Write key</strong></td><td>only after a successful authentication: writes a PICC key into a <strong>Key entry (1 to 127)</strong> as version 0. The <strong>Key type:</strong> is <strong>AES-128 (DESFire)</strong> for a card with an AES key or
 <strong>DES / 2K3DES (DESFire native)</strong> for a card with the old key type. The key has 32 hexadecimal digits.</td></tr>
 </table>
 

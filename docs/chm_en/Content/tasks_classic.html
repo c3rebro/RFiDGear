@@ -10,18 +10,20 @@
 
 <h1>MIFARE Classic</h1>
 
-<p>Add the task with <strong>Edit &gt; Add / Edit Task(s) &gt; Mifare &gt; Add/Edit Mifare Classic Task</strong>. It reads and writes the sectors of a MIFARE Classic chip (1K, 4K and related
+<p>Add the task with <strong>Edit &gt; Add / Edit Task(s) &gt; Mifare &gt; Add/Edit Mifare Classic Task</strong>. It reads and writes blocks and sectors of a MIFARE Classic chip (1K, 4K and related
 ones). The dialog opens only when a reader is connected.</p>
 
 <h2>The task types</h2>
 
 <table>
 <tr><th>Task type</th><th>Effect</th></tr>
-<tr><td><strong>Read Data</strong></td><td>reads the sector with the keys of the dialog; the data appear in the Data Explorer under <strong>Data on Chip</strong></td></tr>
-<tr><td><strong>Write Data</strong></td><td>writes the data of the memory into the data blocks of the sector</td></tr>
-<tr><td><strong>Edit Sectortrailer and Keys</strong></td><td>writes new keys and new access bits into the sector trailer of the sector</td></tr>
+<tr><td><strong>Read Data</strong></td><td>reads the sector with the keys of the dialog (with <strong>Use MAD</strong> the application through the MAD directory); the data appear in the Data Explorer under <strong>Data on Chip</strong></td></tr>
+<tr><td><strong>Write Data</strong></td><td>writes data of the memory to the chip. <em>What</em> is written depends on <strong>Use MAD</strong>: see "What Write Data writes" below</td></tr>
 <tr><td><strong>Sector Unused Check</strong></td><td>checks whether the sector is unused</td></tr>
 </table>
+
+<p>The keys and the access bits of a sector are in the <strong>sector trailer</strong>, the last block of the sector. There is no task type of its own for it: you write the sector trailer like any other block with
+<strong>Write Data</strong>.</p>
 
 <h2>The tabs</h2>
 
@@ -31,13 +33,13 @@ ones). The dialog opens only when a reader is connected.</p>
 <tr><th>Field</th><th>Meaning</th></tr>
 <tr><td><strong>Sector Nr.</strong></td><td>the sector the task refers to</td></tr>
 <tr><td><strong>SectorKey - Current</strong></td><td>the <strong>A Key</strong> and the <strong>B Key</strong> that open the sector now: 12 hex characters each</td></tr>
-<tr><td><strong>SectorKey - Target</strong></td><td>the keys that the task type <strong>Edit Sectortrailer and Keys</strong> writes into the sector</td></tr>
+<tr><td><strong>SectorKey - Target</strong></td><td>the new keys that a write with <strong>Use MAD</strong> sets in the sectors of the application</td></tr>
 <tr><td><strong>Use MAD</strong></td><td>the task finds the sector through the MAD directory of the card instead of the sector number; the field <strong>Size (Bytes)</strong> gives the size of the
 application data. <strong>Use MAD Authentication</strong> opens the card with the MAD key.</td></tr>
 <tr><td><strong>MAD Key - Current</strong>, <strong>MAD Key - Target</strong></td><td>the keys for the MAD directory</td></tr>
 </table>
 
-<p>Each key field can be switched: instead of the typed key it can point to a key in the Credential Manager (see <a href="keys.html">Keys</a>).</p>
+<p>Like those of other tasks, the key fields can be switched: instead of the typed key a field can point to a key in the Credential Manager (see <a href="keys.html">Keys</a>).</p>
 
 <h3>Sector Trailer Editor</h3>
 
@@ -47,18 +49,24 @@ RFiDGear works out the three bytes of the access bits, with their inverses, by i
 
 <h3>Data Explorer</h3>
 
-<p>Two tables: <strong>Data on Chip</strong> (what was read last) and <strong>Data In Memory/File</strong> (what you want to write). The buttons <strong>Read Data</strong> and
+<p>Two tables: <strong>Data on Chip</strong> (what was read last) and <strong>Data In Memory/File</strong> (what you want to write). In the selection you choose the block that <strong>Write Data</strong> writes without the MAD:
+<strong>Block 0</strong>, <strong>Block 1</strong>, <strong>Block 2</strong> of the sector or the <strong>Sector Trailer</strong>. The buttons <strong>Read Data</strong> and
 <strong>Write Data</strong> carry out the action at once on the card on the reader, not as part of a run; <strong>Load Data from Disk...</strong> loads data from a file into the memory.</p>
 
-<h2>What RFiDGear observes when writing</h2>
+<h2>What Write Data writes</h2>
+
+<table>
+<tr><th>Setting</th><th>What is written</th></tr>
+<tr><td>without <strong>Use MAD</strong></td><td><strong>one</strong> block of 16 bytes: the block of the sector (from the sector number) that is chosen in the Data Explorer. If you choose the <strong>Sector Trailer</strong>, that changes the keys and the access bits of the sector: the block
+is written just as it stands in the memory. RFiDGear never writes block 0 of the chip with the manufacturer data.</td></tr>
+<tr><td>with <strong>Use MAD</strong></td><td>the application data through the MAD directory. The sectors that the data reaches get the new keys and access bits as well (<strong>SectorKey - Target</strong>
+and the access bits that are set); if the card has no directory, RFiDGear creates one. The data come before the directory, the directory before the sector trailers.</td></tr>
+</table>
 
 <ul>
 <li><strong>One attempt.</strong> Every write is made once, read back and never repeated. The first block that fails ends the task. A block that does not read back as written ends as
 <strong>Unknown Error</strong>.</li>
-<li><strong>Data blocks.</strong> <strong>Write Data</strong> writes data blocks only: 32 bytes in sector 0, 48 bytes in a sector with four blocks, 240 bytes in one of the large sectors (sectors
-32 to 39 of a 4K chip). RFiDGear never writes block 0 with the manufacturer data.</li>
-<li><strong>Sector trailer.</strong> It is written only by the task type <strong>Edit Sectortrailer and Keys</strong> and the Sector Trailer Editor. RFiDGear rejects access bits that are not consistent in themselves before
-it sends a key to the card.</li>
+<li><strong>Checks before the card is touched.</strong> RFiDGear rejects access bits that are not consistent in themselves and a block that does not have 16 bytes before it sends a key to the card.</li>
 <li><strong>Key B can be data.</strong> In the delivery configuration (access bits <code>FF078069</code>) key A may read key B: B is then a data area and cannot log in.</li>
 <li><strong>After a refusal the card halts.</strong> If a chip refuses an access, it halts the card: the next command fails once. RFiDGear wakes the card afterwards; the failure
 still stays a failure of the task.</li>
@@ -66,7 +74,7 @@ still stays a failure of the task.</li>
 
 <p>The result names what failed: only <strong>Authentication Failed</strong> means that a key was refused; another error stays another error.</p>
 
-<div class="warn">Wrong access bits can lock a sector for good. Try <strong>Edit Sectortrailer and Keys</strong> on a card you no longer need first. Write down the new keys before you
+<div class="warn">Wrong access bits can lock a sector for good, and with the sector trailer you change its keys. Try that on a card you no longer need first. Write down the new keys before you
 write.</div>
 
 <div class="note">With a PC/SC reader only reading has been tried on a 4K card so far. Writing, the MAD and the dialogs are checked only against a chip simulated in memory, and with an Elatec TWN4 on no card at all.

@@ -42,7 +42,7 @@ card" (condition <strong>Is Not True</strong>) is not taken for it.</p>
 
 <p>The check compares the UID that the run read from the card at its start. It never uses what the reader may still hold of an earlier card.</p>
 
-<div class="note">Typical use: another program releases a card and starts the run with <code>$EXPECTEDUID</code>. If the wrong card is on the reader, RFiDGear writes nothing.
+<div class="note">Typical use: another program releases a card and starts the run with <code>$EXPECTEDUID</code>. The check alone stops nothing: make <strong>Check UID</strong> the first task and give every task that touches the card an execute condition on it (the Check UID task, result <strong>No Error</strong>). A task without that condition runs whatever the check said, and the run ends as failed only afterwards.
 See <a href="command_line.html">Start-up arguments</a> and Part 2 of this help.</div>
 
 <h2>Check Type Of Chip</h2>

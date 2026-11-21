@@ -21,7 +21,7 @@ writing a report. The tasks stand in a list (the project) and run from top to bo
 <td><a href="tasks_common.html">Generic tasks</a></td></tr>
 <tr><td>Add / Edit Generic Chip Task...</td><td>Check UID, check type of chip, check for a multi-technology card</td>
 <td><a href="tasks_generic_chip.html">Chip tasks for any card</a></td></tr>
-<tr><td>Add/Edit Mifare Classic Task</td><td>read and write sectors, change keys and access bits, MAD</td>
+<tr><td>Add/Edit Mifare Classic Task</td><td>read and write blocks and sectors (the sector trailer with the keys and access bits too), MAD</td>
 <td><a href="tasks_classic.html">MIFARE Classic</a></td></tr>
 <tr><td>Add/Edit Mifare Desfire Task</td><td>applications, files and keys of a DESFire card</td>
 <td><a href="tasks_desfire.html">MIFARE DESFire</a></td></tr>
@@ -91,7 +91,7 @@ the card.</td></tr>
 <tr><td><strong>Transport Error</strong></td><td>the connection broke, for example because the card was removed</td></tr>
 <tr><td><strong>Unknown Error</strong></td><td>the outcome is not known, for example when a block that was written does not read back as written</td></tr>
 <tr><td><strong>Out Of Memory Error</strong></td><td>there is no room left on the card</td></tr>
-<tr><td><strong>Key unavailable</strong></td><td>a key that the task names by a reference could not be fetched. Nothing was sent to the card. See
+<tr><td><strong>Key unavailable</strong></td><td>a key that the task names by a reference could not be fetched from its key store; no command was sent to the card for it. A failure of a SAM is another case. See
 <a href="keys.html">Keys</a>.</td></tr>
 <tr><td><strong>Card not expected</strong></td><td>the card on the reader is not the one the caller expects (<a href="tasks_generic_chip.html">Check UID</a>
 with a variable)</td></tr>

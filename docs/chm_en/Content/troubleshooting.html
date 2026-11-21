@@ -36,7 +36,7 @@ once. Take the card away, put it on again and run the task again.</td></tr>
 <tr><td><strong>Permission Denied</strong></td><td>The access rights of the card forbid the operation with this key.</td></tr>
 <tr><td><strong>Protocol Constraint</strong></td><td>The reader or the card cannot do that. An EV1 or NTAG, for example, can be read and written only with an Elatec TWN4, not with a PC/SC reader.</td></tr>
 <tr><td><strong>Transport Error</strong></td><td>The connection broke: card removed too early, reader unplugged. Put the card on again. A task that was writing may have written in part; check the card before you repeat.</td></tr>
-<tr><td><strong>Key unavailable</strong></td><td>A key that the task names by a reference could not be had. Nothing was sent to the card. See <a href="keys.html">Keys</a>.</td></tr>
+<tr><td><strong>Key unavailable</strong></td><td>A key that the task names by a reference could not be had from its key store. No command went to the card for it. A failure of a SAM is another case. See <a href="keys.html">Keys</a>.</td></tr>
 <tr><td><strong>Card not expected</strong></td><td>The card on the reader is not the one the caller expects, or the variable <code>$EXPECTEDUID</code> has no value.</td></tr>
 <tr><td><strong>Is Not True</strong></td><td>A check said "no". That is an answer, not a defect.</td></tr>
 </table>

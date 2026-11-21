@@ -42,7 +42,7 @@ reagiert, und ein Zweig f&uuml;r &bdquo;eine andere Karte&ldquo; (Bedingung <str
 
 <p>Die Pr&uuml;fung vergleicht die UID, die der Lauf am Anfang von der Karte gelesen hat. Die Aufgabe verwendet nie das, was der Leser noch von einer fr&uuml;heren Karte im Speicher hat.</p>
 
-<div class="note">Typische Anwendung: Ein anderes Programm gibt eine Karte frei und startet den Lauf mit <code>$EXPECTEDUID</code>. Liegt die falsche Karte auf dem Leser, schreibt RFiDGear nichts.
+<div class="note">Typische Anwendung: Ein anderes Programm gibt eine Karte frei und startet den Lauf mit <code>$EXPECTEDUID</code>. Die Pr&uuml;fung allein h&auml;lt nichts auf: Machen Sie die <strong>Pr&uuml;fung der UID</strong> zur ersten Aufgabe und geben Sie jeder Aufgabe, die die Karte ber&uuml;hrt, eine Ausf&uuml;hrungsbedingung darauf (die Aufgabe Pr&uuml;fung der UID, Ergebnis <strong>Kein Fehler</strong>). Eine Aufgabe ohne diese Bedingung l&auml;uft, was auch die Pr&uuml;fung sagte, und der Lauf endet erst danach als fehlgeschlagen.
 Siehe <a href="command_line.html">Startargumente</a> und Teil 2 dieser Hilfe.</div>
 
 <h2>Pr&uuml;fung des Kartentyps</h2>

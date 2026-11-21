@@ -31,10 +31,10 @@ wechseln. Dieses Fenster richtet eine SAM daf&uuml;r ein. Es braucht kein Projek
 nichts verbunden. Findet es keine, steht <strong>Keine MIFARE SAM AV3 gefunden.</strong> da.</td></tr>
 <tr><td>2. Pr&uuml;fen</td><td><strong>SAM pr&uuml;fen</strong></td><td>verbindet sich mit der SAM und fragt nach ihrer Version. Es wird kein Schl&uuml;ssel verwendet und nichts ver&auml;ndert. Das Fenster zeigt <strong>Hardware-Information</strong> und
 <strong>Software-Information</strong>.</td></tr>
-<tr><td>3. Aktivieren</td><td><strong>SAM aktivieren...</strong></td><td>nur f&uuml;r eine <em>neue</em> SAM, die &bdquo;nicht aktiviert&ldquo; meldet. RFiDGear fragt vorher; <strong>Nein</strong> ist die Voreinstellung.</td></tr>
-<tr><td>4. Authentifizieren</td><td><strong>Authentifizieren</strong></td><td>meldet Sie als Host mit dem <strong>Hauptschl&uuml;ssel</strong> an (Schl&uuml;sseleintrag 0, Version 0). Der Schl&uuml;ssel ist der <strong>Werksschl&uuml;ssel</strong> (sechzehn Null-Bytes, bei einer neuen SAM), ein
-<strong>Gespeicherter Schl&uuml;ssel</strong> aus der Anmeldeinformationsverwaltung oder ein eingetippter Schl&uuml;ssel.</td></tr>
-<tr><td>5. Schl&uuml;ssel schreiben</td><td><strong>Schl&uuml;ssel schreiben</strong></td><td>schreibt einen PICC-Schl&uuml;ssel in einen <strong>Schl&uuml;sseleintrag (1 bis 127)</strong> als Version 0. Der <strong>Schl&uuml;sseltyp:</strong> ist <strong>AES-128 (DESFire)</strong> f&uuml;r eine Karte mit AES-Schl&uuml;ssel oder
+<tr><td>3. Authentifizieren</td><td><strong>Authentifizieren</strong></td><td>meldet Sie als Host mit dem <strong>Hauptschl&uuml;ssel</strong> an (Schl&uuml;sseleintrag 0, Version 0). Der Schl&uuml;ssel ist der <strong>Werksschl&uuml;ssel</strong> (sechzehn Null-Bytes, bei einer neuen SAM), ein
+<strong>Gespeicherter Schl&uuml;ssel</strong> aus der Anmeldeinformationsverwaltung oder ein eingetippter Schl&uuml;ssel. Eine neue SAM antwortet, dass sie nie aktiviert wurde; dabei wird kein Schl&uuml;ssel verwendet, und die Schaltfl&auml;che <strong>SAM aktivieren...</strong> wird frei.</td></tr>
+<tr><td>4. Aktivieren (nur neue SAM)</td><td><strong>SAM aktivieren...</strong></td><td>erst, nachdem Schritt 3 &bdquo;nicht aktiviert&ldquo; meldete. RFiDGear fragt vorher; <strong>Nein</strong> ist die Voreinstellung. Danach authentifizieren Sie sich noch einmal (Schritt 3).</td></tr>
+<tr><td>5. Schl&uuml;ssel schreiben</td><td><strong>Schl&uuml;ssel schreiben</strong></td><td>erst nach einer gelungenen Authentifizierung: schreibt einen PICC-Schl&uuml;ssel in einen <strong>Schl&uuml;sseleintrag (1 bis 127)</strong> als Version 0. Der <strong>Schl&uuml;sseltyp:</strong> ist <strong>AES-128 (DESFire)</strong> f&uuml;r eine Karte mit AES-Schl&uuml;ssel oder
 <strong>DES / 2K3DES (DESFire nativ)</strong> f&uuml;r eine Karte mit dem alten Schl&uuml;sseltyp. Der Schl&uuml;ssel hat 32 Hexadezimalziffern.</td></tr>
 </table>
 

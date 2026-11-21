@@ -52,15 +52,15 @@ depending on the outcome of a check: two checkpoints for the same field, one for
 
 <ul>
 <li>If the variable <code>REPORTTARGETPATH</code> (also <code>REPORTOUTPUTPATH</code>) is set, RFiDGear saves the report under that path. The folder has to exist. A <code>?</code>, <code>??</code> or <code>???</code> in the file name stands
-for the next free number in that folder, with one, two or three digits: <code>C:\Reports\report-???.pdf</code> becomes <code>report-001.pdf</code>, then <code>report-002.pdf</code> and so on.</li>
+for the next free number in that folder, with one, two or three digits: <code>C:\Reports\report-???.pdf</code> becomes <code>report-001.pdf</code> if no such file exists yet. The number is chosen <strong>once</strong>, when RFiDGear starts with the argument.</li>
 <li>The variable <code>REPORTTEMPLATEFILE</code> (also <code>REPORTTEMPLATEPATH</code>) chooses another template than the one in the dialog, if the file exists.</li>
-<li>Without <code>REPORTTARGETPATH</code>, RFiDGear asks for the file name in the run with the window <strong>Save Report as...</strong>. The path then applies for the rest of the run.
-<strong>Edit &gt; Reset Report Target Paths</strong> forgets remembered paths again.</li>
+<li>Without <code>REPORTTARGETPATH</code>, RFiDGear asks for the file name in the run with the window <strong>Save Report as...</strong>. RFiDGear remembers the path, from a start-up argument or from that window, <strong>for the following runs</strong> as well: every run writes to the same file until you forget the path with
+<strong>Edit &gt; Reset Report Target Paths</strong>.</li>
 </ul>
 
 <p>You give the variables as start-up arguments, or another program supplies them with the run. The page <a href="command_line.html">Start-up arguments</a> shows examples.</p>
 
-<div class="note">Every report is a PDF file of its own at the target path.</div>
+<div class="warn">For a series of cards, automatic mode included, a remembered target means that each report overwrites the one before. Give every run its own target: a program that asks for the runs can name the target for each run (Part 2 of this help), or reset the path between cards.</div>
 
 <div class="nav">Previous page: <a href="running_tasks.html">Running tasks</a> &middot; Next page: <a href="keys.html">Keys</a></div>
 

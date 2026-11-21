@@ -68,17 +68,12 @@ fertig: verwenden Sie sie nicht.</div>
 <h2>Programm ausf&uuml;hren</h2>
 
 <p>Das Feld <strong>Programmpfad (ggf. mit Argumenten)</strong> nimmt den Pfad des Programms in Anf&uuml;hrungszeichen, danach die Argumente, zum Beispiel
-<code>"C:\Tools\notify.exe" -uid %UID</code>. RFiDGear startet das Programm und wartet nicht auf sein Ende. Die Aufgabe gilt als gelungen, wenn das Programm gestartet
+<code>"C:\Tools\notify.exe" -job $JOBNUMMER</code>. RFiDGear ersetzt jedes <code>$NAME</code> in den Argumenten durch den Wert dieser Variablen des Laufs (zum Beispiel aus einem Startargument, siehe
+<a href="command_line.html">Startargumente</a>). Es startet das Programm und wartet nicht auf sein Ende. Die Aufgabe gilt als gelungen, wenn das Programm gestartet
 wurde; schl&auml;gt der Start fehl, endet sie mit <strong>Ist Nicht Wahr</strong>.</p>
 
-<table>
-<tr><th>Platzhalter</th><th>wird ersetzt durch</th></tr>
-<tr><td><code>%UID</code></td><td>die UID des Chips</td></tr>
-<tr><td><code>%CHIPTYPE</code></td><td>den Kartentyp</td></tr>
-<tr><td><code>%DATE</code>, <code>%DATETIME</code></td><td>das Datum (TT/MM/JJJJ) beziehungsweise Datum und Uhrzeit</td></tr>
-<tr><td><code>%FREEMEM</code>, <code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>freier Speicher, Liste der Applikations-IDs, Zahl der Applikationen einer DESFire-Karte</td></tr>
-<tr><td><code>$NAME</code></td><td>der Wert einer Variablen des Laufs, zum Beispiel aus einem Startargument</td></tr>
-</table>
+<div class="note">Die Platzhalter mit Prozentzeichen (<code>%UID</code>, <code>%DATE</code>, ...) werden in den Feldern eines Berichts ersetzt (siehe <a href="reports.html">Berichte</a>), in den Argumenten einer Programmaufgabe aber in dieser Version <strong>nicht</strong>: sie
+kommen so beim Programm an, wie Sie sie eingetippt haben. Geben Sie solche Werte als Variable <code>$NAME</code> mit.</div>
 
 <p>Lautet der Programmpfad <code>%EXIT</code>, beendet die Aufgabe RFiDGear. Verwenden Sie das als letzte Aufgabe eines Projekts, das ein anderes Programm
 gestartet hat und danach nicht mehr offen lassen m&ouml;chte.</p>

@@ -66,17 +66,12 @@ them.</div>
 <h2>Run Application</h2>
 
 <p>The field <strong>Path to Application (optional: with Arguments)</strong> takes the path of the program in quotation marks, then the arguments, for example
-<code>"C:\Tools\notify.exe" -uid %UID</code>. RFiDGear starts the program and does not wait for it to end. The task counts as succeeded when the program was
+<code>"C:\Tools\notify.exe" -job $JOBNUMBER</code>. RFiDGear replaces every <code>$NAME</code> in the arguments by the value of that variable of the run (for example from a start-up argument, see
+<a href="command_line.html">Start-up arguments</a>). It starts the program and does not wait for it to end. The task counts as succeeded when the program was
 started; if the start fails, it ends with <strong>Is Not True</strong>.</p>
 
-<table>
-<tr><th>Placeholder</th><th>is replaced by</th></tr>
-<tr><td><code>%UID</code></td><td>the UID of the chip</td></tr>
-<tr><td><code>%CHIPTYPE</code></td><td>the chip type</td></tr>
-<tr><td><code>%DATE</code>, <code>%DATETIME</code></td><td>the date (DD/MM/YYYY) or date and time</td></tr>
-<tr><td><code>%FREEMEM</code>, <code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>free memory, list of application IDs, number of applications of a DESFire card</td></tr>
-<tr><td><code>$NAME</code></td><td>the value of a variable of the run, for example from a start-up argument</td></tr>
-</table>
+<div class="note">The placeholders with a percent sign (<code>%UID</code>, <code>%DATE</code>, ...) are replaced in the fields of a report (see <a href="reports.html">Reports</a>), but <strong>not</strong> in the arguments of a program task in this version: they
+reach the program as they are typed. Pass such values as a <code>$NAME</code> variable.</div>
 
 <p>If the path is <code>%EXIT</code>, the task closes RFiDGear. Use that as the last task of a project that another program started and that should not stay open
 afterwards.</p>

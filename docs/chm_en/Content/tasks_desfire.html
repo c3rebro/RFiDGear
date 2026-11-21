@@ -79,11 +79,11 @@ without a tick is ignored. You compare the size with <strong>equal to</strong>, 
 
 <p>A key field can hold a typed key or point to a stored key. The button <strong>Key manager...</strong> in the section of the key opens the manager (see <a href="keys.html">Keys</a>). The sources to choose from are the
 <strong>Windows Credential Manager</strong>, a <strong>connected external application</strong> and a <strong>MIFARE SAM AV3</strong>. With a key of the SAM the key stays in the SAM; that works for four commands:
-<strong>Check: App Key</strong>, <strong>Change PICC Master Key</strong>, <strong>Change Application Key</strong> and the button <strong>Authenticate with PICC MasterKey</strong>. A key that cannot be fetched ends the task with
-<strong>Key unavailable</strong>; nothing is sent to the card then.</p>
+<strong>Check: App Key</strong>, <strong>Change PICC Master Key</strong>, <strong>Change Application Key</strong> and the button <strong>Authenticate with PICC MasterKey</strong>. A key that cannot be fetched from a key store ends the task with
+<strong>Key unavailable</strong>; no command is sent to the card then. A failure of the SAM itself is reported with its reason and the status words of the SAM and the card.</p>
 
-<div class="warn">The tasks on this page can make a card unusable: <strong>Format Desfire Card</strong> deletes all data, and a changed PICC master key or a frozen Change-Key Mode cannot be taken
-back without the old key. Write down the new keys before you write them, and practice on a card you no longer need. RFiDGear never repeats a write command on its own.</div>
+<div class="warn">The tasks on this page can make a card unusable: <strong>Format Desfire Card</strong> deletes all data, and after a successful change of the PICC master key every further authentication needs the <em>new</em> key: if you lose it, the card can no longer be managed.
+A frozen Change-Key Mode (<strong>Keychange frozen</strong>) stops later changes of keys. Write down the new keys before you write them, and practice on a card you no longer need. RFiDGear never repeats a write command on its own.</div>
 
 <div class="nav">Previous page: <a href="tasks_classic.html">MIFARE Classic</a> &middot; Next page: <a href="tasks_ultralight.html">MIFARE Ultralight and NTAG</a></div>
 

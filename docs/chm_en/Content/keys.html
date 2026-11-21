@@ -69,8 +69,9 @@ fetches every key it refers to. With <strong>No</strong> it is kept.</p>
 
 <h2>When a key cannot be had</h2>
 
-<p>If a key cannot be fetched (the key is missing from the Credential Manager, no program supplies it, the SAM cannot be reached), the task ends with <strong>Key unavailable</strong>. The status message says: <em>The key for ... is not
-available; nothing was sent to the card.</em> The task did not touch the card, and a task that waits for a refused authentication (<strong>Authentication Failed</strong>) is not started by it.</p>
+<p>If a key cannot be fetched from a key store (it is missing from the Credential Manager, no program supplies it), the task ends with <strong>Key unavailable</strong> before a command goes to the card. The status message says: <em>The key for ... is not
+available; nothing was sent to the card.</em> A task that waits for a refused authentication (<strong>Authentication Failed</strong>) is not started by it.
+A key of a SAM is another case: the SAM and the card work together, so a failure of the SAM can come after the card was addressed. The status line then names the reason and the status words of the SAM and of the card, and the task ends with the result of the step that failed.</p>
 
 <div class="warn">A key that you type is in the project file in plain text, and the default keys in the <a href="settings.html">Settings</a> are in plain text in <code>runtime-defaults.json</code>. Use a reference
 for real keys.</div>

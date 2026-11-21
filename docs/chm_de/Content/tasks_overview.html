@@ -21,7 +21,7 @@ einen Schl&uuml;ssel &auml;ndern oder einen Bericht schreiben. Die Aufgaben steh
 brauchen</td><td><a href="tasks_common.html">Allgemeine Aufgaben</a></td></tr>
 <tr><td>Typunabh&auml;ngige RFiD Aufgabe erstellen / bearbeiten...</td><td>UID pr&uuml;fen, Kartentyp pr&uuml;fen, Multitechnologiekarte pr&uuml;fen</td>
 <td><a href="tasks_generic_chip.html">Typunabh&auml;ngige Chip-Aufgaben</a></td></tr>
-<tr><td>Mifare Classic Aufgabe hinzuf&uuml;gen/bearbeiten</td><td>Sektoren lesen und schreiben, Schl&uuml;ssel und Zugriffsbits &auml;ndern, MAD</td>
+<tr><td>Mifare Classic Aufgabe hinzuf&uuml;gen/bearbeiten</td><td>Bl&ouml;cke und Sektoren lesen und schreiben (auch den Sector Trailer mit Schl&uuml;sseln und Zugriffsbits), MAD</td>
 <td><a href="tasks_classic.html">MIFARE Classic</a></td></tr>
 <tr><td>Mifare Desfire Aufgabe hinzuf&uuml;gen/bearbeiten</td><td>Applikationen, Dateien und Schl&uuml;ssel einer DESFire-Karte</td>
 <td><a href="tasks_desfire.html">MIFARE DESFire</a></td></tr>
@@ -91,8 +91,7 @@ Auswahlfelder der Ausf&uuml;hrungsbedingung und der Pr&uuml;fpunkte.</p>
 <tr><td><strong>Transportfehler</strong></td><td>die Verbindung brach ab, zum Beispiel weil die Karte entfernt wurde</td></tr>
 <tr><td><strong>Unbekannter Fehler</strong></td><td>der Ausgang ist nicht bekannt, zum Beispiel wenn ein geschriebener Block beim Zur&uuml;cklesen nicht stimmt</td></tr>
 <tr><td><strong>Nicht gen&uuml;gend Speicher</strong></td><td>auf der Karte ist kein Platz mehr</td></tr>
-<tr><td><strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong></td><td>ein Schl&uuml;ssel, den die Aufgabe &uuml;ber eine Referenz benennt, lie&szlig; sich nicht holen. An die Karte ging
-nichts. Siehe <a href="keys.html">Schl&uuml;ssel</a>.</td></tr>
+<tr><td><strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong></td><td>ein Schl&uuml;ssel, den die Aufgabe &uuml;ber eine Referenz benennt, lie&szlig; sich aus seinem Schl&uuml;sselspeicher nicht holen; daf&uuml;r ging kein Befehl an die Karte. Ein Fehler einer SAM ist ein anderer Fall. Siehe <a href="keys.html">Schl&uuml;ssel</a>.</td></tr>
 <tr><td><strong>Karte nicht erwartet</strong></td><td>die Karte auf dem Leser ist nicht die, die der Aufrufer erwartet (<a href="tasks_generic_chip.html">Pr&uuml;fung der UID</a>
 mit einer Variablen)</td></tr>
 </table>

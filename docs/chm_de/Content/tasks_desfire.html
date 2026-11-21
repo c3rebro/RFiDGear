@@ -82,10 +82,10 @@ werden. <strong>Beim Lesen &uuml;berschreiben</strong> legt fest, dass gelesene 
 <p>Ein Schl&uuml;sselfeld kann einen eingetippten Schl&uuml;ssel haben oder auf einen gespeicherten Schl&uuml;ssel zeigen. Die Schaltfl&auml;che <strong>Schl&uuml;sselverwaltung...</strong> im Abschnitt des Schl&uuml;ssels &ouml;ffnet die
 Verwaltung (siehe <a href="keys.html">Schl&uuml;ssel</a>). Als Quelle stehen zur Wahl: die <strong>Windows-Anmeldeinformationsverwaltung</strong>, eine <strong>verbundene externe Anwendung</strong> und eine
 <strong>MIFARE SAM AV3</strong>. Mit einem Schl&uuml;ssel der SAM bleibt der Schl&uuml;ssel in der SAM; das funktioniert f&uuml;r vier Befehle: <strong>Pr&uuml;fung: App-Key</strong>, <strong>PICC Master Key &auml;ndern</strong>, <strong>App Key &auml;ndern</strong> und die
-Schaltfl&auml;che <strong>Mit PICC MasterKey Authentifizieren</strong>. Ein Schl&uuml;ssel, der sich nicht holen l&auml;sst, beendet die Aufgabe mit <strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong>; an die Karte geht dann nichts.</p>
+Schaltfl&auml;che <strong>Mit PICC MasterKey Authentifizieren</strong>. Ein Schl&uuml;ssel, der sich aus einem Schl&uuml;sselspeicher nicht holen l&auml;sst, beendet die Aufgabe mit <strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong>; an die Karte geht dann kein Befehl. Ein Fehler der SAM selbst wird mit Grund und den Statusw&ouml;rtern von SAM und Karte gemeldet.</p>
 
-<div class="warn">Die Aufgaben dieser Seite k&ouml;nnen eine Karte unbrauchbar machen: <strong>Karte Formatieren</strong> l&ouml;scht alle Daten, ein ge&auml;nderter PICC Master Key oder ein
-eingefrorener Key-&Auml;nderungsmodus l&auml;sst sich ohne den alten Schl&uuml;ssel nicht zur&uuml;cknehmen. Notieren Sie die neuen Schl&uuml;ssel, bevor Sie sie schreiben, und &uuml;ben Sie an einer Karte, die Sie nicht mehr
+<div class="warn">Die Aufgaben dieser Seite k&ouml;nnen eine Karte unbrauchbar machen: <strong>Karte Formatieren</strong> l&ouml;scht alle Daten, nach einem gelungenen Wechsel des PICC Master Keys braucht jede weitere Authentifizierung den <em>neuen</em> Schl&uuml;ssel: geht er verloren, l&auml;sst sich die Karte nicht mehr verwalten.
+Ein eingefrorener Key-&Auml;nderungsmodus (<strong>Keychange frozen</strong>) verhindert sp&auml;tere Schl&uuml;ssel&auml;nderungen. Notieren Sie die neuen Schl&uuml;ssel, bevor Sie sie schreiben, und &uuml;ben Sie an einer Karte, die Sie nicht mehr
 brauchen. RFiDGear wiederholt einen Schreibbefehl nie von selbst.</div>
 
 <div class="nav">Vorherige Seite: <a href="tasks_classic.html">MIFARE Classic</a> &middot; N&auml;chste Seite: <a href="tasks_ultralight.html">MIFARE Ultralight und NTAG</a></div>
