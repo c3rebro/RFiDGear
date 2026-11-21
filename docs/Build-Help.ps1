@@ -38,25 +38,34 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Get-HhcPath([string]$explicit) {
-    if ($explicit) {
-        if (-not (Test-Path -LiteralPath $explicit)) { throw "hhc.exe was not found at $explicit" }
-        return (Resolve-Path -LiteralPath $explicit).Path
+function Get-HhcPath {
+    param([string]$Explicit)
+
+    if ($Explicit) {
+        if (-not (Test-Path -LiteralPath $Explicit)) { throw "hhc.exe was not found at $Explicit" }
+        return (Resolve-Path -LiteralPath $Explicit).Path
     }
 
     $folders = @(${env:ProgramFiles(x86)}, $env:ProgramFiles) | Where-Object { $_ }
     foreach ($folder in $folders) {
-        $candidate = Join-Path $folder 'HTML Help Workshop\hhc.exe'
+        $candidate = Join-Path -Path $folder -ChildPath 'HTML Help Workshop\hhc.exe'
         if (Test-Path -LiteralPath $candidate) { return $candidate }
     }
 
     throw 'hhc.exe was not found. Install HTML Help Workshop, or pass its path with -HhcPath.'
 }
 
-function Invoke-HelpCompile([string]$hhc, [string]$folder, [string]$project, [string]$chmName) {
-    Push-Location -LiteralPath $folder
+function Invoke-HelpCompile {
+    param(
+        [string]$Hhc,
+        [string]$Folder,
+        [string]$Project,
+        [string]$ChmName
+    )
+
+    Push-Location -LiteralPath $Folder
     try {
-        $output = & $hhc $project 2>&1 | ForEach-Object { "$_" }
+        $output = & $Hhc $Project 2>&1 | ForEach-Object { "$_" }
         $exitCode = $LASTEXITCODE
     }
     finally {
@@ -64,39 +73,39 @@ function Invoke-HelpCompile([string]$hhc, [string]$folder, [string]$project, [st
     }
 
     $problems = @($output | Where-Object { $_ -match 'HHC\d+:\s*(Error|Warning)' })
-    $chm = Join-Path $folder $chmName
+    $chm = Join-Path -Path $Folder -ChildPath $ChmName
 
     if ($exitCode -ne 1 -or $problems.Count -gt 0 -or -not (Test-Path -LiteralPath $chm) -or (Get-Item -LiteralPath $chm).Length -eq 0) {
-        $output | Where-Object { $_.Trim() } | ForEach-Object { Write-Host $_ }
-        throw "The help project $project did not compile (hhc exit code $exitCode, $($problems.Count) problems)."
+        $report = ($output | Where-Object { $_.Trim() }) -join [Environment]::NewLine
+        throw "The help project $Project did not compile (hhc exit code $exitCode, $($problems.Count) problems).$([Environment]::NewLine)$report"
     }
 
     return $chm
 }
 
 $docs = $PSScriptRoot
-$hhcFile = Get-HhcPath $HhcPath
+$hhcFile = Get-HhcPath -Explicit $HhcPath
 $helps = @(
     @{ Code = 'de'; Folder = 'chm_de'; Project = 'rfidgear_de.hhp'; Chm = 'RFiDGear_de.chm' },
     @{ Code = 'en'; Folder = 'chm_en'; Project = 'rfidgear_en.hhp'; Chm = 'RFiDGear_en.chm' }
 ) | Where-Object { $Language -eq 'both' -or $_.Code -eq $Language }
 
 foreach ($help in $helps) {
-    $source = Join-Path $docs $help.Folder
+    $source = Join-Path -Path $docs -ChildPath $help.Folder
     $work = $source
     $temp = $null
 
     if ($Check) {
-        $temp = Join-Path ([IO.Path]::GetTempPath()) ('rfidgear-help-' + [Guid]::NewGuid().ToString('N'))
+        $temp = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath ('rfidgear-help-' + [Guid]::NewGuid().ToString('N'))
         Copy-Item -LiteralPath $source -Destination $temp -Recurse
         $work = $temp
     }
 
     try {
-        $chm = Invoke-HelpCompile $hhcFile $work $help.Project $help.Chm
+        $chm = Invoke-HelpCompile -Hhc $hhcFile -Folder $work -Project $help.Project -ChmName $help.Chm
         $size = (Get-Item -LiteralPath $chm).Length
         $where = if ($Check) { 'checked, not written' } else { $chm }
-        Write-Host ("{0}: {1} bytes ({2})" -f $help.Chm, $size, $where)
+        Write-Output ('{0}: {1} bytes ({2})' -f $help.Chm, $size, $where)
     }
     finally {
         if ($temp -and (Test-Path -LiteralPath $temp)) { Remove-Item -LiteralPath $temp -Recurse -Force }
