@@ -26,7 +26,7 @@ dialog).</p>
 <p>In a run RFiDGear writes every checkpoint whose target task has the expected result into its field. A checkpoint whose target task had another result is ignored. So a report can enter "passed" or "not passed",
 depending on the outcome of a check: two checkpoints for the same field, one for <strong>No Error</strong>, one for <strong>Is Not True</strong>.</p>
 
-<div class="warn">A checkpoint whose target task does not exist (any more: you deleted or renumbered it) is written <strong>whatever happened</strong>: it no longer checks anything, and a report can then say "passed" without a result behind it. After you delete or renumber tasks, check the targets of the report.</div>
+<div class="note">A checkpoint whose target task does not exist (any more: you deleted or renumbered it) writes <strong>nothing</strong>, and the log names the missing task number (never the content). A checkpoint without a target task is a plain field (a date, a UID, a fixed text) and is always written. After you delete or renumber tasks, check the targets of the report.</div>
 
 <h2>Variables in the content of a checkpoint</h2>
 
@@ -40,7 +40,6 @@ depending on the outcome of a check: two checkpoints for the same field, one for
 <tr><td><code>%DATE</code></td><td>the date, <code>DD/MM/YYYY</code></td></tr>
 <tr><td><code>%DATETIME</code></td><td>date and time in the notation of your Windows</td></tr>
 <tr><td><code>%FREEMEM</code></td><td>the free memory of a DESFire card in bytes</td></tr>
-<tr><td><code>%FREECLASSICMEM</code></td><td>meant to be the free memory of a MIFARE Classic card; <strong>not available in this version</strong>, it always stays empty</td></tr>
 <tr><td><code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>the application IDs of a DESFire card, separated by commas, and their number</td></tr>
 <tr><td><code>%n</code>, <code>%nn</code>, <code>%nnn</code></td><td>a running counter with one, two or three digits (<code>1</code>, <code>01</code>, <code>001</code>). It starts at 1 with every program start and rises by 1 with every use</td></tr>
 <tr><td><code>$NAME</code></td><td>the value of a variable of the run, for example from a start-up argument (see <a href="command_line.html">Start-up arguments</a>)</td></tr>
@@ -48,21 +47,21 @@ depending on the outcome of a check: two checkpoints for the same field, one for
 <tr><td><code>%CONCAT</code></td><td>appends the content to the field instead of replacing it</td></tr>
 </table>
 
-<p>If the content contains <code>$NAME</code>, <code>%NEWLINE</code> or <code>%CONCAT</code>, it is appended to what the field held before; otherwise it replaces it.</p>
+<p>If the content contains <code>$NAME</code>, <code>%NEWLINE</code> or <code>%CONCAT</code>, it is appended to what the field held before; otherwise it replaces it. A text that is not a placeholder is written as it stands, so it shows in the report.</p>
 
 <h2>Where the report is written</h2>
 
 <ul>
 <li>If the variable <code>REPORTTARGETPATH</code> (also <code>REPORTOUTPUTPATH</code>) is set, RFiDGear saves the report under that path. The folder has to exist. A <code>?</code>, <code>??</code> or <code>???</code> in the file name stands
-for the next free number in that folder, with one, two or three digits: <code>C:\Reports\report-???.pdf</code> becomes <code>report-001.pdf</code> if no such file exists yet. The number is chosen <strong>once</strong>, when RFiDGear starts with the argument.</li>
+for the next free number in that folder, with one, two or three digits: <code>C:\Reports\report-???.pdf</code> becomes <code>report-001.pdf</code> if no such file exists yet. The number is chosen <strong>for each run</strong>: the window and automatic mode give every card its own file, and what stands before and after the question marks (<code>card-???-result.pdf</code>) is matched as well. A path without question marks is the same file for every run.</li>
 <li>The variable <code>REPORTTEMPLATEFILE</code> (also <code>REPORTTEMPLATEPATH</code>) chooses another template than the one in the dialog, if the file exists.</li>
-<li>Without <code>REPORTTARGETPATH</code>, RFiDGear asks for the file name in the run with the window <strong>Save Report as...</strong>. RFiDGear remembers the path, from a start-up argument or from that window, <strong>for the following runs</strong> as well: every run writes to the same file until you forget the path with
+<li>Without <code>REPORTTARGETPATH</code>, RFiDGear asks for the file name in the run with the window <strong>Save Report as...</strong>. RFiDGear remembers the path that you choose there <strong>for the following runs</strong>: every run writes to the same file until you forget the path (and the pattern of a start-up argument) with
 <strong>Edit &gt; Reset Report Target Paths</strong>.</li>
 </ul>
 
 <p>You give the variables as start-up arguments, or another program supplies them with the run. The page <a href="command_line.html">Start-up arguments</a> shows examples.</p>
 
-<div class="warn">For a series of cards, automatic mode included, a remembered target means that each report overwrites the one before. Give every run its own target: a program that asks for the runs can name the target for each run (Part 2 of this help), or reset the path between cards.</div>
+<div class="note">For a series of cards, automatic mode included, put a <code>?</code> into <code>REPORTTARGETPATH</code>: every run gets its own file. A fixed path, or a path that you chose in the window, is the same file for every run, and the next card overwrites the report of the one before. Each run starts its report from the template, so no field keeps the value of the card before; only a run of the selected task alone goes on with the report as it is. A program that asks for the runs can name the target for each run (Part 2 of this help).</div>
 
 <div class="nav">Previous page: <a href="running_tasks.html">Running tasks</a> &middot; Next page: <a href="keys.html">Keys</a></div>
 

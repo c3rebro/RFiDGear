@@ -49,16 +49,18 @@ function is fulfilled, otherwise with <strong>Is Not True</strong>. Other tasks 
 <tr><td><strong>Compare</strong></td><td>the <strong>Comparer Value</strong> (an expression) holds</td></tr>
 </table>
 
-<p>An expression for <strong>Compare</strong> has the form <em>operand operator value</em>. Only these combinations work:</p>
+<p>An expression for <strong>Compare</strong> has the form <em>operand operator value</em>. Spaces around the three do not matter. These combinations exist:</p>
 
 <table>
 <tr><th>Operand</th><th>Operators that work</th><th>Meaning</th></tr>
-<tr><td><code>$NAME</code></td><td><code>==</code>, <code>!=</code></td><td>a variable of the run (see <a href="command_line.html">Start-up arguments</a>), for example <code>$EXPECTEDUID==04A1B2C3D4E5F6</code></td></tr>
-<tr><td><code>%FREEMEM</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code></td><td>the free memory of a DESFire card in bytes, for example <code>%FREEMEM&gt;=1024</code></td></tr>
-<tr><td><code>%COUNTAPPS</code></td><td><code>&gt;=</code></td><td>the number of applications of a DESFire card: at least the value</td></tr>
+<tr><td><code>$NAME</code></td><td><code>==</code>, <code>!=</code></td><td>a variable of the run (see <a href="command_line.html">Start-up arguments</a>), compared as text, for example <code>$EXPECTEDUID==04A1B2C3D4E5F6</code>. <code>$NAME!=</code> with nothing after it says that the variable is not empty</td></tr>
+<tr><td><code>%FREEMEM</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code></td><td>the free memory of a DESFire card in bytes, for example <code>%FREEMEM&gt;=1024</code>. The value is a whole number: <code>4096</code>, or <code>4.096</code>, <code>4,096</code> or <code>4 096</code></td></tr>
+<tr><td><code>%COUNTAPPS</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code></td><td>the number of applications of a DESFire card, for example <code>%COUNTAPPS==2</code></td></tr>
 </table>
 
-<div class="warn">Other combinations do not do what they say: <code>%FREEMEM!=</code> tests for equality, <code>%COUNTAPPS==</code> and <code>%COUNTAPPS!=</code> test for "at least", and <code>%COUNTAPPS&lt;=</code> is not implemented. Do not use them: they can select the wrong branch.</div>
+<p>Every operator means what it says. An expression that cannot be evaluated ends with <strong>Is Not True</strong>, like one that is false, and the log says so (without the text of the expression). That is the case for: no operator, and an operand that RFiDGear does not know. For <code>%FREEMEM</code> and <code>%COUNTAPPS</code> also a value that is not a whole number and a run without a DESFire card. For a <code>$NAME</code> also <code>&gt;=</code> and <code>&lt;=</code>, and a variable that the run was not given (it is neither equal nor different; a variable that was given with an empty value does have a value, and <code>$NAME==</code> is true for it). A variable needs no card: <code>$JOB==abc</code> can be true without one.</p>
+
+<div class="note">Earlier versions of RFiDGear evaluated some of these wrongly: <code>%FREEMEM!=</code> tested for equality, <code>%COUNTAPPS==</code> and <code>%COUNTAPPS!=</code> tested for "at least", and <code>%COUNTAPPS&lt;=</code> gave no result. A project that was written against that behavior has to be checked.</div>
 
 <div class="note">The logic functions <strong>NOT</strong>, <strong>NAND</strong> and <strong>NOR</strong> are in the selection but are not finished: do not use
 them.</div>
@@ -66,12 +68,18 @@ them.</div>
 <h2>Run Application</h2>
 
 <p>The field <strong>Path to Application (optional: with Arguments)</strong> takes the path of the program in quotation marks, then the arguments, for example
-<code>"C:\Tools\notify.exe" -job $JOBNUMBER</code>. RFiDGear replaces every <code>$NAME</code> in the arguments by the value of that variable of the run (for example from a start-up argument, see
-<a href="command_line.html">Start-up arguments</a>). It starts the program and does not wait for it to end. The task counts as succeeded when the program was
+<code>"C:\Tools\notify.exe" -job $JOBNUMBER -uid %UID</code>. RFiDGear replaces in the path and in the arguments every <code>$NAME</code> by the value of that variable of the run (for example from a start-up argument, see
+<a href="command_line.html">Start-up arguments</a>; the case of the name does not matter) and these placeholders. It starts the program and does not wait for it to end. The task counts as succeeded when the program was
 started; if the start fails, it ends with <strong>Is Not True</strong>.</p>
 
-<div class="note">The placeholders with a percent sign (<code>%UID</code>, <code>%DATE</code>, ...) are replaced in the fields of a report (see <a href="reports.html">Reports</a>), but <strong>not</strong> in the arguments of a program task in this version: they
-reach the program as they are typed. Pass such values as a <code>$NAME</code> variable.</div>
+<table>
+<tr><th>Placeholder</th><th>is replaced by</th></tr>
+<tr><td><code>%UID</code>, <code>%CHIPTYPE</code></td><td>the UID and the type of the card that the run read</td></tr>
+<tr><td><code>%DATE</code>, <code>%DATETIME</code></td><td>the date, <code>DD/MM/YYYY</code>, and the date with the time, in the notation of your Windows</td></tr>
+<tr><td><code>%FREEMEM</code>, <code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>the free memory of a DESFire card, its application IDs (separated by commas) and their number</td></tr>
+</table>
+
+<p>A value that is not known (the run read no card, or the card is no DESFire card) is replaced by nothing. The text of the task is not changed: every run replaces the placeholders again, with the values of its own card. What stands after the closing quotation mark of the path reaches the program as it was typed, quotation marks included.</p>
 
 <p>If the path is <code>%EXIT</code>, the task closes RFiDGear when the project runs in the window, with <code>AUTORUN</code> or in the automatic mode of the menu. In a run that another program asks for (external control, an extension) it ends the run at that task instead and RFiDGear stays open: the tasks after it do not run, and they are not counted as failures. Use it as the last task of a project that was started with <code>AUTORUN</code> and should not stay open afterwards.</p>
 

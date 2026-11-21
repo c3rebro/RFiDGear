@@ -94,6 +94,31 @@ Fixed:
   offer the programming step. Such a chain of conditions is accepted now.
 - The chip type SmartMX (DESFire) of the generic chip task matches every SmartMX that
   presents itself as DESFire. It could not match a real card before.
+- Program task: the placeholders %UID, %CHIPTYPE, %DATE, %DATETIME, %FREEMEM, %LISTAPPS and
+  %COUNTAPPS are replaced in the path and in the arguments, and no longer in the saved text
+  of the task: every run (every card) replaces them again with its own values. The names of
+  variables with a dollar sign are found without regard to case.
+- Logic task "Compare": every operator means what it says. Before, %FREEMEM!= tested for
+  equality, %COUNTAPPS== and %COUNTAPPS!= tested for "at least", and %COUNTAPPS&lt;= gave no
+  result. An expression that cannot be evaluated ends with "Is Not True": no operator, an
+  operand that is not known; for %FREEMEM and %COUNTAPPS a value that is no whole number or
+  no DESFire card; for a $NAME variable that the run was not given (a variable given with an
+  empty value has a value). A project that relied on the old behavior has to be checked.
+- Report: the placeholder %FREECLASSICMEM, which never had a value, is gone (a text that is
+  no placeholder is written as it stands). A checkpoint whose target task does not exist
+  writes nothing (it wrote anyway). The report of a run starts from the template: fields of
+  the card before do not stay in it. REPORTTARGETPATH with a "?" gives the next free number
+  for each run (it was chosen once, so a series of cards wrote one file), also when text
+  follows the question marks (card-???-result.pdf).
+- MIFARE Classic Data Explorer: "Sector Trailer" is the last block of a sector of 16 blocks
+  (sectors 32 to 39) as well; it selected a data block there.
+- The top node of a chip in the tree is green or red when a run has ended (it turned yellow
+  and then lost its color).
+- A program task or a report names the card of the run: a run whose read found no card no
+  longer gets the UID and type of the card before, and a run whose card is not a DESFire
+  card gets no DESFire data (free memory, applications) of an earlier card. Not solved yet:
+  a DESFire card that replaces another DESFire card and whose listing fails (for example
+  because its PICC master key is not the default) still gets the data of the first.
 
 Please note:
 - The signature of an extension package is shown, not enforced: a package is accepted
