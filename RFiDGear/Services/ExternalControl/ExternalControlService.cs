@@ -119,6 +119,9 @@ namespace RFiDGear.Services.ExternalControl
 
             var supervisor = _supervisor;
 
+            // Which connection approved the card of a run of automatic mode: filled by the bridge of the mode, read for the key requests.
+            var approvedRuns = new ApprovedRunTable();
+
             // Automatic mode needs the table of results (every run of the mode is numbered in it) and a host that says why a start
             // was refused; one that does not (a host of another application) has no mode to offer.
             if (registry != null && host.AutoMode is IAutoModeControl control)
@@ -132,7 +135,8 @@ namespace RFiDGear.Services.ExternalControl
                     () => busyActivity?.Invoke(),
                     runFacts,
                     () => (host.Project as IProjectRevisionSource)?.GetProjectRevision(),
-                    (sessionId, name, durable, create) => _server!.Publish(name, durable, create, sessionId));
+                    (sessionId, name, durable, create) => _server!.Publish(name, durable, create, sessionId),
+                    approvedRuns);
             }
 
             var autoMode = _autoMode;
@@ -229,7 +233,7 @@ namespace RFiDGear.Services.ExternalControl
             };
 
             _server = new BridgeServer(pipeName, options, timings);
-            _keyChannel = keyProvider == null ? null : new KeyChannel(_server, new RunOriginResolver(registry, windowRunSource));
+            _keyChannel = keyProvider == null ? null : new KeyChannel(_server, new RunOriginResolver(registry, windowRunSource, approvedRuns));
             RunInFlight = () => (supervisor?.HasActiveRun ?? false) || (autoMode?.HasRunInFlight ?? false);
         }
 
@@ -496,8 +500,10 @@ namespace RFiDGear.Services.ExternalControl
 
             // A run of a client of the bridge that this very connection started. A run without a connection (one of an earlier
             // RFiDGear, or a caller that gave none) has a null id, which is never equal to the id of a connection: it is nobody's.
+            // A run of the client is its own, and so is the run of a card that the client approved in automatic mode: the window ran it,
+            // the client decided it. The connection that is named is what counts, never the source alone.
             private static bool IsOwnRun(RunOrigin origin, string sessionId) =>
-                string.Equals(origin.Source, RunSources.Bridge, StringComparison.Ordinal)
+                (string.Equals(origin.Source, RunSources.Bridge, StringComparison.Ordinal) || string.Equals(origin.Source, RunSources.AutoMode, StringComparison.Ordinal))
                 && string.Equals(origin.SessionId, sessionId, StringComparison.Ordinal);
 
             public async Task<ResolveKeyResponse?> RequestKeyAsync(ResolveKeyRequest request, CancellationToken cancellationToken)

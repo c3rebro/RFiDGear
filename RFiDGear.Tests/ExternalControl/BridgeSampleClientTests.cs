@@ -10,6 +10,7 @@ using RFiDGear.Bridge;
 using RFiDGear.Bridge.SampleClient;
 using RFiDGear.Contracts;
 using RFiDGear.ExtensionSdk;
+using RFiDGear.Services.AutoMode;
 using RFiDGear.Services.ExternalControl;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Tests.CardCheckAssistant;
@@ -48,14 +49,14 @@ namespace RFiDGear.Tests.ExternalControl
             return Task.CompletedTask;
         };
 
-        private (ExternalControlService Service, string Pipe, FakeExtensionHost Host, BridgeKeyProvider Keys) Start(Func<Action, Task>? dispatch = null)
+        private (ExternalControlService Service, string Pipe, FakeExtensionHost Host, BridgeKeyProvider Keys) Start(Func<Action, Task>? dispatch = null, Func<string?, string?>? windowRunSource = null)
         {
             var name = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
             var host = new FakeExtensionHost();
             host.ProjectHost.CurrentPath = @"C:\projects\one.rfPrj";
             host.ProjectHost.TaskCount = 2;
             var keys = new BridgeKeyProvider();
-            var service = new ExternalControlService(host, dispatch ?? RunAtOnce, () => false, "2.0.10", name, keyProvider: keys);
+            var service = new ExternalControlService(host, dispatch ?? RunAtOnce, () => false, "2.0.10", name, keyProvider: keys, windowRunSource: windowRunSource);
             _disposables.Add(service);
             Assert.True(service.Start());
             service.MarkStartupComplete();
@@ -405,6 +406,107 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal(SecureKeyFailureReason.NotAuthorized, another.FailureReason);
             Assert.Equal(1, vault.Served);
             Assert.Equal(RunOutcomeKind.Completed, outcome.Kind);
+        }
+
+        [Fact]
+        public async Task AClientThatAsksForItsOwnRunsOnly_IsAskedForTheRunOfACardItApproved_AndNeverForARunOfTheModeNobodyApproved()
+        {
+            var window = new WindowRunMarker();
+            var (_, pipe, host, keys) = Start(windowRunSource: window.SourceOf);
+            var registry = SecureKeyRegistry.Create(
+                new[] { new SecureKeyProviderRegistration(BridgeKeyProvider.ProviderId, BridgeKeyProvider.DisplayName, keys) },
+                Array.Empty<Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>>());
+            // The caller asks for the cards only: the sample asks for the notice that names the run of an approved card itself.
+            var client = await ConnectAsync(pipe, BridgeEvents.CardPresented);
+            var key = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+            using var vault = new SampleVault("orders/4711", key);
+            client.KeyVault = vault.ResolveAsync;
+            var registered = await client.RegisterKeyProviderAsync(ownRunsOnly: true);
+            var presented = new TaskCompletionSource<CardPresentedEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
+            client.EventReceived += e =>
+            {
+                if (e is CardPresentedEvent shownCard)
+                {
+                    presented.TrySetResult(shownCard);
+                }
+            };
+            await client.Service.StartAutoMode(new StartAutoModeRequest { StopOnDisconnect = true, RequireApproval = true });
+
+            // The machine shows a card, this client approves it, and the window runs it as a run of the mode.
+            var waiting = Task.Run(() => host.AutoModeHost.Approval!.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None));
+            var shown = await presented.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = shown.PresenceId });
+            var approval = (await waiting)!;
+            window.Begin("w-1", RunSources.AutoMode);
+            approval.NotifyRunAdmitted("w-1");
+
+            // The request for the key can be here before the notice that names the run: the client waits for it a little.
+            using var approved = await registry.ResolveAsync(registered.ProviderId, RequestOfRun("orders/4711", "w-1"), CancellationToken.None);
+            window.End("w-1");
+            window.Begin("w-2", RunSources.AutoMode);
+            using var notApproved = await registry.ResolveAsync(registered.ProviderId, RequestOfRun("orders/4711", "w-2"), CancellationToken.None);
+
+            Assert.Equal(key, Assert.IsType<SecureKeyLease>(approved.Key).Key.ToArray());
+            Assert.Equal(SecureKeyFailureReason.NotAuthorized, notApproved.FailureReason);
+            Assert.Equal(1, vault.Served);
+        }
+
+        [Fact]
+        public async Task TheClientsOwnCheck_ServesARunOfAnApprovedCardOnlyWhenANoticeNamedIt_AndWaitsForOneThatIsLate()
+        {
+            var (_, pipe, _, _) = Start();
+            var client = await ConnectAsync(pipe);
+            using var vault = new SampleVault("orders/4711", Enumerable.Range(1, 16).Select(i => (byte)i).ToArray());
+            client.KeyVault = vault.ResolveAsync;
+            await client.RegisterKeyProviderAsync(ownRunsOnly: true);
+            client.ApprovedRunWait = TimeSpan.FromMilliseconds(100);
+
+            Task<ResolveKeyResponse> Ask(string runId, string source) =>
+                client.ResolveKey(new ResolveKeyRequest { Reference = "orders/4711", RunId = runId, Source = source }, CancellationToken.None);
+
+            var noNotice = await Ask("w-1", RunSources.AutoMode);
+            client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "p-1", Reason = PresentationEndReasons.Approved, RunId = "w-1" });
+            var named = await Ask("w-1", RunSources.AutoMode);
+            var namedButNotOfTheMode = await Ask("w-1", RunSources.Gui);
+            client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "p-2", Reason = PresentationEndReasons.Declined, RunId = "w-2" });
+            var noRunWasAdmitted = await Ask("w-2", RunSources.AutoMode);
+
+            // The check on its own (the one the guide tells an author to make): the run of an approved card, and nothing else.
+            var checkNamed = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.AutoMode, RunId = "w-1" });
+            var checkOther = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.AutoMode, RunId = "w-9" });
+            var checkWrongSource = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.Gui, RunId = "w-1" });
+            var checkWithoutRun = client.StartedByThisClient(new ResolveKeyRequest { Source = RunSources.AutoMode });
+
+            // The notice that is late: the request waits for it and is served when it comes.
+            client.ApprovedRunWait = TimeSpan.FromSeconds(5);
+            var late = Ask("w-3", RunSources.AutoMode);
+            await Task.Delay(150);
+            client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "p-3", Reason = PresentationEndReasons.Approved, RunId = "w-3" });
+            var lateAnswer = await late.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // Only the latest runs are remembered: a station that goes on for days does not collect every run it ever approved.
+            client.ApprovedRunWait = TimeSpan.FromMilliseconds(100);
+
+            for (var i = 0; i < 70; i++)
+            {
+                client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "q-" + i, Reason = PresentationEndReasons.Approved, RunId = "x-" + i });
+            }
+
+            var forgotten = await Ask("x-0", RunSources.AutoMode);
+            var remembered = await Ask("x-69", RunSources.AutoMode);
+
+            Assert.Equal(KeyResolveResults.NotAuthorized, noNotice.Result);
+            Assert.Equal(KeyResolveResults.Resolved, named.Result);
+            Assert.Equal(KeyResolveResults.NotAuthorized, namedButNotOfTheMode.Result);
+            Assert.Equal(KeyResolveResults.NotAuthorized, noRunWasAdmitted.Result);
+            Assert.True(checkNamed);
+            Assert.False(checkOther);
+            Assert.False(checkWrongSource);
+            Assert.False(checkWithoutRun);
+            Assert.Equal(KeyResolveResults.Resolved, lateAnswer.Result);
+            Assert.Equal(KeyResolveResults.NotAuthorized, forgotten.Result);
+            Assert.Equal(KeyResolveResults.Resolved, remembered.Result);
+            Assert.Equal(3, vault.Served);
         }
 
         [Fact]

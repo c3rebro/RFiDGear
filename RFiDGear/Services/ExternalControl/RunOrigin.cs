@@ -68,14 +68,17 @@ namespace RFiDGear.Services.ExternalControl
     {
         private readonly RunRegistry? _registry;
         private readonly Func<string?, string?>? _windowRunSource;
+        private readonly ApprovedRunTable? _approvedRuns;
 
         /// <summary>Creates the resolver.</summary>
         /// <param name="registry">The runs of the clients of the bridge, or <see langword="null"/> when the host cannot run for a client.</param>
         /// <param name="windowRunSource">Says who asked for the run of the window with this id, or <see langword="null"/> (see <see cref="WindowRunMarker.SourceOf"/>).</param>
-        internal RunOriginResolver(RunRegistry? registry, Func<string?, string?>? windowRunSource)
+        /// <param name="approvedRuns">Which connection approved the card of a run of automatic mode, or <see langword="null"/> for none.</param>
+        internal RunOriginResolver(RunRegistry? registry, Func<string?, string?>? windowRunSource, ApprovedRunTable? approvedRuns = null)
         {
             _registry = registry;
             _windowRunSource = windowRunSource;
+            _approvedRuns = approvedRuns;
         }
 
         /// <summary>Finds where a run came from.</summary>
@@ -100,7 +103,16 @@ namespace RFiDGear.Services.ExternalControl
 
             var source = _windowRunSource?.Invoke(runId);
 
-            return source == null ? RunOrigin.Unknown : new RunOrigin(source);
+            if (source == null)
+            {
+                return RunOrigin.Unknown;
+            }
+
+            // The window ran the card of a mode that a client started with approval: it is a run of the mode, and the client decided it and is
+            // the one it is answered to. Which connection that is, is all that is added; the source stays what it is.
+            var approvedBy = string.Equals(source, RunSources.AutoMode, StringComparison.Ordinal) ? _approvedRuns?.SessionOf(runId) : null;
+
+            return new RunOrigin(source, SessionId: approvedBy);
         }
     }
 }

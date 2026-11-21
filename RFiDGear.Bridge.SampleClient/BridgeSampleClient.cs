@@ -45,6 +45,8 @@ namespace RFiDGear.Bridge.SampleClient
     [SupportedOSPlatform("windows")]
     public sealed class BridgeSampleClient : IBridgeClientEvents, IBridgeClientKeys, IAsyncDisposable
     {
+        private const int MaxApprovedRunsRemembered = 64;
+
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
 
         // The form of a variable a project can name for an approved UID: a dollar sign and a name, as the Check UID task reads it.
@@ -53,6 +55,11 @@ namespace RFiDGear.Bridge.SampleClient
         private readonly NamedPipeClientStream _pipe;
         private readonly JsonRpc _rpc;
         private readonly ConcurrentDictionary<string, byte> _ownRequests = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
+
+        // The runs that were admitted for a card this client approved in automatic mode, as the notices said (the latest only).
+        private readonly object _approvedRunsGate = new object();
+        private readonly HashSet<string> _approvedRuns = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Queue<string> _approvedRunOrder = new Queue<string>();
         private TimeSpan _longPoll = TimeSpan.FromSeconds(20);
 
         private BridgeSampleClient(NamedPipeClientStream pipe)
@@ -109,6 +116,14 @@ namespace RFiDGear.Bridge.SampleClient
         /// </summary>
         public bool ServeOwnRunsOnly { get; set; }
 
+        /// <summary>
+        /// Gets or sets how long a request for a key of a run of automatic mode waits for the notice that says the run was admitted for a
+        /// card this client approved (<c>cardPresentationEnded</c> with the reason <c>approved</c>). RFiDGear sends the notice before the
+        /// first task of the run, but on a path of its own, so the request for a key can be here first. It is used only with
+        /// <see cref="ServeOwnRunsOnly"/>, and a request for a run that no notice names is refused when the time is up.
+        /// </summary>
+        public TimeSpan ApprovedRunWait { get; set; } = TimeSpan.FromSeconds(2);
+
         /// <summary>Raised for every notification the host sends and this client asked for. Keep the handler short and never call the host from it.</summary>
         public event Action<BridgeEvent>? EventReceived;
 
@@ -123,7 +138,11 @@ namespace RFiDGear.Bridge.SampleClient
 
         /// <summary>Connects to RFiDGear and makes the handshake.</summary>
         /// <param name="pipeName">The pipe name; the one of the current user when <see langword="null"/>.</param>
-        /// <param name="events">The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent.</param>
+        /// <param name="events">
+        /// The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent. The notice that ends a card
+        /// (<see cref="BridgeEvents.CardPresentationEnded"/>) is always added: the client's own check of whose run it is learns the runs of the
+        /// cards it approved from it. A RFiDGear that does not offer it ignores the name, and it is only ever sent in a mode that waits for approval.
+        /// </param>
         /// <param name="connectTimeout">How long to wait for the pipe; ten seconds when <see langword="null"/>.</param>
         /// <param name="cancellationToken">Cancels the connection.</param>
         /// <returns>The connected client.</returns>
@@ -150,7 +169,7 @@ namespace RFiDGear.Bridge.SampleClient
                         ClientVersion = "1.0",
                         ProtocolMajorMin = BridgeProtocol.Major,
                         ProtocolMajorMax = BridgeProtocol.Major,
-                        Events = events ?? Array.Empty<string>(),
+                        Events = WithTheNoticesTheClientNeeds(events),
                     }).WaitAsync(patience, cancellationToken).ConfigureAwait(false);
 
                     return client;
@@ -439,15 +458,23 @@ namespace RFiDGear.Bridge.SampleClient
         }
 
         /// <summary>
-        /// Says whether a request for a key is for a run that this client started over this connection's bridge: RFiDGear says the run
-        /// is a client's (<c>source</c> is <see cref="RunSources.Bridge"/>) and the request id is one that this client sent with
-        /// <c>startRun</c>. A request without them (an extension, the window, automatic mode, an older RFiDGear) is not.
+        /// Says whether a request for a key is for a run that this client started or decided. A run it started over the bridge: RFiDGear
+        /// says the run is a client's (<c>source</c> is <see cref="RunSources.Bridge"/>) and the request id is one that this client sent
+        /// with <c>startRun</c>. The run of a card it approved in automatic mode: <c>source</c> is <see cref="RunSources.AutoMode"/>
+        /// and the run id is one that a <c>cardPresentationEnded</c> with the reason <c>approved</c> named (that notice goes to the
+        /// connection that started the mode, so it is this client's approval). A request without them (an extension, the window, a card
+        /// nobody approved, an older RFiDGear) is not.
         /// </summary>
         /// <param name="request">The request of the host.</param>
-        /// <returns><see langword="true"/> for a run this client started.</returns>
+        /// <returns><see langword="true"/> for a run this client started or decided.</returns>
         public bool StartedByThisClient(ResolveKeyRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
+
+            if (string.Equals(request.Source, RunSources.AutoMode, StringComparison.Ordinal))
+            {
+                return request.RunId != null && IsApprovedRun(request.RunId);
+            }
 
             return string.Equals(request.Source, RunSources.Bridge, StringComparison.Ordinal)
                 && request.RequestId != null
@@ -492,14 +519,23 @@ namespace RFiDGear.Bridge.SampleClient
         public void CardPresented(CardPresentedEvent e) => Raise(e);
 
         /// <inheritdoc />
-        public void CardPresentationEnded(CardPresentationEndedEvent e) => Raise(e);
+        public void CardPresentationEnded(CardPresentationEndedEvent e)
+        {
+            // The notice goes to the connection that started the mode, so a run it names was admitted for a card this client approved.
+            if (string.Equals(e.Reason, PresentationEndReasons.Approved, StringComparison.Ordinal) && !string.IsNullOrEmpty(e.RunId))
+            {
+                NoteApprovedRun(e.RunId);
+            }
+
+            Raise(e);
+        }
 
         /// <inheritdoc />
         public async Task<ResolveKeyResponse> ResolveKey(ResolveKeyRequest request, CancellationToken cancellationToken)
         {
             var vault = KeyVault;
 
-            if (vault == null || (ServeOwnRunsOnly && !StartedByThisClient(request)))
+            if (vault == null || (ServeOwnRunsOnly && !await StartedByThisClientAsync(request, cancellationToken).ConfigureAwait(false)))
             {
                 return new ResolveKeyResponse { Result = KeyResolveResults.NotAuthorized };
             }
@@ -512,6 +548,65 @@ namespace RFiDGear.Bridge.SampleClient
         {
             _rpc.Dispose();
             await _pipe.DisposeAsync().ConfigureAwait(false);
+        }
+
+        // Like StartedByThisClient, but a request for a run of automatic mode waits a little for the notice that names the run: it is
+        // sent before the first task, on its own path, and the request for a key can be here first.
+        private async Task<bool> StartedByThisClientAsync(ResolveKeyRequest request, CancellationToken cancellationToken)
+        {
+            if (StartedByThisClient(request))
+            {
+                return true;
+            }
+
+            if (!string.Equals(request.Source, RunSources.AutoMode, StringComparison.Ordinal) || request.RunId == null)
+            {
+                return false;
+            }
+
+            var until = DateTime.UtcNow + ApprovedRunWait;
+
+            while (DateTime.UtcNow < until)
+            {
+                await Task.Delay(20, cancellationToken).ConfigureAwait(false);
+
+                if (IsApprovedRun(request.RunId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // The events the caller asked for, and the one the client's own check cannot do without.
+        private static IReadOnlyList<string> WithTheNoticesTheClientNeeds(IReadOnlyList<string>? events) =>
+            (events ?? Array.Empty<string>()).Concat(new[] { BridgeEvents.CardPresentationEnded }).Distinct(StringComparer.Ordinal).ToList();
+
+        private void NoteApprovedRun(string runId)
+        {
+            lock (_approvedRunsGate)
+            {
+                if (!_approvedRuns.Add(runId))
+                {
+                    return;
+                }
+
+                _approvedRunOrder.Enqueue(runId);
+
+                while (_approvedRunOrder.Count > MaxApprovedRunsRemembered)
+                {
+                    _approvedRuns.Remove(_approvedRunOrder.Dequeue());
+                }
+            }
+        }
+
+        private bool IsApprovedRun(string runId)
+        {
+            lock (_approvedRunsGate)
+            {
+                return _approvedRuns.Contains(runId);
+            }
         }
 
         private void Raise(BridgeEvent e)

@@ -33,6 +33,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Func<string?> _readRevision;
         private readonly Action<string, bool, BridgeEventFactory> _publish;
         private readonly Func<DateTimeOffset> _now;
+        private readonly Action<string, string>? _runApproved;
         private readonly object _gate = new object();
         private Pending? _pending;
 
@@ -45,18 +46,21 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="readRevision">Reads the revision of the project as it is now, on the thread that asks (the one of the main window); may return <see langword="null"/>.</param>
         /// <param name="publish">Hands an event to the client (name, whether it is durable, the maker of the event).</param>
         /// <param name="now">The clock, for the time the wait ends; the system clock when <see langword="null"/>.</param>
+        /// <param name="runApproved">Told (the id of the run, the connection that approved) when the run of an approved card was admitted, before the notice that says so is sent; <see langword="null"/> for none.</param>
         internal AutoModeApprovalGate(
             string sessionId,
             TimeSpan timeout,
             Func<string?> readRevision,
             Action<string, bool, BridgeEventFactory> publish,
-            Func<DateTimeOffset>? now = null)
+            Func<DateTimeOffset>? now = null,
+            Action<string, string>? runApproved = null)
         {
             _sessionId = sessionId ?? throw new ArgumentNullException(nameof(sessionId));
             _timeout = timeout;
             _readRevision = readRevision ?? throw new ArgumentNullException(nameof(readRevision));
             _publish = publish ?? throw new ArgumentNullException(nameof(publish));
             _now = now ?? (() => DateTimeOffset.UtcNow);
+            _runApproved = runApproved;
         }
 
         /// <summary>Gets how long a card is waited for.</summary>
@@ -269,7 +273,13 @@ namespace RFiDGear.Services.ExternalControl
                 pending.Uid,
                 variables,
                 request.ExpectProjectRevision,
-                runId => PublishEnded(presenceId, PresentationEndReasons.Approved, runId));
+                runId =>
+                {
+                    // Before the notice, and so before the first task of the run: a request for a key of this run may come at once, and
+                    // the run is the client's own (it decided it).
+                    _runApproved?.Invoke(runId, _sessionId);
+                    PublishEnded(presenceId, PresentationEndReasons.Approved, runId);
+                });
 
             if (!pending.Completion.TrySetResult(new Decision(approval, PresentationEndReasons.Approved)))
             {
