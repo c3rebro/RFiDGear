@@ -1224,8 +1224,16 @@ namespace RFiDGear.Tests
         // Runs a project on the card with one node of the tree for the UID that is given (the window selects the node of the card
         // when it syncs the selection). The flag that the node had before the run, and a token that may already be cancelled, are
         // the other things a case needs to set. Returns the node, and the error that ended the run when there was one.
+        private static Task<(RFiDGear.ViewModel.RFiDChipParentLayerViewModel Node, Exception Failure)> RunWithATopNodeAsync(
+            string nodeUid, bool? flagBeforeTheRun, bool tokenIsCancelled, params Func<object>[] createTasks) =>
+            RunWithATopNodeAsync(nodeUid, flagBeforeTheRun, tokenIsCancelled, null, createTasks);
+
+        // The same with a hook that is called as each task starts, with the node of the run and a node of another card that the tree holds as
+        // well: it stands for the person who clicks on another card while the run is on.
         private static async Task<(RFiDGear.ViewModel.RFiDChipParentLayerViewModel Node, Exception Failure)> RunWithATopNodeAsync(
-            string nodeUid, bool? flagBeforeTheRun, bool tokenIsCancelled, params Func<object>[] createTasks)
+            string nodeUid, bool? flagBeforeTheRun, bool tokenIsCancelled,
+            Action<RFiDGear.ViewModel.RFiDChipParentLayerViewModel, RFiDGear.ViewModel.RFiDChipParentLayerViewModel> whileTheRunIsOn,
+            params Func<object>[] createTasks)
         {
             RFiDGear.ViewModel.RFiDChipParentLayerViewModel node = null;
             Exception failure = null;
@@ -1244,6 +1252,11 @@ namespace RFiDGear.Tests
                     IsSelected = tokenIsCancelled
                 };
 
+                var otherNode = new RFiDGear.ViewModel.RFiDChipParentLayerViewModel(
+                    new RFiDGear.Models.GenericChipModel("FFFFFFFFFF", CARD_TYPE.EM4102),
+                    new ObservableCollection<RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces.IDialogViewModel>(),
+                    false);
+
                 using (ReaderDeviceScope.Use(reader))
                 {
                     var handler = new ChipTaskHandlerModel();
@@ -1256,9 +1269,10 @@ namespace RFiDGear.Tests
                     var request = new TaskExecutionRequest
                     {
                         TaskHandler = handler,
-                        TreeViewParentNodes = new ObservableCollection<RFiDGear.ViewModel.RFiDChipParentLayerViewModel> { node },
+                        TreeViewParentNodes = new ObservableCollection<RFiDGear.ViewModel.RFiDChipParentLayerViewModel> { node, otherNode },
                         VariablesFromArgs = new Dictionary<string, string>(),
-                        Timeouts = TaskExecutionTimeouts.Default
+                        Timeouts = TaskExecutionTimeouts.Default,
+                        UpdateSelectedSetupViewModel = _ => whileTheRunIsOn?.Invoke(node, otherNode)
                     };
 
                     using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -1323,6 +1337,29 @@ namespace RFiDGear.Tests
             Assert.IsType<NotSupportedException>(failure);
             Assert.False(node.IsProgrammingCompletedSuccessfully);
             Assert.Null(node.IsBeingProgrammed);
+        }
+
+        [Fact]
+        public async Task TheVerdict_GoesToTheNodeOfTheCardOfTheRun_WhateverTheSelectionOfTheTreeIsWhenItEnds()
+        {
+            RFiDGear.ViewModel.RFiDChipParentLayerViewModel other = null;
+
+            var (node, failure) = await RunWithATopNodeAsync(
+                "0123456789", null, false,
+                (programmed, another) =>
+                {
+                    // The person clicks on another card while the run is on.
+                    other = another;
+                    programmed.IsSelected = false;
+                    another.IsSelected = true;
+                },
+                () => CheckUid("0", "0123456789"));
+
+            Assert.Null(failure);
+            Assert.True(node.IsProgrammingCompletedSuccessfully);
+            Assert.Null(node.IsBeingProgrammed);
+            Assert.Null(other.IsProgrammingCompletedSuccessfully);
+            Assert.Null(other.IsBeingProgrammed);
         }
 
         [Fact]

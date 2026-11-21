@@ -1305,18 +1305,23 @@ namespace RFiDGear.Services.TaskExecution
 
         private void ResetSelectionState(TaskExecutionRequest request, TaskExecutionResult result, CancellationToken cancellationToken)
         {
-            var selectedNode = request.TreeViewParentNodes?.FirstOrDefault(y => y.IsSelected);
-            if (selectedNode != null)
+            // The node that the run marked as being programmed is the node of the card, and it gets the end of the run: the selection of
+            // the tree is bound two-way and may be somewhere else by now.
+            var programmedNode = request.TreeViewParentNodes?.FirstOrDefault(y => y.IsBeingProgrammed == true);
+            if (programmedNode != null)
             {
-                selectedNode.IsBeingProgrammed = null;
+                programmedNode.IsBeingProgrammed = null;
 
                 // The top node shows how the run ended: green when it succeeded (a failure that a task of the project handles on purpose
                 // is no failure of the run), red when it failed or ended on an error before the end of the task list. A run that was
                 // cancelled has no verdict.
-                selectedNode.IsProgrammingCompletedSuccessfully = cancellationToken.IsCancellationRequested
+                programmedNode.IsProgrammingCompletedSuccessfully = cancellationToken.IsCancellationRequested
                     ? null
                     : result.TerminalStatus is TaskLoopTerminalStatus.Success or TaskLoopTerminalStatus.CompletedWithIntentionalFailures;
+            }
 
+            if (request.TreeViewParentNodes?.Any(y => y.IsSelected) == true)
+            {
                 result.RunSelectedOnly = false;
             }
         }
