@@ -20,6 +20,7 @@ using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using Serilog;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Services.AutoMode;
 using RFiDGear.Services.SecureKeys;
 using VerificationDetails = RFiDGear.Contracts.VerificationDetails;
 
@@ -286,6 +287,14 @@ namespace RFiDGear.Services.TaskExecution
         /// device. It is not called by a run that has no reader read of its own (one driven by task descriptors).
         /// </summary>
         public Action<GenericChipModel> ChipHydrated { get; set; }
+
+        /// <summary>
+        /// Optional. The UID of the card this run is meant for. The run's own read has to find exactly this card: it is compared
+        /// right after that read and before anything else is sent to the card (the listing of the applications of a DESFire card
+        /// may authenticate with a default key), and a read that finds another card, or none, ends the run with an
+        /// <see cref="ApprovedCardChangedException"/> before any task starts. <see langword="null"/> (the default) checks nothing.
+        /// </summary>
+        public string ExpectedCardUid { get; set; }
     }
 
     /// <summary>
@@ -472,7 +481,7 @@ namespace RFiDGear.Services.TaskExecution
                     {
                         var hydrationResult = await ExecuteStageWithTimeout(
                             "ChipHydration",
-                            () => HydrateChipAsync(device, cancellationToken),
+                            () => HydrateChipAsync(device, request.ExpectedCardUid, cancellationToken),
                             request.Timeouts?.ChipHydrationTimeout,
                             cancellationToken,
                         runId);
@@ -644,7 +653,7 @@ namespace RFiDGear.Services.TaskExecution
             }, timeout, cancellationToken, runId);
         }
 
-        private async Task<ChipHydrationResult> HydrateChipAsync(ReaderDevice device, CancellationToken cancellationToken)
+        private async Task<ChipHydrationResult> HydrateChipAsync(ReaderDevice device, string expectedCardUid, CancellationToken cancellationToken)
         {
             if (device == null)
             {
@@ -666,6 +675,9 @@ namespace RFiDGear.Services.TaskExecution
                 null, true, device.IsPcscReader, device.IsConnected, readResult, genericChip);
             var readFoundACard = found.State == RFiDGear.Contracts.ReaderScanState.Ready && found.Credentials.Count > 0;
 
+            // Before anything else is sent to the card: the listing of the applications below can authenticate with a default key.
+            RequireTheExpectedCard(expectedCardUid, readFoundACard ? RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.PrimaryUidOf(genericChip) : null);
+
             if (!string.IsNullOrEmpty(genericChip.UID) &&
                 genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
             {
@@ -675,6 +687,15 @@ namespace RFiDGear.Services.TaskExecution
 
             cancellationToken.ThrowIfCancellationRequested();
             return new ChipHydrationResult(genericChip, readFoundACard ? genericChip : new GenericChipModel());
+        }
+
+        // A run that was given the card it is meant for does not go on with another card, or with none.
+        private static void RequireTheExpectedCard(string expectedCardUid, string uidOfTheRead)
+        {
+            if (expectedCardUid != null && !string.Equals(uidOfTheRead, expectedCardUid, StringComparison.Ordinal))
+            {
+                throw new ApprovedCardChangedException();
+            }
         }
 
         private SelectionSyncResult SynchronizeSelection(TaskExecutionRequest request, GenericChipModel hydratedChip)

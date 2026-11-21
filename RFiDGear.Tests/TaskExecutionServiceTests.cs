@@ -1752,6 +1752,72 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ExpectedCardUid_AnotherCardOnTheReader_EndsTheRunRightAfterItsRead_BeforeTheDirectoryOfADesfireCardIsListed()
+        {
+            // The run was approved for card A, and card B (a DESFire) is on the reader when the run reads: nothing but the read may be sent.
+            var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider
+            {
+                Card = new RFiDGear.Models.GenericChipModel("9876543210", CARD_TYPE.DESFire)
+            };
+            var hydrated = false;
+            var request = new TaskExecutionRequest { ExpectedCardUid = "0123456789", ChipHydrated = _ => hydrated = true };
+            var service = new TaskExecutionService(
+                new FixedReaderDeviceProvider(reader),
+                new StubDispatcherTimerAdapter(),
+                new StubDispatcherTimerAdapter());
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await Assert.ThrowsAsync<RFiDGear.Services.AutoMode.ApprovedCardChangedException>(() => service.ExecuteOnceAsync(request));
+            });
+
+            Assert.False(hydrated);
+            Assert.Equal(0, reader.DesfireListings);
+            Assert.Equal(1, reader.ReadCount);
+        }
+
+        [Fact]
+        public async Task ExpectedCardUid_NoCardOnTheReader_EndsTheRun()
+        {
+            var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider { Card = new RFiDGear.Models.GenericChipModel() };
+            var hydrated = false;
+            var request = new TaskExecutionRequest { ExpectedCardUid = "0123456789", ChipHydrated = _ => hydrated = true };
+            var service = new TaskExecutionService(
+                new FixedReaderDeviceProvider(reader),
+                new StubDispatcherTimerAdapter(),
+                new StubDispatcherTimerAdapter());
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await Assert.ThrowsAsync<RFiDGear.Services.AutoMode.ApprovedCardChangedException>(() => service.ExecuteOnceAsync(request));
+            });
+
+            Assert.False(hydrated);
+        }
+
+        [Fact]
+        public async Task ExpectedCardUid_TheExpectedCard_RunsAsBefore_AndAnUnsetUidChecksNothing()
+        {
+            var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider
+            {
+                Card = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102)
+            };
+            string seen = null;
+            var service = new TaskExecutionService(
+                new FixedReaderDeviceProvider(reader),
+                new StubDispatcherTimerAdapter(),
+                new StubDispatcherTimerAdapter());
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await service.ExecuteOnceAsync(new TaskExecutionRequest { ExpectedCardUid = "0123456789", ChipHydrated = chip => seen = chip.UID });
+                await service.ExecuteOnceAsync(new TaskExecutionRequest { ExpectedCardUid = null, ChipHydrated = chip => seen += "+" + chip.UID });
+            });
+
+            Assert.Equal("0123456789+0123456789", seen);
+        }
+
+        [Fact]
         public async Task ChipHydrated_IsNotCalled_ByARunThatHasNoReadOfItsOwn()
         {
             var called = false;

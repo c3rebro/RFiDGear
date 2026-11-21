@@ -1683,7 +1683,25 @@ namespace RFiDGear.ViewModel
             // holds the execution slot, before anything is admitted. A card that cannot be told is not the one that was approved.
             if (approval != null)
             {
-                var cardRefusal = await VerifyTheApprovedCardAsync(approval);
+                AutoModeRefusal cardRefusal;
+                bool stillWanted;
+
+                try
+                {
+                    cardRefusal = await VerifyTheApprovedCardAsync(approval);
+
+                    // The look took time: a mode that was stopped meanwhile (or whose client left), or a card that another run processed,
+                    // ends the request here, before anything is admitted.
+                    stillWanted = isStillWanted == null || isStillWanted();
+                }
+                catch (Exception)
+                {
+                    // The execution slot is held and the run has not started: whatever went wrong, the slot is let go of, or nothing
+                    // could run again until the application is restarted. The machine stops on the exception.
+                    _coordinator.EndExecution();
+
+                    throw;
+                }
 
                 if (cardRefusal != AutoModeRefusal.None)
                 {
@@ -1692,9 +1710,7 @@ namespace RFiDGear.ViewModel
                     return cardRefusal == AutoModeRefusal.CardChanged ? AutoModeRunReport.CardChanged : AutoModeRunReport.NotAdmitted;
                 }
 
-                // The look took time: a mode that was stopped meanwhile (or whose client left), or a card that another run processed,
-                // ends the request here, before anything is admitted.
-                if (isStillWanted != null && !isStillWanted())
+                if (!stillWanted)
                 {
                     _coordinator.EndExecution();
 
@@ -1761,18 +1777,13 @@ namespace RFiDGear.ViewModel
                     KeepApplicationOpen = keepApplicationOpen,
                     ChipHydrated = chip =>
                     {
-                        var hydratedUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
-
-                        // The card this run's own read found is the card the tasks work on: it must be the one that was approved, before
-                        // anything is written to it or remembered about it.
-                        if (approval != null && !string.Equals(hydratedUid, approval.Uid, StringComparison.Ordinal))
-                        {
-                            throw new ApprovedCardChangedException();
-                        }
-
-                        cardUid = hydratedUid;
+                        cardUid = ReaderSnapshotBuilder.PrimaryUidOf(chip);
                         RememberCard(chip);
                     },
+
+                    // The card the tasks work on is the one that was approved: the service looks at it right after its own read, before
+                    // anything else is sent to the card, and ends the run before the first task when it is another one.
+                    ExpectedCardUid = approval?.Uid,
                     TaskHandler = taskHandler,
                     TreeViewParentNodes = treeViewParentNodes,
                     VariablesFromArgs = VariablesOfTheRun(approval),
