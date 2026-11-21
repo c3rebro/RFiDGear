@@ -44,7 +44,8 @@ namespace RFiDGear.Bridge.SampleClient
     /// <item>Whatever is not an approval ends as a refusal: a decision that throws (a time limit of its own included), a project whose
     /// state cannot be told, a variable the project does not accept.</item>
     /// <item>The decision about a card never holds up the events: it runs on its own, and it is dropped, with nothing answered, when
-    /// RFiDGear ends the wait for that card or the loop ends. An answer that RFiDGear has not replied to yet is not waited for
+    /// RFiDGear ends the wait for that card or the loop ends. Its token is cancelled on the thread pool and without waiting, so that a
+    /// callback of the program that blocks, or throws, holds up nothing. An answer that RFiDGear has not replied to yet is not waited for
     /// longer than <see cref="Grace"/>, and is never sent twice.</item>
     /// <item>A late answer (<c>approvalNotPending</c>) is not an error: the card was given up already, and the loop goes on with the next.</item>
     /// <item>The mode ends with the connection (<c>stopOnDisconnect</c>). When the loop ends it stops the mode, but only a mode that it
@@ -273,7 +274,7 @@ namespace RFiDGear.Bridge.SampleClient
 
                 try
                 {
-                    CancelQuietly(card.Cancel);
+                    card.Drop();
                     answered = await card.Answer.WaitAsync(_owner.Grace).ConfigureAwait(false);
                 }
                 catch (TimeoutException)
@@ -284,10 +285,6 @@ namespace RFiDGear.Bridge.SampleClient
                 {
                     // The request failed after the wait for the card had ended: what RFiDGear says about the card is still reported.
                     answered = "failed";
-                }
-                finally
-                {
-                    card.Cancel.Dispose();
                 }
 
                 return new CardOutcome(ended.PresenceId, card.Uid, answered, ended.Reason, ended.RunId);
@@ -305,7 +302,7 @@ namespace RFiDGear.Bridge.SampleClient
             {
                 foreach (var card in _pending.Values)
                 {
-                    CancelQuietly(card.Cancel);
+                    card.Drop();
                 }
 
                 if (_weStartedTheMode)
@@ -358,19 +355,6 @@ namespace RFiDGear.Bridge.SampleClient
                 }
             }
 
-            // A callback that the program registered on the token of its decision can throw when the token is cancelled: that must not
-            // keep the loop from ending, and the mode from being stopped.
-            private static void CancelQuietly(CancellationTokenSource cancel)
-            {
-                try
-                {
-                    cancel.Cancel();
-                }
-                catch (Exception)
-                {
-                    // The token is cancelled all the same.
-                }
-            }
 
             // What was queued when the loop ended is looked at first: a card that was shown and not looked at yet is in it, and gets no
             // decision. After the stop RFiDGear ends the wait for the card that was shown last; it is reported when that notice comes, for
@@ -439,7 +423,7 @@ namespace RFiDGear.Bridge.SampleClient
 
                 foreach (var card in _pending.Values)
                 {
-                    card.Cancel.Dispose();
+                    card.Drop();
                 }
 
                 _pending.Clear();
@@ -529,8 +513,53 @@ namespace RFiDGear.Bridge.SampleClient
                 }
             }
 
-            // A card whose decision is under way: what was shown, how to drop the decision, and what it will have answered.
-            private sealed record PendingCard(string Uid, CancellationTokenSource Cancel, Task<string> Answer);
+            // A card whose decision is under way: what was shown, the source of the token of the decision, and what the decision will
+            // have answered.
+            private sealed class PendingCard
+            {
+                private readonly CancellationTokenSource _cancel;
+                private int _dropped;
+
+                internal PendingCard(string uid, CancellationTokenSource cancel, Task<string> answer)
+                {
+                    Uid = uid;
+                    _cancel = cancel;
+                    Answer = answer;
+                }
+
+                internal string Uid { get; }
+
+                internal Task<string> Answer { get; }
+
+                // Cancels the token of the decision without waiting for the callbacks that the program registered on it: Cancel runs them
+                // on the calling thread, and one that blocks would hold up the events and the stop of the mode, one that throws would end
+                // the loop. The source is let go of once they have run. Doing it twice does nothing.
+                internal void Drop()
+                {
+                    if (Interlocked.Exchange(ref _dropped, 1) != 0)
+                    {
+                        return;
+                    }
+
+                    _ = Task.Run(CancelAndDispose);
+                }
+
+                private void CancelAndDispose()
+                {
+                    try
+                    {
+                        _cancel.Cancel();
+                    }
+                    catch (Exception)
+                    {
+                        // The token is cancelled all the same, and what the callbacks threw is of no interest to anybody.
+                    }
+                    finally
+                    {
+                        _cancel.Dispose();
+                    }
+                }
+            }
 
             // What the loop is told when the answer for a card failed (the connection, RFiDGear): it ends the loop with that failure.
             private sealed record AnswerFailed(string PresenceId, Exception Error);

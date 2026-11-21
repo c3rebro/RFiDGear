@@ -1540,6 +1540,80 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheLoop_StopsTheModeAndEnds_WhileACallbackOfTheDecisionOfAPendingCardBlocks()
+        {
+            // A callback that the program registered on the token of its decision blocks when the token is cancelled.
+            using var gate = new ManualResetEventSlim(false);
+            var registered = new TaskCompletionSource<bool>();
+            var (_, host, loop, stop, _) = await StartLoopAsync(
+                async (_, token) =>
+                {
+                    token.Register(() => gate.Wait());
+                    registered.TrySetResult(true);
+                    await Task.Delay(Timeout.Infinite, token);
+
+                    return CardDecision.Decline;
+                },
+                grace: TimeSpan.FromMilliseconds(300));
+
+            _ = Present(host, "p-1", "04AA");
+            await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            stop.Cancel();
+
+            try
+            {
+                // The loop does not wait for the callback: it stops the mode and ends.
+                await loop.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+            }
+            finally
+            {
+                gate.Set();
+            }
+        }
+
+        [Fact]
+        public async Task TheLoop_GoesOnWithTheNextCard_WhileACallbackOfTheDecisionOfTheEndedOneBlocks()
+        {
+            using var gate = new ManualResetEventSlim(false);
+            var registered = new TaskCompletionSource<bool>();
+            var (client, host, loop, stop, seen) = await StartLoopAsync(
+                async (shown, token) =>
+                {
+                    if (shown.PresenceId != "p-1")
+                    {
+                        return CardDecision.Decline;
+                    }
+
+                    token.Register(() => gate.Wait());
+                    registered.TrySetResult(true);
+                    await Task.Delay(Timeout.Infinite, token);
+
+                    return CardDecision.Decline;
+                },
+                grace: TimeSpan.FromMilliseconds(300));
+
+            try
+            {
+                var first = Present(host, "p-1", "04AA");
+                await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+                Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(5)));
+
+                // The wait for the first card ended while the callback blocks: the loop reports it and shows the next card.
+                Assert.Null(await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5)));
+                var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+                Assert.Equal(("p-1", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Reason));
+                Assert.Equal(("p-2", "declined", PresentationEndReasons.Declined), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+            }
+            finally
+            {
+                gate.Set();
+            }
+        }
+
+        [Fact]
         public async Task TheLoop_StopsTheModeAndEnds_WhenTheDecisionOfAPendingCardHasACallbackThatThrows()
         {
             var registered = new TaskCompletionSource<bool>();
