@@ -37,9 +37,6 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets every call that carried a key, in the order it happened.</summary>
         public List<KeyCall> Calls { get; } = new List<KeyCall>();
 
-        /// <summary>Gets or sets whether the listing of the applications leaves the chip model as it is (a reader that is gone).</summary>
-        public bool ListingMakesNoModel { get; set; }
-
         /// <summary>Gets or sets the method that answers an error instead of success (<see cref="FailWith"/>); <c>null</c> for none.</summary>
         public string? FailMethod { get; set; }
 
@@ -148,6 +145,9 @@ namespace RFiDGear.Tests.KeySlots
         }
 
         // ── DESFire ──
+
+        /// <summary>Gets or sets whether the listing of the applications leaves the chip model as it is (a reader that is gone).</summary>
+        public bool ListingMakesNoModel { get; set; }
 
         /// <inheritdoc />
         public override Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
