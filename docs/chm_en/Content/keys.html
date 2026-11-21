@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Keys</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Keys</h1>
+
+<p>Every card key of a task is given in one of two ways:</p>
+
+<ul>
+<li><strong>Typed</strong>: you enter the hex digits in the task. The key is then in the project file.</li>
+<li><strong>As a reference</strong>: the task names only the name of a key in a <em>key store</em>. The project saves the name, never the key; RFiDGear fetches the key only when the task runs.</li>
+</ul>
+
+<p>With references a project can be passed on without giving keys away. It then runs on another computer or for another Windows user only when the same keys are stored there under the same names. Versions of RFiDGear that do
+not know references cannot run such a project.</p>
+
+<h2>The key stores</h2>
+
+<table>
+<tr><th>Key store</th><th>What it is</th></tr>
+<tr><td><strong>Windows Credential Manager</strong></td><td>the vault of Windows for this user of this PC. RFiDGear keeps its keys there under the name <code>RFiDGear/key/&lt;name&gt;</code>.</td></tr>
+<tr><td><strong>Connected external application</strong></td><td>a program that is connected to RFiDGear through external control and supplies the key when the task runs. The project saves only the name; the program decides what it
+means. If external control is not running, or no program has registered as the supplier, the task ends with <strong>Key unavailable</strong>.</td></tr>
+<tr><td><strong>MIFARE SAM AV3</strong></td><td>the key stays in a SAM and never reaches RFiDGear. The reference is a key entry with a version, for example <code>3:0</code> (entry 1 to 127). See
+<a href="sam_setup.html">Setting up a MIFARE SAM AV3</a>.</td></tr>
+<tr><td>Store of an extension</td><td>an installed extension can bring a key store of its own (see Part 2 of this help)</td></tr>
+</table>
+
+<h2>Set a key in a task</h2>
+
+<p>Next to each key field is a switch, and below the key fields of a section is the button <strong>Key manager...</strong>. It opens the window <strong>Key manager</strong> for the keys of that section. There you
+say for each key where it comes from:</p>
+
+<table>
+<tr><th>Button, field</th><th>Effect</th></tr>
+<tr><td><strong>Use the typed key</strong></td><td>the key is typed into the task (and is in the project)</td></tr>
+<tr><td><strong>Use a reference</strong></td><td>the key comes from a key store. Choose the <strong>Key store</strong> and then the <strong>Stored key</strong> from the list. For a SAM you enter
+<strong>Key entry and version</strong>.</td></tr>
+<tr><td><strong>Create a new key</strong>: <strong>Name of the key</strong>, key field, <strong>Store key</strong></td><td>stores a new key in the Credential Manager and uses it for this key at once. A name that is already in use is never
+overwritten; if RFiDGear cannot read the list, it stores nothing.</td></tr>
+<tr><td><strong>Show key</strong></td><td>shows the digits while you type, so that you can check them. The field is green when the key has the right length and red when not. It is cleared as soon as the key has been used.</td></tr>
+</table>
+
+<p>A key field that points to a reference is gray and shows the reference instead of the key. A task with a reference never uses the typed key, even if the reference is broken.</p>
+
+<h2>Manage stored keys</h2>
+
+<p><strong>File &gt; Key manager...</strong> needs no project. The window lists the stored keys by name only (no key is read to show the list).</p>
+
+<table>
+<tr><th>Field</th><th>Effect</th></tr>
+<tr><td><strong>Stored keys</strong></td><td>the list; <strong>Remove</strong> deletes the selected key from the Credential Manager, after a question. Projects and tasks that name it can no longer get it; that cannot be
+undone.</td></tr>
+<tr><td><strong>Store a key</strong></td><td>a new key with <strong>Name of the key</strong> and the <strong>Kind of key</strong>: <strong>MIFARE Classic key (12 digits)</strong>,
+<strong>DES, 2K3DES or AES key (32 digits)</strong> or <strong>3K3DES key (48 digits)</strong></td></tr>
+</table>
+
+<h2>Move the keys of an existing project</h2>
+
+<p><strong>File &gt; Move keys of a project to the Credential Manager...</strong> takes the typed keys of a project, puts them in the Credential Manager and saves a <em>new</em> project that refers to them. You first choose the project
+(<strong>Project whose keys are to be moved</strong>) and then the name of the new one (<strong>Save the new project as</strong>). The original project is only read, never changed. At the end RFiDGear asks whether the original project is to be deleted; before that it reads the new one once more and
+fetches every key it refers to. With <strong>No</strong> it is kept.</p>
+
+<h2>When a key cannot be had</h2>
+
+<p>If a key cannot be fetched (the key is missing from the Credential Manager, no program supplies it, the SAM cannot be reached), the task ends with <strong>Key unavailable</strong>. The status message says: <em>The key for ... is not
+available; nothing was sent to the card.</em> The task did not touch the card, and a task that waits for a refused authentication (<strong>Authentication Failed</strong>) is not started by it.</p>
+
+<div class="warn">A key that you type is in the project file in plain text, and the default keys in the <a href="settings.html">Settings</a> are in plain text in <code>runtime-defaults.json</code>. Use a reference
+for real keys.</div>
+
+<div class="nav">Previous page: <a href="reports.html">Reports (PDF)</a> &middot; Next page: <a href="sam_setup.html">Setting up a MIFARE SAM AV3</a></div>
+
+</body>
+</html>

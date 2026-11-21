@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Das Hauptfenster</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Das Hauptfenster</h1>
+
+<p>Das Hauptfenster hat vier Teile: die Men&uuml;leiste oben, links den Chip-Baum, rechts die Aufgabenliste und unten die
+Statusleiste. Die Trennlinie zwischen Baum und Liste l&auml;sst sich mit der Maus verschieben.</p>
+
+<h2>Der Chip-Baum (links)</h2>
+
+<p>Der Baum zeigt den Chip, der zuletzt gelesen wurde. Der oberste Knoten tr&auml;gt den <strong>Chip Typ:</strong> und die UID.
+Darunter stehen, je nach Chip, Sektoren, Applikationen, Dateien und Seiten. Die Farbe der Knoten sagt, wie der Chip
+behandelt wurde: gr&uuml;n steht f&uuml;r einen Knoten, der sich mit seinem Schl&uuml;ssel &ouml;ffnen lie&szlig;, rot f&uuml;r einen, der sich nicht
+&ouml;ffnen lie&szlig;, violett f&uuml;r einen, der seit dem Lesen ge&auml;ndert wurde. Der oberste Knoten ist gelb, solange ein Lauf an ihm
+arbeitet, danach gr&uuml;n (gelungen) oder rot (fehlgeschlagen).</p>
+
+<p>Die Men&uuml;s im Baum:</p>
+
+<table>
+<tr><th>Wo</th><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td>leere Fl&auml;che</td><td><strong>Chip erkennen</strong></td><td>liest den Chip auf dem Leser (wie <kbd>Strg</kbd> + <kbd>R</kbd>)</td></tr>
+<tr><td>oberster Knoten</td><td><strong>Schnellpr&uuml;fung</strong></td><td>versucht, einen MIFARE-Classic-Chip mit den Standardschl&uuml;sseln zu lesen oder die
+Applikationen und Schl&uuml;sseleinstellungen eines DESFire-Chips aufzulisten (siehe <a href="running_tasks.html">Aufgaben ausf&uuml;hren</a>)</td></tr>
+<tr><td>Knoten einer DESFire-Applikation</td><td><strong>App mit Schl&uuml;ssel lesen&hellip;</strong></td><td>&ouml;ffnet die Applikation mit einem Schl&uuml;ssel, den Sie angeben</td></tr>
+</table>
+
+<h2>Die Aufgabenliste (rechts)</h2>
+
+<p>Jede Zeile ist eine Aufgabe. Die Spalten:</p>
+
+<table>
+<tr><th>Spalte</th><th>Inhalt</th></tr>
+<tr><td>(Zeilenanfang)</td><td>Symbol des Ergebnisses: drei Punkte = noch nicht ausgef&uuml;hrt, gr&uuml;nes H&auml;kchen = gelungen, rotes Kreuz = fehlgeschlagen</td></tr>
+<tr><td><strong>Aufgaben Nr.</strong></td><td>die Nummer der Aufgabe; andere Aufgaben beziehen sich auf sie</td></tr>
+<tr><td><strong>Aufgabentyp</strong></td><td>was die Aufgabe tut, zum Beispiel <strong>Daten lesen</strong></td></tr>
+<tr><td><strong>Aufgabenbeschreibung</strong></td><td>Ihr eigener Text; er l&auml;sst sich direkt in der Zeile &auml;ndern</td></tr>
+</table>
+
+<p>Ein Doppelklick auf eine Zeile &ouml;ffnet die Aufgabe zum Bearbeiten. Mit gedr&uuml;ckter Maustaste ziehen Sie eine Zeile an eine
+andere Stelle der Liste; sie bekommt dabei eine neue Aufgabennummer (siehe <a href="tasks_overview.html">Aufgaben im &Uuml;berblick</a>).</p>
+
+<p>Das Kontextmen&uuml; einer Zeile:</p>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>Neue Aufgabe anlegen</strong></td><td>&ouml;ffnet das Men&uuml; der Aufgabentypen</td></tr>
+<tr><td><strong>Aufgabe bearbeiten...</strong></td><td>&ouml;ffnet die Aufgabe</td></tr>
+<tr><td><strong>Aufgabe entfernen</strong></td><td>l&ouml;scht die Aufgabe aus der Liste</td></tr>
+<tr><td><strong>Aufgabe ausf&uuml;hren</strong></td><td>f&uuml;hrt nur diese Aufgabe aus</td></tr>
+<tr><td><strong>Aufgabe zur&uuml;cksetzen</strong></td><td>setzt das Ergebnis dieser Aufgabe auf &bdquo;noch nicht ausgef&uuml;hrt&ldquo;</td></tr>
+<tr><td><strong>Alle Aufgaben zur&uuml;cksetzen und ausf&uuml;hren</strong></td><td>setzt alle Ergebnisse zur&uuml;ck und f&uuml;hrt die ganze Liste aus</td></tr>
+<tr><td><strong>Alle Aufgaben zur&uuml;cksetzen</strong></td><td>setzt alle Ergebnisse zur&uuml;ck</td></tr>
+<tr><td><strong>Alle Berichtausgabepfade zur&uuml;cksetzen</strong></td><td>l&ouml;scht die Zielpfade der Berichte (siehe <a href="reports.html">Berichte</a>)</td></tr>
+</table>
+
+<p>Ein Rechtsklick auf die leere Fl&auml;che der Liste &ouml;ffnet das Men&uuml; <strong>Aufgabe erstellen / bearbeiten</strong> mit den
+Aufgabentypen.</p>
+
+<div class="note">Die Liste l&auml;sst sich nicht &auml;ndern, solange ein Lauf, das Laden eines Projekts oder eine andere &Auml;nderung
+aktiv ist. RFiDGear meldet das in einem Hinweis; versuchen Sie es nach dem Ende erneut.</div>
+
+<h2>Die Statusleiste (unten)</h2>
+
+<table>
+<tr><th>Anzeige</th><th>Bedeutung</th></tr>
+<tr><td><strong>Ausgew&auml;hlter Kartenleser:</strong></td><td>der Leser, den RFiDGear verwendet</td></tr>
+<tr><td><strong>Kartenleser Status:</strong></td><td><strong>INIT</strong> (der Leser wird gerade gesucht), <strong>LEERLAUF</strong> (bereit),
+<strong>BESCH&Auml;FTIGT</strong> (ein Lauf oder ein Dialog arbeitet mit dem Leser) oder <strong>UNBEKANNT</strong> (der Zustand ist nicht
+bekannt, zum Beispiel weil kein Leser gefunden wurde)</td></tr>
+<tr><td>Kartenstatus</td><td><strong>keine Verbindung</strong>, <strong>Karte erkannt</strong> oder <strong>Karte wurde entfernt</strong></td></tr>
+<tr><td>Datum und Uhrzeit</td><td>die aktuelle Zeit</td></tr>
+<tr><td><strong>RDP: PC/SC nicht verf&uuml;gbar</strong></td><td>erscheint in einer Remotedesktop-Sitzung, wenn PC/SC-Leser nicht umgeleitet sind
+(siehe <a href="troubleshooting.html">Fehlersuche</a>)</td></tr>
+<tr><td><strong>Externe Steuerung: verbunden</strong></td><td>erscheint, solange ein anderes Programm &uuml;ber die externe Steuerung verbunden ist
+(siehe Teil 2 dieser Hilfe)</td></tr>
+</table>
+
+<p>RFiDGear pr&uuml;ft den Leser im Hintergrund in kurzen Abst&auml;nden und aktualisiert die Anzeige selbst. Steht der Status auf
+<strong>BESCH&Auml;FTIGT</strong>, arbeitet ein Lauf oder ein Dialog mit dem Leser: warten Sie, bis wieder <strong>LEERLAUF</strong>
+steht, bevor Sie etwas Neues starten.</p>
+
+<div class="nav">Vorherige Seite: <a href="first_steps.html">Erste Schritte</a> &middot; N&auml;chste Seite: <a href="menus.html">Die Men&uuml;s und Tastenk&uuml;rzel</a></div>
+
+</body>
+</html>

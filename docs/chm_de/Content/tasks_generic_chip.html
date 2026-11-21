@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Typunabh&auml;ngige Chip-Aufgaben</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Typunabh&auml;ngige Chip-Aufgaben</h1>
+
+<p>Diese Aufgaben pr&uuml;fen den Chip, egal von welcher Familie er ist. Sie legen sie mit <strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten &gt; Typunabh&auml;ngige
+RFiD Aufgabe erstellen / bearbeiten...</strong> an; der Dialog &ouml;ffnet sich nur, wenn ein Leser verbunden ist. Es sind Pr&uuml;fungen: sie &auml;ndern den Chip nicht.</p>
+
+<table>
+<tr><th>Aufgabentyp</th><th>Feld</th><th>Pr&uuml;ft</th></tr>
+<tr><td><strong>Pr&uuml;fung der UID</strong></td><td><strong>UID</strong></td><td>ob die UID der Karte die erwartete ist</td></tr>
+<tr><td><strong>Pr&uuml;fung des Kartentyps</strong></td><td><strong>Kartentyp</strong></td><td>ob die Karte von diesem Typ ist</td></tr>
+<tr><td><strong>Pr&uuml;fung auf Multitechnologiekarte</strong></td><td>&ndash;</td><td>ob die Karte mehrere Chips tr&auml;gt: neben dem Haupt-Chip einen zweiten (die Berichtsvariablen <code>%SLAVEUID</code> und <code>%SLAVECHIPTYPE</code> nennen ihn)</td></tr>
+</table>
+
+<p>Jede Aufgabe endet mit <strong>Kein Fehler</strong>, wenn die Pr&uuml;fung zutrifft, und mit <strong>Ist Nicht Wahr</strong>, wenn nicht. Ein Projekt kann die Antwort
+mit einer Ausf&uuml;hrungsbedingung f&uuml;r Zweige nutzen (siehe <a href="tasks_overview.html">Aufgaben im &Uuml;berblick</a>). Ein &bdquo;nein&ldquo; wertet RFiDGear als Antwort der Pr&uuml;fung, nicht als
+Fehler des Laufs.</p>
+
+<h2>Pr&uuml;fung der UID</h2>
+
+<p>Im Feld <strong>UID</strong> steht eine von zwei Angaben:</p>
+
+<ul>
+<li><strong>Eine UID</strong>, zum Beispiel <code>04A1B2C3D4E5F6</code>. Die Gro&szlig;- und Kleinschreibung spielt keine Rolle, Leerzeichen am Rand z&auml;hlen nicht. Stimmt die UID der Karte,
+endet die Aufgabe mit <strong>Kein Fehler</strong>, sonst mit <strong>Ist Nicht Wahr</strong>. Das ist eine Frage, die das Projekt weiterverwenden kann.</li>
+<li><strong>Eine Variable</strong>, zum Beispiel <code>$EXPECTEDUID</code>: der Name einer Variablen des Laufs, die das Programm enth&auml;lt, das den Lauf anfordert (ein
+Startargument, ein anderes Programm &uuml;ber die externe Steuerung oder eine Erweiterung). So gilt ein Projekt f&uuml;r jede Karte einer Serie, und nur der Aufrufer wei&szlig;, welche Karte
+gerade dran ist. Ein Variablenname beginnt mit <code>$</code> und hat h&ouml;chstens 64 Buchstaben, Ziffern oder Unterstriche.</li>
+</ul>
+
+<p>Mit einer Variablen hat die Aufgabe ein anderes Ergebnis, wenn etwas nicht stimmt: Fehlt der Variablen der Wert, ist er leer oder geh&ouml;rt er zu einer anderen Karte, endet die Aufgabe
+mit <strong>Karte nicht erwartet</strong>. Das ist keine &bdquo;nein&ldquo;-Antwort, sondern eine Absage: ein Lauf, der so endet, ist fehlgeschlagen, auch wenn ein Zweig des Projekts darauf
+reagiert, und ein Zweig f&uuml;r &bdquo;eine andere Karte&ldquo; (Bedingung <strong>Ist Nicht Wahr</strong>) springt daf&uuml;r nicht an.</p>
+
+<p>Die Pr&uuml;fung vergleicht die UID, die der Lauf am Anfang von der Karte gelesen hat. Die Aufgabe verwendet nie das, was der Leser noch von einer fr&uuml;heren Karte im Speicher hat.</p>
+
+<div class="note">Typische Anwendung: Ein anderes Programm gibt eine Karte frei und startet den Lauf mit <code>$EXPECTEDUID</code>. Liegt die falsche Karte auf dem Leser, schreibt RFiDGear nichts.
+Siehe <a href="command_line.html">Startargumente</a> und Teil 2 dieser Hilfe.</div>
+
+<h2>Pr&uuml;fung des Kartentyps</h2>
+
+<p>W&auml;hlen Sie unter <strong>Kartentyp</strong> einen Typ aus der Liste, zum Beispiel <strong>Mifare Desfire EV1</strong>. Die Aufgabe endet mit <strong>Kein Fehler</strong>, wenn die Karte auf dem
+Leser von diesem Typ ist.</p>
+
+<div class="nav">Vorherige Seite: <a href="tasks_common.html">Allgemeine Aufgaben: Bericht, Logik, Programm</a> &middot; N&auml;chste Seite: <a href="tasks_classic.html">MIFARE Classic</a></div>
+
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>MIFARE Ultralight und NTAG</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>MIFARE Ultralight und NTAG</h1>
+
+<p>Die Aufgabe legen Sie mit <strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten &gt; Mifare Aufgabe &gt; Mifare Ultralight / NTAG Aufgabe hinzuf&uuml;gen/bearbeiten</strong> an. Sie gilt f&uuml;r die
+Chips der Familie mit Seiten zu je 4 Bytes: MIFARE Ultralight, Ultralight C, Ultralight EV1 (MF0UL11, MF0UL21) und NTAG213, NTAG215, NTAG216. Der Dialog &ouml;ffnet sich nur, wenn ein Leser verbunden ist.</p>
+
+<p>Die Aufgabe <strong>liest und schreibt Seiten</strong>. Sperrseiten setzen, Z&auml;hler, Signaturen und das &Auml;ndern eines Schl&uuml;ssels oder Passworts sind keine Aufgaben von RFiDGear.</p>
+
+<h2>Die Aufgabentypen</h2>
+
+<table>
+<tr><th>Aufgabentyp</th><th>Wirkung</th></tr>
+<tr><td><strong>Daten lesen</strong></td><td>liest die angegebenen Seiten</td></tr>
+<tr><td><strong>Daten schreiben</strong></td><td>schreibt die Seiten der Tabelle, jede mit genau 8 Hex-Ziffern (4 Bytes)</td></tr>
+</table>
+
+<h2>Die Reiter</h2>
+
+<h3>Chip und Authentifizierung</h3>
+
+<table>
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td><strong>Erwarteter Chip</strong></td><td><strong>Beliebiger Chip (der gefundene)</strong>, <strong>Mifare Ultralight</strong>, <strong>Mifare Ultralight C</strong>, <strong>Mifare Ultralight EV1 (MF0UL11)</strong>,
+<strong>Mifare Ultralight EV1 (MF0UL21)</strong>, <strong>NTAG213</strong>, <strong>NTAG215</strong> oder <strong>NTAG216</strong>. Eine Aufgabe, die sich authentifiziert oder gesch&uuml;tzte Seiten
+beschreibt, muss den Chip nennen. Liegt ein anderer Chip auf dem Leser, endet die Aufgabe, ohne zu schreiben.</td></tr>
+<tr><td><strong>Authentifizierung</strong></td><td><strong>Keine Authentifizierung</strong>, <strong>Schl&uuml;ssel eines Ultralight C</strong> oder <strong>Passwort und PACK (EV1, NTAG)</strong></td></tr>
+<tr><td><strong>Schreiben gesch&uuml;tzter Seiten erlauben</strong></td><td>der Schalter, der Seiten 0 bis 3 und die Sperr-, Konfigurations-, Passwort- und Schl&uuml;sselseiten freigibt. Er gilt nur, wenn der Chip genannt ist.</td></tr>
+</table>
+
+<h3>Schl&uuml;ssel</h3>
+
+<p>Verwendet werden nur die Schl&uuml;ssel der Authentifizierung, die auf dem ersten Reiter gew&auml;hlt ist.</p>
+
+<table>
+<tr><th>Gruppe</th><th>Feld</th><th>L&auml;nge</th></tr>
+<tr><td><strong>Ultralight C</strong></td><td><strong>Schl&uuml;ssel</strong></td><td>32 Hex-Ziffern</td></tr>
+<tr><td><strong>Ultralight EV1 und NTAG</strong></td><td><strong>Passwort</strong> und <strong>PACK</strong></td><td>8 beziehungsweise 4 Hex-Ziffern</td></tr>
+</table>
+
+<p>Die Schl&uuml;sselfelder lassen sich wie die anderer Aufgaben an einen gespeicherten Schl&uuml;ssel binden (siehe <a href="keys.html">Schl&uuml;ssel</a>). F&uuml;r einen Ultralight C gibt es keinen
+Standardschl&uuml;ssel im Programm. Eine externe Anwendung kann ein Passwort oder ein PACK nicht liefern: ein solches Feld endet mit <strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong>.</p>
+
+<div class="warn">Senden Sie nie das Werkspasswort <code>FFFFFFFF</code> eines NTAG an eine Karte: ein fehlgeschlagener Versuch z&auml;hlt gegen die Grenze der erlaubten Versuche.</div>
+
+<h3>Seiten</h3>
+
+<table>
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td><strong>Erste Seite</strong>, <strong>Anzahl Seiten</strong></td><td>der Bereich, den <strong>Daten lesen</strong> liest</td></tr>
+<tr><td>Tabelle <strong>Seite</strong> und <strong>Daten (8 Hex-Ziffern)</strong></td><td>die Seiten, die <strong>Daten schreiben</strong> schreibt. <strong>Seite hinzuf&uuml;gen</strong> und <strong>Entfernen</strong> &auml;ndern die Tabelle.
+Solange eine Zeile keine ganze Seite ist, bleibt die Aufgabe unvollst&auml;ndig und l&auml;uft nicht.</td></tr>
+<tr><td>Gruppe <strong>Jetzt ausf&uuml;hren</strong></td><td>f&uuml;hrt die Aufgabe sofort auf dem Chip aus, der auf dem Leser liegt, wie sie hier eingerichtet ist; ein Lesevorgang zeigt in der Tabelle, was der Chip geliefert hat</td></tr>
+</table>
+
+<p>Das Statusfeld nennt, was geschah: <em>Seite(n) ab Seite N gelesen</em>, <em>geschrieben</em> oder <em>Der Vorgang endete mit ... (Seiten erledigt: x von y)</em>. W&auml;hrend ein Vorgang l&auml;uft,
+l&auml;sst sich der Dialog nicht schlie&szlig;en.</p>
+
+<h2>Welche Leser k&ouml;nnen was</h2>
+
+<ul>
+<li>Der <strong>Elatec TWN4</strong> liest und schreibt alle Chips dieser Familie.</li>
+<li>Ein <strong>PC/SC-Leser</strong> kann nur den einfachen Ultralight und den Ultralight C. Ein EV1 oder NTAG endet dort mit <strong>Protokolleinschr&auml;nkung</strong>; an die Karte geht nichts.</li>
+</ul>
+
+<div class="warn">Gesch&uuml;tzte Seiten sind die Seiten 0 bis 3 sowie die Sperr-, Konfigurations-, Passwort- und Schl&uuml;sselseiten des Chips. Ein falscher Schreibvorgang dort kann den Chip oder sein Passwort f&uuml;r
+immer sperren.</div>
+
+<div class="note">Gelesen und geschrieben wurde bisher nur an einem NTAG215 mit einem Elatec-Leser; die Aufgabe selbst und ihr Dialog sind noch an keiner Karte gelaufen, und ein einfacher Ultralight, ein Ultralight C
+oder ein EV1 wurde noch gar nicht ausprobiert.</div>
+
+<div class="nav">Vorherige Seite: <a href="tasks_desfire.html">MIFARE DESFire</a> &middot; N&auml;chste Seite: <a href="running_tasks.html">Aufgaben ausf&uuml;hren</a></div>
+
+</body>
+</html>

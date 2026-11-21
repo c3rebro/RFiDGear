@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Glossary</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Glossary</h1>
+
+<p>The terms as RFiDGear uses them. This help does not explain how the RFID technologies themselves work.</p>
+
+<table>
+<tr><th>Term</th><th>Meaning in RFiDGear</th></tr>
+<tr><td>Task</td><td>a step that RFiDGear carries out on a chip or in the program; a row of the task list</td></tr>
+<tr><td>Task index</td><td>the whole number under which a task stands in the list and to which others refer; it decides the order</td></tr>
+<tr><td>Execute condition</td><td>the condition under which a task runs: an earlier task must have ended with a certain result</td></tr>
+<tr><td>Result (of a task)</td><td>how a task ended, for example <strong>No Error</strong> or <strong>Authentication Failed</strong></td></tr>
+<tr><td>Project</td><td>the saved task list, an <code>.rfPrj</code> or <code>.xml</code> file</td></tr>
+<tr><td>Run</td><td>one pass of the task list on a card, or of a single task</td></tr>
+<tr><td>Chip tree</td><td>the view on the left of the main window: the chip that was read, with its sectors, applications, files or pages</td></tr>
+<tr><td>Quick check</td><td>reading a chip with the default keys of the settings, without tasks</td></tr>
+<tr><td>Automatic mode</td><td>the state in which the list runs once for every card that is placed on the reader</td></tr>
+<tr><td>Checkpoint</td><td>an entry of a report or logic block: a task and the result it is to have</td></tr>
+<tr><td>Logic block</td><td>a task that evaluates the results of other tasks</td></tr>
+<tr><td>Report</td><td>a PDF file that is made from a template with form fields</td></tr>
+<tr><td>Variable</td><td>a value that comes with the run and starts with <code>$</code> (for example <code>$EXPECTEDUID</code>); a task reads it</td></tr>
+<tr><td>Start-up argument</td><td>a value that you give RFiDGear at start, in the form <code>NAME=value</code></td></tr>
+<tr><td>Reference</td><td>the name of a key in a key store; the project contains the reference, never the key</td></tr>
+<tr><td>Key store</td><td>where a key lives that a reference names: the Windows Credential Manager, a connected application, a SAM or an extension</td></tr>
+<tr><td>External control</td><td>the named pipe through which another program controls RFiDGear (Part 2 of this help)</td></tr>
+<tr><td>Extension</td><td>an additional part of the program in the menu <strong>Extensions</strong></td></tr>
+<tr><td>Extension package</td><td>an <code>.rfext</code> file with which an extension is updated</td></tr>
+<tr><td>UID</td><td>the identifier of a card as the reader reads it</td></tr>
+<tr><td>Sector, sector trailer</td><td>MIFARE Classic: the memory area and its last block with keys and access bits</td></tr>
+<tr><td>MAD</td><td>MIFARE Classic: the directory that says which sector belongs to which application</td></tr>
+<tr><td>PICC, application, file</td><td>MIFARE DESFire: the card itself, an area on it with keys of its own, and a content in it</td></tr>
+<tr><td>Page</td><td>Ultralight and NTAG: a memory section of 4 bytes</td></tr>
+<tr><td>SAM</td><td>a security module (MIFARE SAM AV3) that keeps card keys inside itself</td></tr>
+</table>
+
+<div class="nav">Previous page: <a href="troubleshooting.html">Troubleshooting</a></div>
+
+</body>
+</html>

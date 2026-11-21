@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Updates and extensions</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Updates and extensions</h1>
+
+<h2>Updates</h2>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>Help &gt; Check for Updates</strong></td><td>asks the update source (the file <code>update.xml</code> of the latest release on GitHub) for a newer version. If there is one, RFiDGear shows the
+<strong>Version Info</strong> and asks whether the update is to be downloaded and installed now (<strong>Update</strong>). If there is none, it says <strong>No Update Available</strong>: you are running the latest version.</td></tr>
+<tr><td><strong>Check for Updates on Start</strong> (Settings)</td><td>does the same at start in the background, without your doing anything</td></tr>
+<tr><td><strong>Help &gt; Changelog</strong></td><td>shows the release notes of the update source, even when there is no update</td></tr>
+<tr><td><strong>Help &gt; About RFiDGear</strong></td><td>shows the version number</td></tr>
+</table>
+
+<p>For an update RFiDGear downloads the package with a progress window; to install it, RFiDGear has to be restarted (message <strong>Restart Required</strong>). The check for updates needs a connection to github.com.</p>
+
+<h2>Extensions</h2>
+
+<p>An <em>extension</em> is an additional part of the program that RFiDGear finds at start and offers in the menu <strong>Extensions</strong>. You open an extension with its entry there; it then shows its own user interface. Extensions
+live in the folder <code>%ProgramData%\RFiDGear\Extensions</code> and in the folder of your installed packages under <code>%LocalAppData%\RFiDGear\InstalledExtensions</code>. RFiDGear finds them only at start: restart it after a new
+extension.</p>
+
+<p>An extension that cannot be loaded stops neither RFiDGear nor the other extensions. The log names the reason (see <a href="troubleshooting.html">Troubleshooting</a>). If an extension cannot be opened, RFiDGear says
+<em>The extension ... could not be opened. Details are in the application log.</em></p>
+
+<h3>The Card Check Assistant</h3>
+
+<p>The <strong>Card Check Assistant</strong> is the first extension that belongs to RFiDGear. It leads through the check and the programming of a card in steps; its page describes itself. Whether it is installed shows in the menu
+<strong>Extensions</strong>.</p>
+
+<h3>Install an extension update</h3>
+
+<p>A new version of an extension comes as a <em>package</em> (a <code>.rfext</code> file). You install it for your own user, without administrator rights:</p>
+
+<ol>
+<li>Choose <strong>File &gt; Install extension update...</strong> and the package (<strong>Extension package to install</strong>).</li>
+<li>RFiDGear checks the package and shows what it is (name, version) and who signed it. <strong>Signed by: ...</strong> means the signature is valid and this PC trusts it. <strong>Not signed</strong>, or a message that the signature is
+<strong>NOT valid</strong>, means that the package may have been changed.</li>
+<li>Confirm. The new version is used after RFiDGear has been restarted.</li>
+</ol>
+
+<div class="warn">An extension is a program that runs with your rights. Install a package only if it comes from a source you trust.</div>
+
+<p>Possible reasons why RFiDGear rejects a package:</p>
+
+<table>
+<tr><th>Message</th><th>Meaning</th></tr>
+<tr><td>The file is not an extension package, or it is damaged.</td><td>not an <code>.rfext</code> file, or it is incomplete</td></tr>
+<tr><td>The package cannot be used. It is damaged, changed, or not made for this version of RFiDGear.</td><td>the checksums or the layout do not match</td></tr>
+<tr><td>This extension needs a newer RFiDGear.</td><td>update RFiDGear first</td></tr>
+<tr><td>This package is made for the other platform (x64 or x86) than this RFiDGear.</td><td>take the package of the platform of your RFiDGear</td></tr>
+<tr><td>This version of the extension is installed already. / A newer version ... is installed already.</td><td>nothing to do</td></tr>
+<tr><td>RFiDGear cannot write to your folder of installed extensions.</td><td>check the rights on <code>%LocalAppData%\RFiDGear</code></td></tr>
+</table>
+
+<p>If an extension in the shared folder and a package of yours are both present, RFiDGear uses the higher version, and the one of the shared folder when they are equal.</p>
+
+<div class="nav">Previous page: <a href="command_line.html">Start-up arguments</a> &middot; Next page: <a href="troubleshooting.html">Troubleshooting</a></div>
+
+</body>
+</html>

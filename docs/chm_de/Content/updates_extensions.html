@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Updates und Erweiterungen</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Updates und Erweiterungen</h1>
+
+<h2>Updates</h2>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>Hilfe &gt; Auf Updates pr&uuml;fen</strong></td><td>fragt die Update-Quelle (die Datei <code>update.xml</code> der neuesten Version auf GitHub) nach einer neueren Version. Gibt es eine, zeigt RFiDGear die
+<strong>Versionsinformationen</strong> und fragt, ob die Aktualisierung jetzt geladen und installiert werden soll (<strong>Update starten</strong>). Gibt es keine, meldet es <strong>Kein Update verf&uuml;gbar</strong>: Sie verwenden bereits die neueste Version.</td></tr>
+<tr><td><strong>Beim Start auf Updates pr&uuml;fen</strong> (Einstellungen)</td><td>macht dasselbe beim Start im Hintergrund, ohne dass Sie etwas tun</td></tr>
+<tr><td><strong>Hilfe &gt; Changelog</strong></td><td>zeigt die Versionshinweise der Update-Quelle, auch wenn es kein Update gibt</td></tr>
+<tr><td><strong>Hilfe &gt; &Uuml;ber RFiDGear</strong></td><td>zeigt die Versionsnummer</td></tr>
+</table>
+
+<p>Beim Update l&auml;dt RFiDGear das Paket mit einem Fortschrittsfenster; zum Installieren muss RFiDGear neu gestartet werden (Hinweis <strong>Neustart erforderlich</strong>). Die Update-Pr&uuml;fung braucht eine Verbindung zu github.com.</p>
+
+<h2>Erweiterungen</h2>
+
+<p>Eine <em>Erweiterung</em> ist ein zus&auml;tzliches Programmteil, das RFiDGear beim Start findet und im Men&uuml; <strong>Erweiterungen</strong> anbietet. Eine Erweiterung &ouml;ffnen Sie mit ihrem Eintrag dort; sie zeigt dann ihre eigene Oberfl&auml;che. Erweiterungen liegen im Ordner <code>%ProgramData%\RFiDGear\Extensions</code> und im Ordner Ihrer installierten Pakete unter <code>%LocalAppData%\RFiDGear\InstalledExtensions</code>. RFiDGear findet sie nur beim
+Start: nach einer neuen Erweiterung starten Sie es neu.</p>
+
+<p>Eine Erweiterung, die sich nicht laden l&auml;sst, h&auml;lt weder RFiDGear noch die anderen Erweiterungen auf. Das Protokoll nennt den Grund (siehe <a href="troubleshooting.html">Fehlersuche</a>). L&auml;sst sich eine Erweiterung nicht &ouml;ffnen,
+meldet RFiDGear <em>Die Erweiterung ... konnte nicht ge&ouml;ffnet werden. Einzelheiten stehen im Anwendungsprotokoll.</em></p>
+
+<h3>Der Card Check Assistant</h3>
+
+<p>Der <strong>Card Check Assistant</strong> ist die erste Erweiterung, die zu RFiDGear geh&ouml;rt. Er f&uuml;hrt in Schritten durch die Pr&uuml;fung und das Programmieren einer Karte; seine Seite beschreibt sich selbst. Ob er installiert ist, zeigt das Men&uuml;
+<strong>Erweiterungen</strong>.</p>
+
+<h3>Ein Erweiterungs-Update installieren</h3>
+
+<p>Eine neue Version einer Erweiterung kommt als <em>Paket</em> (Datei <code>.rfext</code>). Sie installieren sie f&uuml;r Ihren eigenen Benutzer, ohne Administratorrechte:</p>
+
+<ol>
+<li>W&auml;hlen Sie <strong>Datei &gt; Erweiterungs-Update installieren...</strong> und das Paket (<strong>Zu installierendes Erweiterungspaket</strong>).</li>
+<li>RFiDGear pr&uuml;ft das Paket und zeigt, was es ist (Name, Version) und von wem es signiert ist. <strong>Signiert von: ...</strong> bedeutet, die Signatur ist g&uuml;ltig und dieser PC vertraut ihr. <strong>Nicht signiert</strong> oder eine Meldung, dass die Signatur
+<strong>nicht g&uuml;ltig</strong> ist, bedeutet: Das Paket kann ver&auml;ndert worden sein.</li>
+<li>Best&auml;tigen Sie. Die neue Version wird nach einem Neustart von RFiDGear verwendet.</li>
+</ol>
+
+<div class="warn">Eine Erweiterung ist ein Programm, das mit Ihren Rechten l&auml;uft. Installieren Sie ein Paket nur, wenn es aus einer Quelle stammt, der Sie vertrauen.</div>
+
+<p>M&ouml;gliche Gr&uuml;nde, warum RFiDGear ein Paket ablehnt:</p>
+
+<table>
+<tr><th>Meldung</th><th>Bedeutung</th></tr>
+<tr><td>Die Datei ist kein Erweiterungspaket oder sie ist besch&auml;digt.</td><td>keine <code>.rfext</code>-Datei, oder sie ist unvollst&auml;ndig</td></tr>
+<tr><td>Das Paket kann nicht verwendet werden. Es ist besch&auml;digt, ver&auml;ndert oder nicht f&uuml;r diese Version von RFiDGear gemacht.</td><td>die Pr&uuml;fsummen oder der Aufbau stimmen nicht</td></tr>
+<tr><td>Diese Erweiterung ben&ouml;tigt ein neueres RFiDGear.</td><td>aktualisieren Sie zuerst RFiDGear</td></tr>
+<tr><td>Dieses Paket ist f&uuml;r die andere Plattform (x64 oder x86) gemacht.</td><td>nehmen Sie das Paket der Plattform Ihres RFiDGear</td></tr>
+<tr><td>Diese Version der Erweiterung ist bereits installiert. / Eine neuere Version ... ist bereits installiert.</td><td>nichts zu tun</td></tr>
+<tr><td>RFiDGear kann nicht in Ihren Ordner f&uuml;r installierte Erweiterungen schreiben.</td><td>pr&uuml;fen Sie die Rechte an <code>%LocalAppData%\RFiDGear</code></td></tr>
+</table>
+
+<p>Sind eine Erweiterung im gemeinsamen Ordner und ein Paket von Ihnen beide vorhanden, verwendet RFiDGear die h&ouml;here Version, bei gleicher die des gemeinsamen Ordners.</p>
+
+<div class="nav">Vorherige Seite: <a href="command_line.html">Startargumente</a> &middot; N&auml;chste Seite: <a href="troubleshooting.html">Fehlersuche</a></div>
+
+</body>
+</html>

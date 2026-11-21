@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>MIFARE Classic</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>MIFARE Classic</h1>
+
+<p>Die Aufgabe legen Sie mit <strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten &gt; Mifare Aufgabe &gt; Mifare Classic Aufgabe hinzuf&uuml;gen/bearbeiten</strong> an. Sie liest und
+schreibt die Sektoren eines MIFARE-Classic-Chips (1K, 4K und verwandte). Der Dialog &ouml;ffnet sich nur, wenn ein Leser verbunden ist.</p>
+
+<h2>Die Aufgabentypen</h2>
+
+<table>
+<tr><th>Aufgabentyp</th><th>Wirkung</th></tr>
+<tr><td><strong>Daten lesen</strong></td><td>liest den Sektor mit den Schl&uuml;sseln des Dialogs; die Daten erscheinen im Daten Editor unter <strong>Daten auf dem Chip</strong></td></tr>
+<tr><td><strong>Daten schreiben</strong></td><td>schreibt die Daten des Zwischenspeichers in die Datenbl&ouml;cke des Sektors</td></tr>
+<tr><td><strong>Schl&uuml;ssel bearbeiten</strong></td><td>schreibt neue Schl&uuml;ssel und neue Zugriffsbits in den Sector Trailer des Sektors</td></tr>
+<tr><td><strong>Sektor-Unbenutzt Pr&uuml;fung</strong></td><td>pr&uuml;ft, ob der Sektor unbenutzt ist</td></tr>
+</table>
+
+<h2>Die Reiter</h2>
+
+<h3>Mifare Classic Schl&uuml;ssel</h3>
+
+<table>
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td><strong>Sektornummer</strong></td><td>der Sektor, auf den sich die Aufgabe bezieht</td></tr>
+<tr><td><strong>Sektorschl&uuml;ssel - Aktuell</strong></td><td>der <strong>A Schl&uuml;ssel</strong> und der <strong>B Schl&uuml;ssel</strong>, mit denen sich der Sektor jetzt &ouml;ffnen l&auml;sst: je 12
+Hex-Zeichen</td></tr>
+<tr><td><strong>Sektorschl&uuml;ssel - Neu</strong></td><td>die Schl&uuml;ssel, die der Aufgabentyp <strong>Schl&uuml;ssel bearbeiten</strong> in den Sektor schreibt</td></tr>
+<tr><td><strong>MAD Ben.</strong></td><td>die Aufgabe findet den Sektor &uuml;ber das MAD-Verzeichnis der Karte statt &uuml;ber die Sektornummer; das Feld <strong>Gr&ouml;&szlig;e in Bytes</strong> gibt die Gr&ouml;&szlig;e der
+Anwendungsdaten an. <strong>Mit MAD Authentifizieren</strong> &ouml;ffnet die Karte mit dem MAD-Schl&uuml;ssel.</td></tr>
+<tr><td><strong>MAD Schl&uuml;ssel - Aktuell</strong>, <strong>MAD Schl&uuml;ssel - Neu</strong></td><td>die Schl&uuml;ssel f&uuml;r das MAD-Verzeichnis</td></tr>
+</table>
+
+<p>Jedes Schl&uuml;sselfeld hat eine Umschaltung: statt des eingetippten Schl&uuml;ssels kann es auf einen Schl&uuml;ssel in der Anmeldeinformationsverwaltung zeigen (siehe
+<a href="keys.html">Schl&uuml;ssel</a>).</p>
+
+<h3>Sector Trailer Editor</h3>
+
+<p>Der Reiter erscheint, solange die MAD nicht verwendet wird. Er zeigt unter <strong>Sector Trailer | Access Bits</strong> eine Tabelle der Zugriffsbedingungen eines Sektors. Die Spalten
+<strong>Read Key A</strong>, <strong>Write Key A</strong>, <strong>Read Access Bits</strong>, <strong>Write Access Bits</strong>, <strong>Read Key B</strong> und <strong>Write Key B</strong> sagen, welcher Schl&uuml;ssel was darf. Sie w&auml;hlen eine Zeile;
+RFiDGear rechnet daraus die drei Bytes der Zugriffsbits samt ihren Gegenst&uuml;cken selbst aus.</p>
+
+<h3>Daten Editor</h3>
+
+<p>Zwei Tabellen: <strong>Daten auf dem Chip</strong> (was zuletzt gelesen wurde) und <strong>Daten im Zwischenspeicher</strong> (was Sie schreiben wollen). Die Schaltfl&auml;chen
+<strong>Daten lesen</strong> und <strong>Daten schreiben</strong> f&uuml;hren die Aktion sofort an der Karte auf dem Leser aus, nicht als Teil eines Laufs; <strong>Datendatei &Ouml;ffnen...</strong> l&auml;dt Daten aus einer Datei in den
+Zwischenspeicher.</p>
+
+<h2>Was RFiDGear beim Schreiben beachtet</h2>
+
+<ul>
+<li><strong>Ein Versuch.</strong> Jeder Schreibzugriff geschieht einmal, wird zur&uuml;ckgelesen und nie wiederholt. Der erste Block, der scheitert, beendet die Aufgabe. Ein Block, der nach dem
+Schreiben nicht so zur&uuml;ckgelesen wird, endet als <strong>Unbekannter Fehler</strong>.</li>
+<li><strong>Datenbl&ouml;cke.</strong> <strong>Daten schreiben</strong> schreibt nur Datenbl&ouml;cke: 32 Bytes in Sektor 0, 48 Bytes in einem Sektor mit vier Bl&ouml;cken, 240 Bytes in einem der gro&szlig;en Sektoren
+(Sektoren 32 bis 39 eines 4K-Chips). Block 0 mit den Herstellerdaten schreibt RFiDGear nie.</li>
+<li><strong>Sector Trailer.</strong> Er wird nur durch den Aufgabentyp <strong>Schl&uuml;ssel bearbeiten</strong> und den Sector Trailer Editor geschrieben. Zugriffsbits, die in sich nicht stimmig sind, weist RFiDGear
+ab, bevor es einen Schl&uuml;ssel an die Karte schickt.</li>
+<li><strong>Schl&uuml;ssel B kann Daten sein.</strong> In der Auslieferungskonfiguration (Zugriffsbits <code>FF078069</code>) darf Schl&uuml;ssel A den Schl&uuml;ssel B lesen: B ist dann Datenbereich und kann sich nicht anmelden.</li>
+<li><strong>Nach einer Absage h&auml;lt die Karte an.</strong> Verweigert ein Chip einen Zugriff, h&auml;lt er die Karte an: der n&auml;chste Befehl scheitert einmal. RFiDGear weckt die Karte danach auf; der
+Fehler bleibt trotzdem ein Fehler der Aufgabe.</li>
+</ul>
+
+<p>Das Ergebnis nennt, was fehlschlug: nur <strong>Authentifizierung fehlgeschlagen</strong> hei&szlig;t, dass ein Schl&uuml;ssel abgelehnt wurde; ein anderer Fehler bleibt ein anderer Fehler.</p>
+
+<div class="warn">Falsche Zugriffsbits k&ouml;nnen einen Sektor f&uuml;r immer sperren. Probieren Sie <strong>Schl&uuml;ssel bearbeiten</strong> zuerst an einer Karte, die Sie nicht mehr brauchen. Notieren Sie die neuen
+Schl&uuml;ssel, bevor Sie schreiben.</div>
+
+<div class="note">Mit einem PC/SC-Leser ist bisher nur das Lesen an einer 4K-Karte ausprobiert. Die Schreibwege, die MAD und die Dialoge sind nur an einer Chip-Nachbildung im Speicher gepr&uuml;ft, mit einem Elatec TWN4 an
+keiner Karte. Pr&uuml;fen Sie das Ergebnis jeder Schreibaufgabe an einer Testkarte, bevor Sie sie in einer Serie einsetzen.</div>
+
+<div class="nav">Vorherige Seite: <a href="tasks_generic_chip.html">Typunabh&auml;ngige Chip-Aufgaben</a> &middot; N&auml;chste Seite: <a href="tasks_desfire.html">MIFARE DESFire</a></div>
+
+</body>
+</html>

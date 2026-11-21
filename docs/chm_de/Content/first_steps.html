@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Erste Schritte</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Erste Schritte</h1>
+
+<p>Dieser Weg f&uuml;hrt vom frisch installierten Programm bis zum ersten Lauf einer Aufgabenliste. Sie brauchen einen
+Kartenleser und einen Chip.</p>
+
+<h2>1. Kartenleser ausw&auml;hlen</h2>
+
+<ol>
+<li>W&auml;hlen Sie <strong>Extras &gt; Einstellungen...</strong>.</li>
+<li>W&auml;hlen Sie auf dem Reiter <strong>Kartenleser Einstellungen</strong> unter <strong>Verf&uuml;gbare Kartenleseranbieter</strong>
+den Anbieter <strong>Elatec TWN4</strong> (ein Elatec-Leser am USB-Anschluss) oder <strong>PCSC</strong> (jeder PC/SC-Leser,
+zum Beispiel ein OMNIKEY). Bei PCSC w&auml;hlen Sie darunter den Leser in der Liste <strong>Gefundene PC/SC-Leseger&auml;te</strong>.</li>
+<li>Legen Sie einen Chip auf den Leser und klicken Sie <strong>Verbinden</strong>. Unter <strong>Kartenleser Status:</strong>
+erscheinen <strong>Verbunden:</strong>, die UID und der Typ des Chips.</li>
+<li>Klicken Sie <strong>Speichern + Schlie&szlig;en</strong>.</li>
+</ol>
+
+<p>Die Einstellung merkt sich RFiDGear f&uuml;r den n&auml;chsten Start. Mehr dazu auf der Seite
+<a href="settings.html">Einstellungen</a>.</p>
+
+<h2>2. Einen Chip einlesen</h2>
+
+<p>Legen Sie den Chip auf den Leser und w&auml;hlen Sie <strong>Programmierung &gt; RFiD Chip einlesen</strong>
+(<kbd>Strg</kbd> + <kbd>R</kbd>). Der Chip erscheint links im Chip-Baum, mit seinem Typ und seiner UID. Rechts davon steht die
+Liste der Aufgaben. Das Fenster beschreibt die Seite <a href="main_window.html">Das Hauptfenster</a>.</p>
+
+<h2>3. Eine erste Aufgabe anlegen</h2>
+
+<ol>
+<li>W&auml;hlen Sie <strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten &gt; Typunabh&auml;ngige RFiD Aufgabe erstellen /
+bearbeiten....</strong> Der Dialog &ouml;ffnet sich nur, wenn ein Leser verbunden ist.</li>
+<li>W&auml;hlen Sie unter <strong>Aufgabentyp</strong> den Eintrag <strong>Pr&uuml;fung des Kartentyps</strong> und unter
+<strong>Kartentyp</strong> den Typ Ihres Chips. Geben Sie eine <strong>Aufgabenbeschreibung</strong> ein, zum Beispiel
+&bdquo;Kartentyp pr&uuml;fen&ldquo;.</li>
+<li>Best&auml;tigen Sie den Dialog. Die Aufgabe steht jetzt in der Liste.</li>
+</ol>
+
+<h2>4. Die Aufgaben ausf&uuml;hren</h2>
+
+<p>W&auml;hlen Sie <strong>Programmierung &gt; Alle Aufgaben einmalig ausf&uuml;hren</strong> (<kbd>Strg</kbd> + <kbd>X</kbd>).
+RFiDGear liest den Chip auf dem Leser und f&uuml;hrt die Aufgaben von oben nach unten aus. Das Symbol am Anfang jeder Zeile zeigt
+das Ergebnis: drei Punkte (noch nicht ausgef&uuml;hrt), gr&uuml;nes H&auml;kchen (gelungen) oder rotes Kreuz (fehlgeschlagen). Die Seite
+<a href="running_tasks.html">Aufgaben ausf&uuml;hren</a> erkl&auml;rt die L&auml;ufe genauer.</p>
+
+<h2>5. Das Projekt speichern</h2>
+
+<p>W&auml;hlen Sie <strong>Datei &gt; Projekt Speichern unter...</strong> (<kbd>Strg</kbd> + <kbd>S</kbd>). Die Aufgabenliste wird als
+Projektdatei (<code>.rfPrj</code>) gespeichert und l&auml;sst sich sp&auml;ter mit <strong>Datei &gt; Projekt &ouml;ffnen...</strong> (<kbd>Strg</kbd> +
+<kbd>O</kbd>) wieder laden. Siehe <a href="projects.html">Projekte</a>.</p>
+
+<div class="note">Die Aufgabentypen f&uuml;r MIFARE Classic, DESFire und Ultralight/NTAG liegen unter <strong>Bearbeiten &gt;
+Aufgabe erstellen / bearbeiten &gt; ...</strong>. Sie schreiben auf den Chip: probieren Sie sie zuerst an einer Karte, die Sie
+nicht mehr brauchen.</div>
+
+<div class="nav">Vorherige Seite: <a href="about_this_help.html">So ist diese Hilfe aufgebaut</a> &middot; N&auml;chste Seite: <a href="main_window.html">Das Hauptfenster</a></div>
+
+</body>
+</html>

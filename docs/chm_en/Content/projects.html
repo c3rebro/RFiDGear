@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Projects</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Projects</h1>
+
+<p>A <em>project</em> is the saved task list. It holds the tasks with all their settings, including execute conditions,
+checkpoints of reports and logic blocks. The chip tree is not part of a project.</p>
+
+<h2>Files</h2>
+
+<table>
+<tr><th>Extension</th><th>Content</th></tr>
+<tr><td><code>.rfPrj</code></td><td>the usual project file, an archive with the tasks as XML</td></tr>
+<tr><td><code>.xml</code></td><td>a project as a plain XML file</td></tr>
+</table>
+
+<p>When saving, RFiDGear adds <code>.rfPrj</code> if the file name has another extension or none. A file that already exists is
+replaced only after a question.</p>
+
+<div class="warn">A key that you typed into a task is in the project file. Pass the file on only to people who may know the key. A key that a
+task names by a reference is not in the file (see <a href="keys.html">Keys</a>).</div>
+
+<h2>Open and save</h2>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>File &gt; Open Project...</strong> (<kbd>Ctrl</kbd> + <kbd>O</kbd>)</td><td>replaces the task list with the tasks of the file and
+remembers the file as the last used project</td></tr>
+<tr><td><strong>File &gt; Save Tasks</strong></td><td>writes to the file of the open project. If the file was moved or deleted, RFiDGear asks for a new name so that it
+does not overwrite another project</td></tr>
+<tr><td><strong>File &gt; Save Tasks...</strong> (<kbd>Ctrl</kbd> + <kbd>S</kbd>)</td><td>asks for a file name and then whether the project is to be the default and
+loaded automatically at start (this needs the setting <strong>Automatically Load last used Project when starting RFIDGear</strong>)</td></tr>
+<tr><td><strong>File &gt; Save Chips...</strong></td><td>saves the chips of the chip tree as an XML file (<strong>Chip files (*.xml)</strong>)</td></tr>
+</table>
+
+<p>A project can also be loaded at start: as an argument with the path of an <code>.rfPrj</code> file, or automatically as the last used
+project. See <a href="command_line.html">Start-up arguments</a>.</p>
+
+<h2>Changing the list</h2>
+
+<p>While a run, the loading of a project or another change of the list is in progress, the list cannot be changed. RFiDGear then shows the
+message <em>The task list cannot be changed...</em>; try again when it has finished.</p>
+
+<h2>One project for many cards</h2>
+
+<p>The project applies to every card of a series. What changes from card to card is not in the project but comes into the run as a variable:
+the UID a card is expected to have (<code>$EXPECTEDUID</code>), the target path of a report and other values. See
+<a href="command_line.html">Start-up arguments</a> and <a href="tasks_generic_chip.html">Chip tasks for any card</a>.</p>
+
+<div class="nav">Previous page: <a href="settings.html">Settings</a> &middot; Next page: <a href="tasks_overview.html">Tasks at a glance</a></div>
+
+</body>
+</html>

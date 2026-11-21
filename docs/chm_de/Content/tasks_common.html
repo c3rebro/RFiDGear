@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Allgemeine Aufgaben: Bericht, Logik, Programm</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Allgemeine Aufgaben: Bericht, Logik, Programm</h1>
+
+<p>Diese Aufgaben brauchen keinen Chip. Sie legen Sie mit <strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten &gt; Allgemeine Aufgabe erstellen /
+bearbeiten...</strong> an. Der Dialog hat drei Reiter; welcher gilt, bestimmt der <strong>Aufgabentyp</strong>.</p>
+
+<table>
+<tr><th>Aufgabentyp</th><th>Reiter</th><th>Wof&uuml;r</th></tr>
+<tr><td><strong>Bericht erstellen / bearbeiten</strong></td><td>Bericht erstellen / bearbeiten</td><td>schreibt ein PDF-Formular mit Werten aus dem Lauf</td></tr>
+<tr><td><strong>Logische Zustandspr&uuml;fung</strong></td><td>Logikbaustein erstellen / bearbeiten</td><td>wertet die Ergebnisse anderer Aufgaben aus</td></tr>
+<tr><td><strong>Programm ausf&uuml;hren</strong></td><td>Externes Programm ausf&uuml;hren</td><td>startet ein anderes Programm oder beendet RFiDGear</td></tr>
+</table>
+
+<h2>Bericht erstellen / bearbeiten</h2>
+
+<p>Ein Bericht f&uuml;llt die Formularfelder einer PDF-Vorlage. Die Seite <a href="reports.html">Berichte (PDF)</a> beschreibt ihn ausf&uuml;hrlich; hier die
+Felder des Dialogs.</p>
+
+<table>
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td><strong>Berichtvorlage</strong>, <strong>Berichtdateipfad</strong>, <strong>Datei &ouml;ffnen...</strong></td><td>die PDF-Vorlage. Die Schaltfl&auml;che &ouml;ffnet die Dateiauswahl; die Felder
+der Vorlage erscheinen danach in der Auswahl <strong>Berichtfeld</strong>.</td></tr>
+<tr><td><strong>Pr&uuml;fpunkteinstellungen</strong></td><td>ein Pr&uuml;fpunkt besagt: &bdquo;Wenn die Aufgabe mit der Nummer <em>N</em> mit dem Ergebnis <em>E</em> endete, schreibe diesen Inhalt in das
+Feld&ldquo;. Sie stellen ein: das <strong>Berichtfeld</strong>, den <strong>Feldinhalt</strong>, das <strong>Ziel Aufgabennummer</strong> und das <strong>Erw. Fehlertyp</strong>
+(das erwartete Ergebnis).</td></tr>
+<tr><td><strong>Pr&uuml;fpunkt hinzuf.</strong>, <strong>Pr&uuml;fpunkt entf.</strong></td><td>f&uuml;gt den eingestellten Pr&uuml;fpunkt der Tabelle hinzu oder entfernt den markierten</td></tr>
+<tr><td>Tabelle <strong>Pr&uuml;fpunkte&uuml;bersicht</strong></td><td>die Spalten <strong>CP Nr.</strong>, <strong>Ziel Aufgaben-Nummer</strong>, <strong>Ziel Aufgaben-Ergebnis</strong>,
+<strong>PDF Feldvariablenbezeichnung</strong> und <strong>PDF Feldinhalt</strong></td></tr>
+</table>
+
+<h2>Logische Zustandspr&uuml;fung</h2>
+
+<p>Ein Logikbaustein hat eine Liste von Pr&uuml;fpunkten, jeder mit einer Aufgabennummer und einem erwarteten Ergebnis, und eine <strong>Logikfunktion</strong>.
+Er endet mit <strong>Kein Fehler</strong>, wenn die Funktion erf&uuml;llt ist, sonst mit <strong>Ist Nicht Wahr</strong>. Andere Aufgaben k&ouml;nnen das Ergebnis in ihrer
+Ausf&uuml;hrungsbedingung verwenden.</p>
+
+<table>
+<tr><th>Logikfunktion</th><th>Erf&uuml;llt, wenn</th></tr>
+<tr><td><strong>UND</strong></td><td>alle Pr&uuml;fpunkte zutreffen: jede genannte Aufgabe hat das erwartete Ergebnis</td></tr>
+<tr><td><strong>ODER</strong></td><td>mindestens ein Pr&uuml;fpunkt zutrifft</td></tr>
+<tr><td><strong>Z&auml;hler (ODER)</strong></td><td>die Zahl der zutreffenden Pr&uuml;fpunkte zum <strong>Z&auml;hler Wert</strong> passt: der <strong>Z&auml;hler Operator</strong> ist
+<strong>=</strong>, <strong>&lt;</strong>, <strong>&lt;=</strong>, <strong>&gt;</strong> oder <strong>&gt;=</strong></td></tr>
+<tr><td><strong>Vergleiche</strong></td><td>der <strong>Vergleicher Wert</strong> (ein Ausdruck) zutrifft</td></tr>
+</table>
+
+<p>Ein Ausdruck f&uuml;r <strong>Vergleiche</strong> hat die Form <em>Operand Operator Wert</em> mit den Operatoren <code>==</code>, <code>!=</code>, <code>&gt;=</code>
+und <code>&lt;=</code>:</p>
+
+<table>
+<tr><th>Operand</th><th>Bedeutung</th></tr>
+<tr><td><code>$NAME</code></td><td>eine Variable des Laufs (siehe <a href="command_line.html">Startargumente</a>), zum Beispiel <code>$EXPECTEDUID==04A1B2C3D4E5F6</code></td></tr>
+<tr><td><code>%FREEMEM</code></td><td>der freie Speicher einer DESFire-Karte in Bytes, zum Beispiel <code>%FREEMEM&gt;=1024</code></td></tr>
+<tr><td><code>%COUNTAPPS</code></td><td>die Zahl der Applikationen einer DESFire-Karte</td></tr>
+</table>
+
+<div class="note">Die Logikfunktionen <strong>Nicht</strong>, <strong>Nicht UND</strong> und <strong>Nicht ODER</strong> stehen zwar in der Auswahl, sind aber nicht
+fertig: verwenden Sie sie nicht.</div>
+
+<h2>Programm ausf&uuml;hren</h2>
+
+<p>Das Feld <strong>Programmpfad (ggf. mit Argumenten)</strong> nimmt den Pfad des Programms in Anf&uuml;hrungszeichen, danach die Argumente, zum Beispiel
+<code>"C:\Tools\notify.exe" -uid %UID</code>. RFiDGear startet das Programm und wartet nicht auf sein Ende. Die Aufgabe gilt als gelungen, wenn das Programm gestartet
+wurde; schl&auml;gt der Start fehl, endet sie mit <strong>Ist Nicht Wahr</strong>.</p>
+
+<table>
+<tr><th>Platzhalter</th><th>wird ersetzt durch</th></tr>
+<tr><td><code>%UID</code></td><td>die UID des Chips</td></tr>
+<tr><td><code>%CHIPTYPE</code></td><td>den Kartentyp</td></tr>
+<tr><td><code>%DATE</code>, <code>%DATETIME</code></td><td>das Datum (TT/MM/JJJJ) beziehungsweise Datum und Uhrzeit</td></tr>
+<tr><td><code>%FREEMEM</code>, <code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>freier Speicher, Liste der Applikations-IDs, Zahl der Applikationen einer DESFire-Karte</td></tr>
+<tr><td><code>$NAME</code></td><td>der Wert einer Variablen des Laufs, zum Beispiel aus einem Startargument</td></tr>
+</table>
+
+<p>Lautet der Programmpfad <code>%EXIT</code>, beendet die Aufgabe RFiDGear. Verwenden Sie das als letzte Aufgabe eines Projekts, das ein anderes Programm
+gestartet hat und danach nicht mehr offen lassen m&ouml;chte.</p>
+
+<div class="warn">Ein Programm, das Sie hier eintragen, l&auml;uft mit den Rechten des Benutzers, der RFiDGear gestartet hat. &Ouml;ffnen Sie ein Projekt aus einer
+fremden Quelle erst, wenn Sie seine Programmaufgaben kennen.</div>
+
+<div class="nav">Vorherige Seite: <a href="tasks_overview.html">Aufgaben im &Uuml;berblick</a> &middot; N&auml;chste Seite: <a href="tasks_generic_chip.html">Typunabh&auml;ngige Chip-Aufgaben</a></div>
+
+</body>
+</html>

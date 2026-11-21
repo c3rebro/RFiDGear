@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Reports (PDF)</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Reports (PDF)</h1>
+
+<p>A report records what happened to a chip in a run. For that RFiDGear fills the form fields of a PDF template and saves the result as a new PDF file. You add the report as a task:
+<strong>Edit &gt; Add / Edit Task(s) &gt; Add / Edit Generic (Non-Chip) Task...</strong>, task type <strong>Create / Edit Report</strong> (the page <a href="tasks_common.html">Generic tasks</a> describes the fields of the
+dialog).</p>
+
+<h2>How a report comes about</h2>
+
+<ol>
+<li>You need a PDF template with <strong>form fields</strong>. Every field has a name; a PDF editor with form functions creates such fields.</li>
+<li>In the dialog you open the template with <strong>Open File...</strong>. The names of its fields then appear in the selection <strong>Template Field</strong>.</li>
+<li>For each field that you want to fill, you add a <strong>checkpoint</strong>: the field, the content, the task it refers to, and the result that task has to have.</li>
+<li>In the task list the report stands <em>below</em> the tasks whose result it records, because it reads their results when it runs.</li>
+</ol>
+
+<p>In a run RFiDGear writes every checkpoint whose target task has the expected result into its field. A checkpoint whose target task had another result is ignored. So a report can enter "passed" or "not passed",
+depending on the outcome of a check: two checkpoints for the same field, one for <strong>No Error</strong>, one for <strong>Is Not True</strong>.</p>
+
+<h2>Variables in the content of a checkpoint</h2>
+
+<p>The <strong>Fieldvalue</strong> may contain placeholders that are replaced in the run:</p>
+
+<table>
+<tr><th>Placeholder</th><th>is replaced by</th></tr>
+<tr><td><code>%UID</code></td><td>the UID of the chip</td></tr>
+<tr><td><code>%CHIPTYPE</code></td><td>the chip type</td></tr>
+<tr><td><code>%SLAVEUID</code>, <code>%SLAVECHIPTYPE</code></td><td>UID and type of the second chip of a multi-technology card</td></tr>
+<tr><td><code>%DATE</code></td><td>the date, <code>DD/MM/YYYY</code></td></tr>
+<tr><td><code>%DATETIME</code></td><td>date and time in the notation of your Windows</td></tr>
+<tr><td><code>%FREEMEM</code></td><td>the free memory of a DESFire card in bytes</td></tr>
+<tr><td><code>%FREECLASSICMEM</code></td><td>the free memory of a MIFARE Classic card</td></tr>
+<tr><td><code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>the application IDs of a DESFire card, separated by commas, and their number</td></tr>
+<tr><td><code>%n</code>, <code>%nn</code>, <code>%nnn</code></td><td>a running counter with one, two or three digits (<code>1</code>, <code>01</code>, <code>001</code>). It starts at 1 with every program start and rises by 1 with every use</td></tr>
+<tr><td><code>$NAME</code></td><td>the value of a variable of the run, for example from a start-up argument (see <a href="command_line.html">Start-up arguments</a>)</td></tr>
+<tr><td><code>%NEWLINE</code></td><td>a line break; the content is appended</td></tr>
+<tr><td><code>%CONCAT</code></td><td>appends the content to the field instead of replacing it</td></tr>
+</table>
+
+<p>If the content contains <code>$NAME</code>, <code>%NEWLINE</code> or <code>%CONCAT</code>, it is appended to what the field held before; otherwise it replaces it.</p>
+
+<h2>Where the report is written</h2>
+
+<ul>
+<li>If the variable <code>REPORTTARGETPATH</code> (also <code>REPORTOUTPUTPATH</code>) is set, RFiDGear saves the report under that path. The folder has to exist. A <code>?</code>, <code>??</code> or <code>???</code> in the file name stands
+for the next free number in that folder, with one, two or three digits: <code>C:\Reports\report-???.pdf</code> becomes <code>report-001.pdf</code>, then <code>report-002.pdf</code> and so on.</li>
+<li>The variable <code>REPORTTEMPLATEFILE</code> (also <code>REPORTTEMPLATEPATH</code>) chooses another template than the one in the dialog, if the file exists.</li>
+<li>Without <code>REPORTTARGETPATH</code>, RFiDGear asks for the file name in the run with the window <strong>Save Report as...</strong>. The path then applies for the rest of the run.
+<strong>Edit &gt; Reset Report Target Paths</strong> forgets remembered paths again.</li>
+</ul>
+
+<p>You give the variables as start-up arguments, or another program supplies them with the run. The page <a href="command_line.html">Start-up arguments</a> shows examples.</p>
+
+<div class="note">Every report is a PDF file of its own at the target path.</div>
+
+<div class="nav">Previous page: <a href="running_tasks.html">Running tasks</a> &middot; Next page: <a href="keys.html">Keys</a></div>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>The main window</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>The main window</h1>
+
+<p>The main window has four parts: the menu bar at the top, the chip tree on the left, the task list on the right and the status
+bar at the bottom. The divider between tree and list can be moved with the mouse.</p>
+
+<h2>The chip tree (left)</h2>
+
+<p>The tree shows the chip that was read last. The top node carries the <strong>ChipType:</strong> and the UID. Below it are,
+depending on the chip, sectors, applications, files and pages. The color of a node tells how the chip was handled: green
+stands for a node that could be opened with its key, red for one that could not, violet for one that was changed since it was read.
+The top node is yellow while a run works on it, afterwards green (succeeded) or red (failed).</p>
+
+<p>The menus in the tree:</p>
+
+<table>
+<tr><th>Where</th><th>Entry</th><th>Effect</th></tr>
+<tr><td>empty area</td><td><strong>Read Chip Public</strong></td><td>reads the chip on the reader (like <kbd>Ctrl</kbd> + <kbd>R</kbd>)</td></tr>
+<tr><td>top node</td><td><strong>QuickCheck</strong></td><td>tries to read a MIFARE Classic chip with the default keys, or lists the applications
+and key settings of a DESFire chip (see <a href="running_tasks.html">Running tasks</a>)</td></tr>
+<tr><td>node of a DESFire application</td><td><strong>Read App with Key&hellip;</strong></td><td>opens the application with a key you give</td></tr>
+</table>
+
+<h2>The task list (right)</h2>
+
+<p>Each row is one task. The columns:</p>
+
+<table>
+<tr><th>Column</th><th>Content</th></tr>
+<tr><td>(row start)</td><td>icon of the result: three dots = not run yet, green tick = succeeded, red cross = failed</td></tr>
+<tr><td><strong>Task Nr.</strong></td><td>the number of the task; other tasks refer to it</td></tr>
+<tr><td><strong>Task Type</strong></td><td>what the task does, for example <strong>Read Data</strong></td></tr>
+<tr><td><strong>Description</strong></td><td>your own text; it can be changed directly in the row</td></tr>
+</table>
+
+<p>A double click on a row opens the task for editing. Drag a row with the mouse button held to move it to another place in the
+list; it gets a new task number in doing so (see <a href="tasks_overview.html">Tasks at a glance</a>).</p>
+
+<p>The context menu of a row:</p>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>Add New Task</strong></td><td>opens the menu of the task types</td></tr>
+<tr><td><strong>Edit Task...</strong></td><td>opens the task</td></tr>
+<tr><td><strong>Remove Task</strong></td><td>deletes the task from the list</td></tr>
+<tr><td><strong>Run Task</strong></td><td>runs this task only</td></tr>
+<tr><td><strong>Reset Task</strong></td><td>sets the result of this task back to "not run yet"</td></tr>
+<tr><td><strong>Run All Tasks</strong></td><td>resets all results and runs the whole list</td></tr>
+<tr><td><strong>Reset All Tasks</strong></td><td>resets all results</td></tr>
+<tr><td><strong>Reset All Report Paths</strong></td><td>clears the target paths of the reports (see <a href="reports.html">Reports</a>)</td></tr>
+</table>
+
+<p>A right click on the empty area of the list opens the menu <strong>Add / Edit Task(s)</strong> with the task types.</p>
+
+<div class="note">The list cannot be changed while a run, the loading of a project or another change is in progress. RFiDGear
+tells you in a message; try again when it has finished.</div>
+
+<h2>The status bar (bottom)</h2>
+
+<table>
+<tr><th>Display</th><th>Meaning</th></tr>
+<tr><td><strong>Selected Reader:</strong></td><td>the reader RFiDGear uses</td></tr>
+<tr><td><strong>Reader Status:</strong></td><td><strong>INIT</strong> (the reader is being looked for), <strong>IDLE</strong> (ready),
+<strong>BUSY</strong> (a run or a dialog is working with the reader) or <strong>UNKNOWN</strong> (the state is not known, for example because no
+reader was found)</td></tr>
+<tr><td>Card status</td><td><strong>not connected</strong>, <strong>card detected</strong> or <strong>card removed</strong></td></tr>
+<tr><td>Date and time</td><td>the current time</td></tr>
+<tr><td><strong>RDP: PC/SC unavailable</strong></td><td>appears in a Remote Desktop session when PC/SC readers are not redirected
+(see <a href="troubleshooting.html">Troubleshooting</a>)</td></tr>
+<tr><td><strong>External control: connected</strong></td><td>appears while another program is connected through external control
+(see Part 2 of this help)</td></tr>
+</table>
+
+<p>RFiDGear looks at the reader in the background at short intervals and updates the display by itself. While the status is
+<strong>BUSY</strong>, a run or a dialog is working with the reader: wait until it says <strong>IDLE</strong> again before you start
+something new.</p>
+
+<div class="nav">Previous page: <a href="first_steps.html">First steps</a> &middot; Next page: <a href="menus.html">The menus and shortcuts</a></div>
+
+</body>
+</html>

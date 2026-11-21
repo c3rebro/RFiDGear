@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>MIFARE DESFire</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>MIFARE DESFire</h1>
+
+<p>Add the task with <strong>Edit &gt; Add / Edit Task(s) &gt; Mifare &gt; Add/Edit Mifare Desfire Task</strong>. The dialog opens only when a reader is connected. A task carries out
+<em>one</em> command on the card; the <strong>Task Type</strong> chooses it, and the tabs of the dialog hold its settings.</p>
+
+<h2>The task types</h2>
+
+<table>
+<tr><th>Task type</th><th>Effect</th></tr>
+<tr><td><strong>Check: App Existance</strong></td><td>checks whether the application with the <strong>App ID</strong> is on the card</td></tr>
+<tr><td><strong>Check: App Key</strong></td><td>authenticates to the application with the key that is set</td></tr>
+<tr><td><strong>Check: App Key Count</strong></td><td>compares the number of keys of the application with the expected number (<strong>equal to</strong>, <strong>at least</strong> or <strong>at most</strong>)</td></tr>
+<tr><td><strong>Check: App Config Equals</strong></td><td>reads the key settings of the application and compares them with the expected ones (see below)</td></tr>
+<tr><td><strong>Check: File Settings</strong></td><td>reads the settings of a file and compares the ticked ones with the expected ones</td></tr>
+<tr><td><strong>Create Application</strong>, <strong>Delete Application</strong></td><td>creates or deletes an application</td></tr>
+<tr><td><strong>Create File</strong>, <strong>Delete File</strong></td><td>creates or deletes a file in an application</td></tr>
+<tr><td><strong>Change File Settings</strong></td><td>changes the settings of a file</td></tr>
+<tr><td><strong>Read Data</strong>, <strong>Write Data</strong></td><td>reads or writes the content of a file</td></tr>
+<tr><td><strong>Change Application Key</strong>, <strong>Change App Key Settings</strong></td><td>changes a key of an application or its key settings</td></tr>
+<tr><td><strong>Change PICC Master Key</strong>, <strong>Change PICC Master Key Settings</strong></td><td>changes the master key of the card or its settings</td></tr>
+<tr><td><strong>Format Desfire Card</strong></td><td>deletes all applications and files of the card</td></tr>
+</table>
+
+<h2>The tabs</h2>
+
+<table>
+<tr><th>Tab</th><th>What for</th><th>Needs</th></tr>
+<tr><td><strong>PICC Master Key Setup</strong></td><td>set or change the PICC master key; free space (<strong>Format</strong>)</td><td>nothing</td></tr>
+<tr><td><strong>Application Setup</strong></td><td>create new applications and delete existing ones (space is not freed automatically)</td>
+<td>the PICC master key if the security settings forbid creating without it</td></tr>
+<tr><td><strong>Application Key Setup</strong></td><td>change keys of existing applications, authenticate with a key, check or change key settings</td>
+<td>the app master key (key 0) or the current key, if the security settings demand it</td></tr>
+<tr><td><strong>File Setup</strong></td><td>create and delete files, change and check their settings</td><td>the app master key and the app ID</td></tr>
+<tr><td><strong>Data Explorer</strong></td><td>read and write the content of a file</td><td>the app ID, the read or write key with its number</td></tr>
+</table>
+
+<h2>Keys, encryption, files</h2>
+
+<ul>
+<li><strong>Key types:</strong> <strong>3DES</strong> (DES / 2K3DES), <strong>3K3DES</strong> and <strong>AES</strong>. The field accepts only as many hex characters as the type needs.</li>
+<li><strong>Communication mode</strong> of a file: <strong>Plain</strong>, <strong>MAC</strong> or <strong>Encrypted</strong>.</li>
+<li><strong>File types:</strong> <strong>Standard Data File</strong>, <strong>Backup File</strong>, <strong>Value File</strong>, <strong>Linear Record File</strong> and <strong>Cyclic Record File</strong>.</li>
+<li><strong>Access rights</strong> of a file: <strong>Key 0</strong> to <strong>Key 13</strong>, <strong>without Key</strong> or <strong>not Allowed</strong>.</li>
+<li><strong>Change-Key Mode</strong> of an application: <strong>Keychange frozen</strong> (keys can no longer be changed), <strong>Change Key using MK</strong> (only with the master key) or
+<strong>Change Key using KeyNo</strong> (with a key number).</li>
+</ul>
+
+<h2>Checks with a comparison</h2>
+
+<p>The tasks <strong>Check: App Config Equals</strong> and <strong>Check: File Settings</strong> read something from the card and compare it with what you expect. The task ends with
+<strong>No Error</strong> (PASS) or with an error result (FAIL); the status field of the dialog names the difference.</p>
+
+<ul>
+<li><strong>App config:</strong> you tick the expected key settings (<strong>Allow change PICC / App MasterKey</strong>, <strong>Allow change configuration</strong>,
+<strong>Free app / file creation w/o PICC / App MasterKey</strong>, <strong>Free directory listing w/o PICC / App MasterKey</strong>) and choose the rule: <strong>All selected settings must be set</strong>,
+<strong>At least one selected setting must be set</strong> or <strong>Exact match (including the Change-Key Mode)</strong>.</li>
+<li><strong>File settings:</strong> you tick the settings to compare (file type, communication mode, size, read access, write access, read-write access, right to change the access rights). A setting
+without a tick is ignored. You compare the size with <strong>equal to</strong>, <strong>at least</strong> or <strong>at most</strong>. Standard and backup data files are checked; value and record files are not.</li>
+</ul>
+
+<h2>Reading and writing data</h2>
+
+<p>In the <strong>Data Explorer</strong> you set the app ID, the file number, the <strong>Read Key</strong> with number and type (the number is between 0 and 13) and, for writing, the
+<strong>Write Key</strong>. Then come the <strong>Data Index Start Position</strong> and the number of bytes (<strong>Byte Count</strong>). The tables show <strong>Data on Chip</strong> (on the card) and
+<strong>Data in Memory</strong> (in the memory). With <strong>Load Data from Disk...</strong> you load data from a file, with <strong>Select Read Data File...</strong> you choose the file that read data is saved to.
+<strong>Overwrite on read</strong> says that read data overwrite the data in memory; <strong>Reload before write</strong> loads the file again before writing.</p>
+
+<h2>Keys for a DESFire task</h2>
+
+<p>A key field can hold a typed key or point to a stored key. The button <strong>Key manager...</strong> in the section of the key opens the manager (see <a href="keys.html">Keys</a>). The sources to choose from are the
+<strong>Windows Credential Manager</strong>, a <strong>connected external application</strong> and a <strong>MIFARE SAM AV3</strong>. With a key of the SAM the key stays in the SAM; that works for four commands:
+<strong>Check: App Key</strong>, <strong>Change PICC Master Key</strong>, <strong>Change Application Key</strong> and the button <strong>Authenticate with PICC MasterKey</strong>. A key that cannot be fetched ends the task with
+<strong>Key unavailable</strong>; nothing is sent to the card then.</p>
+
+<div class="warn">The tasks on this page can make a card unusable: <strong>Format Desfire Card</strong> deletes all data, and a changed PICC master key or a frozen Change-Key Mode cannot be taken
+back without the old key. Write down the new keys before you write them, and practice on a card you no longer need. RFiDGear never repeats a write command on its own.</div>
+
+<div class="nav">Previous page: <a href="tasks_classic.html">MIFARE Classic</a> &middot; Next page: <a href="tasks_ultralight.html">MIFARE Ultralight and NTAG</a></div>
+
+</body>
+</html>

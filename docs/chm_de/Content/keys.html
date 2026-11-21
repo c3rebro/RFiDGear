@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Schl&uuml;ssel</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Schl&uuml;ssel</h1>
+
+<p>Jeder Kartenschl&uuml;ssel einer Aufgabe wird auf einem von zwei Wegen angegeben:</p>
+
+<ul>
+<li><strong>Eingetippt</strong>: Sie geben die Hex-Ziffern in der Aufgabe ein. Der Schl&uuml;ssel steht dann in der Projektdatei.</li>
+<li><strong>Als Referenz</strong>: Die Aufgabe nennt nur den Namen eines Schl&uuml;ssels in einem <em>Schl&uuml;sselspeicher</em>. Das Projekt speichert den Namen, nie den Schl&uuml;ssel; RFiDGear holt den Schl&uuml;ssel erst,
+wenn die Aufgabe l&auml;uft.</li>
+</ul>
+
+<p>Mit Referenzen l&auml;sst sich ein Projekt weitergeben, ohne Schl&uuml;ssel preiszugeben. Das Projekt l&auml;uft dann auf einem anderen Computer oder bei einem anderen Windows-Benutzer erst, wenn dort dieselben
+Schl&uuml;ssel unter denselben Namen hinterlegt sind. Versionen von RFiDGear, die Referenzen nicht kennen, k&ouml;nnen ein solches Projekt nicht ausf&uuml;hren.</p>
+
+<h2>Die Schl&uuml;sselspeicher</h2>
+
+<table>
+<tr><th>Schl&uuml;sselspeicher</th><th>Was er ist</th></tr>
+<tr><td><strong>Windows-Anmeldeinformationsverwaltung</strong></td><td>der Tresor von Windows f&uuml;r diesen Benutzer dieses PCs. RFiDGear legt seine Schl&uuml;ssel unter dem Namen
+<code>RFiDGear/key/&lt;Name&gt;</code> ab.</td></tr>
+<tr><td><strong>Verbundene externe Anwendung</strong></td><td>ein Programm, das &uuml;ber die externe Steuerung mit RFiDGear verbunden ist und den Schl&uuml;ssel liefert, wenn die Aufgabe l&auml;uft. Das
+Projekt speichert nur den Namen; das Programm legt fest, was er bedeutet. L&auml;uft die externe Steuerung nicht oder hat sich kein Programm als Lieferant angemeldet, endet die Aufgabe mit
+<strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong>.</td></tr>
+<tr><td><strong>MIFARE SAM AV3</strong></td><td>der Schl&uuml;ssel bleibt in einer SAM und gelangt nie zu RFiDGear. Die Referenz ist ein Schl&uuml;sseleintrag mit Version, zum Beispiel <code>3:0</code> (Eintrag 1 bis 127).
+Siehe <a href="sam_setup.html">MIFARE SAM AV3 einrichten</a>.</td></tr>
+<tr><td>Speicher einer Erweiterung</td><td>eine installierte Erweiterung kann einen eigenen Schl&uuml;sselspeicher mitbringen (siehe Teil 2 dieser Hilfe)</td></tr>
+</table>
+
+<h2>Einen Schl&uuml;ssel in einer Aufgabe festlegen</h2>
+
+<p>Neben jedem Schl&uuml;sselfeld steht ein Umschalter, und unter den Schl&uuml;sselfeldern eines Bereichs die Schaltfl&auml;che <strong>Schl&uuml;sselverwaltung...</strong>. Sie &ouml;ffnet das Fenster <strong>Schl&uuml;sselverwaltung</strong> f&uuml;r die Schl&uuml;ssel dieses Bereichs.
+Dort geben Sie f&uuml;r jeden Schl&uuml;ssel an, woher er kommt:</p>
+
+<table>
+<tr><th>Schaltfl&auml;che, Feld</th><th>Wirkung</th></tr>
+<tr><td><strong>Eingegebenen Schl&uuml;ssel verwenden</strong></td><td>der Schl&uuml;ssel wird in der Aufgabe eingetippt (und steht im Projekt)</td></tr>
+<tr><td><strong>Referenz verwenden</strong></td><td>der Schl&uuml;ssel kommt aus einem Schl&uuml;sselspeicher. W&auml;hlen Sie den <strong>Schl&uuml;sselspeicher</strong> und danach den <strong>Gespeicherten Schl&uuml;ssel</strong>
+aus der Liste. Bei einer SAM geben Sie <strong>Schl&uuml;sseleintrag und Version</strong> ein.</td></tr>
+<tr><td><strong>Neuen Schl&uuml;ssel anlegen</strong>: <strong>Name des Schl&uuml;ssels</strong>, Schl&uuml;sselfeld, <strong>Schl&uuml;ssel speichern</strong></td><td>speichert einen neuen Schl&uuml;ssel in der Anmeldeinformationsverwaltung und verwendet ihn sofort
+f&uuml;r diesen Schl&uuml;ssel. Ein bereits vergebener Name wird nie &uuml;berschrieben; kann RFiDGear die Liste nicht lesen, speichert es nichts.</td></tr>
+<tr><td><strong>Schl&uuml;ssel anzeigen</strong></td><td>zeigt beim Eingeben die Ziffern, damit Sie sie pr&uuml;fen. Das Feld ist gr&uuml;n, wenn der Schl&uuml;ssel die richtige L&auml;nge hat, und rot, wenn nicht. Es wird geleert, sobald der Schl&uuml;ssel
+benutzt wurde.</td></tr>
+</table>
+
+<p>Ein Schl&uuml;sselfeld, das auf eine Referenz zeigt, ist grau und nennt die Referenz statt des Schl&uuml;ssels. Eine Aufgabe mit einer Referenz verwendet nie den eingetippten Schl&uuml;ssel, auch wenn die Referenz kaputt ist.</p>
+
+<h2>Gespeicherte Schl&uuml;ssel verwalten</h2>
+
+<p><strong>Datei &gt; Schl&uuml;sselverwaltung...</strong> braucht kein Projekt. Das Fenster listet die gespeicherten Schl&uuml;ssel nur nach ihrem Namen (kein Schl&uuml;ssel wird gelesen, um die Liste zu zeigen).</p>
+
+<table>
+<tr><th>Feld</th><th>Wirkung</th></tr>
+<tr><td><strong>Gespeicherte Schl&uuml;ssel</strong></td><td>die Liste; <strong>Entfernen</strong> l&ouml;scht den markierten Schl&uuml;ssel aus der Anmeldeinformationsverwaltung, nach einer R&uuml;ckfrage. Projekte und Aufgaben, die ihn nennen,
+bekommen ihn danach nicht mehr; das l&auml;sst sich nicht r&uuml;ckg&auml;ngig machen.</td></tr>
+<tr><td><strong>Schl&uuml;ssel speichern</strong></td><td>ein neuer Schl&uuml;ssel mit <strong>Name des Schl&uuml;ssels</strong> und der <strong>Art des Schl&uuml;ssels</strong>: <strong>MIFARE-Classic-Schl&uuml;ssel (12 Ziffern)</strong>,
+<strong>DES-, 2K3DES- oder AES-Schl&uuml;ssel (32 Ziffern)</strong> oder <strong>3K3DES-Schl&uuml;ssel (48 Ziffern)</strong></td></tr>
+</table>
+
+<h2>Schl&uuml;ssel eines vorhandenen Projekts verschieben</h2>
+
+<p><strong>Datei &gt; Schl&uuml;ssel eines Projekts in die Anmeldeinformationsverwaltung verschieben...</strong> nimmt die eingetippten Schl&uuml;ssel eines Projekts, legt sie in der Anmeldeinformationsverwaltung ab und speichert ein
+<em>neues</em> Projekt, das auf sie verweist. Sie w&auml;hlen zuerst das Projekt (<strong>Projekt, dessen Schl&uuml;ssel verschoben werden</strong>) und dann den Namen des neuen (<strong>Neues Projekt speichern unter</strong>). Das urspr&uuml;ngliche
+Projekt wird nur gelesen, nie ver&auml;ndert. Zum Schluss fragt RFiDGear, ob das urspr&uuml;ngliche Projekt gel&ouml;scht werden soll; vorher liest es das neue noch einmal und holt jeden Schl&uuml;ssel, auf den es verweist. Mit <strong>Nein</strong> bleibt es erhalten.</p>
+
+<h2>Wenn ein Schl&uuml;ssel nicht zu bekommen ist</h2>
+
+<p>L&auml;sst sich ein Schl&uuml;ssel nicht holen (der Schl&uuml;ssel fehlt in der Anmeldeinformationsverwaltung, kein Programm liefert ihn, die SAM ist nicht erreichbar), endet die Aufgabe mit <strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong>. Die
+Statusmeldung sagt: <em>Der Schl&uuml;ssel f&uuml;r ... ist nicht verf&uuml;gbar; es wurde nichts an die Karte gesendet.</em> Die Aufgabe hat die Karte nicht ber&uuml;hrt, und eine Aufgabe, die auf eine abgelehnte Authentifizierung wartet (<strong>Authentifizierung
+fehlgeschlagen</strong>), springt darauf nicht an.</p>
+
+<div class="warn">Ein Schl&uuml;ssel, den Sie eintippen, steht im Klartext in der Projektdatei, und die Standardschl&uuml;ssel der <a href="settings.html">Einstellungen</a> stehen im Klartext in <code>runtime-defaults.json</code>.
+Verwenden Sie f&uuml;r echte Schl&uuml;ssel eine Referenz.</div>
+
+<div class="nav">Vorherige Seite: <a href="reports.html">Berichte (PDF)</a> &middot; N&auml;chste Seite: <a href="sam_setup.html">MIFARE SAM AV3 einrichten</a></div>
+
+</body>
+</html>

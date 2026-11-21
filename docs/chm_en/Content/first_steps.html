@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>First steps</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>First steps</h1>
+
+<p>This path leads from a freshly installed program to the first run of a task list. You need a card reader and a chip.</p>
+
+<h2>1. Select a card reader</h2>
+
+<ol>
+<li>Choose <strong>Tools &gt; Settings...</strong>.</li>
+<li>On the tab <strong>Reader Settings</strong>, choose the provider under <strong>Available Reader Providers</strong>:
+<strong>Elatec TWN4</strong> (an Elatec reader on a USB port) or <strong>PCSC</strong> (any PC/SC reader, for example an OMNIKEY).
+With PCSC, choose the reader below it in the list <strong>Detected PC/SC Readers</strong>.</li>
+<li>Put a chip on the reader and click <strong>Connect</strong>. Under <strong>Reader Status:</strong> you see
+<strong>Connected:</strong>, the UID and the type of the chip.</li>
+<li>Click <strong>Save and Exit</strong>.</li>
+</ol>
+
+<p>RFiDGear remembers the setting for the next start. More on the page <a href="settings.html">Settings</a>.</p>
+
+<h2>2. Read a chip</h2>
+
+<p>Put the chip on the reader and choose <strong>Programming &gt; Read Chip Public</strong> (<kbd>Ctrl</kbd> + <kbd>R</kbd>).
+The chip appears in the chip tree on the left, with its type and UID. On the right is the list of tasks. The page
+<a href="main_window.html">The main window</a> describes the window.</p>
+
+<h2>3. Add a first task</h2>
+
+<ol>
+<li>Choose <strong>Edit &gt; Add / Edit Task(s) &gt; Add / Edit Generic Chip Task...</strong>. The dialog opens only when a
+reader is connected.</li>
+<li>Under <strong>Task Type</strong> choose <strong>Check Type Of Chip</strong>, and under <strong>Is Chip Of Type</strong> the type of
+your chip. Enter a <strong>Task Description</strong>, for example "Check chip type".</li>
+<li>Confirm the dialog. The task is now in the list.</li>
+</ol>
+
+<h2>4. Run the tasks</h2>
+
+<p>Choose <strong>Programming &gt; Run All Tasks On Selected Chip Just Once</strong> (<kbd>Ctrl</kbd> + <kbd>X</kbd>).
+RFiDGear reads the chip on the reader and runs the tasks from top to bottom. The icon at the start of each row shows the
+result: three dots (not run yet), green tick (succeeded) or red cross (failed). The page <a href="running_tasks.html">Running tasks</a>
+explains runs in more detail.</p>
+
+<h2>5. Save the project</h2>
+
+<p>Choose <strong>File &gt; Save Tasks...</strong> (<kbd>Ctrl</kbd> + <kbd>S</kbd>). The task list is saved as a project file
+(<code>.rfPrj</code>) and can be loaded again with <strong>File &gt; Open Project...</strong> (<kbd>Ctrl</kbd> + <kbd>O</kbd>).
+See <a href="projects.html">Projects</a>.</p>
+
+<div class="note">The task types for MIFARE Classic, DESFire and Ultralight/NTAG are under <strong>Edit &gt; Add / Edit Task(s)
+&gt; ...</strong>. They write to the chip: try them on a card you no longer need first.</div>
+
+<div class="nav">Previous page: <a href="about_this_help.html">How this help is organized</a> &middot; Next page: <a href="main_window.html">The main window</a></div>
+
+</body>
+</html>
