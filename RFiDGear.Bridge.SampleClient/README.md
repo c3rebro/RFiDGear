@@ -23,6 +23,10 @@ RFiDGear.Bridge.SampleClient run job-1 C:\projects\order.rfPrj $JOBNUMBER=4711
 RFiDGear.Bridge.SampleClient result job-1
 RFiDGear.Bridge.SampleClient results 12
 RFiDGear.Bridge.SampleClient auto
+RFiDGear.Bridge.SampleClient auto --approve-with=$EXPECTEDUID [--no-pin]
+    [--wait=15] [--set=NAME=value]
+RFiDGear.Bridge.SampleClient auto --decline
+RFiDGear.Bridge.SampleClient auto --no-answer
 RFiDGear.Bridge.SampleClient keys orders/4711 --own-runs-only --run=job-2
 ```
 
@@ -59,6 +63,19 @@ starts one run with that UID in the variable `$EXPECTEDUID` (`--variable=$NAME`
 for another name; `--yes` answers for you, for a test), and only then compares
 the card that the result says the run read with the approved one. The exit code
 is 0 only for a confirmed run.
+
+`ApprovalModeLoop` is the loop of a program that decides about every card in
+automatic mode (see the client guide, "Automatic mode that waits for your
+approval"): it switches the mode on with `requireApproval`, hands every card
+that is shown to your decision (`CardDecision.ApproveWith` with the variables of
+that card, or `Decline`), answers with the presence id, treats a decision that
+throws and a project state that cannot be told as a refusal, tolerates a late
+answer, ends when the mode is stopped or the connection ends, and stops the mode
+when it is cancelled. `auto --approve-with=$NAME` approves every card by one
+fixed rule, `--decline` declines every card and `--no-answer` never answers, so
+that you can see each end by hand (cases 52 to 64 of
+`RFiDGear.HIL.Tests/EXTERNAL-CONTROL.md`). A real program decides in its own
+code, with its job and its list of cards.
 
 This is a sample, not a library: copy what you need. It keeps the rules of
 the guide and nothing more; a real client also decides what its operators see,

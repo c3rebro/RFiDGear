@@ -188,6 +188,10 @@ a fault, a timeout or a lost reader does, and `autoModeChanged` says why
 (`lastStopReason`). While the mode is on, `loadProject` and `startRun` are
 refused. You can stop the mode whoever started it.
 
+This mode runs every card that is put on the reader. A station that writes
+cards one after the other does not use it: it uses the mode that waits for
+your approval, described below (`autoMode.approval`).
+
 **Supplying card keys:**
 
 A project can name a key by a reference to a provider instead of containing it.
@@ -257,7 +261,15 @@ that the user starts in the window, a button in a task dialog, and a run that an
 earlier connection left behind (a client that went away mid-run, even if it was
 you before you reconnected): a project that names your provider ends
 `KeyUnavailable` there, and you ask for the result of your earlier run by its
-request id as usual. The answer to the registration
+request id as usual. The run of a card that **you** approved in automatic mode
+(below) is your own as well: RFiDGear runs it as a run of the mode (`source`
+stays `autoMode`, there is no `requestId`) and notes which connection approved
+it before the notice that names the run and before its first task. A run of the
+mode that nobody approved (the mode of the user, a card you did not approve) is
+nobody's. You learn the id of the run from `cardPresentationEnded` (`approved`,
+with `runId`), and the request for a key can be here first, so wait for the
+notice a moment before you refuse (the sample does: `ApprovedRunWait`). The
+answer to the registration
 says whether the restriction is in force (`ownRunsOnly: true`); check it. Send
 the field only when `keys.context` is offered: an older RFiDGear rejects a
 registration that carries a member it does not know, while a registration
@@ -310,17 +322,21 @@ answered "no" can end with.
 - A UID typed into the task is another thing: a question ("is this card that
   card?"), answered `isNotTrue`, which a project may branch on and a run may
   end with as an answer it asked for. Only a variable is an approval.
-- The variable is the one of the run. In automatic mode the variables are
-  those of the start-up (they do not change from card to card), so a variable
-  there approves every card with that UID again: do not approve a write that
-  way. Use single runs, as above.
+- The variable is the one of the run. In the plain automatic mode the
+  variables are those of the start-up (they do not change from card to
+  card), so a variable there approves every card with that UID again: do not
+  approve a write that way. Use single runs, as above, or the mode that waits
+  for your approval (below), where every approval brings the variables of its
+  card.
 
 **Reference flow: one card, one approval, one run:**
 
 This is the flow for a job that writes a card, as the sample client does it
 (`BridgeSampleClient.RunApprovedCardAsync`, command `approved-run`; the tests of
-`BridgeSampleClientTests` run it against the bridge). Use it for writes until
-your station has something better. Do not use automatic mode for a write.
+`BridgeSampleClientTests` run it against the bridge). Use it for writes of one
+card at a time. For a station that handles one card after the other, use the
+mode that waits for your approval (below); the plain automatic mode runs every
+card and is not for writing.
 
 Once per project (and again after RFiDGear was restarted: a revision is valid
 for one process):
@@ -361,6 +377,7 @@ For every card:
 6. To read it back, load a separate project that only reads (a new
    `loadProject` and a new revision) and run it the same way. Do not read back
    with the project that writes.
+
 What the project that RFiDGear runs must look like (your generator's part):
 
 - The first task is Check UID with the variable `$EXPECTEDUID`, and every task that
@@ -372,6 +389,127 @@ What the project that RFiDGear runs must look like (your generator's part):
   are skipped, and the run is a `failure`.
 - Nothing in the project holds the UID of one card, so the project, and with it
   its revision, does not change from card to card.
+
+**Automatic mode that waits for your approval (`autoMode.approval`):**
+
+The reference flow is one card at a time. A station that handles one card after
+the other uses this mode: RFiDGear shows every card that is put on the reader
+to the client that started the mode, and runs the project for it only when
+that client approves it, once, for that card. Nothing is run for a card that
+nobody approved. The sample does all of it (`ApprovalModeLoop`; the command
+`auto --approve-with=$EXPECTEDUID` tries it by hand), and
+`BridgeSampleClientTests` run it against the bridge.
+
+Start it with `startAutoMode` and `requireApproval: true`. It needs
+`stopOnDisconnect` (the default), because nobody would be left to answer
+otherwise. `approvalTimeoutMs` (2000 to 120000, default 15000) is how long a
+card is waited for. Check `autoMode.approval` first, because an older RFiDGear
+rejects the fields, and ask `hello` for `cardPresented`,
+`cardPresentationEnded` and `autoModeChanged`. A start with approval is never
+agreed on again (`autoModeActive`): stop the mode and start the one you mean.
+
+For every card:
+
+1. `cardPresented` says the `presenceId`, the `uid`, the `projectRevision` (the
+   state of the project now, read when the card was shown) and when the wait
+   ends (`expiresAt`). A presence is the card as it was put on the reader: the
+   same card taken away and put back is another presence with another id, and
+   RFiDGear asks again. Whether this UID was written already is yours to know:
+   RFiDGear does not remember what you approved.
+2. Decide, in your own program: the job, the profile, the serial number, the
+   list of cards that were written already. That is the approval.
+3. `approveCard` with the `presenceId`, the `variables` of this one run (the
+   Check UID task of the project reads `$EXPECTEDUID` from here, set to the UID
+   you approved) and `expectProjectRevision` (the one that came with the card:
+   the run then starts only when the project is in exactly that state), or
+   `declineCard`. Answer once, on the connection that started the mode. A
+   variable that cannot be used is `invalidRequest` and the card still waits:
+   a report target that is not a full path to a file in a folder that exists,
+   a template that does not exist. The report variables are those of this card
+   only, and the report of the card is built apart from the next one.
+4. `cardPresentationEnded` says how the wait ended, once for every card:
+   `approved` (with the `runId` of the run that was admitted); `declined`,
+   `expired` (no answer in time), `stopped` (the mode was stopped) or
+   `clientLost`: nothing was run; `projectChanged` (the project was not in the
+   state you named), `notAdmitted` (something else held the reader or the
+   execution slot) or `cardChanged` (the card was taken away or replaced while
+   you decided, or another run was made on it): nothing was run, and a card
+   that is on the reader and was not processed is shown again as a new
+   presence.
+5. The result of the run (`autoRunCompleted`, `listRunResults`) carries the
+   `presenceId`, the `projectRevision` the run started with (exactly the one
+   you named: the check is exact, but the one in the next `cardPresented` is
+   not the same, because a run changes the project) and the `cardUid` the run
+   itself read. Record the card as written only when the status is what your
+   project means by done and the `cardUid` is the UID you approved.
+
+**What that mode holds to, and what stays with you:**
+
+- Without your approval nothing runs. A card that you decline, that you do not
+  answer in time or that is taken away is not run, and a declined or expired
+  card is not shown again until it was taken away.
+- An approval is for one card and one run. The run reads the card itself, and
+  that read is held to the approved UID before anything else is sent to the
+  card: another card, or none, ends the run before its first task and stops
+  the mode. The approval is used up by the first run, whatever it ends with.
+- A late, repeated or foreign answer is `approvalNotPending` (1018, with
+  `neverStarted`): treat it as "this presence is over" and go on. Only the
+  connection that started the mode can answer.
+- A lost connection ends the mode (`stopOnDisconnect`) and runs nothing more.
+  **Never start a writing job again by yourself after you reconnected.** Start
+  the mode again on purpose: the card that is on the reader is shown as a new
+  presence and needs a new approval.
+- `loadProject` and `startRun` are refused while the mode is on, and a project
+  that was changed after you saw the card is `projectChanged` when you named
+  its revision. Name it.
+- RFiDGear holds the card to the UID, but only your project says which tasks
+  write. Keep the Check UID with `$EXPECTEDUID` as the first task and make every
+  task that touches the card depend on it, as in the reference flow.
+- A run that fails does not stop the mode; a fault, a timeout or a lost reader
+  does (`autoModeChanged` says why). After one of them look at the card before
+  you start again.
+- A card that is taken away and put back faster than the reader is polled is
+  not seen, and counts as the same presence.
+
+**Going from a project that writes to one that only reads:**
+
+Never with the mode on. Stop the mode (`stopAutoMode`), wait for
+`autoModeChanged` with `enabled: false` and for `getStatus` to say that no run
+is going on, `loadProject` the other project and note its revision, and start
+the mode again (with approval too, when the project that reads also needs your
+decision for every card). Take the card away between the two: a card that was
+processed is not shown to the new mode until it was taken away.
+
+**What the tests prove without a reader, and what only a card can:**
+
+A reader and a card are needed for the hands-on cases (`EXTERNAL-CONTROL.md`,
+from case 52). Everything about the decision is tested without them, with the
+real bridge on a real pipe, the real state machine of automatic mode and the
+real main window against a scripted reader:
+
+- Nothing runs without an approval, and an approval is used once, for that
+  presence: `AutoModeApprovalControllerTests`, `AutoModeApprovalGateTests`,
+  `BridgeAutoModeApprovalTests`.
+- A decline, no answer in time, a stop, a lost connection, a card taken away or
+  replaced (also by the card that was shown before), a project that was
+  changed, a reader that is busy or cannot be looked at:
+  `AutoModeApprovalControllerTests`, `BridgeAutoModeApprovalTests`,
+  `BridgeAutoModeRealHostTests`.
+- Only the starting connection answers, an answer after the limit is no answer,
+  and what belongs to one connection never reaches another:
+  `AutoModeApprovalGateTests`, `BridgeServerTests`,
+  `BridgeAutoModeApprovalTests`.
+- The run's own read is held to the approved UID before anything else is sent
+  to the card: `TaskExecutionServiceTests` (`ExpectedCardUid`).
+- The variables and the report of a card do not carry over to the next:
+  `BridgeAutoModeRealHostTests`.
+- The keys of an approved run with `ownRunsOnly`: `ApprovedRunTests`,
+  `BridgeKeyContextTests`, `BridgeSampleClientTests`.
+- The loop of a client: `BridgeSampleClientTests` (`TheLoop_...`).
+
+What only a card shows: how a real reader reports a card that is taken away
+between two polls, how long a real read takes against the time you allow, and
+what a real task does to a real card.
 
 **Why a check failed (`execution.verificationDetails`):**
 

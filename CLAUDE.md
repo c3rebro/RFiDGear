@@ -607,6 +607,17 @@ passed with a real reader; until then a snapshot may be re-baselined.
   different paths. These are information and a
   convenience, not protection against a hostile program of the same user (see
   the guide).
+- **The loop of a client for the mode that waits for approval**
+  (`ApprovalModeLoop` of the sample client, the reference for the guide's
+  "Automatic mode that waits for your approval"): it starts the mode with
+  `requireApproval` and `stopOnDisconnect`, hands each `cardPresented` to a
+  decision (`CardDecision`) and answers with the presence id. It fails closed:
+  a decision that throws, or a pin on a state that RFiDGear did not tell, is a
+  decline; a late answer (`approvalNotPending`) is tolerated; the loop ends
+  with the mode or the connection, and stops the mode when it is cancelled. It
+  decides nothing itself: `auto --approve-with=$NAME`, `--decline` and
+  `--no-answer` of the command line are fixed rules to try the flow by hand
+  (cases 52 to 64 of `EXTERNAL-CONTROL.md`).
 - Logs hold method names, request and run ids, numbers and error kinds. Never a
   variable, a path, a UID, a key or the text of an exception (`SanitizedException`
   is for the existing logs; the bridge logs only the type). Errors on the wire
