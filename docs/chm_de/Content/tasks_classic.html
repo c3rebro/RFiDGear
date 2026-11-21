@@ -61,7 +61,7 @@ Zwischenspeicher.</p>
 <table>
 <tr><th>Einstellung</th><th>Was geschrieben wird</th></tr>
 <tr><td>ohne <strong>MAD Ben.</strong></td><td><strong>ein</strong> Block von 16 Bytes: der im Daten Editor gew&auml;hlte Block des Sektors aus der Sektornummer. W&auml;hlen Sie den <strong>Sector Trailer</strong>, &auml;ndert das die Schl&uuml;ssel und die Zugriffsbits des
-Sektors: Der Block wird dann so geschrieben, wie er im Zwischenspeicher steht. Den Block 0 des Chips mit den Herstellerdaten schreibt RFiDGear nie.</td></tr>
+Sektors: Der Block wird dann so geschrieben, wie er im Zwischenspeicher steht. <strong>Das gilt nur f&uuml;r die Sektoren 0 bis 31.</strong> In den gro&szlig;en Sektoren 32 bis 39 nennt die Auswahl <strong>Sector Trailer</strong> den vierten Block des Sektors, einen Datenblock: er &uuml;berschreibt Daten und l&auml;sst die Schl&uuml;ssel, wie sie sind. Den Block 0 des Chips mit den Herstellerdaten schreibt RFiDGear nie.</td></tr>
 <tr><td>mit <strong>MAD Ben.</strong></td><td>die Anwendungsdaten &uuml;ber das MAD-Verzeichnis. Dabei bekommen die Sektoren, die die Daten erreichen, auch die neuen Schl&uuml;ssel und Zugriffsbits (<strong>Sektorschl&uuml;ssel - Neu</strong>
 und die eingestellten Zugriffsbits); fehlt der Karte ein Verzeichnis, legt RFiDGear eines an. Die Daten kommen vor dem Verzeichnis, das Verzeichnis vor den Sector Trailern.</td></tr>
 </table>

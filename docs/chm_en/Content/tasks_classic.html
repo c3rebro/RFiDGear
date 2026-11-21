@@ -58,7 +58,7 @@ RFiDGear works out the three bytes of the access bits, with their inverses, by i
 <table>
 <tr><th>Setting</th><th>What is written</th></tr>
 <tr><td>without <strong>Use MAD</strong></td><td><strong>one</strong> block of 16 bytes: the block of the sector (from the sector number) that is chosen in the Data Explorer. If you choose the <strong>Sector Trailer</strong>, that changes the keys and the access bits of the sector: the block
-is written just as it stands in the memory. RFiDGear never writes block 0 of the chip with the manufacturer data.</td></tr>
+is written just as it stands in the memory. <strong>This works for sectors 0 to 31 only.</strong> In the large sectors 32 to 39 the selection <strong>Sector Trailer</strong> names the fourth block of the sector, which is a data block: it overwrites data and leaves the keys as they are. RFiDGear never writes block 0 of the chip with the manufacturer data.</td></tr>
 <tr><td>with <strong>Use MAD</strong></td><td>the application data through the MAD directory. The sectors that the data reaches get the new keys and access bits as well (<strong>SectorKey - Target</strong>
 and the access bits that are set); if the card has no directory, RFiDGear creates one. The data come before the directory, the directory before the sector trailers.</td></tr>
 </table>

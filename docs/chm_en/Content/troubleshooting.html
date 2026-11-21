@@ -22,7 +22,7 @@ check the "Smart Card" service of Windows.</td></tr>
 or in the settings of the Remote Desktop client); the reader must be attached to the local computer.</td></tr>
 <tr><td>The status stays <strong>INIT</strong></td><td>RFiDGear is still looking for the reader. If it takes long, check the same points as above.</td></tr>
 <tr><td>A card is not recognized at all</td><td>Check the position of the card on the reader. With an Elatec TWN4, RFiDGear searches for all high-frequency card types except HID iCLASS; an iCLASS card stays invisible.</td></tr>
-<tr><td>A MIFARE SAM AV3 is not found</td><td>A TWN4 sees it only from hardware revision G (see <a href="sam_setup.html">Setting up a MIFARE SAM AV3</a>). With a PC/SC reader the <strong>SAM reader:</strong> has to be chosen in the settings.</td></tr>
+<tr><td>A MIFARE SAM AV3 is not found</td><td>A TWN4 sees it only from hardware revision G (see <a href="sam_setup.html">Setting up a MIFARE SAM AV3</a>). The setup window looks at all PC/SC readers by itself and does not use the setting <strong>SAM reader:</strong>; that setting matters only when a task uses a key of the SAM.</td></tr>
 </table>
 
 <h2>A task fails</h2>
