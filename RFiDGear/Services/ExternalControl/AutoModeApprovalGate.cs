@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using RFiDGear.Bridge;
+using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.Services.AutoMode;
 
 using Serilog;
@@ -225,6 +226,17 @@ namespace RFiDGear.Services.ExternalControl
             foreach (var pair in checkedVariables)
             {
                 variables[pair.Key] = pair.Value;
+            }
+
+            // The report variables mean what they mean for any run (a report target in a folder that exists, a template that exists):
+            // a run that cannot make its report is refused now, while the client can still answer, and not after the card was touched.
+            try
+            {
+                ReportVariables.Resolve(variables, out _, out _);
+            }
+            catch (ArgumentException)
+            {
+                throw BridgeFault.InvalidRequest("variables");
             }
 
             var presenceId = pending.PresenceId;

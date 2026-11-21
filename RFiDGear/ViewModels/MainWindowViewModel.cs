@@ -1651,6 +1651,28 @@ namespace RFiDGear.ViewModel
         /// <returns>What came of it; <see cref="AutoModeRunReport.NotAdmitted"/> when nothing ran.</returns>
         private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen, Func<bool> isStillWanted = null, AutoModeApproval approval = null)
         {
+            // The report variables of an approval (REPORTTARGETPATH, REPORTTEMPLATEFILE) are read as for any run of the host, before
+            // anything is admitted (the program was told when it approved if they are not usable), and they are the report of this one card:
+            // they do not become the report of the next one.
+            string approvedReportPath = null;
+            string approvedReportTemplate = null;
+
+            if (approval != null)
+            {
+                try
+                {
+                    ReportVariables.Resolve(approval.Variables, out approvedReportPath, out approvedReportTemplate);
+                }
+                catch (ArgumentException)
+                {
+                    Log.ForContext<MainWindowViewModel>().Warning("The report variables of an approval cannot be used any more; the card is not run");
+
+                    return AutoModeRunReport.NotAdmitted;
+                }
+            }
+
+            var reportIsOfThisRun = approvedReportPath != null || approvedReportTemplate != null;
+
             if (!await TryBeginExecutionAfterAScanAsync(isStillWanted))
             {
                 Mouse.OverrideCursor = null;
@@ -1750,9 +1772,9 @@ namespace RFiDGear.ViewModel
                     TreeViewParentNodes = treeViewParentNodes,
                     VariablesFromArgs = VariablesOfTheRun(approval),
                     Dialogs = Dialogs,
-                    ReportReaderWriter = reportReaderWriter,
-                    ReportOutputPath = reportOutputPath,
-                    ReportTemplateFile = reportTemplateFile,
+                    ReportReaderWriter = reportIsOfThisRun ? null : reportReaderWriter,
+                    ReportOutputPath = approvedReportPath ?? reportOutputPath,
+                    ReportTemplateFile = approvedReportTemplate ?? reportTemplateFile,
                     SelectedSetupViewModel = SelectedSetupViewModel,
                     RunSelectedOnly = _runSelectedOnly,
                     UpdateSelectedSetupViewModel = vm => SelectedSetupViewModel = vm,
@@ -1763,9 +1785,13 @@ namespace RFiDGear.ViewModel
 
                 var result = await taskExecutionService.ExecuteOnceAsync(request, CancellationToken.None);
 
-                reportReaderWriter = result.ReportReaderWriter;
-                reportOutputPath = result.ReportOutputPath;
-                reportTemplateFile = result.ReportTemplateFile;
+                if (!reportIsOfThisRun)
+                {
+                    reportReaderWriter = result.ReportReaderWriter;
+                    reportOutputPath = result.ReportOutputPath;
+                    reportTemplateFile = result.ReportTemplateFile;
+                }
+
                 _runSelectedOnly = result.RunSelectedOnly;
                 SelectedSetupViewModel = result.SelectedSetupViewModel;
 

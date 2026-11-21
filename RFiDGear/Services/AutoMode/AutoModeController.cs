@@ -136,7 +136,6 @@ namespace RFiDGear.Services.AutoMode
         private bool _keepApplicationOpen;
         private int _ticking;
         private int _pauseCount;
-        private int _watching;
 
         // The card that waits for the decision of the program, guarded by _sync; the tick that waits holds _ticking, so the ticks that
         // come meanwhile look at the reader for this card only.
@@ -538,7 +537,9 @@ namespace RFiDGear.Services.AutoMode
                 pending = _pendingCard;
             }
 
-            if (pending == null || !_coordinator.IsIdle || Interlocked.CompareExchange(ref _watching, 1, 0) != 0)
+            // The scan slot is taken for the look, as the scans of extensions take it: while the reader is looked at, no run and no
+            // project edit can start, and nothing else looks at the card. One look at a time follows from that.
+            if (pending == null || !_coordinator.TryBeginScan())
             {
                 return;
             }
@@ -577,7 +578,7 @@ namespace RFiDGear.Services.AutoMode
             }
             finally
             {
-                Volatile.Write(ref _watching, 0);
+                _coordinator.EndScan();
             }
         }
 
@@ -704,7 +705,9 @@ namespace RFiDGear.Services.AutoMode
                     // do that from any thread, and what it remembered is the truth.
                     if (_cardStamp == stamp)
                     {
-                        _lastUid = previous;
+                        // A card that was not the one approved says nothing about the card before it, which may be back on the reader as a
+                        // presence of its own: nothing is remembered then, and the next look offers whatever is there.
+                        _lastUid = report.Refusal == AutoModeRefusal.CardChanged ? null : previous;
                     }
                 }
 

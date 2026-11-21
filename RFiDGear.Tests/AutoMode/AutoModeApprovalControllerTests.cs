@@ -470,6 +470,33 @@ namespace RFiDGear.Tests.AutoMode
         }
 
         [Fact]
+        public async Task WhileTheWatcherLooksAtTheReader_TheReaderIsReserved_AndGivenBackAfterwards()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Approval.Hold = new TaskCompletionSource<AutoModeApproval?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.Present("04AA");
+            var waiting = rig.Tick();
+
+            var slowRead = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.HoldNextPoll = slowRead;
+            var watching = rig.Tick();
+
+            // No run, project edit or other look can start while the reader is looked at.
+            var scanning = rig.Coordinator.IsScanning;
+            var runCanStart = rig.Coordinator.TryBeginExecution();
+            slowRead.SetResult(true);
+            await watching;
+            var idleAfterwards = rig.Coordinator.IsIdle;
+            rig.Approval.Hold.SetResult(null);
+            await waiting;
+
+            Assert.True(scanning);
+            Assert.False(runCanStart);
+            Assert.True(idleAfterwards);
+        }
+
+        [Fact]
         public async Task ALookAtTheReaderThatEndsAfterItsWaitHasEnded_DoesNotTouchTheRecord_SoTheCardThatWasRunIsNotRunAgain()
         {
             var rig = new Rig();
@@ -506,15 +533,12 @@ namespace RFiDGear.Tests.AutoMode
             rig.Present("04AA");
             var waiting = rig.Tick();
 
-            // The mode is stopped and started again while a look at the reader is still under way.
-            var slowRead = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            rig.HoldNextPoll = slowRead;
-            rig.Remove();
-            var watching = rig.Tick();
+            // The mode is stopped and started again while the old tick still waits for the program; the look at the reader that comes
+            // next belongs to the wait of the earlier start (a restart cannot come while a look is under way: the look holds the reader).
             rig.Controller.Stop();
             rig.StartWithApproval();
-            slowRead.SetResult(true);
-            await watching;
+            rig.Remove();
+            await rig.Tick();
             await waiting;
 
             // The card that the first start wrote down is still the record of the card on the reader.
@@ -523,6 +547,29 @@ namespace RFiDGear.Tests.AutoMode
             await rig.Tick();
 
             Assert.Single(rig.Approval.Asked);
+        }
+
+        [Fact]
+        public async Task ACardThatTheWindowFindsReplacedByTheCardBefore_DoesNotMakeThatCardCountAsProcessed()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.Present("04AA");
+            await rig.Tick();
+
+            // B is put on the reader and approved. Before the window admits the run it looks at the reader and finds A again: the
+            // approval was for B, and A, which was taken away and is back, is a presence of its own.
+            rig.Present("04BB");
+            rig.ApprovedBehavior = _ =>
+            {
+                rig.Present("04AA");
+
+                return AutoModeRunReport.CardChanged;
+            };
+            await rig.Tick();
+            await rig.Tick();
+
+            Assert.Equal(new[] { "04AA", "04BB", "04AA" }, rig.Approval.Asked.Select(p => p.Uid));
         }
 
         [Fact]

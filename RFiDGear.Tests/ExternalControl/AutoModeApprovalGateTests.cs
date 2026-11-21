@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -254,6 +255,35 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal("expectProjectRevision", badRevision.Details!["field"]);
             Assert.True(stillWaiting);
             Assert.Equal("1", (await waiting)!.Variables["$A"]);
+        }
+
+        [Fact]
+        public async Task AReportVariableThatCannotBeHonoured_IsRefusedAsInvalid_AndTheCardKeepsWaiting()
+        {
+            var rig = new Rig();
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+            var folder = Path.GetTempPath();
+
+            // The report variables mean what they mean for any run: a full path to a file in a folder that exists, a template that exists.
+            var relative = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(Session, WithVariables("p-1", ("REPORTTARGETPATH", "report.pdf"))));
+            var noFolder = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(
+                Session,
+                WithVariables("p-1", ("REPORTOUTPUTPATH", Path.Combine(folder, Guid.NewGuid().ToString("N"), "report.pdf")))));
+            var noTemplate = Assert.Throws<BridgeFault>(() => rig.Gate.Approve(
+                Session,
+                WithVariables("p-1", ("REPORTTEMPLATEFILE", Path.Combine(folder, Guid.NewGuid().ToString("N") + ".pdf")))));
+            var stillWaiting = !waiting.IsCompleted;
+            var target = Path.Combine(folder, "report-" + Guid.NewGuid().ToString("N") + ".pdf");
+            rig.Gate.Approve(Session, WithVariables("p-1", ("REPORTTARGETPATH", target), ("$JOB", "J-4")));
+
+            Assert.All(new[] { relative, noFolder, noTemplate }, fault =>
+            {
+                Assert.Equal(BridgeErrorKinds.InvalidRequest, fault.Kind);
+                Assert.Equal("variables", fault.Details!["field"]);
+            });
+            Assert.True(stillWaiting);
+            Assert.Equal(target, (await waiting)!.Variables["REPORTTARGETPATH"]);
         }
 
         [Fact]

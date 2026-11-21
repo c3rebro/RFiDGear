@@ -202,6 +202,72 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheReportVariablesOfAnApproval_AreTheReportOfThatCardOnly()
+        {
+            await AutoModeHostTests.WithHost(async (viewModel, _, provider, exec, _) =>
+            {
+                var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+                System.IO.Directory.CreateDirectory(folder);
+
+                try
+                {
+                    var pipe = "RFiDGear.Bridge.test-" + Guid.NewGuid().ToString("N");
+                    using var service = new ExternalControlService(viewModel.ExtensionHost, RunAtOnce, () => false, "2.0.10", pipe, runFacts: viewModel.RunFacts);
+                    Assert.True(service.Start());
+                    service.MarkStartupComplete();
+                    using var client = await BridgeTestClient.ConnectAsync(pipe, 5000);
+                    await client.HelloAsync(BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+                    await client.Service.StartAutoMode(WithApproval());
+                    var target = System.IO.Path.Combine(folder, "report.pdf");
+
+                    // What the real service does with the report state of its request: it keeps it in its result (and makes a writer when
+                    // there is none), and the window keeps it for the next run unless it was the report of one card only.
+                    var writerOfTheFirstRun = new RFiDGear.Infrastructure.FileAccess.ReportReaderWriter();
+                    exec.OnExecute = request => new TaskExecutionResult
+                    {
+                        TerminalStatus = TaskLoopTerminalStatus.Success,
+                        ReportOutputPath = request.ReportOutputPath,
+                        ReportReaderWriter = request.ReportReaderWriter ?? writerOfTheFirstRun,
+                    };
+
+                    // A card is put on the reader (after the card before it was taken away), shown, approved with the variables and run.
+                    var shownBefore = 0;
+
+                    async Task RunACardAsync(params VariablePair[] variables)
+                    {
+                        provider.Card = new RFiDGear.Models.GenericChipModel();
+                        await AutoModeMainWindowTests.Within(viewModel.AutoMode.TickAsync());
+                        provider.Card = Card(CardA);
+                        var tick = viewModel.AutoMode.TickAsync();
+                        var shown = Assert.IsType<CardPresentedEvent>((await client.WaitForEventsAsync(shownBefore + 1))[shownBefore]);
+                        await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = shown.PresenceId, Variables = variables });
+                        await AutoModeMainWindowTests.Within(tick);
+
+                        // The presented notice and the one that ends it.
+                        await client.WaitForEventsAsync(shownBefore + 2);
+                        shownBefore += 2;
+                    }
+
+                    await RunACardAsync();
+                    await RunACardAsync(new VariablePair { Name = "REPORTTARGETPATH", Value = target });
+                    await RunACardAsync();
+
+                    // The report of the second card is its own: not what the window had, and not what the third card finds.
+                    Assert.Equal(3, exec.Requests.Count);
+                    Assert.Null(exec.Requests[0].ReportOutputPath);
+                    Assert.Equal(target, exec.Requests[1].ReportOutputPath);
+                    Assert.Null(exec.Requests[1].ReportReaderWriter);
+                    Assert.Null(exec.Requests[2].ReportOutputPath);
+                    Assert.Same(writerOfTheFirstRun, exec.Requests[2].ReportReaderWriter);
+                }
+                finally
+                {
+                    System.IO.Directory.Delete(folder, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
         public async Task ACardThatTheClientDeclines_IsNeverRun_AndNotAskedAgainWhileItStays()
         {
             await AutoModeHostTests.WithHost(async (viewModel, host, provider, exec, _) =>
