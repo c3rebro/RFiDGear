@@ -1482,6 +1482,42 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheLoop_IgnoresTheEndOfAWaitForACardItWasNeverShown_AnOldNoticeOfAnEarlierMode()
+        {
+            var (client, host, loop, stop, seen) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.Decline));
+
+            // A late notice of an earlier mode on the same connection reaches the loop before its first card.
+            client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "old-1", Reason = PresentationEndReasons.Stopped });
+            Assert.Null(await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5)));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Equal("p-1", Assert.Single(outcomes).PresenceId);
+        }
+
+        [Fact]
+        public async Task TheLoop_IgnoresTheEndOfAWaitForACardItWasNeverShown_WhenItCollectsTheEndsAtTheEnd()
+        {
+            var neverDecided = new TaskCompletionSource<CardDecision>();
+            var asked = 0;
+            var (client, host, loop, stop, _) = await StartLoopAsync((_, _) =>
+            {
+                Interlocked.Increment(ref asked);
+
+                return neverDecided.Task;
+            });
+
+            _ = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref asked) == 1);
+            stop.Cancel();
+
+            // The main part of the loop is cancelled: only the collection at its end can see the late notice of an earlier mode.
+            client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "old-1", Reason = PresentationEndReasons.Stopped });
+            var outcomes = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal("p-1", Assert.Single(outcomes).PresenceId);
+        }
+
+        [Fact]
         public async Task TheLoop_StopsTheModeAndEnds_WhenTheDecisionOfAPendingCardHasACallbackThatThrows()
         {
             var registered = new TaskCompletionSource<bool>();

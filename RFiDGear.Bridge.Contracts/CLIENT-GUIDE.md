@@ -485,7 +485,9 @@ For every card:
   so it can come first): ask the status before you give up the mode, as the
   sample's loop does. The loop ends on that notice and does not poll; a program
   that must not run on with a mode that ended without a notice asks `getStatus`
-  now and then as well.
+  now and then as well. For the same reason the end of a wait for a card that
+  you were never shown (a late notice of an earlier mode on the same
+  connection) is not your card: ignore it.
 
 **Going from a project that writes to one that only reads:**
 

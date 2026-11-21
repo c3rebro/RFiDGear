@@ -57,7 +57,8 @@ namespace RFiDGear.Bridge.SampleClient
     /// its own start, so a notice about an earlier mode can be the first thing it reads, and its own mode is on.</item>
     /// <item>Every card that was shown is reported when RFiDGear says how its wait ended, also when the loop is cancelled or the mode
     /// stops meanwhile (for as long as <see cref="Grace"/>; what RFiDGear does not say is not made up). A card that was shown and that
-    /// the loop had not looked at yet when it ended is reported as one that got no answer.</item>
+    /// the loop had not looked at yet when it ended is reported as one that got no answer. The end of a wait for a card that this loop
+    /// was never shown (a late notice of an earlier mode on the same connection) is ignored.</item>
     /// <item>It never decides for a card it was not shown: the decision gets the event, and the answer carries its presence id.</item>
     /// </list>
     /// </summary>
@@ -227,7 +228,11 @@ namespace RFiDGear.Bridge.SampleClient
                         _pending[shown.PresenceId] = StartDeciding(shown, cancellationToken);
                         break;
                     case CardPresentationEndedEvent ended:
-                        Report(await EndAsync(ended).ConfigureAwait(false));
+                        if (await EndAsync(ended).ConfigureAwait(false) is { } outcome)
+                        {
+                            Report(outcome);
+                        }
+
                         break;
                     default:
                         // Whatever else was queued is no business of the loop.
@@ -252,37 +257,38 @@ namespace RFiDGear.Bridge.SampleClient
             }
 
             // The wait for a card ended: a decision that is still under way is dropped, and nothing is answered for the card. An answer
-            // that RFiDGear has not replied to is waited for a moment and then left alone (it is never sent again).
-            private async Task<CardOutcome> EndAsync(CardPresentationEndedEvent ended)
+            // that RFiDGear has not replied to is waited for a moment and then left alone (it is never sent again). The end of a wait for
+            // a card that this loop was never shown is nobody's card here, and nothing is reported for it.
+            private async Task<CardOutcome?> EndAsync(CardPresentationEndedEvent ended)
             {
-                var uid = string.Empty;
-                var answered = "none";
-
-                if (_pending.Remove(ended.PresenceId, out var card))
+                if (!_pending.Remove(ended.PresenceId, out var card))
                 {
-                    uid = card.Uid;
-
-                    try
-                    {
-                        CancelQuietly(card.Cancel);
-                        answered = await card.Answer.WaitAsync(_owner.Grace).ConfigureAwait(false);
-                    }
-                    catch (TimeoutException)
-                    {
-                        answered = "pending";
-                    }
-                    catch (Exception)
-                    {
-                        // The request failed after the wait for the card had ended: what RFiDGear says about the card is still reported.
-                        answered = "failed";
-                    }
-                    finally
-                    {
-                        card.Cancel.Dispose();
-                    }
+                    // A notice of an earlier mode on the same connection that was still on its way when this loop began to listen.
+                    return null;
                 }
 
-                return new CardOutcome(ended.PresenceId, uid, answered, ended.Reason, ended.RunId);
+                var answered = "none";
+
+                try
+                {
+                    CancelQuietly(card.Cancel);
+                    answered = await card.Answer.WaitAsync(_owner.Grace).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    answered = "pending";
+                }
+                catch (Exception)
+                {
+                    // The request failed after the wait for the card had ended: what RFiDGear says about the card is still reported.
+                    answered = "failed";
+                }
+                finally
+                {
+                    card.Cancel.Dispose();
+                }
+
+                return new CardOutcome(ended.PresenceId, card.Uid, answered, ended.Reason, ended.RunId);
             }
 
             private void Report(CardOutcome outcome)
@@ -334,8 +340,8 @@ namespace RFiDGear.Bridge.SampleClient
                 }
             }
 
-            // Whether the mode that is on is a mode of a client, which is this loop's own because RFiDGear serves one client at a time;
-            // nothing when RFiDGear cannot say (it does not answer in time, answers with a failure, or the connection is gone).
+            // Whether the mode that is on is a mode of a client, which is this loop's own because RFiDGear serves one client at a time.
+            // Nothing when RFiDGear cannot say: it does not answer in time, answers with a failure, or the connection is gone.
             private async Task<bool?> OwnModeIsOnAsync()
             {
                 try
@@ -409,9 +415,9 @@ namespace RFiDGear.Bridge.SampleClient
                 {
                     _pending[shown.PresenceId] = new PendingCard(shown.Uid, new CancellationTokenSource(), Task.FromResult("none"));
                 }
-                else if (item is CardPresentationEndedEvent ended)
+                else if (item is CardPresentationEndedEvent ended && await EndAsync(ended).ConfigureAwait(false) is { } outcome)
                 {
-                    Report(await EndAsync(ended).ConfigureAwait(false));
+                    Report(outcome);
                 }
             }
 
