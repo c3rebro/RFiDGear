@@ -37,6 +37,14 @@ by default on purpose: tests, clean checkouts and mutation runs also build the
 extensions and must not write into a real RFiDGear. See
 `RFiDGear.Extensions/DeployToRFiDGear.targets`.
 
+Every build of an extension also writes its installable package (`.rfext`) to
+`bin\package` of the project and ends with a message that names the file. That
+is on by default, unlike the deploy step, because the file stays inside the
+project's `bin` folder; `-p:PackExtension=false` turns it off. The name has
+the version and the platform, and a configuration other than Release adds its
+name (`...-1.1.0-x64-Debug.rfext`), so that a Debug build never replaces the
+package that is shipped. See `RFiDGear.Extensions/PackExtension.targets`.
+
 Everything targets .NET 10: the host (`RFiDGear`), the test projects, the
 sample plugin, the extension contract (`RFiDGear.Contracts`,
 `RFiDGear.ExtensionSdk`) and `CardCheckAssistant` as `net10.0-windows` (written
@@ -750,9 +758,11 @@ hash), the installer (stage, check the file version, ask, then one rename to
 existing folder) and the selector: `MefHelper` loads each extension **once**,
 the higher file version of the machine-wide and the user's copy (the
 machine-wide one when equal), and the resolver asks `FindExtensionAssembly` so
-the older copy is not loaded by name. A provider makes a package with
-`-p:PackExtension=true` (`RFiDGear.Extensions/PackExtension.targets`); nothing in
-a package is executed. The hash is integrity, not authenticity: the signer and
+the older copy is not loaded by name. Every build of an extension makes a
+package in `bin\package` of its project (`PackExtension.targets` in
+`RFiDGear.Extensions`; `-p:PackExtension=false` turns it off; a configuration
+other than Release adds its name to the file); nothing in a package is
+executed. The hash is integrity, not authenticity: the signer and
 whether Windows finds the signature valid are shown (`WinVerifyTrust`), not
 enforced. See `DEVELOPER_NOTES.md` ("Shipping an extension update as
 a package"). An extension shows its own version in its UI (the Card Check

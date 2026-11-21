@@ -65,9 +65,19 @@
     <ItemGroup>
       <ExtensionPayloadFile Include="@(_SqlDriverFile->'$(OutDir)%(Filename)%(Extension)')" />
     </ItemGroup>
+    <!-- The package is for the platform of the sni.dll that it carries (PackExtension.targets, which is on with every build). A build
+         for x64 or x86 has that platform, but one for AnyCPU has none of its own: the sni.dll that was just copied tells it (it is
+         the one of the operating system for AnyCPU, or the one that RFiDGearSqlNativePlatform names, which is set above). -->
+    <PropertyGroup>
+      <_SqlNativeFile>@(_SqlDriverFile->WithMetadataValue('Filename', 'sni'))</_SqlNativeFile>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(ExtensionPackagePlatform)' == '' ">
+      <ExtensionPackagePlatform Condition="$(_SqlNativeFile.Contains('win-x64'))">x64</ExtensionPackagePlatform>
+      <ExtensionPackagePlatform Condition="$(_SqlNativeFile.Contains('win-x86'))">x86</ExtensionPackagePlatform>
+    </PropertyGroup>
   </Target>
   <!-- Copies the built extension, its support library and its payload to RFiDGear's extension folder when asked to (see the file). -->
   <Import Project="..\DeployToRFiDGear.targets" />
-  <!-- Makes an installable package (.rfext) of the built extension when asked to (see the file). -->
+  <!-- Makes an installable package (.rfext) of the built extension with every build, in bin\package (see the file). -->
   <Import Project="..\PackExtension.targets" />
 </Project>

@@ -6,12 +6,24 @@
     the SHA-256 of each, into one archive. Nothing is executed when a package is installed, and nothing but the files listed is
     put on the machine. Imported by each extension project that wants to be shipped as a package.
 
-    Off unless asked for, like DeployToRFiDGear.targets, because it writes a file that is not part of the build output:
-      dotnet build RFiDGear.Extensions\CardCheckAssistant -c Release -p:Platform=x64 -p:PackExtension=true
+    On with every build of such a project, in every configuration: a build that makes the extension makes its package as well,
+    so there is nothing to remember and a package is never missing. It is written into bin\package of the project (a file of
+    the build, not of its output folder, which the installers harvest), or into ExtensionPackageFolder when that is set. The
+    last message of the build says where. To build without one:
+      dotnet build RFiDGear.Extensions\CardCheckAssistant -p:PackExtension=false
 
     A package is made for one platform (the payload of an extension, such as the native sni.dll of the SQL driver, is of the
-    platform that was built); the file name says which: <id>-<version>-<platform>.rfext in bin\package of the project, or in
-    ExtensionPackageFolder when that is set.
+    platform that was built); the file name says which, and the version:
+      <id>-<version>-<platform>.rfext             a Release build, the one that is shipped
+      <id>-<version>-<platform>-<Configuration>.rfext   any other configuration (Debug), so that it never replaces the Release one
+    The platform is the build's, or ExtensionPackagePlatform when the project says that its payload is for another one. A build for
+    AnyCPU has no platform of its own, so a project with native payload files has to name it: the Card Check Assistant takes it from
+    the sni.dll that it copied, which is the one of the operating system for AnyCPU.
+
+    A package that cannot be made does not break a build that never asked for one: it is a warning, and the build goes on. That is
+    the case for a project that has native payload files and no platform to name (AnyCPU), and for a package file that cannot be
+    replaced (it is open in RFiDGear's installer, or a program holds it). A build that asks for a package by name (-p:PackExtension=true,
+    on the command line or in the environment of the build) fails instead, with the reason.
 
     What goes in, the same files that DeployToRFiDGear.targets copies and the installers carry:
       - the project's own assembly (its name is the id of the extension),
@@ -28,20 +40,40 @@
   -->
   <PropertyGroup>
     <ExtensionPackageFolder Condition="'$(ExtensionPackageFolder)' == ''">$(MSBuildProjectDirectory)\bin\package</ExtensionPackageFolder>
+    <!-- Was the package asked for by name? Whatever sets PackExtension before this point (the command line, the environment, the
+         project) asked; the default below is no request. It decides whether a package that cannot be made is an error. -->
+    <_PackAsked Condition="'$(PackExtension)' != ''">true</_PackAsked>
+    <PackExtension Condition="'$(PackExtension)' == ''">true</PackExtension>
   </PropertyGroup>
 
-  <Target Name="PackExtensionPackage" AfterTargets="Build" Condition="'$(PackExtension.Trim())' == 'true' And '$(DesignTimeBuild)' != 'true'">
+  <!-- Decides whether a package can be made, and says why not. Never fails a build that did not ask for a package. -->
+  <Target Name="PackExtensionDecide" AfterTargets="Build" Condition="'$(PackExtension.Trim())' == 'true' And '$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <!-- The platform of the package is that of its native files, which is the build's unless the project says otherwise. -->
+      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' != ''">$(ExtensionPackagePlatform)</_PackPlatform>
+      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' == ''">$(Platform)</_PackPlatform>
+      <_PackPlatformUnknown Condition="'@(ExtensionPayloadFile)' != '' And ('$(_PackPlatform)' == '' Or '$(_PackPlatform)' == 'AnyCPU')">true</_PackPlatformUnknown>
+      <_PackGo>true</_PackGo>
+      <_PackGo Condition="'$(_PackPlatformUnknown)' == 'true' And '$(_PackAsked)' != 'true'">false</_PackGo>
+      <!-- What goes wrong while the file is written is an error for whoever asked, a warning for everybody else. -->
+      <_PackContinue>WarnAndContinue</_PackContinue>
+      <_PackContinue Condition="'$(_PackAsked)' == 'true'">ErrorAndStop</_PackContinue>
+    </PropertyGroup>
+    <Error Condition="'$(_PackPlatformUnknown)' == 'true' And '$(_PackAsked)' == 'true'"
+           Text="The extension has native payload files, so its package is made for one platform. Build with -p:Platform=x64 or -p:Platform=x86, or set ExtensionPackagePlatform to the platform of the payload; AnyCPU is for a package with nothing native in it." />
+    <Warning Condition="'$(_PackGo)' != 'true'"
+             Text="No extension package was made: the extension has native payload files and this build is for AnyCPU, so the platform of the package is not known. Build with -p:Platform=x64 or -p:Platform=x86, or set ExtensionPackagePlatform to the platform of the payload (-p:PackExtension=false turns the package off)." />
+  </Target>
+
+  <Target Name="PackExtensionPackage" AfterTargets="PackExtensionDecide" Condition="'$(PackExtension.Trim())' == 'true' And '$(DesignTimeBuild)' != 'true' And '$(_PackGo)' == 'true'">
     <PropertyGroup>
       <_PackName Condition="'$(ExtensionDisplayName)' != ''">$(ExtensionDisplayName)</_PackName>
       <_PackName Condition="'$(ExtensionDisplayName)' == ''">$(TargetName)</_PackName>
       <_PackStage>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)package-stage\</_PackStage>
-      <!-- The platform of the package is that of its native files, which is the build's unless the project says otherwise. -->
-      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' != ''">$(ExtensionPackagePlatform)</_PackPlatform>
-      <_PackPlatform Condition="'$(ExtensionPackagePlatform)' == ''">$(Platform)</_PackPlatform>
-      <_PackFile>$(ExtensionPackageFolder)\$(TargetName)-$(Version)-$(_PackPlatform).rfext</_PackFile>
+      <!-- Release is the package that is shipped and keeps the plain name; another configuration says which it is. -->
+      <_PackConfiguration Condition="'$(Configuration)' != '' And '$(Configuration)' != 'Release'">-$(Configuration)</_PackConfiguration>
+      <_PackFile>$(ExtensionPackageFolder)\$(TargetName)-$(Version)-$(_PackPlatform)$(_PackConfiguration).rfext</_PackFile>
     </PropertyGroup>
-    <Error Condition="'@(ExtensionPayloadFile)' != '' And ('$(_PackPlatform)' == '' Or '$(_PackPlatform)' == 'AnyCPU')"
-           Text="The extension has native payload files, so its package is made for one platform. Build with -p:Platform=x64 or -p:Platform=x86, or set ExtensionPackagePlatform to the platform of the payload; AnyCPU is for a package with nothing native in it." />
     <ItemGroup>
       <_PackSource Include="$(OutDir)$(TargetName).dll" />
       <_PackSource Include="$(OutDir)RFiDGear.ExtensionLibraries.*.dll" />
@@ -72,8 +104,10 @@
     <!-- Lines is a list that is split at semicolons: one in the name must stay in its line. -->
     <WriteLinesToFile File="$(_PackStage)extension.json" Lines="$(_PackManifest.Replace(';', '%3B'))" Overwrite="true" />
 
-    <Delete Files="$(_PackFile)" />
-    <ZipDirectory SourceDirectory="$(_PackStage)" DestinationFile="$(_PackFile)" Overwrite="true" />
-    <Message Importance="high" Text="Extension package: $(_PackFile)" />
+    <!-- The two tasks that touch the package file itself: a file that is held open (RFiDGear is installing from it) is a warning
+         for a build that did not ask for a package, and the message that says where it is follows only a package that was written. -->
+    <Delete Files="$(_PackFile)" ContinueOnError="$(_PackContinue)" />
+    <ZipDirectory SourceDirectory="$(_PackStage)" DestinationFile="$(_PackFile)" Overwrite="true" ContinueOnError="$(_PackContinue)" />
+    <Message Importance="high" Condition="'$(MSBuildLastTaskResult)' == 'true'" Text="Extension package: $(_PackFile)" />
   </Target>
 </Project>
