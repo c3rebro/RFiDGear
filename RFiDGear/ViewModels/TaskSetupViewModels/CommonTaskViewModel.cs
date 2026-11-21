@@ -1663,7 +1663,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 var start = ProgramCommandLine.Build(ProgramToExecute, ProgramValues())
                     ?? throw new FormatException("The program of the task is not a file name in quotation marks followed by its arguments.");
 
-                var info = new ProcessStartInfo()
+                var info = new ProcessStartInfo
                 {
                     FileName = start.FileName,
                     Arguments = start.Arguments,
