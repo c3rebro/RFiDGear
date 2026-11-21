@@ -138,7 +138,11 @@ namespace RFiDGear.Bridge.SampleClient
 
         /// <summary>Connects to RFiDGear and makes the handshake.</summary>
         /// <param name="pipeName">The pipe name; the one of the current user when <see langword="null"/>.</param>
-        /// <param name="events">The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent.</param>
+        /// <param name="events">
+        /// The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent. The notice that ends a card
+        /// (<see cref="BridgeEvents.CardPresentationEnded"/>) is always added: the client's own check of whose run it is learns the runs of the
+        /// cards it approved from it. A RFiDGear that does not offer it ignores the name, and it is only ever sent in a mode that waits for approval.
+        /// </param>
         /// <param name="connectTimeout">How long to wait for the pipe; ten seconds when <see langword="null"/>.</param>
         /// <param name="cancellationToken">Cancels the connection.</param>
         /// <returns>The connected client.</returns>
@@ -165,7 +169,7 @@ namespace RFiDGear.Bridge.SampleClient
                         ClientVersion = "1.0",
                         ProtocolMajorMin = BridgeProtocol.Major,
                         ProtocolMajorMax = BridgeProtocol.Major,
-                        Events = events ?? Array.Empty<string>(),
+                        Events = WithTheNoticesTheClientNeeds(events),
                     }).WaitAsync(patience, cancellationToken).ConfigureAwait(false);
 
                     return client;
@@ -574,6 +578,10 @@ namespace RFiDGear.Bridge.SampleClient
 
             return false;
         }
+
+        // The events the caller asked for, and the one the client's own check cannot do without.
+        private static IReadOnlyList<string> WithTheNoticesTheClientNeeds(IReadOnlyList<string>? events) =>
+            (events ?? Array.Empty<string>()).Concat(new[] { BridgeEvents.CardPresentationEnded }).Distinct(StringComparer.Ordinal).ToList();
 
         private void NoteApprovedRun(string runId)
         {

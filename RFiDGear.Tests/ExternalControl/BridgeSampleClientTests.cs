@@ -416,7 +416,8 @@ namespace RFiDGear.Tests.ExternalControl
             var registry = SecureKeyRegistry.Create(
                 new[] { new SecureKeyProviderRegistration(BridgeKeyProvider.ProviderId, BridgeKeyProvider.DisplayName, keys) },
                 Array.Empty<Lazy<ISecureKeyProvider, ISecureKeyProviderMetadata>>());
-            var client = await ConnectAsync(pipe, BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded);
+            // The caller asks for the cards only: the sample asks for the notice that names the run of an approved card itself.
+            var client = await ConnectAsync(pipe, BridgeEvents.CardPresented);
             var key = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
             using var vault = new SampleVault("orders/4711", key);
             client.KeyVault = vault.ResolveAsync;
