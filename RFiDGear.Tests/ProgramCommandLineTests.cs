@@ -14,11 +14,20 @@ using Xunit;
 namespace RFiDGear.Tests
 {
     /// <summary>
+    /// Serialises the tests that replace a static of the common task (the call that closes the application, the call that
+    /// starts a program): two classes that save and restore one delegate must not run side by side.
+    /// </summary>
+    [CollectionDefinition("CommonTaskStatics", DisableParallelization = true)]
+    public class CommonTaskStaticsCollection
+    {
+    }
+
+    /// <summary>
     /// The program task: what the text of the task turns into (<see cref="ProgramCommandLine"/>) and that a run leaves the text
     /// alone, so that the next card gets its own values. The placeholders of the text, <c>%UID</c> and the others, used to be
     /// replaced in the text of the task itself, and not at all in the arguments.
     /// </summary>
-    [Collection("ProgramStarter")]
+    [Collection("CommonTaskStatics")]
     public class ProgramCommandLineTests
     {
         private static readonly DateTime Moment = new DateTime(2026, 11, 21, 9, 30, 15);
@@ -112,6 +121,15 @@ namespace RFiDGear.Tests
 
             Assert.NotNull(start);
             Assert.Equal("%UID $A 04AABBCC", start.Arguments);
+        }
+
+        [Fact]
+        public void AVariableName_IsFoundWithoutRegardToCase_AsTheVariablesOfARunAreEverywhere()
+        {
+            var start = ProgramCommandLine.Build("\"a.exe\" $JOB $Job", Values(new Dictionary<string, string> { ["$job"] = "J-7" }));
+
+            Assert.NotNull(start);
+            Assert.Equal("J-7 J-7", start.Arguments);
         }
 
         [Fact]

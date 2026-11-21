@@ -33,7 +33,8 @@ namespace RFiDGear.Infrastructure.Tasks
 
         /// <summary>
         /// The variables of the run (start-up arguments, <c>startRun</c>, an extension). Only a name with a dollar sign in it counts,
-        /// anywhere in it (<c>$JOB</c>, <c>JOB$ID</c>), as the start-up arguments accept it.
+        /// anywhere in it (<c>$JOB</c>, <c>JOB$ID</c>), as the start-up arguments accept it. A name is found in the text without
+        /// regard to case, as the variables of a run are matched everywhere else (<c>$job</c> fills <c>$JOB</c>).
         /// </summary>
         public IReadOnlyDictionary<string, string>? Variables { get; init; }
     }
@@ -134,10 +135,11 @@ namespace RFiDGear.Infrastructure.Tasks
             {
                 string? hit = null;
 
-                // A name may start anywhere (JOB$ID): every position is tried, the longest name first.
+                // A name may start anywhere (JOB$ID): every position is tried, the longest name first. The case does not matter,
+                // as everywhere else a variable of a run is looked up; the value is that of the name as the dictionary holds it.
                 foreach (var name in names)
                 {
-                    if (string.CompareOrdinal(text, position, name, 0, name.Length) == 0)
+                    if (string.Compare(text, position, name, 0, name.Length, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         hit = name;
                         break;
