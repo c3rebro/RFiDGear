@@ -43,6 +43,9 @@ namespace RFiDGear.Tests
         [InlineData(32, DataExplorer_DataBlock.Block0, 0)]
         [InlineData(32, DataExplorer_DataBlock.Block2, 2)]
         [InlineData(5, DataExplorer_DataBlock.Block1, 1)]
+        [InlineData(-1, DataExplorer_DataBlock.Block3, 3)]
+        [InlineData(40, DataExplorer_DataBlock.Block3, 3)]
+        [InlineData(99, DataExplorer_DataBlock.Block3, 3)]
         public void TheSelection_NamesTheBlockOfTheSectorThatItSays(int sector, DataExplorer_DataBlock selection, int expected)
         {
             Assert.Equal(expected, RFiDGear.Infrastructure.Classic.DataExplorerBlocks.IndexInSector(selection, sector));

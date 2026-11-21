@@ -13,7 +13,7 @@ namespace RFiDGear.Infrastructure.Classic
     {
         /// <summary>Tells which block of a sector (counted from the first block of the sector) the selection names.</summary>
         /// <param name="selection">The selection of the dialog.</param>
-        /// <param name="sector">The sector the dialog is on. A number that is no sector is taken as one of 4 blocks.</param>
+        /// <param name="sector">The sector the dialog is on (0 to 39). A number that is no sector is taken as one of 4 blocks.</param>
         /// <returns>The block number within the sector: 0 to 3, or 0 to 15 for the trailer of a sector of 16 blocks.</returns>
         internal static int IndexInSector(DataExplorer_DataBlock selection, int sector)
         {
@@ -22,7 +22,9 @@ namespace RFiDGear.Infrastructure.Classic
                 return (int)selection;
             }
 
-            var blocks = sector >= ClassicLayout.FirstLargeSector ? ClassicLayout.LargeSectorBlocks : ClassicLayout.SmallSectorBlocks;
+            var blocks = sector is >= ClassicLayout.FirstLargeSector and <= ClassicLayout.MaxSector
+                ? ClassicLayout.LargeSectorBlocks
+                : ClassicLayout.SmallSectorBlocks;
 
             return blocks - 1;
         }
