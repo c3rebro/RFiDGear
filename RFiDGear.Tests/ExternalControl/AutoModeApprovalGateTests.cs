@@ -407,6 +407,46 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task ACardIsHandedOverInOneStepWithTheCheckThatTheStartHasNotEnded_ACancelWaitsAndNoCardFollowsIt()
+        {
+            using var handingOver = new ManualResetEventSlim(false);
+            using var letGo = new ManualResetEventSlim(false);
+            var told = new List<string>();
+            var gate = new AutoModeApprovalGate(
+                Session,
+                TimeSpan.FromSeconds(30),
+                () => "rev-1",
+                (name, _, _) =>
+                {
+                    lock (told)
+                    {
+                        told.Add(name);
+                    }
+
+                    if (name == BridgeEvents.CardPresented)
+                    {
+                        handingOver.Set();
+                        letGo.Wait(TimeSpan.FromSeconds(5));
+                    }
+                },
+                () => Now);
+            var waiting = Task.Run(() => gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None));
+            Assert.True(handingOver.Wait(TimeSpan.FromSeconds(5)));
+
+            // A stop comes in while the card is being handed over. It has to wait until the card is out, so that no card can be queued
+            // after the stop; the card is then ended as stopped.
+            var cancelling = Task.Run(() => gate.Cancel(PresentationEndReasons.Stopped));
+            await Task.Delay(200);
+            var cancelWaited = !cancelling.IsCompleted;
+            letGo.Set();
+            await cancelling;
+
+            Assert.True(cancelWaited);
+            Assert.Null(await waiting);
+            Assert.Equal(new[] { BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded }, told);
+        }
+
+        [Fact]
         public async Task ADeclineAfterTheTimeLimit_IsNoAnswerEither_AndTheWaitEndsAsExpired()
         {
             var rig = new Rig(TimeSpan.FromSeconds(30));

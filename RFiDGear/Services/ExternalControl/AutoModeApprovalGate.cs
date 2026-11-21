@@ -135,7 +135,9 @@ namespace RFiDGear.Services.ExternalControl
             }
 
             // The start may have ended while the revision was read (the mode was stopped, or the connection of the client ended): the
-            // card is not shown then, to anybody.
+            // card is not shown then, to anybody. The card is handed to the queue under the lock that a cancel takes, so that the check
+            // and the hand-over are one step: a card is either queued before the stop is, or not at all, and nothing is shown after
+            // the notice that the mode stopped. (Handing over is quick and never waits: the queue only wakes its sender.)
             lock (_gate)
             {
                 if (_endedWith != null)
@@ -147,21 +149,21 @@ namespace RFiDGear.Services.ExternalControl
 
                     return null;
                 }
-            }
 
-            _publish(
-                BridgeEvents.CardPresented,
-                true,
-                (seq, sessionId, at) => new CardPresentedEvent
-                {
-                    Seq = seq,
-                    SessionId = sessionId,
-                    At = at,
-                    PresenceId = presence.PresenceId,
-                    Uid = presence.Uid,
-                    ProjectRevision = revision,
-                    ExpiresAt = expiresAt,
-                });
+                _publish(
+                    BridgeEvents.CardPresented,
+                    true,
+                    (seq, sessionId, at) => new CardPresentedEvent
+                    {
+                        Seq = seq,
+                        SessionId = sessionId,
+                        At = at,
+                        PresenceId = presence.PresenceId,
+                        Uid = presence.Uid,
+                        ProjectRevision = revision,
+                        ExpiresAt = expiresAt,
+                    });
+            }
 
             Decision decision;
 
