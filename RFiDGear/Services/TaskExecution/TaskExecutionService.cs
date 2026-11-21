@@ -434,6 +434,9 @@ namespace RFiDGear.Services.TaskExecution
                 SelectedSetupViewModel = request.SelectedSetupViewModel
             };
 
+            // A new run starts without the colour that the run before left on the top node of a chip.
+            ClearProgrammingResults(request);
+
             var descriptors = BuildTaskDescriptors(request);
             // Use the caller-supplied RunId so the extension host and structured logs share one identity.
             var runId = !string.IsNullOrEmpty(request.RunId) ? request.RunId : Guid.NewGuid().ToString("N");
@@ -515,7 +518,7 @@ namespace RFiDGear.Services.TaskExecution
             }
             finally
             {
-                ResetSelectionState(request, result);
+                ResetSelectionState(request, result, cancellationToken);
                 triggerReadChip.IsEnabled = triggerReadChip.Tag is bool value && value;
             }
 
@@ -1287,12 +1290,33 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
-        private void ResetSelectionState(TaskExecutionRequest request, TaskExecutionResult result)
+        private static void ClearProgrammingResults(TaskExecutionRequest request)
+        {
+            if (request.TreeViewParentNodes == null)
+            {
+                return;
+            }
+
+            foreach (var node in request.TreeViewParentNodes)
+            {
+                node.IsProgrammingCompletedSuccessfully = null;
+            }
+        }
+
+        private void ResetSelectionState(TaskExecutionRequest request, TaskExecutionResult result, CancellationToken cancellationToken)
         {
             var selectedNode = request.TreeViewParentNodes?.FirstOrDefault(y => y.IsSelected);
             if (selectedNode != null)
             {
                 selectedNode.IsBeingProgrammed = null;
+
+                // The top node shows how the run ended: green when it succeeded (a failure that a task of the project handles on purpose
+                // is no failure of the run), red when it failed or ended on an error before the end of the task list. A run that was
+                // cancelled has no verdict.
+                selectedNode.IsProgrammingCompletedSuccessfully = cancellationToken.IsCancellationRequested
+                    ? null
+                    : result.TerminalStatus is TaskLoopTerminalStatus.Success or TaskLoopTerminalStatus.CompletedWithIntentionalFailures;
+
                 result.RunSelectedOnly = false;
             }
         }

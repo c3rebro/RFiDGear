@@ -1217,6 +1217,136 @@ namespace RFiDGear.Tests
             Assert.Empty(tasks[2].AttemptResults);
         }
 
+        // ── the top node of the chip tree shows how the run ended ──
+        // The node was yellow while a run was on it and then lost its colour: the green and the red that the window is built
+        // for never came, because nothing ever set the result. The card of these runs has the UID 0123456789.
+
+        // Runs a project on the card with one node of the tree for the UID that is given (the window selects the node of the card
+        // when it syncs the selection). The flag that the node had before the run, and a token that may already be cancelled, are
+        // the other things a case needs to set. Returns the node, and the error that ended the run when there was one.
+        private static async Task<(RFiDGear.ViewModel.RFiDChipParentLayerViewModel Node, Exception Failure)> RunWithATopNodeAsync(
+            string nodeUid, bool? flagBeforeTheRun, bool tokenIsCancelled, params Func<object>[] createTasks)
+        {
+            RFiDGear.ViewModel.RFiDChipParentLayerViewModel node = null;
+            Exception failure = null;
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var chip = new RFiDGear.Models.GenericChipModel("0123456789", CARD_TYPE.EM4102);
+                var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider { GenericChip = chip, Card = chip };
+
+                node = new RFiDGear.ViewModel.RFiDChipParentLayerViewModel(
+                    new RFiDGear.Models.GenericChipModel(nodeUid, CARD_TYPE.EM4102),
+                    new ObservableCollection<RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces.IDialogViewModel>(),
+                    false)
+                {
+                    IsProgrammingCompletedSuccessfully = flagBeforeTheRun,
+                    IsSelected = tokenIsCancelled
+                };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var handler = new ChipTaskHandlerModel();
+
+                    foreach (var create in createTasks)
+                    {
+                        handler.TaskCollection.Add(create());
+                    }
+
+                    var request = new TaskExecutionRequest
+                    {
+                        TaskHandler = handler,
+                        TreeViewParentNodes = new ObservableCollection<RFiDGear.ViewModel.RFiDChipParentLayerViewModel> { node },
+                        VariablesFromArgs = new Dictionary<string, string>(),
+                        Timeouts = TaskExecutionTimeouts.Default
+                    };
+
+                    using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+                    if (tokenIsCancelled)
+                    {
+                        limit.Cancel();
+                    }
+
+                    try
+                    {
+                        await new TaskExecutionService(new FixedReaderDeviceProvider(reader), new StubDispatcherTimerAdapter(), new StubDispatcherTimerAdapter())
+                            .ExecuteOnceAsync(request, limit.Token);
+                    }
+                    catch (Exception e)
+                    {
+                        failure = e;
+                    }
+                }
+            });
+
+            return (node, failure);
+        }
+
+        [Fact]
+        public async Task TheTopNode_IsGreenAfterARunThatSucceeded()
+        {
+            var (node, failure) = await RunWithATopNodeAsync("0123456789", null, false, () => CheckUid("0", "0123456789"));
+
+            Assert.Null(failure);
+            Assert.True(node.IsProgrammingCompletedSuccessfully);
+            Assert.Null(node.IsBeingProgrammed);
+        }
+
+        [Fact]
+        public async Task TheTopNode_IsGreenAfterARunWhoseFailuresWereMeant()
+        {
+            // The check answers no, as a question; the run ends as "completed with intentional failures".
+            var (node, failure) = await RunWithATopNodeAsync("0123456789", null, false, () => CheckUid("0", "ABCDEF0123"));
+
+            Assert.Null(failure);
+            Assert.True(node.IsProgrammingCompletedSuccessfully);
+        }
+
+        [Fact]
+        public async Task TheTopNode_IsRedAfterARunThatFailed()
+        {
+            // No reader of this test has page operations: the task ends as a failed one that no task of the project handles.
+            var (node, failure) = await RunWithATopNodeAsync(
+                "0123456789", null, false, () => new MifareUltralightSetupViewModel { CurrentTaskIndex = "0", SelectedTaskType = TaskType_MifareUltralightTask.ReadData });
+
+            Assert.Null(failure);
+            Assert.False(node.IsProgrammingCompletedSuccessfully);
+            Assert.Null(node.IsBeingProgrammed);
+        }
+
+        [Fact]
+        public async Task TheTopNode_IsRedAfterARunThatEndedOnAnError()
+        {
+            var (node, failure) = await RunWithATopNodeAsync("0123456789", null, false, () => new StubTaskModel { CurrentTaskIndex = "0" });
+
+            Assert.IsType<NotSupportedException>(failure);
+            Assert.False(node.IsProgrammingCompletedSuccessfully);
+            Assert.Null(node.IsBeingProgrammed);
+        }
+
+        [Fact]
+        public async Task ARunThatWasCancelled_LeavesTheTopNodeWithoutAVerdict()
+        {
+            var (node, failure) = await RunWithATopNodeAsync("0123456789", true, true, () => CheckUid("0", "0123456789"));
+
+            Assert.IsAssignableFrom<OperationCanceledException>(failure);
+            Assert.Null(node.IsProgrammingCompletedSuccessfully);
+            Assert.Null(node.IsBeingProgrammed);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ANewRun_ClearsTheColourOfTheRunBefore_OnEveryNode(bool before)
+        {
+            // The node is of another card: this run never selects it, so only the start of the run can clear what the run before left.
+            var (node, failure) = await RunWithATopNodeAsync("ABCDEF0123", before, false, () => CheckUid("0", "0123456789"));
+
+            Assert.Null(failure);
+            Assert.Null(node.IsProgrammingCompletedSuccessfully);
+        }
+
         // ── Check UID ──
         // A task of the type Check UID was saved by the dialog and never run by the loop: nothing ran, the index did not move.
         // The card of these runs has the UID 0123456789.
