@@ -31,7 +31,10 @@ namespace RFiDGear.Infrastructure.Tasks
         /// <summary>The number of applications of a DESFire card (<c>%COUNTAPPS</c>).</summary>
         public string ApplicationCount { get; init; } = string.Empty;
 
-        /// <summary>The variables of the run (start-up arguments, <c>startRun</c>, an extension); only names with a dollar sign count.</summary>
+        /// <summary>
+        /// The variables of the run (start-up arguments, <c>startRun</c>, an extension). Only a name with a dollar sign in it counts,
+        /// anywhere in it (<c>$JOB</c>, <c>JOB$ID</c>), as the start-up arguments accept it.
+        /// </summary>
         public IReadOnlyDictionary<string, string>? Variables { get; init; }
     }
 
@@ -114,7 +117,7 @@ namespace RFiDGear.Infrastructure.Tasks
             // Walked once, longest name first, so that $JOB does not eat the start of $JOBNUMBER. A value is put in as it is:
             // text that happens to look like another name is left alone because every name is taken from the original text.
             var names = values.Variables.Keys
-                .Where(name => name.StartsWith('$') && name.Length > 1)
+                .Where(name => name.Contains('$'))
                 .OrderByDescending(name => name.Length)
                 .ThenBy(name => name, StringComparer.Ordinal)
                 .ToArray();
@@ -131,15 +134,13 @@ namespace RFiDGear.Infrastructure.Tasks
             {
                 string? hit = null;
 
-                if (text[position] == '$')
+                // A name may start anywhere (JOB$ID): every position is tried, the longest name first.
+                foreach (var name in names)
                 {
-                    foreach (var name in names)
+                    if (string.CompareOrdinal(text, position, name, 0, name.Length) == 0)
                     {
-                        if (string.CompareOrdinal(text, position, name, 0, name.Length) == 0)
-                        {
-                            hit = name;
-                            break;
-                        }
+                        hit = name;
+                        break;
                     }
                 }
 

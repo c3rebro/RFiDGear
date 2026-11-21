@@ -124,6 +124,17 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void ADollarSign_MayStandAnywhereInTheNameOfAVariable_AsTheStartUpArgumentsAcceptIt()
+        {
+            var start = ProgramCommandLine.Build(
+                "\"a.exe\" JOB$ID cost$ $JOB",
+                Values(new Dictionary<string, string> { ["JOB$ID"] = "7", ["$"] = "usd", ["$JOB"] = "j" }));
+
+            Assert.NotNull(start);
+            Assert.Equal("7 costusd j", start.Arguments);
+        }
+
+        [Fact]
         public void AnEntryWithoutADollarSign_IsNotAVariable()
         {
             var start = ProgramCommandLine.Build("\"a.exe\" JOB", Values(new Dictionary<string, string> { ["JOB"] = "x" }));
@@ -224,6 +235,25 @@ namespace RFiDGear.Tests
 
                 Assert.Equal(ERROR.NoError, task.CurrentTaskErrorLevel);
                 Assert.Equal("[][][]", Assert.Single(starts.Started).Arguments);
+            });
+        }
+
+        [Fact]
+        public async Task AReadThatFoundNoCard_GivesEmptyValues_NotTheNameOfNoTag()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var starts = new RecordedStarts();
+                var task = new CommonTaskViewModel
+                {
+                    SelectedTaskType = TaskType_CommonTask.ExecuteProgram,
+                    ProgramToExecute = "\"a.exe\" [%UID][%CHIPTYPE]",
+                    GenericChip = new GenericChipModel()
+                };
+
+                await task.ExecuteProgramCommand.ExecuteAsync(null);
+
+                Assert.Equal("[][]", Assert.Single(starts.Started).Arguments);
             });
         }
 

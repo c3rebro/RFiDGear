@@ -1701,7 +1701,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             return new ProgramTaskValues
             {
                 Uid = GenericChip?.UID ?? string.Empty,
-                ChipType = GenericChip == null
+                // A model without a UID is the empty one of a read that found no card: its type is "no tag", not a chip type.
+                ChipType = string.IsNullOrEmpty(GenericChip?.UID)
                     ? string.Empty
                     : ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip.CardType))) ?? string.Empty,
                 Now = DateTime.Now,
