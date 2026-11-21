@@ -13,6 +13,10 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
+    <!-- The tests put a stand-in between the loop and RFiDGear (a slow request, a status that says another mode is on). -->
+    <InternalsVisibleTo Include="RFiDGear.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Bridge.Contracts\RFiDGear.Bridge.Contracts.csproj" />
     <PackageReference Include="StreamJsonRpc" Version="2.26.150" />
   </ItemGroup>

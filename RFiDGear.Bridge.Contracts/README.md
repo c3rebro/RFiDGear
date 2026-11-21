@@ -87,6 +87,13 @@ one response):
   automatic mode too, from a number onward, with an explicit `gap` flag.
 - `scanReader` [reader.scan]: reads the reader now.
 - `startAutoMode`, `stopAutoMode` [autoMode]: continuous processing of cards.
+  With `requireApproval` [autoMode.approval] a card is run only when the client
+  approves it; it needs `stopOnDisconnect`, and `approvalTimeoutMs` (2000 to
+  120000, default 15000) is how long a card is waited for.
+- `approveCard`, `declineCard` [autoMode.approval]: the answer about the card
+  that was shown (`cardPresented`), once, for that `presenceId`, from the
+  connection that started the mode. `approveCard` carries the variables of this
+  one run and optionally the `expectProjectRevision` the project must have.
 - `registerKeyProvider` [keys.provider]: makes the client the supplier of card
   keys for the rest of the connection. With `ownRunsOnly` [keys.context] only
   for the runs that the client started; the answer says whether that is in force.
@@ -102,6 +109,12 @@ only those are sent; each carries `seq`, `sessionId` and `at`):
 - `autoModeChanged`, `autoRunCompleted` [events.autoMode]: the mode was
   switched on or off; a card was processed. The result of the run that stops
   the mode comes before the notice that it stopped.
+- `cardPresented`, `cardPresentationEnded` [autoMode.approval]: a card was
+  shown and waits for the answer (`presenceId`, `uid`, `projectRevision`,
+  `expiresAt`); the wait for it ended, with the reason `approved` (and the
+  `runId`), `declined`, `expired`, `stopped`, `clientLost`, `projectChanged`,
+  `notAdmitted` or `cardChanged`. Both are addressed to the connection that
+  started the mode, and never to another one.
 - `shuttingDown` [events.lifecycle]: RFiDGear is closing. Best effort: the
   connection ending without it proves nothing.
 
@@ -118,7 +131,8 @@ that registered for a card key. See the client guide for the rules. With
 **Capabilities:** `session`, `status`, `project.load`, `project.revision`,
 `execution.run`, `execution.cancel`, `execution.resultLookup`,
 `execution.resultLog`, `execution.journal`, `execution.verificationDetails`,
-`autoMode`, `keys.provider`, `keys.context`, `reader.scan`, and the event groups
+`autoMode`, `autoMode.approval`, `keys.provider`, `keys.context`, `reader.scan`,
+and the event groups
 `events.execution`, `events.running`, `events.reader`, `events.project`,
 `events.autoMode`, `events.lifecycle`.
 `execution.journal`, `project.revision`, `execution.verificationDetails` and
@@ -135,7 +149,14 @@ that state, and the result says which state the run started with. The revision
 is opaque and valid for one RFiDGear process only.
 `keys.context`: a request for a key says where its run comes from (`requestId`,
 `source`, `projectRevision`), and a client can ask RFiDGear to refuse, for it,
-every request of a run that it did not start (`ownRunsOnly`).
+every request of a run that it did not start (`ownRunsOnly`); the run of a card
+that the connection approved in automatic mode counts as its own.
+`autoMode.approval`: automatic mode that waits for the client's approval of
+every card (`startAutoMode` with `requireApproval`, `approveCard`,
+`declineCard`, `cardPresented`, `cardPresentationEnded`). Nothing is run for a
+card that was not approved, once, within the time limit, by the connection that
+started the mode; the run is held to the UID that was approved and, when the
+client names it, to the state of the project.
 
 **What a run reports:**
 
@@ -144,7 +165,9 @@ the run id, `source` (`bridge` or `autoMode`), `status` (`success`,
 `completedWithIntentionalFailures`, `failure`, `cancelled`, `timedOut`), the
 `failureReason` (`none`, `cancelled`, `timedOut`, `faulted`, `bridgeFault`,
 `unknown`), the counts, the times, the card UID when it is known, its number in
-the sequence of results (`resultSeq`), and one outcome per task. The number of
+the sequence of results (`resultSeq`), and one outcome per task. A result also
+says the `projectRevision` the run started with and, for a card that was
+approved in automatic mode, the `presenceId`. The number of
 outcomes is always the number of tasks, or the result says `bridgeFault`: a
 result that is incomplete is never passed off as a complete one. The
 states a lookup answers are `running`, `completed` (the result may be gone),
@@ -169,7 +192,9 @@ not fit reach a client as `-32601` and `-32602`.
 - 1008 `projectNotFound`, 1009 `projectUnsupportedFormat`, 1010
   `projectLoadFailed`, 1011 `noProjectLoaded`, 1012 `projectMismatch`.
 - 1013 `requestIdConflict`: the same id with other content.
-- 1016 `internalError`, 1017 `noReader`.
+- 1016 `internalError`, 1017 `noReader`, 1018 `approvalNotPending`: an answer
+  about a card that is not waited for (any more), that was answered already, or
+  that comes from another connection than the one that started the mode.
 
 `neverStarted: true` says that the request did not touch a card and a new
 attempt is safe. An error without it does not say the opposite: ask.

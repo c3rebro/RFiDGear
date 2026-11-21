@@ -7,7 +7,6 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Security.Principal;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -49,8 +48,6 @@ namespace RFiDGear.Bridge.SampleClient
 
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
 
-        // The form of a variable a project can name for an approved UID: a dollar sign and a name, as the Check UID task reads it.
-        private static readonly Regex UidVariablePattern = new Regex(@"^\$[A-Za-z0-9_]{1,64}\z", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
         private readonly NamedPipeClientStream _pipe;
         private readonly JsonRpc _rpc;
@@ -139,9 +136,11 @@ namespace RFiDGear.Bridge.SampleClient
         /// <summary>Connects to RFiDGear and makes the handshake.</summary>
         /// <param name="pipeName">The pipe name; the one of the current user when <see langword="null"/>.</param>
         /// <param name="events">
-        /// The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent. The notice that ends a card
-        /// (<see cref="BridgeEvents.CardPresentationEnded"/>) is always added: the client's own check of whose run it is learns the runs of the
-        /// cards it approved from it. A RFiDGear that does not offer it ignores the name, and it is only ever sent in a mode that waits for approval.
+        /// The wire names of the events to receive (<see cref="BridgeEvents"/>); only these are sent. The cards that automatic mode shows
+        /// for approval (<see cref="BridgeEvents.CardPresented"/>) and the notice that ends each of them
+        /// (<see cref="BridgeEvents.CardPresentationEnded"/>) are always added, and so is <see cref="BridgeEvents.AutoModeChanged"/> (the loop ends
+        /// when RFiDGear stops the mode): <see cref="ApprovalModeLoop"/> and the client's own check of whose run it is need them. A RFiDGear that
+        /// does not offer them ignores the names, and the first two are only ever sent in a mode that waits for approval.
         /// </param>
         /// <param name="connectTimeout">How long to wait for the pipe; ten seconds when <see langword="null"/>.</param>
         /// <param name="cancellationToken">Cancels the connection.</param>
@@ -304,7 +303,7 @@ namespace RFiDGear.Bridge.SampleClient
             ArgumentException.ThrowIfNullOrEmpty(requestId);
             ArgumentNullException.ThrowIfNull(approve);
 
-            if (uidVariable == null || !UidVariablePattern.IsMatch(uidVariable))
+            if (!ApprovalPolicy.IsUidVariable(uidVariable))
             {
                 throw new ArgumentException("The variable of the approved UID is a dollar sign and a name, such as $EXPECTEDUID.", nameof(uidVariable));
             }
@@ -579,9 +578,12 @@ namespace RFiDGear.Bridge.SampleClient
             return false;
         }
 
-        // The events the caller asked for, and the one the client's own check cannot do without.
+        // The events the caller asked for, and the ones that the approval loop and the client's own check cannot do without.
         private static IReadOnlyList<string> WithTheNoticesTheClientNeeds(IReadOnlyList<string>? events) =>
-            (events ?? Array.Empty<string>()).Concat(new[] { BridgeEvents.CardPresentationEnded }).Distinct(StringComparer.Ordinal).ToList();
+            (events ?? Array.Empty<string>())
+                .Concat(new[] { BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded, BridgeEvents.AutoModeChanged })
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
 
         private void NoteApprovedRun(string runId)
         {

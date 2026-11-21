@@ -607,6 +607,32 @@ passed with a real reader; until then a snapshot may be re-baselined.
   different paths. These are information and a
   convenience, not protection against a hostile program of the same user (see
   the guide).
+- **The loop of a client for the mode that waits for approval**
+  (`ApprovalModeLoop` of the sample client, the reference for the guide's
+  "Automatic mode that waits for your approval"): it starts the mode with
+  `requireApproval` and `stopOnDisconnect`, hands each `cardPresented` to a
+  decision (`CardDecision`) and answers with the presence id. The decision
+  runs on its own task, so the events are never held up by it, and it is
+  dropped (its token cancelled, nothing answered) when the wait for its card
+  ends or the loop does. It fails closed: a decision that throws (a time limit
+  of its own too), or a pin on a state that RFiDGear did not tell, is a
+  decline; a late answer (`approvalNotPending`) is tolerated; the loop ends
+  with the mode or the connection. It stops only a mode that it switched on
+  itself and that `getStatus` still shows as a mode of a client (`startedBy`
+  `bridge`, whether or not it waits for approval: a mode that runs every card
+  is the one that must never be left on; `stopAutoMode` stops any mode, and
+  the notice that its own mode ended may be on its way while a user's mode is
+  already on; neither request waits for longer than `Grace`, and whatever
+  they do the loop ends): a refused start
+  (`autoModeActive`) and a mode that has ended leave the mode alone. After the
+  stop it still collects the ends of the waits that RFiDGear tells (for
+  `Grace`, 2 s; what is not told is not made up), and an answer that RFiDGear
+  has not replied to is not waited for longer (outcome `pending`, never sent
+  again). It decides nothing itself: `ApprovalPolicy` makes the fixed
+  rules of `auto --approve-with=$NAME`, `--decline` and `--no-answer` to try
+  the flow by hand, and refuses an option it does not know (only a bare `auto`
+  is the plain mode that runs every card; cases 52 to 65 of
+  `EXTERNAL-CONTROL.md`).
 - Logs hold method names, request and run ids, numbers and error kinds. Never a
   variable, a path, a UID, a key or the text of an exception (`SanitizedException`
   is for the existing logs; the bridge logs only the type). Errors on the wire

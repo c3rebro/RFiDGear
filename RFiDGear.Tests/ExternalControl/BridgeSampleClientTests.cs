@@ -15,6 +15,8 @@ using RFiDGear.Services.ExternalControl;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Tests.CardCheckAssistant;
 
+using StreamJsonRpc;
+
 using Xunit;
 
 namespace RFiDGear.Tests.ExternalControl
@@ -945,6 +947,814 @@ namespace RFiDGear.Tests.ExternalControl
             var other = await ConnectAsync(name);
 
             await Assert.ThrowsAsync<NotSupportedException>(() => other.RegisterKeyProviderAsync());
+        }
+
+        // ── The loop of a program that decides about every card (autoMode.approval) ──
+
+        // Starts the loop against the real bridge and waits until the mode is on; the test plays the machine against the approval the
+        // host was given (what the main window does when a card is put on the reader).
+        private async Task<(BridgeSampleClient Client, FakeExtensionHost Host, Task<IReadOnlyList<CardOutcome>> Loop, CancellationTokenSource Stop, List<CardOutcome> Seen)> StartLoopAsync(
+            Func<CardPresentedEvent, CancellationToken, Task<CardDecision>> decide,
+            string? revision = "rev-1",
+            Func<IBridgeService, IBridgeService>? wrap = null,
+            TimeSpan? grace = null)
+        {
+            var (_, pipe, host, _) = Start();
+            host.ProjectHost.Revision = revision;
+            var client = await ConnectAsync(pipe);
+            var stop = new CancellationTokenSource();
+            _disposables.Add(stop);
+            var seen = new List<CardOutcome>();
+            var service = wrap == null ? client.Service : wrap(client.Service);
+            var loop = new ApprovalModeLoop(client, service) { Grace = grace ?? TimeSpan.FromSeconds(2) }
+                .RunAsync(decide, onOutcome: outcome => { lock (seen) { seen.Add(outcome); } }, cancellationToken: stop.Token);
+            await WaitUntilAsync(() => host.AutoModeHost.Approval != null);
+
+            return (client, host, loop, stop, seen);
+        }
+
+        private static Task<AutoModeApproval?> Present(FakeExtensionHost host, string presenceId, string uid) =>
+            Task.Run(() => host.AutoModeHost.Approval!.RequestAsync(new AutoModePresence(presenceId, uid), CancellationToken.None));
+
+        private static async Task<IReadOnlyList<CardOutcome>> EndTheLoopAsync(Task<IReadOnlyList<CardOutcome>> loop, CancellationTokenSource stop, List<CardOutcome> seen, int outcomes)
+        {
+            await WaitUntilAsync(() => { lock (seen) { return seen.Count >= outcomes; } });
+            stop.Cancel();
+
+            return await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public async Task TheLoop_ApprovesACardWithItsVariablesAndTheStateItWasShownWith_AndTellsHowItEnded()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync((shown, _) => Task.FromResult(CardDecision.ApproveWith(new Dictionary<string, string> { ["$EXPECTEDUID"] = shown.Uid })));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            approval!.NotifyRunAdmitted("run-1");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Equal("04AA", approval.Variables["$EXPECTEDUID"]);
+            Assert.Equal("rev-1", approval.ExpectProjectRevision);
+            Assert.Equal(new CardOutcome("p-1", "04AA", "approved", PresentationEndReasons.Approved, "run-1"), Assert.Single(outcomes));
+
+            // The mode is stopped when the loop ends: nothing is left running that nobody decides about.
+            Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardTheProgramDoesNotApprove_AndANotApprovedCardRunsNothing()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.Decline));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Null(approval);
+            Assert.Equal(("declined", PresentationEndReasons.Declined), (outcomes[0].Answer, outcomes[0].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardWhenTheDecisionThrows_ThatIsNoApproval()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync((_, _) => throw new InvalidOperationException("The list of written cards could not be read."));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Null(approval);
+            Assert.Equal("declined", outcomes[0].Answer);
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardWhoseProjectStateCannotBeHeldTo_AndApprovesItWhenTheProgramDoesNotAskForThat()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync(
+                (shown, _) => Task.FromResult(shown.Uid == "04AA" ? CardDecision.ApproveWith() : CardDecision.ApproveWith(pinRevision: false)),
+                revision: null);
+
+            var pinned = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var notPinned = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            notPinned!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            // The state of the project cannot be told, so an approval that insists on it is no approval; one that does not is taken as it is.
+            Assert.Null(pinned);
+            Assert.Null(notPinned.ExpectProjectRevision);
+            Assert.Equal(new[] { "declined", "approved" }, outcomes.Select(o => o.Answer));
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardWhoseApprovalRFiDGearRefusesForWhatItSays_InsteadOfLeavingItToExpire()
+        {
+            // A report target that is no full path: the host refuses the approval, and the card is still waited for.
+            var (_, host, loop, stop, seen) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith(new Dictionary<string, string> { ["REPORTTARGETPATH"] = "report.pdf" })));
+
+            var approval = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Null(approval);
+            Assert.Equal(("declined", PresentationEndReasons.Declined), (outcomes[0].Answer, outcomes[0].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_ToleratesALateAnswer_AndGoesOnWithTheNextCard()
+        {
+            CardPresentedEvent? first = null;
+            BridgeSampleClient? clientOfTheTest = null;
+            var (client, host, loop, stop, seen) = await StartLoopAsync(async (shown, _) =>
+            {
+                if (first == null)
+                {
+                    // The first card is given up (declined from elsewhere) while the program is still deciding; its answer comes late.
+                    first = shown;
+                    await clientOfTheTest!.Service.DeclineCard(new DeclineCardRequest { PresenceId = shown.PresenceId });
+                }
+
+                return CardDecision.ApproveWith();
+            });
+            clientOfTheTest = client;
+
+            var late = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            next!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            Assert.Null(late);
+            // The answer crossed the end of the wait ("late") or came after the loop had dropped the decision ("none"): either way it was
+            // never accepted, and the loop went on.
+            Assert.Contains(outcomes[0].Answer, new[] { "late", "none" });
+            Assert.Equal(("p-1", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Reason));
+            Assert.Equal(("p-2", "approved", PresentationEndReasons.Approved), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_EndsWhenRFiDGearStopsTheMode_AndWhenTheConnectionEnds()
+        {
+            var (_, host, loop, _, _) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith()));
+
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+            var endedByTheMode = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var (client, _, secondLoop, _, _) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith()));
+            await client.DisposeAsync();
+            var endedByTheConnection = await secondLoop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Empty(endedByTheMode);
+            Assert.Empty(endedByTheConnection);
+        }
+
+        [Fact]
+        public async Task TheLoop_KeepsConsumingEventsWhileACardIsBeingDecided_AndDropsADecisionWhoseWaitHasEnded()
+        {
+            // The program is still thinking about the first card (and ignores its token) when the wait for it ends and the next card comes.
+            var neverDecided = new TaskCompletionSource<CardDecision>();
+            var asked = new List<string>();
+            var (client, host, loop, stop, seen) = await StartLoopAsync((shown, _) =>
+            {
+                lock (asked)
+                {
+                    asked.Add(shown.PresenceId);
+                }
+
+                return shown.PresenceId == "p-1" ? neverDecided.Task : Task.FromResult(CardDecision.ApproveWith());
+            });
+
+            var first = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => { lock (asked) { return asked.Contains("p-1"); } });
+            await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+            var firstApproval = await first.WaitAsync(TimeSpan.FromSeconds(5));
+            var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            next!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            Assert.Null(firstApproval);
+            Assert.Equal(("p-1", "none", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
+            Assert.Equal(("p-2", "approved", PresentationEndReasons.Approved), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_EndsWhenTheModeStopsOrTheConnectionEnds_EvenWhileADecisionNeverCompletes()
+        {
+            var neverDecided = new TaskCompletionSource<CardDecision>();
+            var asked = 0;
+            Task<CardDecision> Think(CardPresentedEvent shown, CancellationToken token)
+            {
+                Interlocked.Increment(ref asked);
+
+                return neverDecided.Task;
+            }
+
+            var (_, host, loop, _, _) = await StartLoopAsync(Think);
+            _ = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref asked) == 1);
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+            var endedByTheMode = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var (client, secondHost, secondLoop, _, _) = await StartLoopAsync(Think);
+            _ = Present(secondHost, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref asked) == 2);
+            await client.DisposeAsync();
+            var endedByTheConnection = await secondLoop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // The card whose decision never came was not answered, and the end of its wait that RFiDGear told after the mode had stopped
+            // is reported. A connection that ended has no end to report, and none is made up.
+            var ended = Assert.Single(endedByTheMode);
+            Assert.Equal(("p-1", "none", PresentationEndReasons.Stopped), (ended.PresenceId, ended.Answer, ended.Reason));
+            Assert.Empty(endedByTheConnection);
+        }
+
+        [Fact]
+        public async Task TheLoop_ReportsTheCardWhoseWaitEndsBecauseTheLoopWasCancelled()
+        {
+            var neverDecided = new TaskCompletionSource<CardDecision>();
+            var asked = 0;
+            var (_, host, loop, stop, seen) = await StartLoopAsync((_, _) =>
+            {
+                Interlocked.Increment(ref asked);
+
+                return neverDecided.Task;
+            });
+
+            _ = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref asked) == 1);
+            stop.Cancel();
+            var outcomes = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // The stop of the loop made RFiDGear end the wait after the loop had left its main part: the end is still collected.
+            var outcome = Assert.Single(outcomes);
+            Assert.Equal(("p-1", "04AA", "none", PresentationEndReasons.Stopped), (outcome.PresenceId, outcome.Uid, outcome.Answer, outcome.Reason));
+            Assert.Equal(outcomes, seen);
+        }
+
+        [Fact]
+        public async Task TheLoop_DoesNotWaitForAnAnswerRFiDGearHasNotRepliedTo_AndNeverSendsItAgain()
+        {
+            // The first approval hangs on its way (a report path that is slow to check, say); the card is declined from elsewhere.
+            var hang = new TaskCompletionSource<bool>();
+            var approvals = 0;
+            ServiceStandIn? stand = null;
+            var (client, host, loop, stop, seen) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    stand = ServiceStandIn.Wrap(real);
+                    stand.Replace(nameof(IBridgeService.ApproveCard), (target, arguments) =>
+                        Interlocked.Increment(ref approvals) == 1 ? Hang(hang.Task) : target.ApproveCard((ApproveCardRequest)arguments[0]!));
+
+                    return stand.Service;
+                },
+                grace: TimeSpan.FromMilliseconds(300));
+
+            var first = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref approvals) == 1);
+            await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+            Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(5)));
+            await WaitUntilAsync(() => { lock (seen) { return seen.Count == 1; } });
+
+            // The request that was never replied to fails at last, when its card is long over: that is of no interest to the loop.
+            hang.SetException(new InvalidOperationException("The connection of the request broke."));
+            var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            next!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            // The loop went on with the next card although the first answer was never replied to, and sent nothing twice.
+            Assert.Equal(("p-1", "pending", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
+            Assert.Equal(("p-2", "approved", PresentationEndReasons.Approved), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+            Assert.Equal(2, stand!.CallsOf(nameof(IBridgeService.ApproveCard)));
+        }
+
+        [Fact]
+        public async Task TheLoop_ReportsTheEndOfACard_WhoseAnswerFailsOnceItsWaitHasEnded()
+        {
+            // The approval is still out when RFiDGear ends the wait for the card, and it fails while the loop gives it a moment to reply.
+            var hang = new TaskCompletionSource<bool>();
+            var approvals = 0;
+            var (client, host, loop, stop, seen) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.ApproveCard), (target, arguments) =>
+                        Interlocked.Increment(ref approvals) == 1 ? Hang(hang.Task) : target.ApproveCard((ApproveCardRequest)arguments[0]!));
+
+                    return standIn.Service;
+                },
+                grace: TimeSpan.FromSeconds(10));
+
+            // The loop's own handler comes first, so the end of the wait is queued before the failure of the request is.
+            client.EventReceived += e =>
+            {
+                if (e is CardPresentationEndedEvent)
+                {
+                    hang.TrySetException(new InvalidOperationException("The connection of the request broke."));
+                }
+            };
+
+            var first = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref approvals) == 1);
+            await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+            Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(5)));
+            var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            next!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            // What RFiDGear said about the card is reported although the request failed, and the loop went on.
+            Assert.Equal(("p-1", "failed", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
+            Assert.Equal(("p-2", "approved", PresentationEndReasons.Approved), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+        }
+
+        private static async Task<ApproveCardResponse> Hang(Task until)
+        {
+            await until;
+
+            return new ApproveCardResponse();
+        }
+
+        [Theory]
+        [InlineData(false, "bridge", true)]
+        [InlineData(true, "other", true)]
+        [InlineData(true, "other", false)]
+        public async Task TheLoop_StopsTheModeOnlyWhenRFiDGearSaysItIsTheApprovalModeOfAClient(bool enabled, string startedBy, bool requireApproval)
+        {
+            // RFiDGear says that the mode that is on now is not the loop's: it ended, and a user switched on another one meanwhile.
+            var (_, host, loop, stop, _) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.GetStatus), (_, _) =>
+                        Task.FromResult(new StatusResponse { AutoMode = new AutoModeStatusDto { Enabled = enabled, StartedBy = startedBy, RequireApproval = requireApproval } }));
+
+                    return standIn.Service;
+                });
+
+            stop.Cancel();
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(0, host.AutoModeHost.StopCalls);
+        }
+
+        [Fact]
+        public async Task TheLoop_StopsTheModeThatRFiDGearStartedWithoutWaitingForApproval_ItMustNeverLeaveThatOne()
+        {
+            // RFiDGear answers the start as if it ignored requireApproval, and reports the mode as one of a client that runs every card.
+            var (_, host, loop, _, _) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.StartAutoMode), (target, arguments) => StartWithoutApproval(target, (StartAutoModeRequest)arguments[0]!));
+                    standIn.Replace(nameof(IBridgeService.GetStatus), (_, _) =>
+                        Task.FromResult(new StatusResponse { AutoMode = new AutoModeStatusDto { Enabled = true, StartedBy = RunSources.Bridge, RequireApproval = false } }));
+
+                    return standIn.Service;
+                });
+
+            var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => loop.WaitAsync(TimeSpan.FromSeconds(5)));
+
+            Assert.Contains("stopped", failure.Message);
+            Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+        }
+
+        private static async Task<StartAutoModeResponse> StartWithoutApproval(IBridgeService target, StartAutoModeRequest request)
+        {
+            var started = await target.StartAutoMode(request);
+
+            return started with { RequireApproval = false };
+        }
+
+        [Theory]
+        [InlineData(nameof(IBridgeService.GetStatus), "hangs")]
+        [InlineData(nameof(IBridgeService.GetStatus), "throws")]
+        [InlineData(nameof(IBridgeService.StopAutoMode), "hangs")]
+        [InlineData(nameof(IBridgeService.StopAutoMode), "throws")]
+        public async Task TheLoop_EndsInTime_WhateverTheRequestsThatStopTheModeDo(string method, string behavior)
+        {
+            // RFiDGear does not answer the question about the mode, or the stop, or answers with something that is not a failure of the
+            // connection: the loop ends all the same, and what it leaves on ends with the connection.
+            var (_, _, loop, stop, _) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(method, (_, _) => Misbehave(method, behavior));
+
+                    return standIn.Service;
+                },
+                grace: TimeSpan.FromMilliseconds(300));
+
+            stop.Cancel();
+
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        private static object Misbehave(string method, string behavior) => (method, behavior) switch
+        {
+            (nameof(IBridgeService.GetStatus), "hangs") => new TaskCompletionSource<StatusResponse>().Task,
+            (nameof(IBridgeService.GetStatus), _) => Task.FromException<StatusResponse>(new InvalidOperationException("RFiDGear did not answer as it should.")),
+            (_, "hangs") => new TaskCompletionSource<StopAutoModeResponse>().Task,
+            _ => Task.FromException<StopAutoModeResponse>(new InvalidOperationException("RFiDGear did not answer as it should.")),
+        };
+
+        // What RFiDGear says about the mode that is on: the approval mode of a client, whoever's it is.
+        private static IBridgeService ThatSaysTheModeIsTheApprovalModeOfAClient(IBridgeService real)
+        {
+            var standIn = ServiceStandIn.Wrap(real);
+            standIn.Replace(nameof(IBridgeService.GetStatus), (_, _) =>
+                Task.FromResult(new StatusResponse { AutoMode = new AutoModeStatusDto { Enabled = true, StartedBy = RunSources.Bridge, RequireApproval = true } }));
+
+            return standIn.Service;
+        }
+
+        [Fact]
+        public async Task TheLoop_DoesNotStopAModeItDidNotStart_EvenWhenItLooksLikeTheApprovalModeOfAClient()
+        {
+            // The start of this loop is refused because the approval mode of another loop of the same client is on (here: any mode).
+            var (_, pipe, host, _) = Start();
+            host.AutoModeHost.IsAutoModeEnabled = true;
+            var client = await ConnectAsync(pipe);
+
+            await Assert.ThrowsAsync<RemoteInvocationException>(() =>
+                new ApprovalModeLoop(client, ThatSaysTheModeIsTheApprovalModeOfAClient(client.Service)).RunAsync((_, _) => Task.FromResult(CardDecision.Decline)));
+
+            Assert.True(host.AutoModeHost.IsAutoModeEnabled);
+            Assert.Equal(0, host.AutoModeHost.StopCalls);
+        }
+
+        [Fact]
+        public async Task TheLoop_GoesOn_WhenTheNoticeThatAModeEndedIsAboutAnEarlierOne()
+        {
+            // The notice reaches the loop although its own mode is on: it is about a mode that ended just before the start was answered
+            // (the loop listens from before the start). Ending at it would leave the approval mode on, with nobody to decide.
+            var (_, host, loop, stop, _) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith()), wrap: ThatSaysTheModeIsTheApprovalModeOfAClient);
+
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+            await Task.Delay(500);
+
+            Assert.False(loop.IsCompleted);
+
+            stop.Cancel();
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public async Task TheLoop_EndsWhenTheModeStops_EvenWhenRFiDGearCannotSayWhetherItIsStillOn()
+        {
+            var (_, host, loop, _, _) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.GetStatus), (_, _) => Task.FromException<StatusResponse>(new InvalidOperationException("RFiDGear did not answer as it should.")));
+
+                    return standIn.Service;
+                });
+
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public async Task TheLoop_ReportsACardThatWasShownAndNotLookedAtYet_WhenTheLoopEnds()
+        {
+            // The loop is busy with the end of the first card (an approval that is not replied to is waited for) when the second card
+            // is shown and the loop is cancelled: it never looked at the second one, which RFiDGear ends when the mode is stopped.
+            var hang = new TaskCompletionSource<bool>();
+            var approvals = 0;
+            var secondShown = new TaskCompletionSource<bool>();
+            var (client, host, loop, stop, _) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.ApproveCard), (target, arguments) =>
+                        Interlocked.Increment(ref approvals) == 1 ? Hang(hang.Task) : target.ApproveCard((ApproveCardRequest)arguments[0]!));
+
+                    return standIn.Service;
+                },
+                grace: TimeSpan.FromSeconds(2));
+
+            client.EventReceived += e =>
+            {
+                if (e is CardPresentedEvent { PresenceId: "p-2" })
+                {
+                    secondShown.TrySetResult(true);
+                }
+            };
+
+            var first = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref approvals) == 1);
+            await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+            Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(5)));
+            _ = Present(host, "p-2", "04BB");
+            await secondShown.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            stop.Cancel();
+            var outcomes = await loop.WaitAsync(TimeSpan.FromSeconds(10));
+            hang.SetResult(true);
+
+            Assert.Equal(new[] { "p-1", "p-2" }, outcomes.Select(o => o.PresenceId));
+            Assert.Equal(("p-2", "04BB", "none", PresentationEndReasons.Stopped), (outcomes[1].PresenceId, outcomes[1].Uid, outcomes[1].Answer, outcomes[1].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_ReportsTheEndOfACard_WhoseDecisionHasACallbackThatThrowsWhenItIsCancelled()
+        {
+            var registered = new TaskCompletionSource<bool>();
+            var (client, host, loop, stop, seen) = await StartLoopAsync(async (_, token) =>
+            {
+                token.Register(() => throw new InvalidOperationException("The callback of the decision threw."));
+                registered.TrySetResult(true);
+                await Task.Delay(Timeout.Infinite, token);
+
+                return CardDecision.Decline;
+            });
+
+            _ = Present(host, "p-1", "04AA");
+            await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+            await WaitUntilAsync(() => { lock (seen) { return seen.Count == 1; } });
+            stop.Cancel();
+            var outcomes = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // The callback threw while the wait for the card was ended: that does not make the answer a failure.
+            Assert.Equal(("p-1", "none", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
+        }
+
+        [Fact]
+        public async Task TheLoop_IgnoresTheEndOfAWaitForACardItWasNeverShown_AnOldNoticeOfAnEarlierMode()
+        {
+            var (client, host, loop, stop, seen) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.Decline));
+
+            // A late notice of an earlier mode on the same connection reaches the loop before its first card.
+            client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "old-1", Reason = PresentationEndReasons.Stopped });
+            Assert.Null(await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5)));
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 1);
+
+            Assert.Equal("p-1", Assert.Single(outcomes).PresenceId);
+        }
+
+        [Fact]
+        public async Task TheLoop_IgnoresTheEndOfAWaitForACardItWasNeverShown_WhenItCollectsTheEndsAtTheEnd()
+        {
+            var neverDecided = new TaskCompletionSource<CardDecision>();
+            var asked = 0;
+            var (client, host, loop, stop, _) = await StartLoopAsync((_, _) =>
+            {
+                Interlocked.Increment(ref asked);
+
+                return neverDecided.Task;
+            });
+
+            _ = Present(host, "p-1", "04AA");
+            await WaitUntilAsync(() => Volatile.Read(ref asked) == 1);
+            stop.Cancel();
+
+            // The main part of the loop is cancelled: only the collection at its end can see the late notice of an earlier mode.
+            client.CardPresentationEnded(new CardPresentationEndedEvent { PresenceId = "old-1", Reason = PresentationEndReasons.Stopped });
+            var outcomes = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal("p-1", Assert.Single(outcomes).PresenceId);
+        }
+
+        [Fact]
+        public async Task TheLoop_DoesNotLetTheCallbackOfADecisionThatThrowsSurfaceInTheCancelOfTheCaller()
+        {
+            var registered = new TaskCompletionSource<bool>();
+            var (_, host, loop, stop, _) = await StartLoopAsync(async (_, token) =>
+            {
+                token.Register(() => throw new InvalidOperationException("The callback of the decision threw."));
+                registered.TrySetResult(true);
+                await Task.Delay(Timeout.Infinite, token);
+
+                return CardDecision.Decline;
+            });
+
+            _ = Present(host, "p-1", "04AA");
+            await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // The callback runs when the loop cancels the decision, not inside the Cancel of the caller.
+            Assert.Null(Record.Exception(() => stop.Cancel()));
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+        }
+
+        [Fact]
+        public async Task TheLoop_StopsTheModeAndEnds_WhileACallbackOfTheDecisionOfAPendingCardBlocks()
+        {
+            // A callback that the program registered on the token of its decision blocks when the token is cancelled.
+            using var gate = new ManualResetEventSlim(false);
+            var registered = new TaskCompletionSource<bool>();
+            var (_, host, loop, stop, _) = await StartLoopAsync(
+                async (_, token) =>
+                {
+                    token.Register(() => gate.Wait());
+                    registered.TrySetResult(true);
+                    await Task.Delay(Timeout.Infinite, token);
+
+                    return CardDecision.Decline;
+                },
+                grace: TimeSpan.FromMilliseconds(300));
+
+            _ = Present(host, "p-1", "04AA");
+            await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            stop.Cancel();
+
+            try
+            {
+                // The loop does not wait for the callback: it stops the mode and ends.
+                await loop.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+            }
+            finally
+            {
+                gate.Set();
+            }
+        }
+
+        [Fact]
+        public async Task TheLoop_GoesOnWithTheNextCard_WhileACallbackOfTheDecisionOfTheEndedOneBlocks()
+        {
+            using var gate = new ManualResetEventSlim(false);
+            var registered = new TaskCompletionSource<bool>();
+            var (client, host, loop, stop, seen) = await StartLoopAsync(
+                async (shown, token) =>
+                {
+                    if (shown.PresenceId != "p-1")
+                    {
+                        return CardDecision.Decline;
+                    }
+
+                    token.Register(() => gate.Wait());
+                    registered.TrySetResult(true);
+                    await Task.Delay(Timeout.Infinite, token);
+
+                    return CardDecision.Decline;
+                },
+                grace: TimeSpan.FromMilliseconds(300));
+
+            try
+            {
+                var first = Present(host, "p-1", "04AA");
+                await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
+                Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(5)));
+
+                // The wait for the first card ended while the callback blocks: the loop reports it and shows the next card.
+                Assert.Null(await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5)));
+                var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+                // Nothing was sent for the first card, and the answer says so, whether or not its decision had given up when the wait ended.
+                Assert.Equal(("p-1", "none", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
+                Assert.Equal(("p-2", "declined", PresentationEndReasons.Declined), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
+            }
+            finally
+            {
+                gate.Set();
+            }
+        }
+
+        [Fact]
+        public async Task TheLoop_SaysNone_ForACardWhoseDecisionSentNothingBeforeItsWaitEnded_NotPending()
+        {
+            // A grace of nothing: the end of the wait does not wait for the decision to have given up. What the answer says then depends
+            // on whether a request went out, and none did.
+            var asked = 0;
+            var (client, host, loop, stop, seen) = await StartLoopAsync(
+                async (_, _) =>
+                {
+                    Interlocked.Increment(ref asked);
+                    await Task.Delay(Timeout.Infinite);
+
+                    return CardDecision.Decline;
+                },
+                grace: TimeSpan.Zero);
+
+            for (var card = 1; card <= 10; card++)
+            {
+                var presence = "p-" + card;
+                var shown = Present(host, presence, "04AA");
+                var expected = card;
+                await WaitUntilAsync(() => Volatile.Read(ref asked) == expected);
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = presence });
+                Assert.Null(await shown.WaitAsync(TimeSpan.FromSeconds(5)));
+                await WaitUntilAsync(() => { lock (seen) { return seen.Count == expected; } });
+            }
+
+            stop.Cancel();
+            var outcomes = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(10, outcomes.Count);
+            Assert.All(outcomes, outcome => Assert.Equal("none", outcome.Answer));
+        }
+
+        [Fact]
+        public async Task TheLoop_SendsNoApprovalOnceTheCallerHasCancelled_EvenBeforeTheLoopHasLookedAtIt()
+        {
+            var release = new TaskCompletionSource<bool>();
+            var asked = new TaskCompletionSource<bool>();
+            ServiceStandIn? standIn = null;
+            var (_, host, loop, stop, _) = await StartLoopAsync(
+                async (_, _) =>
+                {
+                    asked.TrySetResult(true);
+                    await release.Task;
+
+                    return CardDecision.ApproveWith();
+                },
+                wrap: real =>
+                {
+                    standIn = ServiceStandIn.Wrap(real);
+
+                    return standIn.Service;
+                });
+
+            _ = Present(host, "p-1", "04AA");
+            await asked.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // Inside the Cancel of the caller, before anything else sees it (callbacks run last in, first out): the token of the caller
+            // is cancelled, the loop has not got to its own decision yet, and the program's decision finishes now.
+            stop.Token.Register(() =>
+            {
+                release.TrySetResult(true);
+                Thread.Sleep(300);
+            });
+            stop.Cancel();
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(0, standIn!.CallsOf(nameof(IBridgeService.ApproveCard)));
+        }
+
+        [Fact]
+        public async Task TheLoop_StopsTheModeAndEnds_WhenTheDecisionOfAPendingCardHasACallbackThatThrows()
+        {
+            var registered = new TaskCompletionSource<bool>();
+            var (_, host, loop, _, _) = await StartLoopAsync(async (_, token) =>
+            {
+                token.Register(() => throw new InvalidOperationException("The callback of the decision threw."));
+                registered.TrySetResult(true);
+                await Task.Delay(Timeout.Infinite, token);
+
+                return CardDecision.Decline;
+            });
+
+            _ = Present(host, "p-1", "04AA");
+            await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+
+            // The loop ends with the mode and does not fail on the callback, whose exception would otherwise end the shutdown.
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public async Task TheLoop_DeclinesACardWhenTheDecisionRunsIntoATimeLimitOfItsOwn_AndGoesOnWithTheNextCard()
+        {
+            var (_, host, loop, stop, seen) = await StartLoopAsync(async (shown, _) =>
+            {
+                if (shown.PresenceId == "p-1")
+                {
+                    // The program's own time limit: it ends the decision with a cancellation that is not the loop's.
+                    using var limit = new CancellationTokenSource(TimeSpan.FromMilliseconds(20));
+                    await Task.Delay(Timeout.Infinite, limit.Token);
+                }
+
+                return CardDecision.ApproveWith();
+            });
+
+            var timedOut = await Present(host, "p-1", "04AA").WaitAsync(TimeSpan.FromSeconds(5));
+            var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
+            next!.NotifyRunAdmitted("run-2");
+            var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
+
+            Assert.Null(timedOut);
+            Assert.Equal(new[] { "declined", "approved" }, outcomes.Select(o => o.Answer));
+        }
+
+        [Fact]
+        public async Task TheLoop_LeavesAModeAlone_ThatWasOnAlready()
+        {
+            var (_, pipe, host, _) = Start();
+            host.AutoModeHost.IsAutoModeEnabled = true;
+            var client = await ConnectAsync(pipe);
+
+            var failure = await Assert.ThrowsAsync<RemoteInvocationException>(() => new ApprovalModeLoop(client).RunAsync((_, _) => Task.FromResult(CardDecision.Decline)));
+
+            // The mode of the user is not the loop's to stop: the start was refused, so there is nothing to clean up.
+            Assert.Equal(BridgeErrorKinds.AutoModeActive, BridgeSampleClient.ErrorDataOf(failure)?.Kind);
+            Assert.True(host.AutoModeHost.IsAutoModeEnabled);
+            Assert.Equal(0, host.AutoModeHost.StopCalls);
+        }
+
+        [Fact]
+        public async Task TheLoop_DoesNotStopAModeThatEndedAlready_ForSomebodyElseMayHaveSwitchedOneOnSince()
+        {
+            var (_, host, loop, _, _) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith()));
+
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+            host.AutoModeHost.IsAutoModeEnabled = true;
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(host.AutoModeHost.IsAutoModeEnabled);
         }
 
         private static SecureKeyRequest Request(string reference) => new SecureKeyRequest

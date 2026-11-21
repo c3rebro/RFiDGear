@@ -29,7 +29,7 @@ namespace RFiDGear.Bridge.SampleClient
             "RFiDGear.Bridge.SampleClient run <requestId> [<project.rfPrj>] [--expect-revision=<revision>] [$NAME=value ...]\n" +
             "RFiDGear.Bridge.SampleClient result <requestId>\n" +
             "RFiDGear.Bridge.SampleClient results [<afterResultSeq>]\n" +
-            "RFiDGear.Bridge.SampleClient auto\n" +
+            "RFiDGear.Bridge.SampleClient auto [--approve-with=$NAME [--no-pin] [--wait=<seconds>] [--set=NAME=value ...] | --decline | --no-answer]\n" +
             "RFiDGear.Bridge.SampleClient keys <reference> [--own-runs-only] [--run=<requestId>]\n" +
             "RFiDGear.Bridge.SampleClient approved-run <requestId> <project.rfPrj> [--variable=$NAME] [--yes]";
 
@@ -57,7 +57,7 @@ namespace RFiDGear.Bridge.SampleClient
                     "run" when args.Length >= 2 => await RunAsync(args, stop.Token),
                     "result" when args.Length == 2 => await ResultAsync(args[1], stop.Token),
                     "results" => await ResultsAsync(args.Length > 1 ? long.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 0, stop.Token),
-                    "auto" => await AutoAsync(stop.Token),
+                    "auto" => await AutoAsync(args, stop.Token),
                     "keys" when args.Length >= 2 => await KeysAsync(args, stop.Token),
                     "approved-run" when args.Length >= 3 => await ApprovedRunAsync(args, stop.Token),
                     _ => Fail(Usage),
@@ -260,8 +260,19 @@ namespace RFiDGear.Bridge.SampleClient
             return 0;
         }
 
-        private static async Task<int> AutoAsync(CancellationToken cancellationToken)
+        // A bare "auto" switches on the mode that runs every card. With any option after it the mode waits for approval: every card that
+        // is put on the reader is shown and this command decides about it by one fixed rule, to try the flow by hand (a program that
+        // writes cards decides here, with its job and its list of cards: see ApprovalModeLoop and the guide). The rules and their
+        // options are ApprovalPolicy's, and an option that it does not understand is refused: it must never start the plain mode.
+        private static async Task<int> AutoAsync(string[] args, CancellationToken cancellationToken)
         {
+            var options = args.Skip(1).ToArray();
+
+            if (!ApprovalPolicy.IsPlainMode(options))
+            {
+                return await ApprovalAutoAsync(options, cancellationToken);
+            }
+
             var events = new[] { BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted };
             await using var client = await BridgeSampleClient.ConnectAsync(events: events, cancellationToken: cancellationToken);
             client.EventReceived += e =>
@@ -288,6 +299,39 @@ namespace RFiDGear.Bridge.SampleClient
             }
 
             await client.Service.StopAutoMode(new StopAutoModeRequest());
+
+            return 0;
+        }
+
+        private static async Task<int> ApprovalAutoAsync(string[] options, CancellationToken cancellationToken)
+        {
+            if (!ApprovalPolicy.TryRead(options, out var decide, out var description, out var error))
+            {
+                return Fail(error);
+            }
+
+            var events = new[] { BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted };
+            await using var client = await BridgeSampleClient.ConnectAsync(events: events, cancellationToken: cancellationToken);
+            client.EventReceived += e =>
+            {
+                if (e is CardPresentedEvent shown)
+                {
+                    Console.WriteLine("card " + shown.Uid + " shown (presence " + shown.PresenceId + ")");
+                }
+                else if (e is AutoRunCompletedEvent completed)
+                {
+                    Console.WriteLine("card processed: #" + completed.Result.ResultSeq + " " + completed.Result.Status + ", card " + completed.Result.CardUid);
+                }
+            };
+
+            Console.WriteLine("automatic mode waits for approval; " + description + ". Ctrl+C ends it");
+
+            var outcomes = await new ApprovalModeLoop(client).RunAsync(
+                decide!,
+                onOutcome: outcome => Console.WriteLine("card " + outcome.Uid + ": answered " + outcome.Answer + ", RFiDGear says " + outcome.Reason + (outcome.RunId != null ? ", run " + outcome.RunId : string.Empty)),
+                cancellationToken: cancellationToken);
+
+            Console.WriteLine(outcomes.Count + " cards were shown");
 
             return 0;
         }
