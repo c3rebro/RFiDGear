@@ -509,9 +509,12 @@ passed with a real reader; until then a snapshot may be re-baselined.
   waited for; every other answer is `approvalNotPending`. What the gate says
   is addressed to that connection (`BridgeServer.Publish` takes it): a client
   that connects after it left never sees a card, or the end of a card, of the
-  start that ended, and a card that arrives after the start ended is not shown.
-  The wait ends at the time `cardPresented` announced (`expiresAt`), not a
-  whole limit after the revision was read.
+  start that ended, and a card that arrives after the start ended is not shown:
+  the check that the start has not ended and the hand-over of `cardPresented`
+  to the queue are one step under the lock that a cancel takes, so nothing is
+  shown after the notice that the mode stopped. The wait ends at the time
+  `cardPresented` announced (`expiresAt`), not a whole limit after the revision
+  was read.
 - What each end of the wait does (`cardPresentationEnded` says it, with the
   run id for `approved`): declined, not answered in time (`expired`), overtaken
   by a stop, a connection that ended (`clientLost`): nothing runs, and the card
