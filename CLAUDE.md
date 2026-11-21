@@ -523,9 +523,12 @@ passed with a real reader; until then a snapshot may be re-baselined.
   is never taken over for approval.
 - **The card is held to the approval.** While the program decides, the ticks
   that come meanwhile still look at the reader (`WatchPendingCardAsync`; the
-  tick that waits holds the machine): a card that is gone or replaced withdraws
-  the wait (`cardChanged`) and ends the presence as an empty poll does, so a
-  card put back is a new presence. The approval carries the UID it was given
+  tick that waits holds the machine, and a look takes the scan slot): a card
+  that is gone or replaced withdraws the wait (`cardChanged`) and ends the
+  presence as an empty poll does, so a card put back is a new presence. What a
+  look saw counts even if the program approved while it was under way, unless
+  something was written down since (the card stamp says that): the approval is
+  then refused at admission. The approval carries the UID it was given
   for (`AutoModeApproval.Uid`). The window looks at the reader once more, with
   the execution slot held, before it admits the run
   (`VerifyTheApprovedCardAsync`): another card is `cardChanged`, a reader that
@@ -535,9 +538,22 @@ passed with a real reader; until then a snapshot may be re-baselined.
   A run that another path made on the card while the program decided (the card
   stamp changed) is not repeated for the approval (`cardChanged`; the card stays
   processed). The gate refuses an answer after the time limit itself, whether or
-  not its timer has fired, and a gate that was cancelled shows no card that
-  arrives later. A removal and a return between two ticks are not seen, as
-  everywhere in the mode.
+  not its timer has fired (it looks at the clock again after checking the
+  variables), and a gate that was cancelled shows no card that arrives later. A
+  removal and a return between two ticks are not seen, as everywhere in the
+  mode.
+- **The report variables of an approval** (`REPORTTARGETPATH`,
+  `REPORTTEMPLATEFILE` and their aliases) mean what they mean for any run: the
+  execution service reads the report paths from the fields of its request, so
+  `ReportVariables` (one resolver, also used by `TaskExecHostImpl`) turns them
+  into those fields. The gate checks them when the program approves (an unusable
+  one is `invalidRequest` and the card keeps waiting), the window applies them
+  to that one run and keeps them out of its own report state, and builds the
+  report with a writer that has a work folder of its own
+  (`report-work\<runId>` in the application folder, removed after the run): the
+  writer keeps the report it is building in a file in its folder, and two
+  writers in one folder would hand the fields of one card to the report of the
+  next.
 - Card keys: the built-in secure key provider `bridge-client`
   (`BridgeKeyProvider`) is bound to the connected client that called
   `registerKeyProvider`; RFiDGear then calls `resolveKey` on the client inside
