@@ -612,28 +612,58 @@ passed with a real reader; until then a snapshot may be re-baselined.
   "Automatic mode that waits for your approval"): it starts the mode with
   `requireApproval` and `stopOnDisconnect`, hands each `cardPresented` to a
   decision (`CardDecision`) and answers with the presence id. The decision
-  runs on its own task, so the events are never held up by it, and it is
-  dropped (its token cancelled, nothing answered) when the wait for its card
-  ends or the loop does. It fails closed: a decision that throws (a time limit
-  of its own too), or a pin on a state that RFiDGear did not tell, is a
-  decline; a late answer (`approvalNotPending`) is tolerated; the loop ends
-  with the mode or the connection. It stops only a mode that it switched on
-  itself and that `getStatus` still shows as a mode of a client (`startedBy`
-  `bridge`, whether or not it waits for approval: a mode that runs every card
-  is the one that must never be left on; `stopAutoMode` stops any mode, and
-  the notice that its own mode ended may be on its way while a user's mode is
-  already on; neither request waits for longer than `Grace`, and whatever
-  they do the loop ends): a refused start
-  (`autoModeActive`) and a mode that has ended leave the mode alone. After the
-  stop it still collects the ends of the waits that RFiDGear tells (for
-  `Grace`, 2 s; what is not told is not made up), and an answer that RFiDGear
-  has not replied to is not waited for longer (outcome `pending`, never sent
-  again). It decides nothing itself: `ApprovalPolicy` makes the fixed
-  rules of `auto --approve-with=$NAME`, `--decline` and `--no-answer` to try
-  the flow by hand, and refuses an option it does not know (only a bare `auto`
-  is the plain mode that runs every card; cases 52 to 65 of
-  `EXTERNAL-CONTROL.md`).
-- Logs hold method names, request and run ids, numbers and error kinds. Never a
+  runs on its own task, so the events are never held up by it; a decision
+  that ignores its token is abandoned, not waited for. Its token belongs to
+  its `PendingCard` and is NOT linked to the caller's token: a link would run
+  the callbacks that the program registered on it inside the caller's own
+  `Cancel`, where one that blocks or throws surfaces in the caller. The loop
+  drops the decision when the wait for its card ends or the loop does
+  (`PendingCard.Drop`: `CancelAsync`, so the token is cancelled when it
+  returns, the callbacks run elsewhere, and the source is disposed after
+  them), and nothing is sent once the token of the card or the caller's is
+  cancelled (`GivenUp`: the caller's token is cancelled when its `Cancel`
+  starts, before the loop has looked at it). It fails closed: a decision that
+  throws (a time limit of its own too), or a pin on a state that RFiDGear did
+  not tell, is a decline; a late answer (`approvalNotPending`) is tolerated.
+  `CardOutcome.Answer` says what was sent: `approved`, `declined`, `late`,
+  `failed` (the request failed after the wait ended), `none` (nothing was
+  sent) or `pending` (a request went out and RFiDGear has not replied; the
+  card notes that before it sends, `MarkSent`, and a reply is waited for
+  `Grace`, 2 s, at the most).
+- **The loop and the mode:** it listens from before its own start, so a
+  notice that a mode ended can be about an EARLIER mode and be the first thing
+  it reads. It is checked with `getStatus` (`OwnModeIsOnAsync`: enabled and
+  `startedBy` `bridge`, which a user's mode never is and which, on a bridge
+  that serves one client at a time, is the loop's own): the loop goes on when
+  its own mode is on, and ends when it is off or RFiDGear cannot say (the stop
+  below is still tried then). The end of a wait for a presence it was never
+  shown (a late notice of an earlier mode on the same connection) is ignored.
+  When the loop ends it drops the decisions, stops the mode only if it started
+  it and `getStatus` still shows a client's mode (`stopAutoMode` stops any
+  mode, the wire has no "stop mine", and the notice that its own mode ended
+  may be on its way while a user's mode is already on; a mode that RFiDGear
+  started without the approval is a client's mode too and is stopped; a
+  refused start, `autoModeActive`, and a mode that ended are left alone; a
+  program that owns its connection closes it instead), then collects the ends
+  of the waits for `Grace` (a card that was shown and not looked at yet is
+  adopted as `none`; what RFiDGear does not tell is not made up), then lets
+  go. Neither request waits for longer than `Grace`, and whatever they do the
+  loop ends. It does not poll `getStatus`: a mode that ended without a notice
+  is for the program to catch.
+- **The command line and the tests of the loop:** `ApprovalPolicy` makes the
+  fixed rules of `auto --approve-with=$NAME` (`--no-pin`, `--wait`, `--set`),
+  `--decline` and `--no-answer` to try the flow by hand (cases 52 to 65 of
+  `EXTERNAL-CONTROL.md`); it refuses an option it does not know, and only a
+  bare `auto` is the plain mode that runs every card. `IsUidVariable` is the
+  grammar of `ExpectedUid` (`$` and 1 to 64 letters, digits or underscores)
+  and is shared with `RunApprovedCardAsync`. The tests
+  (`BridgeSampleClientTests` `TheLoop_...`, `PendingCardTests`,
+  `ApprovalPolicyTests`) put a stand-in
+  between the loop and RFiDGear (`ServiceStandIn`, a `DispatchProxy` over
+  `IBridgeService`; the sample client lets `RFiDGear.Tests` see its internals)
+  to make a request slow or have RFiDGear say something it does not, and
+  `client.CardPresentationEnded(...)` injects a late notice. The test filter of
+  a mutation run has to name every new test class.- Logs hold method names, request and run ids, numbers and error kinds. Never a
   variable, a path, a UID, a key or the text of an exception (`SanitizedException`
   is for the existing logs; the bridge logs only the type). Errors on the wire
   carry an `errorId` that matches the log.
