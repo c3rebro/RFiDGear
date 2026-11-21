@@ -73,8 +73,8 @@ throws (its own time limit too) and a project state that cannot be told as a
 refusal, drops a decision whose card is given up meanwhile (a decision never
 holds up the events), tolerates a late answer, ends when the mode is stopped or
 the connection ends, and stops the mode when it is cancelled, but only a mode
-that it switched on itself and that `getStatus` still shows as the approval mode
-of a client. It reports the end of every card that was shown, also when it is
+that it switched on itself and that `getStatus` still shows as a mode of a
+client. It reports the end of every card that was shown, also when it is
 cancelled meanwhile. `auto --approve-with=$NAME` approves every card by
 one fixed rule, `--decline` declines every card and `--no-answer` never
 answers, so that you can see each end by hand; an option the command does not

@@ -409,9 +409,11 @@ rejects the fields, and ask `hello` for `cardPresented`,
 agreed on again (`autoModeActive`): stop the mode and start the one you mean.
 A refused start leaves nothing to clean up: the mode that is on is not yours,
 so do not stop it. `stopAutoMode` switches the mode off whoever switched it on,
-so ask `getStatus` first (the mode has to be `enabled`, `startedBy` `bridge` and
-`requireApproval`), as the sample's loop does, or close your connection, which
-ends the mode that it started and no other.
+so ask `getStatus` first (the mode has to be `enabled` and `startedBy` `bridge`:
+a mode of a user is `other`, and RFiDGear serves one client at a time), as the
+sample's loop does, or close your connection, which ends the mode that it
+started and no other. If RFiDGear answers the start without `requireApproval`,
+the mode runs every card: stop it at once, and give up.
 
 For every card:
 

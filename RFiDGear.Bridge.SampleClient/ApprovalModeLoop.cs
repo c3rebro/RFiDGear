@@ -48,9 +48,11 @@ namespace RFiDGear.Bridge.SampleClient
     /// longer than <see cref="Grace"/>, and is never sent twice.</item>
     /// <item>A late answer (<c>approvalNotPending</c>) is not an error: the card was given up already, and the loop goes on with the next.</item>
     /// <item>The mode ends with the connection (<c>stopOnDisconnect</c>). When the loop ends it stops the mode, but only a mode that it
-    /// started and that RFiDGear still reports as the approval mode of a client: a mode that was on already (<c>autoModeActive</c>), one
-    /// that ended, and one that a user switched on since are never touched. A program that owns its connection ends its mode without
-    /// any such question by closing it.</item>
+    /// started and that RFiDGear still reports as the mode of a client (<c>startedBy</c> <c>bridge</c>; a mode of a user is
+    /// <c>other</c>): a mode that was on already (<c>autoModeActive</c>), one that ended, and one that a user switched on since are
+    /// never touched. A mode that RFiDGear started without waiting for approval is such a mode too, and is stopped. A program that owns
+    /// its connection ends its mode without any such question by closing it. Neither request waits for longer than
+    /// <see cref="Grace"/>, and whatever they do, the loop ends.</item>
     /// <item>Every card that was shown is reported when RFiDGear says how its wait ended, also when the loop is cancelled or the mode
     /// stops meanwhile (for as long as <see cref="Grace"/>; what RFiDGear does not say is not made up).</item>
     /// <item>It never decides for a card it was not shown: the decision gets the event, and the answer carries its presence id.</item>
@@ -76,7 +78,7 @@ namespace RFiDGear.Bridge.SampleClient
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
-        /// <summary>Gets how long the loop waits, at the most, for an answer that RFiDGear has not replied to yet and for the end of the waits that were still going on when the loop ended.</summary>
+        /// <summary>Gets how long the loop waits, at the most, for an answer that RFiDGear has not replied to yet, for each of the two requests that stop the mode, and for the end of the waits that were still going on when the loop ended.</summary>
         public TimeSpan Grace { get; init; } = TimeSpan.FromSeconds(2);
 
         /// <summary>Switches automatic mode on for approval and decides about every card until the loop is cancelled, the mode stops or the connection ends.</summary>
@@ -289,24 +291,27 @@ namespace RFiDGear.Bridge.SampleClient
             }
 
             // Stopping the mode switches it off whoever switched it on, and the notice that this loop's own mode ended may be on its way
-            // while somebody else's mode is already on. So the mode is asked about first, and stopped only when RFiDGear says that it is the
-            // approval mode of a client (a mode of a user is never that, and RFiDGear serves one client at a time). What is left is the
-            // time between the question and the stop: a program that owns its connection closes it instead, which ends its mode and no
-            // other.
+            // while somebody else's mode is already on. So the mode is asked about first, and stopped only when RFiDGear says that it is a
+            // mode of a client (a mode of a user is never that, and RFiDGear serves one client at a time, so it is this loop's own; it may
+            // be a mode that runs every card, which is the mode that must never be left on). What is left is the time between the question
+            // and the stop: a program that owns its connection closes it instead, which ends its mode and no other. Neither request is
+            // waited for longer than the grace, and nothing they do keeps the loop from ending: a mode that is left on ends with the
+            // connection.
             private async Task StopOwnModeAsync()
             {
                 try
                 {
-                    var status = (await _owner._service.GetStatus(new GetStatusRequest()).ConfigureAwait(false)).AutoMode;
+                    var status = (await _owner._service.GetStatus(new GetStatusRequest()).WaitAsync(_owner.Grace).ConfigureAwait(false)).AutoMode;
 
-                    if (status is { Enabled: true, RequireApproval: true } && status.StartedBy == RunSources.Bridge)
+                    if (status is { Enabled: true } && status.StartedBy == RunSources.Bridge)
                     {
-                        await _owner._service.StopAutoMode(new StopAutoModeRequest()).ConfigureAwait(false);
+                        await _owner._service.StopAutoMode(new StopAutoModeRequest()).WaitAsync(_owner.Grace).ConfigureAwait(false);
                     }
                 }
-                catch (Exception failure) when (failure is RemoteInvocationException || failure is ConnectionLostException || failure is ObjectDisposedException)
+                catch (Exception)
                 {
-                    // The connection is gone, and the mode ends with it.
+                    // The connection is gone (and the mode ends with it), or RFiDGear did not answer in time or answered with a failure: the
+                    // loop has to end anyway.
                 }
             }
 

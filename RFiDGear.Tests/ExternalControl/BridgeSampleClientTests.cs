@@ -1273,7 +1273,7 @@ namespace RFiDGear.Tests.ExternalControl
         [Theory]
         [InlineData(false, "bridge", true)]
         [InlineData(true, "other", true)]
-        [InlineData(true, "bridge", false)]
+        [InlineData(true, "other", false)]
         public async Task TheLoop_StopsTheModeOnlyWhenRFiDGearSaysItIsTheApprovalModeOfAClient(bool enabled, string startedBy, bool requireApproval)
         {
             // RFiDGear says that the mode that is on now is not the loop's: it ended, and a user switched on another one meanwhile.
@@ -1293,6 +1293,68 @@ namespace RFiDGear.Tests.ExternalControl
 
             Assert.Equal(0, host.AutoModeHost.StopCalls);
         }
+
+        [Fact]
+        public async Task TheLoop_StopsTheModeThatRFiDGearStartedWithoutWaitingForApproval_ItMustNeverLeaveThatOne()
+        {
+            // RFiDGear answers the start as if it ignored requireApproval, and reports the mode as one of a client that runs every card.
+            var (_, host, loop, _, _) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(nameof(IBridgeService.StartAutoMode), (target, arguments) => StartWithoutApproval(target, (StartAutoModeRequest)arguments[0]!));
+                    standIn.Replace(nameof(IBridgeService.GetStatus), (_, _) =>
+                        Task.FromResult(new StatusResponse { AutoMode = new AutoModeStatusDto { Enabled = true, StartedBy = RunSources.Bridge, RequireApproval = false } }));
+
+                    return standIn.Service;
+                });
+
+            var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => loop.WaitAsync(TimeSpan.FromSeconds(5)));
+
+            Assert.Contains("stopped", failure.Message);
+            Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+        }
+
+        private static async Task<StartAutoModeResponse> StartWithoutApproval(IBridgeService target, StartAutoModeRequest request)
+        {
+            var started = await target.StartAutoMode(request);
+
+            return started with { RequireApproval = false };
+        }
+
+        [Theory]
+        [InlineData(nameof(IBridgeService.GetStatus), "hangs")]
+        [InlineData(nameof(IBridgeService.GetStatus), "throws")]
+        [InlineData(nameof(IBridgeService.StopAutoMode), "hangs")]
+        [InlineData(nameof(IBridgeService.StopAutoMode), "throws")]
+        public async Task TheLoop_EndsInTime_WhateverTheRequestsThatStopTheModeDo(string method, string behavior)
+        {
+            // RFiDGear does not answer the question about the mode, or the stop, or answers with something that is not a failure of the
+            // connection: the loop ends all the same, and what it leaves on ends with the connection.
+            var (_, _, loop, stop, _) = await StartLoopAsync(
+                (_, _) => Task.FromResult(CardDecision.ApproveWith()),
+                wrap: real =>
+                {
+                    var standIn = ServiceStandIn.Wrap(real);
+                    standIn.Replace(method, (_, _) => Misbehave(method, behavior));
+
+                    return standIn.Service;
+                },
+                grace: TimeSpan.FromMilliseconds(300));
+
+            stop.Cancel();
+
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        private static object Misbehave(string method, string behavior) => (method, behavior) switch
+        {
+            (nameof(IBridgeService.GetStatus), "hangs") => new TaskCompletionSource<StatusResponse>().Task,
+            (nameof(IBridgeService.GetStatus), _) => Task.FromException<StatusResponse>(new InvalidOperationException("RFiDGear did not answer as it should.")),
+            (_, "hangs") => new TaskCompletionSource<StopAutoModeResponse>().Task,
+            _ => Task.FromException<StopAutoModeResponse>(new InvalidOperationException("RFiDGear did not answer as it should.")),
+        };
 
         // What RFiDGear says about the mode that is on: the approval mode of a client, whoever's it is.
         private static IBridgeService ThatSaysTheModeIsTheApprovalModeOfAClient(IBridgeService real)
