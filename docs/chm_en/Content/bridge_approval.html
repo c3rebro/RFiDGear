@@ -19,7 +19,7 @@ The project does not change from card to card, so its revision does not either.<
 <ul>
 <li>The <strong>first task</strong> is Check UID with the variable <code>$EXPECTEDUID</code>.</li>
 <li><strong>Every task that touches the card</strong> depends on it: its execute condition is the check with the result <code>NoError</code>; a task behind that one depends on the one before it. RFiDGear cannot tell which tasks write: a task without that condition runs whatever the check said.</li>
-<li>A UID typed into the task is another thing: a question ("is this card that card?"), answered <code>isNotTrue</code>, which a project may branch on. Only a variable is an approval.</li>
+<li>A UID typed into the task is another thing: a question ("is this card that card?"), answered <code>IsNotTrue</code>, which a project may branch on. Only a variable is an approval.</li>
 <li>The variable holds the UID in capital letters, as RFiDGear writes it in the result.</li>
 </ul>
 
@@ -45,7 +45,7 @@ RFiDGear refused the run before it started if the project was in a state that is
 <p>A station that handles one card after the other uses this mode: RFiDGear shows every card that is put on the reader to the client that started the mode, and runs the project for it only when that client approves it, once, for that card. The plain automatic mode runs every card and is not for writing.</p>
 
 <p><code>startAutoMode</code> with <code>requireApproval: true</code>. It needs <code>stopOnDisconnect</code> (the default), because nobody would be left to answer otherwise. <code>approvalTimeoutMs</code> (2000 to 120000, default 15000) is how long a card is waited for. Check the capability <code>autoMode.approval</code> first
-and ask <code>hello</code> for the events <code>cardPresented</code>, <code>cardPresentationEnded</code> and <code>autoModeChanged</code>. A start with approval is never agreed on when the mode is on already (<code>autoModeActive</code>): stop the mode and start the one you mean.</p>
+and ask <code>hello</code> for the events <code>cardPresented</code>, <code>cardPresentationEnded</code> and <code>autoModeChanged</code>. A start with approval is never agreed on when the mode is on already (<code>autoModeActive</code>). Leave a refused start alone: the mode that is on is not yours. Stop only a mode that your own client started, after <code>getStatus</code> shows it as the mode of a client (<code>enabled</code> and <code>startedBy</code> <code>bridge</code>), or let the operator replace it.</p>
 
 <p>For every card:</p>
 
@@ -69,7 +69,7 @@ and ask <code>hello</code> for the events <code>cardPresented</code>, <code>card
 <li>Without your approval nothing runs. An approval is for one card and one run and is used up by the first run, whatever it ends with.</li>
 <li>The run reads the card itself, and that read is held to the approved UID before anything else is sent to the card: another card, or none, ends the run before its first task and stops the mode.</li>
 <li>A late, repeated or foreign answer is <code>approvalNotPending</code> (1018): treat it as "this presence is over" and go on. Only the connection that started the mode can answer.</li>
-<li>A lost connection ends the mode and runs nothing more. <strong>Never start a writing job again by yourself after you reconnected</strong>: start the mode again on purpose; the card that is on the reader is shown as a new presence and needs a new approval.</li>
+<li>A lost connection ends the mode and runs nothing more. <strong>Never start a writing job again by yourself after you reconnected</strong>: start the mode again on purpose. RFiDGear remembers a card that it has shown or run and shows it again only after the reader was seen empty: take the card away and put it back, and it is shown as a new presence that needs a new approval (restarting the RFiDGear process forgets the card too).</li>
 <li><code>loadProject</code> and <code>startRun</code> are refused while the mode is on.</li>
 <li>A run that fails does not stop the mode; a fault, a timeout or a lost reader does (<code>autoModeChanged</code> says why). After one of them look at the card before you start again.</li>
 <li>If the project does not have the Check UID with <code>$EXPECTEDUID</code> as its first task, with the writing tasks depending on it, the approval does not protect you either: only your project says which tasks write.</li>

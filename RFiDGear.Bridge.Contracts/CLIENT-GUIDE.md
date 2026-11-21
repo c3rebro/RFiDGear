@@ -320,7 +320,7 @@ answered "no" can end with.
   behind that one on the one before it). RFiDGear cannot tell which tasks
   write: a task that does not depend on the check runs whatever the check said.
 - A UID typed into the task is another thing: a question ("is this card that
-  card?"), answered `isNotTrue`, which a project may branch on and a run may
+  card?"), answered `IsNotTrue`, which a project may branch on and a run may
   end with as an answer it asked for. Only a variable is an approval.
 - The variable is the one of the run. In the plain automatic mode the
   variables are those of the start-up (they do not change from card to
@@ -467,8 +467,10 @@ For every card:
   connection that started the mode can answer.
 - A lost connection ends the mode (`stopOnDisconnect`) and runs nothing more.
   **Never start a writing job again by yourself after you reconnected.** Start
-  the mode again on purpose: the card that is on the reader is shown as a new
-  presence and needs a new approval.
+  the mode again on purpose. RFiDGear remembers a card that it has shown or
+  run, and shows it again only after the reader was seen empty: take the card
+  away and put it back, and it is shown as a new presence that needs a new
+  approval (restarting the RFiDGear process forgets the card too).
 - `loadProject` and `startRun` are refused while the mode is on, and a project
   that was changed after you saw the card is `projectChanged` when you named
   its revision. Name it.
