@@ -49,6 +49,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly RunFacts? _facts;
         private readonly Func<string?> _readRevision;
         private readonly Action<string, string, bool, BridgeEventFactory> _publishToSession;
+        private readonly ApprovedRunTable? _approvedRuns;
         private readonly EventHandler _stateChangedHandler;
         private readonly EventHandler _runningChangedHandler;
         private readonly EventHandler<ExecResult> _runCompletedHandler;
@@ -71,6 +72,7 @@ namespace RFiDGear.Services.ExternalControl
         /// the client that started a mode that waits for approval must never reach another client that has connected since. Without it
         /// the events go to whoever is connected, as <paramref name="publish"/> does.
         /// </param>
+        /// <param name="approvedRuns">Where the runs of approved cards are noted with the connection that approved them (see <see cref="ApprovedRunTable"/>), or <see langword="null"/> for none.</param>
         internal AutoModeBridge(
             IRFiDGearExtensionHost host,
             IAutoModeControl control,
@@ -80,7 +82,8 @@ namespace RFiDGear.Services.ExternalControl
             Func<string?> busyActivity,
             RunFacts? facts = null,
             Func<string?>? readRevision = null,
-            Action<string, string, bool, BridgeEventFactory>? publishToSession = null)
+            Action<string, string, bool, BridgeEventFactory>? publishToSession = null,
+            ApprovedRunTable? approvedRuns = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _control = control ?? throw new ArgumentNullException(nameof(control));
@@ -91,6 +94,7 @@ namespace RFiDGear.Services.ExternalControl
             _facts = facts;
             _readRevision = readRevision ?? (() => null);
             _publishToSession = publishToSession ?? ((_, name, durable, create) => publish(name, durable, create));
+            _approvedRuns = approvedRuns;
             _stateChangedHandler = (_, _) => OnStateChanged();
             _runningChangedHandler = (_, _) => OnRunningChanged();
             _runCompletedHandler = (_, result) => OnRunCompleted(result);
@@ -218,7 +222,8 @@ namespace RFiDGear.Services.ExternalControl
                     sessionId,
                     TimeSpan.FromMilliseconds(request.ApprovalTimeoutMs ?? BridgeProtocol.DefaultApprovalTimeoutMs),
                     _readRevision,
-                    (name, durable, create) => _publishToSession(sessionId, name, durable, create))
+                    (name, durable, create) => _publishToSession(sessionId, name, durable, create),
+                    runApproved: (runId, approvedBy) => _approvedRuns?.Add(runId, approvedBy))
                 : null;
             var mine = new ClientStart(sessionId, request.StopOnDisconnect, gate);
             AutoModeStartResult result;

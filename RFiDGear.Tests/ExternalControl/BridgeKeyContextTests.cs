@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using RFiDGear.Bridge;
 using RFiDGear.Contracts;
 using RFiDGear.ExtensionSdk;
+using RFiDGear.Services.AutoMode;
 using RFiDGear.Services.ExternalControl;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Tests.CardCheckAssistant;
@@ -86,6 +87,17 @@ namespace RFiDGear.Tests.ExternalControl
             }
 
             return client;
+        }
+
+        private static async Task WaitUntilAsync(Func<Task<bool>> condition)
+        {
+            var until = DateTime.UtcNow.AddSeconds(5);
+
+            while (!await condition())
+            {
+                Assert.True(DateTime.UtcNow < until, "The condition did not become true in time.");
+                await Task.Delay(10);
+            }
         }
 
         private static Task<SecureKeyResolution> Ask(Rig rig, string? runId, bool interactive = false) =>
@@ -313,6 +325,35 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.All(new[] { byHand, unknown, aButton }, refused => Assert.Equal(SecureKeyFailureReason.NotAuthorized, refused.FailureReason));
 
             // Nothing about the refused runs reached the client: the host answered.
+            Assert.Equal(1, client.KeyRequests.Count);
+        }
+
+        [Fact]
+        public async Task WithTheRestriction_TheRunOfACardTheClientApproved_IsItsOwn_AndTheRunOfACardNobodyApprovedIsNot()
+        {
+            var rig = Start();
+            var client = await ConnectAsync(rig, ownRunsOnly: true);
+            await client.Service.StartAutoMode(new StartAutoModeRequest { StopOnDisconnect = true, RequireApproval = true });
+
+            // The machine shows a card, the client approves it, and the window runs it as a run of the mode.
+            var waiting = Task.Run(() => rig.Host.AutoModeHost.Approval!.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None));
+            await WaitUntilAsync(async () => (await client.Service.GetStatus(new GetStatusRequest())).AutoMode!.PendingPresenceId == "p-1");
+            await client.Service.ApproveCard(new ApproveCardRequest { PresenceId = "p-1" });
+            var approval = (await waiting)!;
+            rig.Window.Begin("w-1", RunSources.AutoMode);
+            approval.NotifyRunAdmitted("w-1");
+            using var approved = await Ask(rig, "w-1");
+            var askedForApproved = client.KeyRequests.Count;
+
+            // The run of a card that nobody approved (the mode of the user, another card) is the mode's and nobody's.
+            rig.Window.End("w-1");
+            rig.Window.Begin("w-2", RunSources.AutoMode);
+            using var notApproved = await Ask(rig, "w-2");
+
+            Assert.True(approved.IsResolved);
+            Assert.Equal(1, askedForApproved);
+            Assert.Equal(RunSources.AutoMode, client.KeyRequests[0].Source);
+            Assert.Equal(SecureKeyFailureReason.NotAuthorized, notApproved.FailureReason);
             Assert.Equal(1, client.KeyRequests.Count);
         }
 

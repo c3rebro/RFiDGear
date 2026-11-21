@@ -34,7 +34,7 @@ namespace RFiDGear.Tests.ExternalControl
             public DateTimeOffset Clock = Now;
             public Func<DateTimeOffset>? ClockSource;
 
-            public Rig(TimeSpan? timeout = null, Func<string?>? readRevision = null)
+            public Rig(TimeSpan? timeout = null, Func<string?>? readRevision = null, Action<string, string>? runApproved = null)
             {
                 Gate = new AutoModeApprovalGate(
                     Session,
@@ -47,7 +47,8 @@ namespace RFiDGear.Tests.ExternalControl
                             Published.Add((name, create(++_seq, Session, Now)));
                         }
                     },
-                    () => ClockSource != null ? ClockSource() : Clock);
+                    () => ClockSource != null ? ClockSource() : Clock,
+                    runApproved);
             }
 
             public IReadOnlyList<T> Events<T>() where T : BridgeEvent
@@ -256,6 +257,39 @@ namespace RFiDGear.Tests.ExternalControl
             Assert.Equal("expectProjectRevision", badRevision.Details!["field"]);
             Assert.True(stillWaiting);
             Assert.Equal("1", (await waiting)!.Variables["$A"]);
+        }
+
+        [Fact]
+        public async Task TheRunOfAnApprovedCard_IsNotedWithTheConnectionThatApprovedIt_BeforeTheNoticeThatSaysSo()
+        {
+            var noted = new List<(string RunId, string Session, int NoticesBefore)>();
+            Rig? rig = null;
+            rig = new Rig(runApproved: (runId, session) => noted.Add((runId, session, rig!.Events<CardPresentationEndedEvent>().Count)));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+            rig.Gate.Approve(Session, Approval("p-1"));
+            var approval = (await waiting)!;
+
+            approval.NotifyRunAdmitted("run-7");
+
+            // Noted once, with the connection of the gate, before the notice that the run was admitted (a key may be asked for at once).
+            Assert.Equal(new[] { ("run-7", Session, 0) }, noted);
+            Assert.Equal("run-7", Assert.Single(rig.Events<CardPresentationEndedEvent>()).RunId);
+        }
+
+        [Fact]
+        public async Task ACardThatNobodyApproved_IsNotedAsNoRun()
+        {
+            var noted = new List<string>();
+            var rig = new Rig(runApproved: (runId, _) => noted.Add(runId));
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+            await rig.WaitForAsync(() => rig.Gate.PendingPresenceId != null);
+
+            rig.Gate.Decline(Session, new DeclineCardRequest { PresenceId = "p-1" });
+            await waiting;
+            rig.Gate.RunRefused("p-2", AutoModeRefusal.NotAdmitted);
+
+            Assert.Empty(noted);
         }
 
         [Fact]
