@@ -1452,25 +1452,24 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task TheDataOfAListingThatFailed_IsNotPublishedToACommonTask()
+        public async Task ADesfireCard_GivesACommonTaskTheDesfireDataOfTheReader()
         {
             var tasks = new List<CommonTaskViewModel>();
-            RFiDGear.Tests.Reader.ScriptedReadProvider scripted = null;
+            MifareDesfireChipModel held = null;
 
             await RunProjectAsync(
                 new Dictionary<string, string>(),
                 reader =>
                 {
-                    // A DESFire card is on the reader; the reader of this test cannot list it (no hardware), whatever it left behind.
-                    scripted = reader;
                     var chip = new RFiDGear.Models.GenericChipModel("04AABBCC", CARD_TYPE.DESFire);
                     reader.GenericChip = chip;
                     reader.Card = chip;
+                    held = reader.DesfireChip = new MifareDesfireChipModel("04AABBCC", CARD_TYPE.DESFire) { FreeMemory = 4096 };
                 },
                 () => Added(tasks, CommonTaskThatLooks("0")));
 
-            Assert.Equal(1, scripted.DesfireListings);
-            Assert.Null(tasks[0].DesfireChip);
+            // The reader of this test cannot list the card (no hardware); what it holds is what the task is given.
+            Assert.Same(held, tasks[0].DesfireChip);
         }
 
         private static object Added<T>(List<T> list, T task)

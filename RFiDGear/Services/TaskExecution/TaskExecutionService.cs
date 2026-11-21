@@ -661,12 +661,6 @@ namespace RFiDGear.Services.TaskExecution
                 return new ChipHydrationResult(new GenericChipModel());
             }
 
-            // The DESFire data that a reader holds (the list of applications, the free memory) is the data of a card that was listed
-            // before: a run starts with none (as the application does at its start), so that a program task or a report never names the
-            // data of an earlier card, and a free memory that was never read is no measured zero. The listing below fills it for a DESFire
-            // card, and the tasks of the run for what they read.
-            device.DesfireChip = null;
-
             // Always ReadChipPublic first: it reconnects the reader if the session
             // has lapsed since the last read (required by the Elatec SDK before any
             // DESFire command — connect then search-tag).
@@ -689,20 +683,17 @@ namespace RFiDGear.Services.TaskExecution
             if (readFoundACard && !string.IsNullOrEmpty(genericChip.UID) &&
                 genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
             {
-                var listing = await device.GetMiFareDESFireChipAppIDs();
-
-                // A listing that failed may have left a part of the list (or the list twice): the data of a failed listing is not published.
-                if (listing != ERROR.NoError)
-                {
-                    device.DesfireChip = null;
-                }
-
+                await device.GetMiFareDESFireChipAppIDs();
                 genericChip = device.GenericChip ?? genericChip;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
             return new ChipHydrationResult(genericChip, readFoundACard ? genericChip : new GenericChipModel());
         }
+
+        // The same rule that decides whether the applications of a card are listed.
+        private static bool IsDesfireCard(GenericChipModel chip) =>
+            !string.IsNullOrEmpty(chip?.UID) && chip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire");
 
         // A run that was given the card it is meant for does not go on with another card, or with none.
         private static void RequireTheExpectedCard(string expectedCardUid, string uidOfTheRead)
@@ -1416,7 +1407,12 @@ namespace RFiDGear.Services.TaskExecution
         private async Task<bool> HandleCommonTaskAsync(CommonTaskViewModel commonTask, TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device)
         {
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).GenericChip = genericChip;
-            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
+
+            // The DESFire data that the reader holds (the list of applications, the free memory) is the data of the last DESFire card that was
+            // listed. A common task gets it only when the card of this run is a DESFire card: after a Classic or an Ultralight card the data
+            // of the DESFire card before would name the wrong card in a program task or a report.
+            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).DesfireChip =
+                IsDesfireCard(genericChip) ? device.DesfireChip : null;
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).AvailableTasks = request.TaskHandler.TaskCollection;
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).Args = request.VariablesFromArgs;
             var executed = false;
