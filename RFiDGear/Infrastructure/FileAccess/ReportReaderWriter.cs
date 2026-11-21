@@ -186,6 +186,23 @@ namespace RFiDGear.Infrastructure.FileAccess
             }
         }
 
+        /// <summary>
+        /// Starts a new report. The report that the writer was building (its working copy, to which every change of a field adds) is
+        /// forgotten, so that the next change starts from the template and not from the report of the card before. The task execution
+        /// service calls it once when a run starts, never between the report tasks of one run, which go on adding to one report.
+        /// </summary>
+        public void StartNewReport()
+        {
+            try
+            {
+                CleanupTemporaryTemplate();
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, "Failed to start a new report");
+            }
+        }
+
         public void DeleteDatabase()
         {
             File.Delete(Path.Combine(ReportOutputPath));

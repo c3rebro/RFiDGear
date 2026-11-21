@@ -439,6 +439,13 @@ namespace RFiDGear.Services.TaskExecution
             var runId = !string.IsNullOrEmpty(request.RunId) ? request.RunId : Guid.NewGuid().ToString("N");
             result.RunId = runId;
 
+            // A report belongs to a run: it starts from the template, not from the report that the writer built for the card before. The run
+            // of the selected task only goes on with the report as it is, and so do the report tasks of one run.
+            if (!request.RunSelectedOnly)
+            {
+                request.ReportReaderWriter?.StartNewReport();
+            }
+
 #if DEBUG
             taskTimeout.IsEnabled = false;
 #else
