@@ -100,9 +100,10 @@ Fixed:
   variables with a dollar sign are found without regard to case.
 - Logic task "Compare": every operator means what it says. Before, %FREEMEM!= tested for
   equality, %COUNTAPPS== and %COUNTAPPS!= tested for "at least", and %COUNTAPPS&lt;= gave no
-  result. An expression that cannot be evaluated (no operator, an operand that is not
-  known, a value that is no whole number, a variable without a value, no DESFire card) ends
-  with "Is Not True". A project that relied on the old behavior has to be checked.
+  result. An expression that cannot be evaluated ends with "Is Not True": no operator, an
+  operand that is not known; for %FREEMEM and %COUNTAPPS a value that is no whole number or
+  no DESFire card; for a $NAME variable that the run was not given (a variable given with an
+  empty value has a value). A project that relied on the old behavior has to be checked.
 - Report: the placeholder %FREECLASSICMEM, which never had a value, is gone (a text that is
   no placeholder is written as it stands). A checkpoint whose target task does not exist
   writes nothing (it wrote anyway). The report of a run starts from the template: fields of
@@ -114,8 +115,10 @@ Fixed:
 - The top node of a chip in the tree is green or red when a run has ended (it turned yellow
   and then lost its color).
 - A program task or a report names the card of the run: a run whose read found no card no
-  longer gets the UID and type of the card before, and the DESFire data (free memory,
-  applications) of an earlier card is not used by the next run.
+  longer gets the UID and type of the card before, and a run whose card is not a DESFire
+  card gets no DESFire data (free memory, applications) of an earlier card. Not solved yet:
+  a DESFire card that replaces another DESFire card and whose listing fails (for example
+  because its PICC master key is not the default) still gets the data of the first.
 
 Please note:
 - The signature of an extension package is shown, not enforced: a package is accepted
