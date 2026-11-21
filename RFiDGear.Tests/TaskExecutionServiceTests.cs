@@ -1232,7 +1232,7 @@ namespace RFiDGear.Tests
         // well: it stands for the person who clicks on another card while the run is on.
         private static async Task<(RFiDGear.ViewModel.RFiDChipParentLayerViewModel Node, Exception Failure)> RunWithATopNodeAsync(
             string nodeUid, bool? flagBeforeTheRun, bool tokenIsCancelled,
-            Action<RFiDGear.ViewModel.RFiDChipParentLayerViewModel, RFiDGear.ViewModel.RFiDChipParentLayerViewModel> whileTheRunIsOn,
+            Action<RFiDGear.ViewModel.RFiDChipParentLayerViewModel, RFiDGear.ViewModel.RFiDChipParentLayerViewModel, CancellationTokenSource> whileTheRunIsOn,
             params Func<object>[] createTasks)
         {
             RFiDGear.ViewModel.RFiDChipParentLayerViewModel node = null;
@@ -1266,16 +1266,16 @@ namespace RFiDGear.Tests
                         handler.TaskCollection.Add(create());
                     }
 
+                    using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
                     var request = new TaskExecutionRequest
                     {
                         TaskHandler = handler,
                         TreeViewParentNodes = new ObservableCollection<RFiDGear.ViewModel.RFiDChipParentLayerViewModel> { node, otherNode },
                         VariablesFromArgs = new Dictionary<string, string>(),
                         Timeouts = TaskExecutionTimeouts.Default,
-                        UpdateSelectedSetupViewModel = _ => whileTheRunIsOn?.Invoke(node, otherNode)
+                        UpdateSelectedSetupViewModel = _ => whileTheRunIsOn?.Invoke(node, otherNode, limit)
                     };
-
-                    using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
                     if (tokenIsCancelled)
                     {
@@ -1346,7 +1346,7 @@ namespace RFiDGear.Tests
 
             var (node, failure) = await RunWithATopNodeAsync(
                 "0123456789", null, false,
-                (programmed, another) =>
+                (programmed, another, _) =>
                 {
                     // The person clicks on another card while the run is on.
                     other = another;
@@ -1360,6 +1360,26 @@ namespace RFiDGear.Tests
             Assert.Null(node.IsBeingProgrammed);
             Assert.Null(other.IsProgrammingCompletedSuccessfully);
             Assert.Null(other.IsBeingProgrammed);
+        }
+
+        [Fact]
+        public async Task ARunThatIsCancelledWhileItIsOn_ClearsBothFlags_AndGivesNoVerdict()
+        {
+            // The token is cancelled when the first task starts, after the node was marked as being programmed.
+            var (node, failure) = await RunWithATopNodeAsync(
+                "0123456789", null, false,
+                (programmed, _, limit) =>
+                {
+                    Assert.True(programmed.IsBeingProgrammed);
+                    limit.Cancel();
+                },
+                () => CheckUid("0", "0123456789"),
+                () => CheckUid("1", "0123456789"));
+
+            // The run may end on the cancellation or after the task it was on; either way the node is no longer yellow and has no verdict.
+            Assert.True(failure == null || failure is OperationCanceledException);
+            Assert.Null(node.IsBeingProgrammed);
+            Assert.Null(node.IsProgrammingCompletedSuccessfully);
         }
 
         [Fact]
