@@ -688,8 +688,9 @@ namespace RFiDGear.Services.TaskExecution
             // Before anything else is sent to the card: the listing of the applications below can authenticate with a default key.
             RequireTheExpectedCard(expectedCardUid, readFoundACard ? RFiDGear.Infrastructure.ExtensionHost.ReaderSnapshotBuilder.PrimaryUidOf(genericChip) : null);
 
-            if (!string.IsNullOrEmpty(genericChip.UID) &&
-                genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
+            // Only for a card that this run's own read found: a read that failed leaves the chip of an earlier card, which must not be
+            // listed (the listing can authenticate with a default key).
+            if (readFoundACard && IsDesfireCard(genericChip))
             {
                 await device.GetMiFareDESFireChipAppIDs();
                 genericChip = device.GenericChip ?? genericChip;
@@ -698,6 +699,11 @@ namespace RFiDGear.Services.TaskExecution
             cancellationToken.ThrowIfCancellationRequested();
             return new ChipHydrationResult(genericChip, readFoundACard ? genericChip : new GenericChipModel());
         }
+
+        // The rule that decides whether the applications of a card are listed and whether a common task gets the DESFire data. The name of
+        // the type is compared without regard to the culture (the "I" of DESFire is no "i" in Turkish).
+        private static bool IsDesfireCard(GenericChipModel chip) =>
+            !string.IsNullOrEmpty(chip?.UID) && chip.CardType.ToString().Contains("desfire", StringComparison.OrdinalIgnoreCase);
 
         // A run that was given the card it is meant for does not go on with another card, or with none.
         private static void RequireTheExpectedCard(string expectedCardUid, string uidOfTheRead)
@@ -866,7 +872,10 @@ namespace RFiDGear.Services.TaskExecution
                             switch (taskOfThePosition)
                             {
                                 case CommonTaskViewModel commonTask:
-                                    executedTask = await HandleCommonTaskAsync(commonTask, request, result, descriptors, genericChip, device);
+                                    // A common task names the card of this run (%UID, %CHIPTYPE): when the run's own read found no card, the chip
+                                    // that the reader still holds is the one of an earlier card, and the task gets none.
+                                    executedTask = await HandleCommonTaskAsync(
+                                        commonTask, request, result, descriptors, cardUid == null ? new GenericChipModel() : genericChip, device);
                                     break;
                                 case GenericChipTaskViewModel genericTask:
                                     executedTask = await HandleGenericChipTaskAsync(genericTask, request, descriptors, device, cardUid);
@@ -1434,7 +1443,12 @@ namespace RFiDGear.Services.TaskExecution
         private async Task<bool> HandleCommonTaskAsync(CommonTaskViewModel commonTask, TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device)
         {
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).GenericChip = genericChip;
-            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
+
+            // The DESFire data that the reader holds (the list of applications, the free memory) is the data of the last DESFire card that was
+            // listed. A common task gets it only when the card of this run is a DESFire card: after a Classic or an Ultralight card the data
+            // of the DESFire card before would name the wrong card in a program task or a report.
+            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).DesfireChip =
+                IsDesfireCard(genericChip) ? device.DesfireChip : null;
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).AvailableTasks = request.TaskHandler.TaskCollection;
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).Args = request.VariablesFromArgs;
             var executed = false;

@@ -149,11 +149,17 @@ namespace RFiDGear.Tests.KeySlots
 
         // ── DESFire ──
 
+        /// <summary>Gets or sets whether the listing of the applications leaves the chip model as it is (a reader that is gone).</summary>
+        public bool ListingMakesNoModel { get; set; }
+
         /// <inheritdoc />
         public override Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
-            // A card without applications; the view model reads the list after a successful call.
-            DesfireChip = new MifareDesfireChipModel();
+            // A card without applications; the view model reads the list after a successful call. A reader that is gone makes no model.
+            if (!ListingMakesNoModel)
+            {
+                DesfireChip = new MifareDesfireChipModel();
+            }
 
             return Task.FromResult(Record(nameof(GetMiFareDESFireChipAppIDs), _appMasterKey));
         }

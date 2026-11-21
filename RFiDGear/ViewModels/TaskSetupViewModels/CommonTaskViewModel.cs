@@ -1057,7 +1057,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             if (temporaryContent.Contains("%CHIPTYPE"))
                             {
-                                temporaryContent = temporaryContent.Replace("%CHIPTYPE", ResourceLoader.GetResource(
+                                // A model without a UID is the empty one of a read that found no card: its type is "no tag", not a chip type.
+                                temporaryContent = temporaryContent.Replace("%CHIPTYPE", string.IsNullOrEmpty(GenericChip?.UID) ? "" : ResourceLoader.GetResource(
                                 string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.CardType))) ?? "");
                                 hasVariable = true;
                             }

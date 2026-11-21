@@ -180,6 +180,24 @@ namespace RFiDGear.Tests.KeySlots
             Assert.Equal(ERROR.Empty, run.Error);
         }
 
+        [Fact]
+        public async Task An_app_check_whose_listing_failed_without_a_chip_model_ends_with_the_error_of_the_reader()
+        {
+            // A reader that is gone answers the listing with a transport error and has made no model of the chip: the task says so
+            // instead of reading the free memory of a model that does not exist.
+            var run = await RunAsync(
+                TaskType_MifareDesfireTask.AppExistCheck,
+                reader: reader =>
+                {
+                    reader.DesfireChip = null;
+                    reader.ListingMakesNoModel = true;
+                    reader.FailMethod = "GetMiFareDESFireChipAppIDs";
+                    reader.FailWith = ERROR.TransportError;
+                });
+
+            Assert.Equal(ERROR.TransportError, run.Error);
+        }
+
         private sealed record Run(string Calls, ERROR Error);
 
         private static async Task<Run> RunAsync(
