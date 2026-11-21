@@ -365,6 +365,48 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheWaitEndsAtTheTimeTheEventAnnounced_NotAFullTimeLimitAfterTheRevisionWasRead()
+        {
+            var rig = new Rig(TimeSpan.FromSeconds(30));
+
+            // The first look at the clock makes the time that the event announces. Reading the revision took the rest of the limit, so
+            // the second look is past it: the wait is over at once, and does not start a whole limit again.
+            var looks = 0;
+            rig.ClockSource = () => ++looks == 1 ? Now : Now.AddSeconds(31);
+            var waiting = rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None);
+
+            var finished = await Task.WhenAny(waiting, Task.Delay(TimeSpan.FromSeconds(5)));
+
+            Assert.Same(waiting, finished);
+            Assert.Null(await waiting);
+            Assert.Equal(PresentationEndReasons.Expired, Assert.Single(rig.Events<CardPresentationEndedEvent>()).Reason);
+        }
+
+        [Fact]
+        public async Task ACardWhoseStartEndsWhileItsRevisionIsRead_IsShownToNobody()
+        {
+            using var entered = new ManualResetEventSlim(false);
+            using var release = new ManualResetEventSlim(false);
+            var rig = new Rig(readRevision: () =>
+            {
+                entered.Set();
+                release.Wait(TimeSpan.FromSeconds(5));
+
+                return "rev-1";
+            });
+            var waiting = Task.Run(() => rig.Gate.RequestAsync(new AutoModePresence("p-1", "04AA"), CancellationToken.None));
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+
+            // The connection of the client ends while the revision is read, and then the revision arrives.
+            rig.Gate.Cancel(PresentationEndReasons.ClientLost);
+            release.Set();
+
+            Assert.Null(await waiting);
+            Assert.Empty(rig.Published);
+            Assert.Null(rig.Gate.PendingPresenceId);
+        }
+
+        [Fact]
         public async Task ADeclineAfterTheTimeLimit_IsNoAnswerEither_AndTheWaitEndsAsExpired()
         {
             var rig = new Rig(TimeSpan.FromSeconds(30));

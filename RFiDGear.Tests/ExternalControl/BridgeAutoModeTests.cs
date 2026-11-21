@@ -600,6 +600,35 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheCardsOfAModeThatWaitsForApproval_AreHandedToTheConnectionThatStartedIt_AndToNoOther()
+        {
+            var host = new FakeExtensionHost();
+            var broadcast = new List<string>();
+            var toSession = new List<(string Session, string Name)>();
+            var bridge = new AutoModeBridge(
+                host,
+                host.AutoModeHost,
+                new RunRegistry(),
+                (name, _, _) => broadcast.Add(name),
+                () => false,
+                () => null,
+                publishToSession: (session, name, _, _) => toSession.Add((session, name)));
+            bridge.Attach();
+            bridge.Start("session-1", new StartAutoModeRequest { StopOnDisconnect = true, RequireApproval = true });
+
+            var waiting = Task.Run(() => host.AutoModeHost.Approval!.RequestAsync(new AutoModePresence("p-1", "04AA"), System.Threading.CancellationToken.None));
+            await WaitUntilAsync(() => toSession.Count >= 1);
+            bridge.DeclineCard("session-1", new DeclineCardRequest { PresenceId = "p-1" });
+            await waiting;
+            await WaitUntilAsync(() => toSession.Count >= 2);
+
+            // Shown and ended for the connection that started the mode, and for nobody who has connected since.
+            Assert.Equal(new[] { ("session-1", BridgeEvents.CardPresented), ("session-1", BridgeEvents.CardPresentationEnded) }, toSession);
+            Assert.DoesNotContain(BridgeEvents.CardPresented, broadcast);
+            Assert.DoesNotContain(BridgeEvents.CardPresentationEnded, broadcast);
+        }
+
+        [Fact]
         public void AConnectionThatDidNotStartTheMode_CannotEndIt_OnlyTheOneThatAgreedToCan()
         {
             var (bridge, host, _) = Direct();

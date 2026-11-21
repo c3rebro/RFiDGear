@@ -20,6 +20,7 @@ namespace RFiDGear.Services.AutoMode
     internal sealed class AutoModeApproval
     {
         private readonly Action<string>? _runAdmitted;
+        private int _admitted;
 
         /// <summary>Creates the approval of one presence.</summary>
         /// <param name="presenceId">The presence it was given for.</param>
@@ -53,10 +54,15 @@ namespace RFiDGear.Services.AutoMode
         /// <summary>Gets the revision the project must have when the run is about to start, or <see langword="null"/> when the approval does not say.</summary>
         internal string? ExpectProjectRevision { get; }
 
+        /// <summary>Gets whether the run was admitted, that is, whether the one who approved was told so.</summary>
+        internal bool RunWasAdmitted => Volatile.Read(ref _admitted) != 0;
+
         /// <summary>Tells the one who approved that the run was admitted. Never throws into the run.</summary>
         /// <param name="runId">The id of the run.</param>
         internal void NotifyRunAdmitted(string runId)
         {
+            Volatile.Write(ref _admitted, 1);
+
             try
             {
                 _runAdmitted?.Invoke(runId);

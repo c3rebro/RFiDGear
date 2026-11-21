@@ -131,7 +131,8 @@ namespace RFiDGear.Services.ExternalControl
                     () => Volatile.Read(ref _shutdown) != 0,
                     () => busyActivity?.Invoke(),
                     runFacts,
-                    () => (host.Project as IProjectRevisionSource)?.GetProjectRevision());
+                    () => (host.Project as IProjectRevisionSource)?.GetProjectRevision(),
+                    (sessionId, name, durable, create) => _server!.Publish(name, durable, create, sessionId));
             }
 
             var autoMode = _autoMode;

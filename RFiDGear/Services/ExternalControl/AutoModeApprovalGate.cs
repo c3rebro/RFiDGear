@@ -134,6 +134,21 @@ namespace RFiDGear.Services.ExternalControl
                 revision = null;
             }
 
+            // The start may have ended while the revision was read (the mode was stopped, or the connection of the client ended): the
+            // card is not shown then, to anybody.
+            lock (_gate)
+            {
+                if (_endedWith != null)
+                {
+                    if (ReferenceEquals(_pending, pending))
+                    {
+                        _pending = null;
+                    }
+
+                    return null;
+                }
+            }
+
             _publish(
                 BridgeEvents.CardPresented,
                 true,
@@ -154,7 +169,10 @@ namespace RFiDGear.Services.ExternalControl
             using (withdrawn.Register(() => pending.Completion.TrySetResult(new Decision(null, PresentationEndReasons.CardChanged))))
             using (var stopWaiting = new CancellationTokenSource())
             {
-                var timer = Task.Delay(_timeout, stopWaiting.Token);
+                // What is left of the time that the event announced: reading the revision and publishing took some of it, and the
+                // wait must not end later than the time the client was told.
+                var remaining = expiresAt - _now();
+                var timer = Task.Delay(remaining < TimeSpan.Zero ? TimeSpan.Zero : (remaining > _timeout ? _timeout : remaining), stopWaiting.Token);
                 var first = await Task.WhenAny(pending.Completion.Task, timer).ConfigureAwait(false);
 
                 if (first == pending.Completion.Task)

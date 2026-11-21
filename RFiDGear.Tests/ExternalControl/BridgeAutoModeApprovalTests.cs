@@ -380,6 +380,29 @@ namespace RFiDGear.Tests.ExternalControl
             await WaitUntilAsync(() => !service.IsConnected);
         }
 
+        [Fact]
+        public async Task WhatIsToldAboutACardOfAStartThatEnded_NeverReachesAClientThatConnectedAfterwards()
+        {
+            var (service, pipe, host) = Start();
+            var first = await ConnectAsync(pipe, BridgeEvents.CardPresented);
+            await first.Service.StartAutoMode(WithApproval());
+            var waiting = Present(host);
+            await first.WaitForEventsAsync(1);
+            await first.Service.ApproveCard(new ApproveCardRequest { PresenceId = "p-1" });
+            var approval = await waiting;
+
+            // The client that started the mode leaves (the mode ends with it) and another one connects; the run of the approved card is
+            // admitted only now, and the notice that says so is for the client that is gone.
+            first.Dispose();
+            await WaitUntilAsync(() => !service.IsConnected);
+            await WaitUntilAsync(() => !host.AutoModeHost.IsAutoModeEnabled);
+            var second = await ConnectAsync(pipe, BridgeEvents.CardPresented, BridgeEvents.CardPresentationEnded, BridgeEvents.AutoModeChanged);
+            approval!.NotifyRunAdmitted("run-1");
+            await Task.Delay(300);
+
+            Assert.Empty(second.Events);
+        }
+
         // ── The results ──
 
         [Fact]

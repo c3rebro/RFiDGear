@@ -566,6 +566,25 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task AnEventThatBelongsToAnotherConnection_IsNotHandedToTheClientThatIsConnected()
+        {
+            var (server, name) = StartServer(Offering(BridgeCapabilities.EventsReader));
+            using var client = await ConnectAsync(name);
+            var hello = await client.HelloAsync(BridgeEvents.ReaderChanged);
+
+            // The first one was meant for a client that is gone (a card shown to the client that started the mode); the second is for this one.
+            server.Publish(BridgeEvents.ReaderChanged, durable: false, (seq, session, at) => new ReaderChangedEvent { Seq = seq, SessionId = session, At = at }, onlyToSession: "an-earlier-connection");
+            server.Publish(BridgeEvents.ReaderChanged, durable: false, (seq, session, at) => new ReaderChangedEvent { Seq = seq, SessionId = session, At = at, Reader = new ReaderDto { State = ReaderStates.Ready } }, onlyToSession: hello.SessionId);
+
+            var events = await client.WaitForEventsAsync(1);
+            await Task.Delay(200);
+
+            Assert.Single(client.Events);
+            Assert.Equal(1, events[0].Seq);
+            Assert.Equal(ReaderStates.Ready, ((ReaderChangedEvent)events[0]).Reader.State);
+        }
+
+        [Fact]
         public async Task AnEventPublishedWithoutAConnection_IsDropped_AndTheNextClientStartsAtOne()
         {
             var (server, name) = StartServer(Offering(BridgeCapabilities.EventsReader));

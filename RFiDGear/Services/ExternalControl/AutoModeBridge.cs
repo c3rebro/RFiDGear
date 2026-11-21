@@ -48,6 +48,7 @@ namespace RFiDGear.Services.ExternalControl
         private readonly Func<string?> _busyActivity;
         private readonly RunFacts? _facts;
         private readonly Func<string?> _readRevision;
+        private readonly Action<string, string, bool, BridgeEventFactory> _publishToSession;
         private readonly EventHandler _stateChangedHandler;
         private readonly EventHandler _runningChangedHandler;
         private readonly EventHandler<ExecResult> _runCompletedHandler;
@@ -65,6 +66,11 @@ namespace RFiDGear.Services.ExternalControl
         /// <param name="busyActivity">Says what the application is busy with, for the hint in a "busy" refusal.</param>
         /// <param name="facts">What the main window noted about its runs when it took them (the revision of the project, the presence they were approved for), or <see langword="null"/> for none.</param>
         /// <param name="readRevision">Reads the revision of the project as it is now, on the thread of the main window (the machine asks from there); <see langword="null"/> for none.</param>
+        /// <param name="publishToSession">
+        /// Hands an event to one connection only (the connection, the name, whether it is durable, the maker of the event): what belongs to
+        /// the client that started a mode that waits for approval must never reach another client that has connected since. Without it
+        /// the events go to whoever is connected, as <paramref name="publish"/> does.
+        /// </param>
         internal AutoModeBridge(
             IRFiDGearExtensionHost host,
             IAutoModeControl control,
@@ -73,7 +79,8 @@ namespace RFiDGear.Services.ExternalControl
             Func<bool> isShuttingDown,
             Func<string?> busyActivity,
             RunFacts? facts = null,
-            Func<string?>? readRevision = null)
+            Func<string?>? readRevision = null,
+            Action<string, string, bool, BridgeEventFactory>? publishToSession = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _control = control ?? throw new ArgumentNullException(nameof(control));
@@ -83,6 +90,7 @@ namespace RFiDGear.Services.ExternalControl
             _busyActivity = busyActivity ?? throw new ArgumentNullException(nameof(busyActivity));
             _facts = facts;
             _readRevision = readRevision ?? (() => null);
+            _publishToSession = publishToSession ?? ((_, name, durable, create) => publish(name, durable, create));
             _stateChangedHandler = (_, _) => OnStateChanged();
             _runningChangedHandler = (_, _) => OnRunningChanged();
             _runCompletedHandler = (_, result) => OnRunCompleted(result);
@@ -210,7 +218,7 @@ namespace RFiDGear.Services.ExternalControl
                     sessionId,
                     TimeSpan.FromMilliseconds(request.ApprovalTimeoutMs ?? BridgeProtocol.DefaultApprovalTimeoutMs),
                     _readRevision,
-                    _publish)
+                    (name, durable, create) => _publishToSession(sessionId, name, durable, create))
                 : null;
             var mine = new ClientStart(sessionId, request.StopOnDisconnect, gate);
             AutoModeStartResult result;

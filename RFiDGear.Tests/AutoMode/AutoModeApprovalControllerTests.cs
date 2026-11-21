@@ -644,6 +644,42 @@ namespace RFiDGear.Tests.AutoMode
         }
 
         [Fact]
+        public async Task ARequestThatFailsBeforeItIsAdmitted_IsToldToTheProgramAsNotAdmitted_AndTheModeStops()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.ApprovedBehavior = _ => throw new InvalidOperationException("The look at the reader failed.");
+            rig.Present("04AA");
+
+            await rig.Tick();
+
+            // The program would wait for the end of the presence for ever otherwise.
+            Assert.Equal((rig.Approval.Asked[0].PresenceId, AutoModeRefusal.NotAdmitted), Assert.Single(rig.Approval.Refusals));
+            Assert.False(rig.Controller.IsEnabled);
+            Assert.Equal(AutoModeStopReason.RunAborted, rig.Controller.LastStopReason);
+        }
+
+        [Fact]
+        public async Task ARunThatWasAdmittedAndThenFails_IsNotToldToTheProgramAsRefused()
+        {
+            var rig = new Rig();
+            rig.StartWithApproval();
+            rig.ApprovedBehavior = approval =>
+            {
+                approval.NotifyRunAdmitted("run-1");
+
+                throw new InvalidOperationException("Something failed after the run was admitted.");
+            };
+            rig.Present("04AA");
+
+            await rig.Tick();
+
+            // The program was told that the run was admitted, and must not be told that it was refused as well.
+            Assert.Empty(rig.Approval.Refusals);
+            Assert.False(rig.Controller.IsEnabled);
+        }
+
+        [Fact]
         public async Task ACardThatTheRunFindsReplacedAtTheStart_IsOfferedAgainAsANewPresence()
         {
             var rig = new Rig();

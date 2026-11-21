@@ -784,7 +784,24 @@ namespace RFiDGear.Services.AutoMode
 
             // The runner may have to wait before it is admitted (a reader scan of an extension is waited for), and the approval is for this
             // presence only: it is asked whether the mode is still on and whether nobody else has run this card meanwhile.
-            var report = await _runApprovedCard(uid, _keepApplicationOpen, () => isCurrent() && isStillThisPresence(), approved).ConfigureAwait(true);
+            AutoModeRunReport report;
+
+            try
+            {
+                report = await _runApprovedCard(uid, _keepApplicationOpen, () => isCurrent() && isStillThisPresence(), approved).ConfigureAwait(true);
+            }
+            catch (Exception)
+            {
+                // A run that was admitted reports its own failures as a result, so this is a request that never got to run: the program
+                // is told that the presence ended without a run (it would wait for the end otherwise), and the machine stops on the
+                // exception.
+                if (!approved.RunWasAdmitted)
+                {
+                    TellTheProgramQuietly(approval, presence.PresenceId, AutoModeRefusal.NotAdmitted);
+                }
+
+                throw;
+            }
 
             if (!report.Admitted)
             {
@@ -801,6 +818,19 @@ namespace RFiDGear.Services.AutoMode
             }
 
             return report;
+        }
+
+        // Tells the program how a presence ended without it ever being able to get in the way of what is going on (an exception is on its way).
+        private static void TellTheProgramQuietly(IAutoModeApproval approval, string presenceId, AutoModeRefusal refusal)
+        {
+            try
+            {
+                approval.RunRefused(presenceId, refusal);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug("The program could not be told how a card ended ({ExceptionType})", ex.GetType().FullName);
+            }
         }
 
         /// <summary>
