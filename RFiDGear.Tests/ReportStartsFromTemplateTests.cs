@@ -109,6 +109,81 @@ namespace RFiDGear.Tests
             });
         }
 
+        // Runs report tasks through the real service (a card on a scripted reader), with the given writer and output. When selectedIndex
+        // is not null it is a run of that one task only, as "run the selected task" makes it.
+        private static async Task RunReportTasksAsync(
+            ReportReaderWriter writer, string template, string output, int? selectedIndex, params CommonTaskViewModel[] tasks)
+        {
+            var chip = new GenericChipModel("0123456789", CARD_TYPE.EM4102);
+            var reader = new Reader.ScriptedReadProvider { GenericChip = chip, Card = chip };
+
+            using (ReaderDeviceScope.Use(reader))
+            {
+                var handler = new ChipTaskHandlerModel();
+
+                foreach (var task in tasks)
+                {
+                    handler.TaskCollection.Add(task);
+                }
+
+                using var limit = new CancellationTokenSource(System.TimeSpan.FromSeconds(30));
+
+                await new TaskExecutionService(new ReaderDeviceProvider(), new NullDispatcherTimerAdapter(), new NullDispatcherTimerAdapter())
+                    .ExecuteOnceAsync(
+                        new TaskExecutionRequest
+                        {
+                            TaskHandler = handler,
+                            VariablesFromArgs = new Dictionary<string, string>(),
+                            Timeouts = TaskExecutionTimeouts.Default,
+                            ReportReaderWriter = writer,
+                            ReportTemplateFile = template,
+                            ReportOutputPath = output,
+                            RunSelectedOnly = selectedIndex != null,
+                            SelectedSetupViewModel = selectedIndex == null ? null : tasks[selectedIndex.Value]
+                        },
+                        limit.Token);
+            }
+        }
+
+        [Fact]
+        public async Task TwoReportTasksOfOneRun_KeepBothTheirFields()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var kit = new ReportTestKit();
+                var template = kit.Template("A", "B");
+                using var writer = NewWriter(kit, template);
+                var output = Path.Combine(kit.Folder, "report.pdf");
+
+                await RunReportTasksAsync(writer, template, output, null, ReportTask("0", ("A", "one")), ReportTask("1", ("B", "two")));
+
+                var report = ReportTestKit.Read(output);
+                Assert.Equal("one", report["A"]);
+                Assert.Equal("two", report["B"]);
+            });
+        }
+
+        [Fact]
+        public async Task ARunOfTheSelectedReportTaskOnly_KeepsTheFieldsOfTheReportBefore()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var kit = new ReportTestKit();
+                var template = kit.Template("A", "B");
+                using var writer = NewWriter(kit, template);
+                var output = Path.Combine(kit.Folder, "report.pdf");
+
+                await RunReportTasksAsync(writer, template, output, null, ReportTask("0", ("A", "one")), ReportTask("1", ("B", "two")));
+
+                // The second report task is run again alone, as "run the selected task" does: it changes its field, the other stays.
+                await RunReportTasksAsync(writer, template, output, 1, ReportTask("0", ("A", "not run")), ReportTask("1", ("B", "changed")));
+
+                var report = ReportTestKit.Read(output);
+                Assert.Equal("one", report["A"]);
+                Assert.Equal("changed", report["B"]);
+            });
+        }
+
         [Fact]
         public async Task TheServiceStartsANewReportForEveryRun_OfTheWriterOfTheWindow()
         {
