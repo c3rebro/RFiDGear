@@ -1518,6 +1518,28 @@ namespace RFiDGear.Tests.ExternalControl
         }
 
         [Fact]
+        public async Task TheLoop_DoesNotLetTheCallbackOfADecisionThatThrowsSurfaceInTheCancelOfTheCaller()
+        {
+            var registered = new TaskCompletionSource<bool>();
+            var (_, host, loop, stop, _) = await StartLoopAsync(async (_, token) =>
+            {
+                token.Register(() => throw new InvalidOperationException("The callback of the decision threw."));
+                registered.TrySetResult(true);
+                await Task.Delay(Timeout.Infinite, token);
+
+                return CardDecision.Decline;
+            });
+
+            _ = Present(host, "p-1", "04AA");
+            await registered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // The callback runs when the loop cancels the decision, not inside the Cancel of the caller.
+            Assert.Null(Record.Exception(() => stop.Cancel()));
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(host.AutoModeHost.IsAutoModeEnabled);
+        }
+
+        [Fact]
         public async Task TheLoop_StopsTheModeAndEnds_WhenTheDecisionOfAPendingCardHasACallbackThatThrows()
         {
             var registered = new TaskCompletionSource<bool>();

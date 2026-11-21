@@ -161,7 +161,7 @@ namespace RFiDGear.Bridge.SampleClient
                             break;
                         }
 
-                        await HandleAsync(item, cancellationToken).ConfigureAwait(false);
+                        await HandleAsync(item).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -212,7 +212,7 @@ namespace RFiDGear.Bridge.SampleClient
                 return finished == read ? await read.ConfigureAwait(false) : null;
             }
 
-            private async Task HandleAsync(object item, CancellationToken cancellationToken)
+            private async Task HandleAsync(object item)
             {
                 switch (item)
                 {
@@ -225,7 +225,7 @@ namespace RFiDGear.Bridge.SampleClient
 
                         break;
                     case CardPresentedEvent shown:
-                        _pending[shown.PresenceId] = StartDeciding(shown, cancellationToken);
+                        _pending[shown.PresenceId] = StartDeciding(shown);
                         break;
                     case CardPresentationEndedEvent ended:
                         if (await EndAsync(ended).ConfigureAwait(false) is { } outcome)
@@ -241,10 +241,12 @@ namespace RFiDGear.Bridge.SampleClient
             }
 
             // Starts the decision about a card on its own, so that the events go on while the program thinks. A failure of the answer
-            // is handed to the loop as soon as it happens.
-            private PendingCard StartDeciding(CardPresentedEvent shown, CancellationToken cancellationToken)
+            // is handed to the loop as soon as it happens. The token of the decision is not linked to the token of the caller: that
+            // would run the callbacks that the program registered on it inside the caller's own Cancel, where one that throws would
+            // surface in the caller. The loop cancels it itself, when the wait for the card ends or the loop does.
+            private PendingCard StartDeciding(CardPresentedEvent shown)
             {
-                var cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var cancel = new CancellationTokenSource();
                 var answer = Task.Run(() => AnswerAsync(shown, cancel.Token), CancellationToken.None);
 
                 _ = answer.ContinueWith(
