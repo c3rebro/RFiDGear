@@ -29,11 +29,10 @@ the dialog.</p>
 <tr><th>Field</th><th>Meaning</th></tr>
 <tr><td><strong>Report Template</strong>, <strong>Template Path</strong>, <strong>Open File...</strong></td><td>the PDF template. The button opens the file selection; the fields of the
 template then appear in the selection <strong>Template Field</strong>.</td></tr>
-<tr><td><strong>Checkpoint Setup</strong></td><td>a checkpoint says: "If the task with number <em>N</em> ended with the result <em>E</em>, write this content into the field". You set the
-<strong>Template Field</strong>, the <strong>Fieldvalue</strong>, the <strong>Targeted Task Index</strong> and the <strong>Targ. Err. Type</strong> (the expected result).</td></tr>
-<tr><td><strong>Add Checkpoint</strong>, <strong>Remove Checkpoint</strong></td><td>adds the checkpoint you set up to the table or removes the selected one</td></tr>
-<tr><td>Table of checkpoints</td><td>the columns <strong>CP Nr.</strong>, <strong>Targeted Task-Index</strong>, <strong>Targeted Error-Level</strong>,
-<strong>Template Formfield</strong> and <strong>Formfield Content</strong></td></tr>
+<tr><td><strong>Checkpoint Setup</strong></td><td>the table of the checkpoints. A checkpoint says: "If the task with number <em>N</em> ended with the result <em>E</em>, write this content into the field". You edit a checkpoint in the cells of its row.</td></tr>
+<tr><td><strong>Add Checkpoint</strong>, <strong>Remove Checkpoint</strong></td><td><strong>Add Checkpoint</strong> adds a row, an empty one or a copy of the selected row (inserted after it); you then set its cells. <strong>Remove Checkpoint</strong> deletes the selected row.</td></tr>
+<tr><td>The columns</td><td><strong>CP Nr.</strong> (the order), <strong>Targeted Task-Index</strong> (choose the number of a task), <strong>Targeted Error-Level</strong> (choose the result it is to have), <strong>Template Formfield</strong> (choose a field of the template) and
+<strong>Formfield Content</strong> (type the content; the variables are on the page <a href="reports.html">Reports</a>)</td></tr>
 </table>
 
 <h2>Check Logic Block</h2>
@@ -50,15 +49,16 @@ function is fulfilled, otherwise with <strong>Is Not True</strong>. Other tasks 
 <tr><td><strong>Compare</strong></td><td>the <strong>Comparer Value</strong> (an expression) holds</td></tr>
 </table>
 
-<p>An expression for <strong>Compare</strong> has the form <em>operand operator value</em> with the operators <code>==</code>, <code>!=</code>, <code>&gt;=</code>
-and <code>&lt;=</code>:</p>
+<p>An expression for <strong>Compare</strong> has the form <em>operand operator value</em>. Only these combinations work:</p>
 
 <table>
-<tr><th>Operand</th><th>Meaning</th></tr>
-<tr><td><code>$NAME</code></td><td>a variable of the run (see <a href="command_line.html">Start-up arguments</a>), for example <code>$EXPECTEDUID==04A1B2C3D4E5F6</code></td></tr>
-<tr><td><code>%FREEMEM</code></td><td>the free memory of a DESFire card in bytes, for example <code>%FREEMEM&gt;=1024</code></td></tr>
-<tr><td><code>%COUNTAPPS</code></td><td>the number of applications of a DESFire card</td></tr>
+<tr><th>Operand</th><th>Operators that work</th><th>Meaning</th></tr>
+<tr><td><code>$NAME</code></td><td><code>==</code>, <code>!=</code></td><td>a variable of the run (see <a href="command_line.html">Start-up arguments</a>), for example <code>$EXPECTEDUID==04A1B2C3D4E5F6</code></td></tr>
+<tr><td><code>%FREEMEM</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code></td><td>the free memory of a DESFire card in bytes, for example <code>%FREEMEM&gt;=1024</code></td></tr>
+<tr><td><code>%COUNTAPPS</code></td><td><code>&gt;=</code></td><td>the number of applications of a DESFire card: at least the value</td></tr>
 </table>
+
+<div class="warn">Other combinations do not do what they say: <code>%FREEMEM!=</code> tests for equality, <code>%COUNTAPPS==</code> and <code>%COUNTAPPS!=</code> test for "at least", and <code>%COUNTAPPS&lt;=</code> is not implemented. Do not use them: they can select the wrong branch.</div>
 
 <div class="note">The logic functions <strong>NOT</strong>, <strong>NAND</strong> and <strong>NOR</strong> are in the selection but are not finished: do not use
 them.</div>

@@ -26,6 +26,8 @@ dialog).</p>
 <p>In a run RFiDGear writes every checkpoint whose target task has the expected result into its field. A checkpoint whose target task had another result is ignored. So a report can enter "passed" or "not passed",
 depending on the outcome of a check: two checkpoints for the same field, one for <strong>No Error</strong>, one for <strong>Is Not True</strong>.</p>
 
+<div class="warn">A checkpoint whose target task does not exist (any more: you deleted or renumbered it) is written <strong>whatever happened</strong>: it no longer checks anything, and a report can then say "passed" without a result behind it. After you delete or renumber tasks, check the targets of the report.</div>
+
 <h2>Variables in the content of a checkpoint</h2>
 
 <p>The <strong>Fieldvalue</strong> may contain placeholders that are replaced in the run:</p>

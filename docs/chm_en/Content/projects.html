@@ -21,8 +21,8 @@ checkpoints of reports and logic blocks. The chip tree is not part of a project.
 <tr><td><code>.xml</code></td><td>a project as a plain XML file</td></tr>
 </table>
 
-<p>When saving, RFiDGear adds <code>.rfPrj</code> if the file name has another extension or none. A file that already exists is
-replaced only after a question.</p>
+<p>When saving, RFiDGear keeps the extension <code>.rfPrj</code> or <code>.xml</code> (a plain XML project) and adds <code>.rfPrj</code> to any other file name. <strong>Save Tasks...</strong> asks before it replaces an existing file;
+<strong>Save Tasks</strong> writes the file of the open project without asking.</p>
 
 <div class="warn">A key that you typed into a task is in the project file. Pass the file on only to people who may know the key. A key that a
 task names by a reference is not in the file (see <a href="keys.html">Keys</a>).</div>

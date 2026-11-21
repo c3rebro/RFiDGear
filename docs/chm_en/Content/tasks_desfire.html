@@ -73,7 +73,7 @@ without a tick is ignored. You compare the size with <strong>equal to</strong>, 
 <p>In the <strong>Data Explorer</strong> you set the app ID, the file number, the <strong>Read Key</strong> with number and type (the number is between 0 and 13) and, for writing, the
 <strong>Write Key</strong>. Then come the <strong>Data Index Start Position</strong> and the number of bytes (<strong>Byte Count</strong>). The tables show <strong>Data on Chip</strong> (on the card) and
 <strong>Data in Memory</strong> (in the memory). With <strong>Load Data from Disk...</strong> you load data from a file, with <strong>Select Read Data File...</strong> you choose the file that read data is saved to.
-<strong>Overwrite on read</strong> says that read data overwrite the data in memory; <strong>Reload before write</strong> loads the file again before writing.</p>
+<strong>Overwrite on read</strong> applies to that file: if it is ticked, every read writes to the file you chose; if not, RFiDGear adds the date and time to the file name (for example <code>reads_20261121_133700.bin</code>), so that earlier reads stay. <strong>Reload before write</strong> loads the file again before writing.</p>
 
 <h2>Keys for a DESFire task</h2>
 

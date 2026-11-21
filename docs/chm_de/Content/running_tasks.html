@@ -43,7 +43,7 @@ danach den Lauf.</p>
 
 <h2>Wann ein Lauf gelungen ist</h2>
 
-<p>Ein Programm, das einen Lauf anfordert (die externe Steuerung, eine Erweiterung, <code>AUTORUN</code>), bekommt als Ergebnis eine von drei Antworten:</p>
+<p>Ein Programm, das einen Lauf &uuml;ber die externe Steuerung oder eine Erweiterung anfordert, bekommt als Ergebnis eine von drei Antworten:</p>
 
 <table>
 <tr><th>Ergebnis</th><th>Wann</th></tr>
@@ -55,6 +55,8 @@ endete, bevor alle Aufgaben erreicht waren</td></tr>
 </table>
 
 <p>Eine Aufgabe, die wegen ihrer Ausf&uuml;hrungsbedingung &uuml;bersprungen wurde, ist kein Fehler.</p>
+
+<div class="note"><code>AUTORUN</code> gibt keine solche Antwort: es startet den Lauf, und RFiDGear bleibt offen. Ein Skript, das RFiDGear mit <code>AUTORUN</code> startet, erkennt am Ende des Prozesses nicht, ob der Lauf gelang; f&uuml;r das Ergebnis braucht es die externe Steuerung (Teil 2 dieser Hilfe).</div>
 
 <h2>Schnellpr&uuml;fung</h2>
 

@@ -29,12 +29,10 @@ Felder des Dialogs.</p>
 <tr><th>Feld</th><th>Bedeutung</th></tr>
 <tr><td><strong>Berichtvorlage</strong>, <strong>Berichtdateipfad</strong>, <strong>Datei &ouml;ffnen...</strong></td><td>die PDF-Vorlage. Die Schaltfl&auml;che &ouml;ffnet die Dateiauswahl; die Felder
 der Vorlage erscheinen danach in der Auswahl <strong>Berichtfeld</strong>.</td></tr>
-<tr><td><strong>Pr&uuml;fpunkteinstellungen</strong></td><td>ein Pr&uuml;fpunkt besagt: &bdquo;Wenn die Aufgabe mit der Nummer <em>N</em> mit dem Ergebnis <em>E</em> endete, schreibe diesen Inhalt in das
-Feld&ldquo;. Sie stellen ein: das <strong>Berichtfeld</strong>, den <strong>Feldinhalt</strong>, das <strong>Ziel Aufgabennummer</strong> und das <strong>Erw. Fehlertyp</strong>
-(das erwartete Ergebnis).</td></tr>
-<tr><td><strong>Pr&uuml;fpunkt hinzuf.</strong>, <strong>Pr&uuml;fpunkt entf.</strong></td><td>f&uuml;gt den eingestellten Pr&uuml;fpunkt der Tabelle hinzu oder entfernt den markierten</td></tr>
-<tr><td>Tabelle <strong>Pr&uuml;fpunkte&uuml;bersicht</strong></td><td>die Spalten <strong>CP Nr.</strong>, <strong>Ziel Aufgaben-Nummer</strong>, <strong>Ziel Aufgaben-Ergebnis</strong>,
-<strong>PDF Feldvariablenbezeichnung</strong> und <strong>PDF Feldinhalt</strong></td></tr>
+<tr><td><strong>Pr&uuml;fpunkteinstellungen</strong></td><td>die Tabelle der Pr&uuml;fpunkte. Ein Pr&uuml;fpunkt besagt: &bdquo;Wenn die Aufgabe mit der Nummer <em>N</em> mit dem Ergebnis <em>E</em> endete, schreibe diesen Inhalt in das Feld&ldquo;. Sie bearbeiten einen Pr&uuml;fpunkt in den Zellen seiner Zeile.</td></tr>
+<tr><td><strong>Pr&uuml;fpunkt hinzuf.</strong>, <strong>Pr&uuml;fpunkt entf.</strong></td><td><strong>Pr&uuml;fpunkt hinzuf.</strong> f&uuml;gt eine Zeile hinzu, eine leere oder eine Kopie der markierten Zeile (dahinter eingef&uuml;gt); danach stellen Sie ihre Zellen ein. <strong>Pr&uuml;fpunkt entf.</strong> l&ouml;scht die markierte Zeile.</td></tr>
+<tr><td>Die Spalten</td><td><strong>CP Nr.</strong> (die Reihenfolge), <strong>Ziel Aufgaben-Nummer</strong> (die Nummer einer Aufgabe w&auml;hlen), <strong>Ziel Aufgaben-Ergebnis</strong> (das Ergebnis w&auml;hlen, das sie haben soll), <strong>PDF Feldvariablenbezeichnung</strong> (ein Feld der Vorlage w&auml;hlen) und
+<strong>PDF Feldinhalt</strong> (den Inhalt eintippen; die Variablen stehen auf der Seite <a href="reports.html">Berichte</a>)</td></tr>
 </table>
 
 <h2>Logische Zustandspr&uuml;fung</h2>
@@ -52,15 +50,16 @@ Ausf&uuml;hrungsbedingung verwenden.</p>
 <tr><td><strong>Vergleiche</strong></td><td>der <strong>Vergleicher Wert</strong> (ein Ausdruck) zutrifft</td></tr>
 </table>
 
-<p>Ein Ausdruck f&uuml;r <strong>Vergleiche</strong> hat die Form <em>Operand Operator Wert</em> mit den Operatoren <code>==</code>, <code>!=</code>, <code>&gt;=</code>
-und <code>&lt;=</code>:</p>
+<p>Ein Ausdruck f&uuml;r <strong>Vergleiche</strong> hat die Form <em>Operand Operator Wert</em>. Nur diese Kombinationen funktionieren:</p>
 
 <table>
-<tr><th>Operand</th><th>Bedeutung</th></tr>
-<tr><td><code>$NAME</code></td><td>eine Variable des Laufs (siehe <a href="command_line.html">Startargumente</a>), zum Beispiel <code>$EXPECTEDUID==04A1B2C3D4E5F6</code></td></tr>
-<tr><td><code>%FREEMEM</code></td><td>der freie Speicher einer DESFire-Karte in Bytes, zum Beispiel <code>%FREEMEM&gt;=1024</code></td></tr>
-<tr><td><code>%COUNTAPPS</code></td><td>die Zahl der Applikationen einer DESFire-Karte</td></tr>
+<tr><th>Operand</th><th>Operatoren, die funktionieren</th><th>Bedeutung</th></tr>
+<tr><td><code>$NAME</code></td><td><code>==</code>, <code>!=</code></td><td>eine Variable des Laufs (siehe <a href="command_line.html">Startargumente</a>), zum Beispiel <code>$EXPECTEDUID==04A1B2C3D4E5F6</code></td></tr>
+<tr><td><code>%FREEMEM</code></td><td><code>&gt;=</code>, <code>&lt;=</code>, <code>==</code></td><td>der freie Speicher einer DESFire-Karte in Bytes, zum Beispiel <code>%FREEMEM&gt;=1024</code></td></tr>
+<tr><td><code>%COUNTAPPS</code></td><td><code>&gt;=</code></td><td>die Zahl der Applikationen einer DESFire-Karte: mindestens der Wert</td></tr>
 </table>
+
+<div class="warn">Andere Kombinationen tun nicht, was sie sagen: <code>%FREEMEM!=</code> pr&uuml;ft auf Gleichheit, <code>%COUNTAPPS==</code> und <code>%COUNTAPPS!=</code> pr&uuml;fen auf &bdquo;mindestens&ldquo;, und <code>%COUNTAPPS&lt;=</code> ist nicht umgesetzt. Verwenden Sie sie nicht: sie k&ouml;nnen den falschen Zweig w&auml;hlen.</div>
 
 <div class="note">Die Logikfunktionen <strong>Nicht</strong>, <strong>Nicht UND</strong> und <strong>Nicht ODER</strong> stehen zwar in der Auswahl, sind aber nicht
 fertig: verwenden Sie sie nicht.</div>

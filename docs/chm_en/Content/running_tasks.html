@@ -42,7 +42,7 @@ wrote in part stays on the card, and the result says where they failed.</p>
 
 <h2>When a run has succeeded</h2>
 
-<p>A program that asks for a run (external control, an extension, <code>AUTORUN</code>) gets one of three answers as the result:</p>
+<p>A program that asks for a run through external control or an extension gets one of three answers as the result:</p>
 
 <table>
 <tr><th>Result</th><th>When</th></tr>
@@ -52,6 +52,8 @@ wrote in part stays on the card, and the result says where they failed.</p>
 </table>
 
 <p>A task that was skipped because of its execute condition is not an error.</p>
+
+<div class="note"><code>AUTORUN</code> gives no such answer: it starts the run, and RFiDGear stays open. A script that starts RFiDGear with <code>AUTORUN</code> cannot tell success from failure by the end of the process; for the result it needs external control (Part 2 of this help).</div>
 
 <h2>Quick check</h2>
 
