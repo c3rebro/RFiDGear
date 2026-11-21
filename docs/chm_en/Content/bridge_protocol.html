@@ -18,7 +18,7 @@
 <li>The parameters are positional with exactly <strong>one</strong> object: the request type of the method.</li>
 <li>The names are camel case and are written explicitly in the contract (<code>BridgeJson</code> has the options). RFiDGear rejects members it does not know; a client skips members it does not know.</li>
 <li>A message longer than 1 MiB ends the connection.</li>
-<li>A client that does not read for ten seconds is disconnected, and so is one that lets more than 64 results wait. The results stay in the history; you catch up after you reconnect.</li>
+<li>RFiDGear sends notifications one after the other. A client that does not take a notification within ten seconds (a send that takes longer) is disconnected, and so is one for which more than 64 durable notifications wait (results, changes of the mode, and the notices about a card that is shown). The results stay in the history; you catch up after you reconnect. An idle connection is not cut off.</li>
 </ul>
 
 <h2>Rules that hold for every call</h2>

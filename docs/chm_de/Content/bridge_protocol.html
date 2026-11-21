@@ -18,7 +18,7 @@
 <li>Die Parameter sind positionell mit genau <strong>einem</strong> Objekt: dem Anfragetyp der Methode.</li>
 <li>Die Namen sind Camel-Case und stehen ausdr&uuml;cklich im Vertrag (<code>BridgeJson</code> hat die Optionen). RFiDGear weist Mitglieder zur&uuml;ck, die es nicht kennt; ein Client &uuml;berspringt Mitglieder, die er nicht kennt.</li>
 <li>Eine Nachricht von mehr als 1 MiB beendet die Verbindung.</li>
-<li>Ein Client, der zehn Sekunden lang nicht liest, wird getrennt, ebenso einer, bei dem mehr als 64 Ergebnisse warten. Die Ergebnisse bleiben im Verlauf; nach dem erneuten Verbinden holen Sie sie nach.</li>
+<li>RFiDGear sendet Benachrichtigungen nacheinander. Ein Client, der eine Benachrichtigung nicht innerhalb von zehn Sekunden annimmt (ein Senden dauert l&auml;nger), wird getrennt, ebenso einer, bei dem mehr als 64 dauerhafte Benachrichtigungen warten (Ergebnisse, Moduswechsel und die Meldungen &uuml;ber eine gezeigte Karte). Die Ergebnisse bleiben im Verlauf; nach dem erneuten Verbinden holen Sie sie nach. Eine ruhende Verbindung wird nicht getrennt.</li>
 </ul>
 
 <h2>Regeln f&uuml;r jeden Aufruf</h2>

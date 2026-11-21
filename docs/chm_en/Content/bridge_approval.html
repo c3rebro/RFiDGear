@@ -72,7 +72,7 @@ and ask <code>hello</code> for the events <code>cardPresented</code>, <code>card
 <li>A lost connection ends the mode and runs nothing more. <strong>Never start a writing job again by yourself after you reconnected</strong>: start the mode again on purpose. RFiDGear remembers a card that it has shown or run and shows it again only after the reader was seen empty: take the card away and put it back, and it is shown as a new presence that needs a new approval (restarting the RFiDGear process forgets the card too).</li>
 <li><code>loadProject</code> and <code>startRun</code> are refused while the mode is on.</li>
 <li>A run that fails does not stop the mode; a fault, a timeout or a lost reader does (<code>autoModeChanged</code> says why). After one of them look at the card before you start again.</li>
-<li>If the project does not have the Check UID with <code>$EXPECTEDUID</code> as its first task, with the writing tasks depending on it, the approval does not protect you either: only your project says which tasks write.</li>
+<li>The mode checks the approved UID itself, as said above. What it cannot know is which tasks write: only your project says that. So keep the Check UID with <code>$EXPECTEDUID</code> as the first task and let every writing task depend on it, as in the flow for one card; for a single <code>startRun</code> it is the only protection.</li>
 <li>Never swap a project that writes for one that only reads while the mode is on: stop the mode, wait for <code>autoModeChanged</code> with <code>enabled: false</code>, load the other project, note its revision, take the card away and start the mode again.</li>
 </ul>
 
