@@ -1,96 +1,44 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-
+<!DOCTYPE html>
+<html lang="de">
 <head>
-<meta content="de" http-equiv="Content-Language" />
-<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
-<title>RFiDGear-Willkommensseite</title>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Willkommen</title>
+<link rel="stylesheet" type="text/css" href="help.css">
 </head>
-
 <body>
 
-<h1>RFiDGear 1.0 Hilfe</h1>
-<p><img alt="" src="mainWnd.jpg" /><br>Abb. 1: Hauptfenster mit geladenem Projekt</br></p>
-<p>Willkommen zur integrierten Hilfe der RFiDGear Kodiersoftware.</p>
-<p>Systemvoraussetzungen:</p>
+<h1>RFiDGear Hilfe</h1>
 
-<ol>
-<li>PC-Hardware: Einen PC, der die Mindestvorraussetzungen f&uuml;r das Betriebssystem Windows 10 (in einer von .NET 10 unterst&uuml;tzten Version) bzw. Windows 11 erf&uuml;llt.</li>
-<li>Betriebssystem: Windows 11 oder Windows 10 in einer von .NET 10 unterst&uuml;tzten Version, mit der .NET 10 Desktop Runtime</li>
-<li>Peripherie: Mindestens ein PC/SC kompatibles Programmierger&auml;t.</li>
-<li>Unterst&uuml;tzte Herstelle sind z.B.: HID, Sciel, ACR und weitere.</li>
-</ol>
+<p>RFiDGear ist ein Windows-Programm zum Kodieren und Pr&uuml;fen von RFID-Chips: MIFARE Classic, MIFARE DESFire,
+MIFARE Ultralight und NTAG. Sie legen eine Liste von <em>Aufgaben</em> an, speichern sie als <em>Projekt</em> und
+f&uuml;hren sie f&uuml;r einen Chip aus &ndash; einmalig am Arbeitsplatz oder automatisch f&uuml;r jede neue Karte
+einer Serie. Ein Bericht als PDF-Formular dokumentiert, was mit dem Chip geschehen ist.</p>
 
-<p>RFiDGear ist eine Kodierungssoftware f&uuml;r RFID Medien (im Folgenden als "Chip" bezeichnet). Kern der Software sind "Aufgaben" welche folgende Eigenschaften besiten k&ouml;nnen:</p>
+<h2>F&uuml;r wen diese Hilfe ist</h2>
 
-<ol>
-<li>Einen <em>Aufgabenindex</em> (Zahlenwert) der die Reihenfolge bestimmt, in der die Aufgaben ausgef&uuml;hrt werden.</li>
-<li>Eine frei w&auml;hlbare <em>Bezeichnung</em>.</li>
-<li>Ein Ergebnis in Form eines "Fehlercodes", welcher bei der Ausf&uuml;hrung der Aufgabe entsteht, und intern in der Aufgabe f&uuml;r sp&auml;tere Verwendung  gespeichert wird.</li>
-<li>Eine Ausf&uuml;hrungsbedingung. Diese ist Optional und besteht aus dem Index und dem erwarteten Fehlercode einer anderen -bereits ausgef&uuml;hrten- Aufgabe.</li>
-</ol>
-
-<p><a href="CreateEvents_Welcome.html"></a>Die erstellten Aufgaben k&ouml;nnen durch einzelanwahl, als sammelauftrag oder vollautomatisch bei erkennen eines neuen Chips abgearbeitet werden. Die Aufgaben werden sequentiell abgearbeitet. Hierbei kann es sich um eine der folgenden Aufgabentypen handeln:</p>
-
-<ol>
-<li>
-Chiptypunabh&auml;ngige Aufgaben:
 <ul>
-<li>Ausf&uuml;llen einer PDF-Forms Vorlage mit selbst definierten Texten oder Variablen.</li>
-<li>Logikbausteine f&uuml;r "Wenn-Dann" Pr&uuml;fungen.</li>
+<li><strong>Teil 1 &ndash; Mit RFiDGear arbeiten:</strong> f&uuml;r alle, die RFiDGear am Arbeitsplatz bedienen:
+Kartenleser einrichten, Aufgaben anlegen, Projekte speichern, Chips kodieren und pr&uuml;fen, Berichte erstellen.</li>
+<li><strong>Teil 2 &ndash; F&uuml;r Entwickler:</strong> f&uuml;r alle, die RFiDGear aus einem eigenen Programm steuern
+(externe Steuerung &uuml;ber eine Named Pipe), Kartenschl&uuml;ssel aus einer eigenen Anwendung liefern oder
+eine Erweiterung f&uuml;r RFiDGear schreiben.</li>
 </ul>
-</li>
 
-<li>
-Chipbezogene Aufgaben:
-<ul>
-<li>
-Generische Aufgaben
-<ul>
-<li>UID Pr&uuml;fen.</li>
-<li>Chiptyp pr&uuml;fen.</li>
-</ul>
-</li>
-<li>
-Mifare Aufgaben
-<ul>
-<li>
-Mifare Classic
-<ul>
-<li>Daten lesen</li>
-<li>Daten schreiben</li>
-<li>Sektor-"unbenutzt" Pr&uuml;fung</li>
-</ul>
-</li>
-<li>
-Mifare Desfire
-<ul>
-<li>Pr&uuml;fung: App existenz</li>
-<li>PICC: Masterkey &auml;ndern</li>
-<li>PICC: Formatieren</li>
-<li>App: Erstellen</li>
-<li>App: Schl&uuml;ssel &auml;ndern</li>
-<li>App: L&ouml;schen</li>
-<li>App: Authentifizieren</li>
-<li>Datei: Erstellen</li>
-<li>Datei: Schreiben</li>
-<li>Datei: Lesen</li>
-<li>Datei: L&ouml;schen</li>
+<p>Wie die einzelnen RFID-Techniken funktionieren, erkl&auml;rt diese Hilfe nicht. Daf&uuml;r sind die Datenbl&auml;tter
+der Chip-Hersteller die richtige Quelle. Hier steht, was RFiDGear damit macht und wie Sie es bedienen.</p>
 
-</ul>
-</li>
-</ul>
-</li>
+<h2>Systemvoraussetzungen</h2>
 
+<ul>
+<li><strong>Betriebssystem:</strong> Windows 11 oder Windows 10 in einer Version, die .NET 10 unterst&uuml;tzt
+(32 oder 64 Bit).</li>
+<li><strong>.NET 10 Desktop Runtime:</strong> Das Setup bringt sie mit.</li>
+<li><strong>Kartenleser:</strong> ein Elatec TWN4 oder ein PC/SC-kompatibler Leser. Der Leser wird in den Einstellungen
+ausgew&auml;hlt; ohne ausgew&auml;hlten Leser lassen sich keine chipbezogenen Aufgaben anlegen.</li>
 </ul>
-</li>
 
-<li>asd</li>
-<li>asd</li>
-</ol>
-
-<p><img alt="" src="mainWndColorized.png" /><br>Abb. 2: Hauptfenster mit Erkl&auml;rung der Oberfl&auml;che und eingelesenem Chip</br></p>
+<div class="nav">N&auml;chste Seite: <a href="about_this_help.html">So ist diese Hilfe aufgebaut</a></div>
 
 </body>
-
 </html>

@@ -540,6 +540,12 @@ Use a csv file to acuire default keys for authentication</value>
   <data name="messageBoxNoUpdateAvailableMessage" xml:space="preserve">
     <value>You are running the latest version of RFiDGear.</value>
   </data>
+  <data name="messageBoxHelpNotFoundCaption" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="messageBoxHelpNotFoundMessage" xml:space="preserve">
+    <value>The help file '{0}' could not be opened. It belongs in the program folder next to RFiDGear.exe. Please repair or reinstall RFiDGear.</value>
+  </data>
   <data name="menuItemProgrammingHeader" xml:space="preserve">
     <value>_Programming</value>
   </data>

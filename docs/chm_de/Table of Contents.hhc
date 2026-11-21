@@ -4,10 +4,17 @@
 <meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
 <!-- Sitemap 1.0 -->
 </HEAD><BODY>
+<OBJECT type="text/site properties">
+	<param name="ImageType" value="Folder">
+</OBJECT>
 <UL>
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Start">
+		<param name="Name" value="Willkommen">
 		<param name="Local" value="Content\welcome.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="So ist diese Hilfe aufgebaut">
+		<param name="Local" value="Content\about_this_help.html">
 		</OBJECT>
 </UL>
 </BODY></HTML>

@@ -2614,28 +2614,36 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// Opens the help (F1 and Help > Help): the compiled help in the language of the settings, next to the program. A help window that
+        /// is open already is left alone; a help file that is missing or cannot be started is logged and told to the user.
         /// </summary>
         public ICommand ShowHelpCommand => new RelayCommand(OnNewShowHelpCommand);
         private void OnNewShowHelpCommand()
         {
-            var q = from p in Process.GetProcesses() where ContainsAny(p.MainWindowTitle, new string[] { "Help", "Hilfe" }) select p;
+            if (HelpFile.IsOpen())
+            {
+                return;
+            }
+
+            string language;
 
             using (var settingsReaderWriter = new SettingsReaderWriter())
             {
-                if (!q.Any())
-                {
-                    var pathToHelpFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, settingsReaderWriter.DefaultSpecification.DefaultLanguage == "german" ? "RFiDGear_de.chm" : "RFiDGear_en.chm");
-                    if (File.Exists(pathToHelpFile))
-                    {
-                        var startInfo = new ProcessStartInfo(pathToHelpFile);
-                        Process.Start(startInfo);
-                    }
+                language = settingsReaderWriter.DefaultSpecification.DefaultLanguage;
+            }
 
-                }
+            if (!HelpFile.TryOpen(HelpFile.PathFor(language, AppDomain.CurrentDomain.BaseDirectory)))
+            {
+                Dialogs.Add(new MessageBoxViewModel
+                {
+                    ParentWindow = mw,
+                    Caption = ResourceLoader.GetResource("messageBoxHelpNotFoundCaption"),
+                    Message = string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("messageBoxHelpNotFoundMessage"), HelpFile.FileNameFor(language)),
+                    Buttons = MessageBoxButton.OK,
+                    Image = MessageBoxImage.Information
+                });
             }
         }
-
         /// <summary>
         ///
         /// </summary>
@@ -3357,11 +3365,6 @@ namespace RFiDGear.ViewModel
             }
 
             CurrentReader = result.Label;
-        }
-
-        private bool ContainsAny(string haystack, params string[] needles)
-        {
-            return needles.Any(haystack.Contains);
         }
 
         #endregion

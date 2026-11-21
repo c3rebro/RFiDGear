@@ -170,6 +170,16 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <!-- The compiled help, one file per language, built from docs\chm_de and docs\chm_en by docs\Build-Help.ps1. The names are the ones
+         that RFiDGear.Infrastructure.HelpFile opens; the WiX harvest of the output folder carries them into both installers. -->
+    <None Include="..\docs\chm_de\RFiDGear_de.chm" Link="RFiDGear_de.chm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\docs\chm_en\RFiDGear_en.chm" Link="RFiDGear_en.chm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <None Update="liblogicalaccess.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

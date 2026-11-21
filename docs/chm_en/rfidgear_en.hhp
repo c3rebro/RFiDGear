@@ -1,0 +1,23 @@
+[OPTIONS]
+Binary Index=Yes
+Binary TOC=Yes
+Compatibility=1.1 or later
+Compiled file=RFiDGear_en.chm
+Contents file=Table of Contents.hhc
+Default Window=Main
+Default topic=Content\welcome.html
+Display compile progress=No
+Full-text search=Yes
+Index file=rfidgear_en.hhk
+Language=0x409 English (United States)
+Title=RFiDGear Help
+
+[WINDOWS]
+Main="RFiDGear Help","Table of Contents.hhc","rfidgear_en.hhk","Content\welcome.html","Content\welcome.html",,,,,0x23520,200,0x387E,[100,100,980,720],0xB0000,,,,,,0
+
+[FILES]
+Content\help.css
+Content\welcome.html
+Content\about_this_help.html
+
+[INFOTYPES]
