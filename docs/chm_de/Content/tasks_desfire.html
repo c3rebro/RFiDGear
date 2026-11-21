@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>MIFARE DESFire</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>MIFARE DESFire</h1>
+
+<p>Die Aufgabe legen Sie mit <strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten &gt; Mifare Aufgabe &gt; Mifare Desfire Aufgabe hinzuf&uuml;gen/bearbeiten</strong> an. Der Dialog
+&ouml;ffnet sich nur, wenn ein Leser verbunden ist. Eine Aufgabe f&uuml;hrt <em>einen</em> Befehl an der Karte aus; der <strong>Aufgabentyp</strong> w&auml;hlt ihn, und die Reiter des Dialogs
+halten die Einstellungen daf&uuml;r.</p>
+
+<h2>Die Aufgabentypen</h2>
+
+<table>
+<tr><th>Aufgabentyp</th><th>Wirkung</th></tr>
+<tr><td><strong>Pr&uuml;fung: App Existenz</strong></td><td>pr&uuml;ft, ob die Applikation mit der <strong>App-ID</strong> auf der Karte ist</td></tr>
+<tr><td><strong>Pr&uuml;fung: App-Key</strong></td><td>meldet sich an der Applikation mit dem eingestellten Schl&uuml;ssel an</td></tr>
+<tr><td><strong>Pr&uuml;fung: App Schl&uuml;sselanzahl</strong></td><td>vergleicht die Zahl der Schl&uuml;ssel der Applikation mit der erwarteten Zahl (<strong>gleich</strong>, <strong>mindestens</strong> oder <strong>h&ouml;chstens</strong>)</td></tr>
+<tr><td><strong>Pr&uuml;fung: App Konfig</strong></td><td>liest die Schl&uuml;sseleinstellungen der Applikation und vergleicht sie mit den erwarteten (siehe unten)</td></tr>
+<tr><td><strong>Pr&uuml;fung: Dateieinstellungen</strong></td><td>liest die Einstellungen einer Datei und vergleicht die angehakten mit den erwarteten</td></tr>
+<tr><td><strong>App erstellen</strong>, <strong>App l&ouml;schen</strong></td><td>legt eine Applikation an oder l&ouml;scht sie</td></tr>
+<tr><td><strong>Datei erstellen</strong>, <strong>Datei l&ouml;schen</strong></td><td>legt eine Datei in einer Applikation an oder l&ouml;scht sie</td></tr>
+<tr><td><strong>Dateieinstellungen &auml;ndern</strong></td><td>&auml;ndert die Einstellungen einer Datei</td></tr>
+<tr><td><strong>Daten lesen</strong>, <strong>Daten schreiben</strong></td><td>liest den Inhalt einer Datei oder schreibt ihn</td></tr>
+<tr><td><strong>App Key &auml;ndern</strong>, <strong>App Key-Settings &auml;ndern</strong></td><td>&auml;ndert einen Schl&uuml;ssel einer Applikation oder deren Schl&uuml;sseleinstellungen</td></tr>
+<tr><td><strong>PICC Master Key &auml;ndern</strong>, <strong>PICC Master Key Settings &auml;ndern</strong></td><td>&auml;ndert den Hauptschl&uuml;ssel der Karte oder dessen Einstellungen</td></tr>
+<tr><td><strong>Karte Formatieren</strong></td><td>l&ouml;scht alle Applikationen und Dateien der Karte</td></tr>
+</table>
+
+<h2>Die Reiter</h2>
+
+<table>
+<tr><th>Reiter</th><th>Wof&uuml;r</th><th>Braucht</th></tr>
+<tr><td><strong>PICC Schl&uuml;ssel Einstellungen</strong></td><td>den PICC Master Key setzen oder &auml;ndern; Speicher freigeben (<strong>Formatieren</strong>)</td><td>den aktuellen PICC Master Key (mit seinem Schl&uuml;sseltyp); zum &Auml;ndern auch den neuen</td></tr>
+<tr><td><strong>App Einstellungen</strong></td><td>neue Applikationen anlegen und vorhandene l&ouml;schen (der Speicher wird dabei nicht von selbst frei)</td>
+<td>den PICC Master Key, wenn die Sicherheitseinstellungen das Anlegen ohne ihn verbieten</td></tr>
+<tr><td><strong>App Schl&uuml;ssel Einstellungen</strong></td><td>Schl&uuml;ssel vorhandener Applikationen &auml;ndern, am Schl&uuml;ssel melden, Schl&uuml;sseleinstellungen pr&uuml;fen oder &auml;ndern</td>
+<td>den App Master Key (Schl&uuml;ssel 0) oder den bisherigen Schl&uuml;ssel, wenn die Sicherheitseinstellungen das verlangen</td></tr>
+<tr><td><strong>Datei Einstellungen</strong></td><td>Dateien anlegen, l&ouml;schen, ihre Einstellungen &auml;ndern und pr&uuml;fen</td><td>den App Master Key und die App-ID</td></tr>
+<tr><td><strong>Daten Editor</strong></td><td>den Inhalt einer Datei lesen und schreiben</td><td>die App-ID, den Lese- beziehungsweise Schreibschl&uuml;ssel samt Nummer</td></tr>
+</table>
+
+<h2>Schl&uuml;ssel, Verschl&uuml;sselung, Dateien</h2>
+
+<ul>
+<li><strong>Schl&uuml;sseltypen:</strong> <strong>3DES</strong> (DES / 2K3DES), <strong>3K3DES</strong> und <strong>AES</strong>. Das Feld l&auml;sst nur so viele Hex-Zeichen zu, wie der Typ braucht.</li>
+<li><strong>Kommunikationsmodus</strong> einer Datei: <strong>Plain</strong>, <strong>MAC</strong> oder <strong>Encrypted</strong>.</li>
+<li><strong>Dateitypen:</strong> <strong>Standard Data File</strong>, <strong>Backup File</strong>, <strong>Value File</strong>, <strong>Linear Record File</strong> und <strong>Cyclic Record File</strong>. Ein Elatec TWN4 legt nur Standard- und Backup-Datendateien an; Wert- und Record-Dateien brauchen den PC/SC-Leser.</li>
+<li><strong>Zugriffsrechte</strong> einer Datei: <strong>Key 0</strong> bis <strong>Key 13</strong>, <strong>without Key</strong> (ohne Schl&uuml;ssel) oder <strong>not Allowed</strong> (nie).</li>
+<li><strong>Key-&Auml;nderungsmodus</strong> einer Applikation: <strong>Keychange frozen</strong> (Schl&uuml;ssel nicht mehr &auml;nderbar), <strong>Change Key using MK</strong> (nur mit dem Master Key) oder <strong>Change Key using KeyNo</strong>
+(mit einer Schl&uuml;sselnummer).</li>
+</ul>
+
+<h2>Pr&uuml;fungen mit Vergleich</h2>
+
+<p>Die Aufgaben <strong>Pr&uuml;fung: App Konfig</strong> und <strong>Pr&uuml;fung: Dateieinstellungen</strong> lesen etwas von der Karte und vergleichen es mit dem, was Sie erwarten. Die Aufgabe endet mit
+<strong>Kein Fehler</strong> (BESTANDEN) oder mit einem Fehlerergebnis (NICHT BESTANDEN); das Statusfeld des Dialogs nennt den Unterschied.</p>
+
+<ul>
+<li><strong>App Konfig:</strong> Sie h&auml;ngen die erwarteten Schl&uuml;sseleinstellungen an (<strong>PICC/App-MasterKey &auml;nderbar</strong>, <strong>Konfiguration ist &auml;nderbar</strong>,
+<strong>App/File ohne MasterKey anlegbar</strong>, <strong>Verzeichnis ohne MasterKey einsehbar</strong>) und w&auml;hlen die Regel: <strong>Alle gew&auml;hlten Einstellungen m&uuml;ssen gesetzt sein</strong>,
+<strong>Mindestens eine gew&auml;hlte Einstellung muss gesetzt sein</strong> oder <strong>Exakte &Uuml;bereinstimmung (einschlie&szlig;lich Key-&Auml;nderungsmodus)</strong>.</li>
+<li><strong>Dateieinstellungen:</strong> Sie haken die Einstellungen an, die verglichen werden sollen (Dateityp, Kommunikationsmodus, Gr&ouml;&szlig;e, Lesezugriff, Schreibzugriff, Lese-/Schreibzugriff, Recht zum &Auml;ndern der
+Zugriffsrechte). Eine Einstellung ohne Haken wird ignoriert. Die Gr&ouml;&szlig;e vergleichen Sie mit <strong>gleich</strong>, <strong>mindestens</strong> oder <strong>h&ouml;chstens</strong>. Gepr&uuml;ft werden Standard- und Backup-Datendateien; Wert- und
+Record-Dateien nicht.</li>
+</ul>
+
+<h2>Daten lesen und schreiben</h2>
+
+<p>Im <strong>Daten Editor</strong> stellen Sie die App-ID, die Dateinummer, den <strong>Leseschl&uuml;ssel</strong> mit Nummer und Typ (die Nummer liegt zwischen 0 und 13) und f&uuml;r das Schreiben den
+<strong>Schreibschl&uuml;ssel</strong> ein. Dazu kommen die <strong>Datenindex Startposition</strong> und die Zahl der Bytes (<strong>Schreibe n Byte(s)</strong>). Die Tabellen zeigen <strong>Daten - IST</strong> (auf der Karte)
+und <strong>Daten - SOLL</strong> (im Speicher). Mit <strong>Datendatei &Ouml;ffnen...</strong> laden Sie Daten aus einer Datei, mit <strong>Lese-Daten speichern...</strong> w&auml;hlen Sie die Datei, in die gelesene Daten gespeichert
+werden. <strong>Beim Lesen &uuml;berschreiben</strong> gilt f&uuml;r diese Datei: ist es angehakt, schreibt jedes Lesen in die gew&auml;hlte Datei; sonst h&auml;ngt RFiDGear Datum und Uhrzeit an den Dateinamen an (zum Beispiel <code>lesen_20261121_133700.bin</code>), damit fr&uuml;here Lesevorg&auml;nge erhalten bleiben. <strong>Vor Schreiben neu laden</strong> l&auml;dt die Datei erneut, bevor geschrieben wird.</p>
+
+<h2>Schl&uuml;ssel f&uuml;r eine DESFire-Aufgabe</h2>
+
+<p>Ein Schl&uuml;sselfeld kann einen eingetippten Schl&uuml;ssel haben oder auf einen gespeicherten Schl&uuml;ssel zeigen. Die Schaltfl&auml;che <strong>Schl&uuml;sselverwaltung...</strong> im Abschnitt des Schl&uuml;ssels &ouml;ffnet die
+Verwaltung (siehe <a href="keys.html">Schl&uuml;ssel</a>). Als Quelle stehen zur Wahl: die <strong>Windows-Anmeldeinformationsverwaltung</strong>, eine <strong>verbundene externe Anwendung</strong> und eine
+<strong>MIFARE SAM AV3</strong>. Mit einem Schl&uuml;ssel der SAM bleibt der Schl&uuml;ssel in der SAM; das funktioniert f&uuml;r vier Befehle: <strong>Pr&uuml;fung: App-Key</strong>, <strong>PICC Master Key &auml;ndern</strong>, <strong>App Key &auml;ndern</strong> und die
+Schaltfl&auml;che <strong>Mit PICC MasterKey Authentifizieren</strong>. Ein Schl&uuml;ssel, der sich aus einem Schl&uuml;sselspeicher nicht holen l&auml;sst, beendet die Aufgabe mit <strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong>; an die Karte geht dann kein Befehl. Ein Fehler der SAM selbst wird mit Grund und den Statusw&ouml;rtern von SAM und Karte gemeldet.</p>
+
+<div class="warn">Die Aufgaben dieser Seite k&ouml;nnen eine Karte unbrauchbar machen: <strong>Karte Formatieren</strong> l&ouml;scht alle Daten, nach einem gelungenen Wechsel des PICC Master Keys braucht jede weitere Authentifizierung den <em>neuen</em> Schl&uuml;ssel: geht er verloren, l&auml;sst sich die Karte nicht mehr verwalten.
+Ein eingefrorener Key-&Auml;nderungsmodus (<strong>Keychange frozen</strong>) verhindert sp&auml;tere Schl&uuml;ssel&auml;nderungen. Notieren Sie die neuen Schl&uuml;ssel, bevor Sie sie schreiben, und &uuml;ben Sie an einer Karte, die Sie nicht mehr
+brauchen. RFiDGear wiederholt einen Schreibbefehl nie von selbst.</div>
+
+<div class="nav">Vorherige Seite: <a href="tasks_classic.html">MIFARE Classic</a> &middot; N&auml;chste Seite: <a href="tasks_ultralight.html">MIFARE Ultralight und NTAG</a></div>
+
+</body>
+</html>

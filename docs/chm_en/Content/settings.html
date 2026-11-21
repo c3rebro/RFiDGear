@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Settings</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Settings</h1>
+
+<p>Open the settings with <strong>Tools &gt; Settings...</strong>. The window has three tabs. <strong>Save and Exit</strong> keeps
+your changes, <strong>Abort</strong> discards them. The settings are kept in files under <code>%LocalAppData%\RFiDGear\</code>.</p>
+
+<h2>Tab "Reader Settings"</h2>
+
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td><strong>Available Reader Providers</strong></td><td>the kind of reader. <strong>Elatec TWN4</strong> and <strong>PCSC</strong> are supported;
+the list holds more names that RFiDGear does not serve. <strong>Kein Leser ausgew&auml;hlt</strong> (no reader selected; the program shows this
+text in German in both languages) switches the reader off.</td></tr>
+<tr><td><strong>Selected Reader:</strong></td><td>shows the reader that is stored</td></tr>
+<tr><td><strong>Detected PC/SC Readers</strong></td><td>PCSC only: the reader the card lies in</td></tr>
+<tr><td><strong>SAM reader:</strong></td><td>PCSC only: the reader that holds a MIFARE SAM AV3 (see below). <strong>(none)</strong> when no SAM is used</td></tr>
+<tr><td><strong>Reader Status:</strong></td><td>the result of the last attempt to connect</td></tr>
+<tr><td><strong>Com Port:</strong>, <strong>Baud Rate:</strong></td><td>RFiDGear stores both values but does not use them today: an Elatec reader is found
+by itself.</td></tr>
+<tr><td><strong>Connect</strong></td><td>tries the reader and reads a chip while doing so: put a chip on the reader first</td></tr>
+</table>
+
+<h3>Elatec TWN4</h3>
+
+<p>RFiDGear finds the reader by itself. If another program or a second RFiDGear window holds the port, the window shows
+<strong>(port not accessible)</strong> and explains that the COM port may be in use by another program: close the other program and click
+<strong>Connect</strong> again.</p>
+
+<h3>PCSC</h3>
+
+<p>Under <strong>Detected PC/SC Readers</strong>, choose the reader the card lies in. With a reader pair such as the OMNIKEY 5422, which has a
+contact slot and a contactless slot, that is the contactless slot.</p>
+
+<p>A <strong>MIFARE SAM AV3</strong> sits in a reader of its own, in a pair the contact slot. Choose it under <strong>SAM reader:</strong>.
+RFiDGear never takes that reader for the card. Choose two different readers: if you name the same reader for card and SAM, the window warns
+that the card is then never read. Without a SAM leave <strong>(none)</strong>. An Elatec TWN4 from hardware revision G, which has SAM sockets of its
+own, needs no setting for this.</p>
+
+<div class="warn">In a Remote Desktop session PC/SC readers are visible only when smart card redirection of the connection is on
+(<code>redirectsmartcards:i:1</code> in the <code>.rdp</code> file or in the settings of the Remote Desktop client), and the reader must be
+attached to the local computer. Otherwise RFiDGear shows <strong>RDP: PC/SC unavailable</strong>, and PCSC cannot be selected.</div>
+
+<h2>Tab "Miscellaneous Settings"</h2>
+
+<table>
+<tr><th>Switch</th><th>Effect</th></tr>
+<tr><td><strong>Automatically Load last used Project when starting RFIDGear</strong></td><td>loads at start the project that you opened last or saved as
+the default (see <a href="projects.html">Projects</a>)</td></tr>
+<tr><td><strong>Check for Updates on Start</strong></td><td>asks the update source at start (see <a href="updates_extensions.html">Updates and
+extensions</a>)</td></tr>
+<tr><td><strong>Enable JSON-RPC pipe server</strong></td><td>opens external control: a named pipe that only this Windows user can reach.
+A program that connects sees the state of RFiDGear, can load a project and run its tasks. The change takes effect after a restart. See Part 2 of
+this help. The start-up argument <code>EXTERNALCONTROL=1</code> switches the pipe on for one run.</td></tr>
+</table>
+
+<h2>Tab "Default Keys"</h2>
+
+<p>The <strong>Quick Check</strong> (<kbd>Ctrl</kbd> + <kbd>Q</kbd>) uses these keys to open a chip.</p>
+
+<table>
+<tr><th>Group</th><th>Content</th></tr>
+<tr><td><strong>Ask for keys before Quick Check</strong></td><td>when on, the quick check opens the window <strong>Configure Quick-Check Keys</strong>
+before it reads, where you can change the keys. Choose <strong>Do not ask again</strong> there to switch the switch off.</td></tr>
+<tr><td><strong>DESFire Default Keys</strong></td><td>one key each for <strong>PICC Master Key</strong>, <strong>Application Master Key</strong>,
+<strong>Read Key</strong> and <strong>Write Key</strong>: the <strong>Encryption</strong> and the value in hex</td></tr>
+<tr><td><strong>MIFARE Classic Quick-Check Keys</strong></td><td>a list of keys separated by commas, 12 hex characters each (for example
+<code>FFFFFFFFFFFF</code>). The field is green while the list is valid and red as soon as a key is wrong; you cannot save with an
+invalid key.</td></tr>
+</table>
+
+<div class="warn">These default keys are stored in plain text in the file <code>settings.xml</code> (the first values come from <code>runtime-defaults.json</code>). Enter only keys here that are defaults
+or for trying things out. Real keys belong in the key manager (see <a href="keys.html">Keys</a>).</div>
+
+<div class="nav">Previous page: <a href="menus.html">The menus and shortcuts</a> &middot; Next page: <a href="projects.html">Projects</a></div>
+
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Die Men&uuml;s und Tastenk&uuml;rzel</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Die Men&uuml;s und Tastenk&uuml;rzel</h1>
+
+<p>Die Men&uuml;s stehen oben im Hauptfenster. Ein unterstrichener Buchstabe im Men&uuml;text ist die Tastenkombination mit <kbd>Alt</kbd>:
+<kbd>Alt</kbd> + <kbd>D</kbd> &ouml;ffnet zum Beispiel das Men&uuml; <strong>Datei</strong>.</p>
+
+<h2>Tastenk&uuml;rzel</h2>
+
+<table>
+<tr><th>Tasten</th><th>Wirkung</th></tr>
+<tr><td><kbd>F1</kbd></td><td>&ouml;ffnet diese Hilfe</td></tr>
+<tr><td><kbd>Strg</kbd> + <kbd>R</kbd></td><td><strong>RFiD Chip einlesen</strong></td></tr>
+<tr><td><kbd>Strg</kbd> + <kbd>O</kbd></td><td><strong>Projekt &ouml;ffnen...</strong></td></tr>
+<tr><td><kbd>Strg</kbd> + <kbd>S</kbd></td><td><strong>Projekt Speichern unter...</strong></td></tr>
+<tr><td><kbd>Strg</kbd> + <kbd>X</kbd></td><td><strong>Alle Aufgaben einmalig ausf&uuml;hren</strong></td></tr>
+<tr><td><kbd>Strg</kbd> + <kbd>Q</kbd></td><td><strong>Schnellpr&uuml;fung durchf&uuml;hren</strong></td></tr>
+<tr><td><kbd>Esc</kbd></td><td>beendet RFiDGear (mit der Frage nach einem laufenden Lauf, siehe unten)</td></tr>
+</table>
+
+<h2>Datei</h2>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>Projekt &ouml;ffnen...</strong></td><td>l&auml;dt eine Projektdatei (<code>.rfPrj</code> oder <code>.xml</code>)</td></tr>
+<tr><td><strong>Projekt Speichern</strong></td><td>schreibt das ge&ouml;ffnete Projekt in seine Datei. Ist keine Datei bekannt, &ouml;ffnet sich
+<strong>Projekt Speichern unter...</strong></td></tr>
+<tr><td><strong>Projekt Speichern unter...</strong></td><td>fragt nach einem Dateinamen und fragt, ob das Projekt als Voreinstellung dienen soll</td></tr>
+<tr><td><strong>Chipliste exportieren</strong></td><td>speichert die Chips des Chip-Baums als XML-Datei</td></tr>
+<tr><td><strong>Schl&uuml;sselverwaltung...</strong></td><td>&ouml;ffnet die Verwaltung der gespeicherten Schl&uuml;ssel (siehe <a href="keys.html">Schl&uuml;ssel</a>)</td></tr>
+<tr><td><strong>Schl&uuml;ssel eines Projekts in die Anmeldeinformationsverwaltung verschieben...</strong></td><td>legt die Schl&uuml;ssel eines vorhandenen Projekts
+in der Windows-Anmeldeinformationsverwaltung ab und speichert ein neues Projekt (siehe <a href="keys.html">Schl&uuml;ssel</a>)</td></tr>
+<tr><td><strong>Erweiterungs-Update installieren...</strong></td><td>installiert ein Erweiterungspaket (<code>.rfext</code>), siehe
+<a href="updates_extensions.html">Updates und Erweiterungen</a></td></tr>
+<tr><td><strong>Beenden</strong></td><td>beendet RFiDGear</td></tr>
+</table>
+
+<h2>Bearbeiten</h2>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>Aufgabe erstellen / bearbeiten</strong></td><td>&ouml;ffnet das Untermen&uuml; der Aufgabentypen:
+<strong>Allgemeine Aufgabe erstellen / bearbeiten...</strong> (Bericht, Logik, Programm), <strong>Typunabh&auml;ngige RFiD Aufgabe erstellen / bearbeiten...</strong>
+(UID und Kartentyp pr&uuml;fen) und <strong>Mifare Aufgabe</strong> mit <strong>Mifare Classic Aufgabe hinzuf&uuml;gen/bearbeiten</strong>,
+<strong>Mifare Desfire Aufgabe hinzuf&uuml;gen/bearbeiten</strong> und <strong>Mifare Ultralight / NTAG Aufgabe hinzuf&uuml;gen/bearbeiten</strong></td></tr>
+<tr><td><strong>Alle Karten entfernen</strong></td><td>leert den Chip-Baum</td></tr>
+<tr><td><strong>Alle Aufgaben entfernen</strong></td><td>leert die Aufgabenliste</td></tr>
+<tr><td><strong>Aufgabenstatus zur&uuml;cksetzen</strong></td><td>setzt die Ergebnisse aller Aufgaben auf &bdquo;noch nicht ausgef&uuml;hrt&ldquo;</td></tr>
+<tr><td><strong>Berichtausgabepfade zur&uuml;cksetzen</strong></td><td>l&ouml;scht die Zielpfade der Berichte</td></tr>
+</table>
+
+<p>Einige Eintr&auml;ge in diesen Men&uuml;s sind grau und ohne Funktion: die Aufgabentypen f&uuml;r MIFARE Plus und SAM sowie der Eintrag Tag-It.
+Sie sind Platzhalter.</p>
+
+<h2>Programmierung</h2>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>RFiD Chip einlesen</strong></td><td>liest den Chip auf dem Leser und zeigt ihn im Baum</td></tr>
+<tr><td><strong>Schnellpr&uuml;fung durchf&uuml;hren</strong></td><td>liest den Chip mit den Standardschl&uuml;sseln aus den Einstellungen (siehe
+<a href="settings.html">Einstellungen</a>) und zeigt das Ergebnis im Baum</td></tr>
+<tr><td><strong>Alle Aufgaben einmalig ausf&uuml;hren</strong></td><td>f&uuml;hrt die ganze Liste einmal aus</td></tr>
+<tr><td><strong>Alle Aufgaben automatisch wiederholen</strong></td><td>schaltet den automatischen Modus ein oder aus: f&uuml;r jede neu aufgelegte Karte
+l&auml;uft die Liste einmal (siehe <a href="running_tasks.html">Aufgaben ausf&uuml;hren</a>)</td></tr>
+<tr><td><strong>Markierte Aufgabe(n) einmalig ausf&uuml;hren</strong></td><td>f&uuml;hrt nur die markierte Aufgabe aus</td></tr>
+</table>
+
+<p>Der Eintrag <strong>Markierte Aufgabe automatisch wiederholen</strong> hat heute keine Funktion.</p>
+
+<h2>Extras</h2>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>Einstellungen...</strong></td><td>&ouml;ffnet die Einstellungen (siehe <a href="settings.html">Einstellungen</a>)</td></tr>
+<tr><td><strong>MIFARE-SAM-AV3-Einrichtung...</strong></td><td>&ouml;ffnet das Fenster, das eine MIFARE SAM AV3 einrichtet (siehe
+<a href="sam_setup.html">MIFARE SAM AV3 einrichten</a>)</td></tr>
+<tr><td><strong>Language</strong></td><td>die Sprache der Oberfl&auml;che: <strong>german</strong> oder <strong>english</strong>. Die &Auml;nderung wirkt nach einem Neustart
+von RFiDGear. Auch diese Hilfe wechselt dann die Sprache.</td></tr>
+</table>
+
+<h2>Erweiterungen</h2>
+
+<p>Dieses Men&uuml; hat einen Eintrag f&uuml;r jede installierte Erweiterung, zum Beispiel den Card Check Assistant. Es ist leer, wenn keine
+Erweiterung installiert ist. Siehe <a href="updates_extensions.html">Updates und Erweiterungen</a>.</p>
+
+<h2>Hilfe</h2>
+
+<table>
+<tr><th>Eintrag</th><th>Wirkung</th></tr>
+<tr><td><strong>Hilfe</strong></td><td>&ouml;ffnet diese Hilfe (<kbd>F1</kbd>)</td></tr>
+<tr><td><strong>Auf Updates pr&uuml;fen</strong></td><td>sucht eine neuere Version von RFiDGear</td></tr>
+<tr><td><strong>Changelog</strong></td><td>zeigt die Versionshinweise der Update-Quelle, auch wenn es kein Update gibt; ein Update bietet dieses Fenster nicht an</td></tr>
+<tr><td><strong>&Uuml;ber RFiDGear</strong></td><td>zeigt die Versionsnummer</td></tr>
+</table>
+
+<div class="warn">L&auml;uft gerade ein Lauf, den ein anderes Programm &uuml;ber die externe Steuerung gestartet hat, fragt RFiDGear beim
+Beenden nach: Das Schlie&szlig;en bricht den Lauf an der Karte ab, und das andere Programm erh&auml;lt kein Ergebnis.</div>
+
+<div class="nav">Vorherige Seite: <a href="main_window.html">Das Hauptfenster</a> &middot; N&auml;chste Seite: <a href="settings.html">Einstellungen</a></div>
+
+</body>
+</html>

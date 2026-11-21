@@ -149,6 +149,69 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData("de")]
         [InlineData("en")]
+        public void EveryPage_HasAnEntryInTheIndex(string language)
+        {
+            var indexed = SitemapTargets(language, "rfidgear_" + language + ".hhk").ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var page in ContentFiles(language).Where(name => name.EndsWith(".html", StringComparison.OrdinalIgnoreCase)))
+            {
+                Assert.True(indexed.Contains("Content/" + page), "'" + page + "' is a page of the '" + language + "' help and the index has no keyword for it");
+            }
+        }
+
+        [Theory]
+        [InlineData("de")]
+        [InlineData("en")]
+        public void EveryPage_HasOneHeading_AndItsTitleIsTheNameThatTheContentsShow(string language)
+        {
+            var content = Path.Combine(FolderOf(language), "Content");
+            var contents = File.ReadAllText(Path.Combine(FolderOf(language), "Table of Contents.hhc"));
+            var names = Regex.Matches(contents, "<param name=\"Name\" value=\"([^\"]*)\">\\s*<param name=\"Local\" value=\"Content\\\\([^\"]+)\">", RegexOptions.IgnoreCase)
+                .ToDictionary(match => match.Groups[2].Value, match => match.Groups[1].Value, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var page in Directory.GetFiles(content, "*.html"))
+            {
+                var name = Path.GetFileName(page);
+                var text = File.ReadAllText(page);
+
+                Assert.True(Regex.Matches(text, "<h1[ >]").Count == 1, "'" + name + "' has to have exactly one <h1>");
+                Assert.True(names.TryGetValue(name, out var shown), "'" + name + "' has no name in the table of contents");
+                Assert.Equal(shown, Regex.Match(text, "<title>(.*?)</title>", RegexOptions.Singleline).Groups[1].Value);
+            }
+        }
+
+        [Fact]
+        public void TheGermanAndTheEnglishPage_HaveTheSameStructure()
+        {
+            // The two languages are written side by side: a section, a table row or a link that one of them has and the other lacks is a
+            // part of the help that was not translated.
+            foreach (var name in ContentFiles("de").Where(file => file.EndsWith(".html", StringComparison.OrdinalIgnoreCase)))
+            {
+                var german = File.ReadAllText(Path.Combine(FolderOf("de"), "Content", name));
+                var english = File.ReadAllText(Path.Combine(FolderOf("en"), "Content", name));
+
+                foreach (var element in new[] { "h1", "h2", "h3", "table", "tr", "ul", "ol", "pre" })
+                {
+                    var pattern = "<" + element + "[ >]";
+                    Assert.True(Regex.Matches(german, pattern).Count == Regex.Matches(english, pattern).Count, "'" + name + "' has a different number of <" + element + "> in German and in English");
+                }
+
+                foreach (var box in new[] { "note", "warn" })
+                {
+                    var pattern = "class=\"" + box + "\"";
+                    Assert.True(Regex.Matches(german, pattern).Count == Regex.Matches(english, pattern).Count, "'" + name + "' has a different number of '" + box + "' boxes in German and in English");
+                }
+
+                Assert.Equal(LinkTargetsOf(german), LinkTargetsOf(english));
+            }
+        }
+
+        private static IReadOnlyList<string> LinkTargetsOf(string page) =>
+            Regex.Matches(page, "<a href=\"([^\"]+)\"").Select(match => match.Groups[1].Value).OrderBy(target => target, StringComparer.Ordinal).ToList();
+
+        [Theory]
+        [InlineData("de")]
+        [InlineData("en")]
         public void TheSources_AreAscii_SoThatTheCodePageOfTheProjectCannotSpoilThem(string language)
         {
             // Umlauts are written as entities (&auml;). The contents and the index are read in the code page of the project language.

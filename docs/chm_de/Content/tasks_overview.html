@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Aufgaben im &Uuml;berblick</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Aufgaben im &Uuml;berblick</h1>
+
+<p>Eine <em>Aufgabe</em> ist ein Schritt, den RFiDGear an einem Chip ausf&uuml;hrt, zum Beispiel eine UID pr&uuml;fen, einen Sektor lesen,
+einen Schl&uuml;ssel &auml;ndern oder einen Bericht schreiben. Die Aufgaben stehen in einer Liste (das Projekt) und laufen von oben nach unten.</p>
+
+<h2>Die Arten von Aufgaben</h2>
+
+<table>
+<tr><th>Men&uuml;eintrag (Bearbeiten &gt; Aufgabe erstellen / bearbeiten)</th><th>Wof&uuml;r</th><th>Seite</th></tr>
+<tr><td>Allgemeine Aufgabe erstellen / bearbeiten...</td><td>Bericht erstellen, Logikbaustein, Programm ausf&uuml;hren: Aufgaben, die keinen Chip
+brauchen</td><td><a href="tasks_common.html">Allgemeine Aufgaben</a></td></tr>
+<tr><td>Typunabh&auml;ngige RFiD Aufgabe erstellen / bearbeiten...</td><td>UID pr&uuml;fen, Kartentyp pr&uuml;fen, Multitechnologiekarte pr&uuml;fen</td>
+<td><a href="tasks_generic_chip.html">Typunabh&auml;ngige Chip-Aufgaben</a></td></tr>
+<tr><td>Mifare Classic Aufgabe hinzuf&uuml;gen/bearbeiten</td><td>Bl&ouml;cke und Sektoren lesen und schreiben (auch den Sector Trailer mit Schl&uuml;sseln und Zugriffsbits), MAD</td>
+<td><a href="tasks_classic.html">MIFARE Classic</a></td></tr>
+<tr><td>Mifare Desfire Aufgabe hinzuf&uuml;gen/bearbeiten</td><td>Applikationen, Dateien und Schl&uuml;ssel einer DESFire-Karte</td>
+<td><a href="tasks_desfire.html">MIFARE DESFire</a></td></tr>
+<tr><td>Mifare Ultralight / NTAG Aufgabe hinzuf&uuml;gen/bearbeiten</td><td>Seiten eines Ultralight- oder NTAG-Chips lesen und schreiben</td>
+<td><a href="tasks_ultralight.html">MIFARE Ultralight und NTAG</a></td></tr>
+</table>
+
+<p>Die Dialoge der Chip-Aufgaben &ouml;ffnen sich nur, wenn ein Leser verbunden ist.</p>
+
+<h2>Eine Aufgabe anlegen und &auml;ndern</h2>
+
+<ol>
+<li>W&auml;hlen Sie den Aufgabentyp im Men&uuml; <strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten</strong>, oder im Kontextmen&uuml; der Liste
+(<strong>Neue Aufgabe anlegen</strong>).</li>
+<li>Stellen Sie die Aufgabe im Dialog ein und best&auml;tigen Sie ihn.</li>
+<li>Zum &Auml;ndern &ouml;ffnen Sie eine Zeile mit einem Doppelklick oder &uuml;ber <strong>Aufgabe bearbeiten...</strong> im Kontextmen&uuml;.</li>
+</ol>
+
+<h2>Was jeder Aufgabendialog hat</h2>
+
+<table>
+<tr><th>Feld</th><th>Bedeutung</th></tr>
+<tr><td><strong>Aufgabennummer</strong></td><td>eine ganze Zahl ab 0, die keine andere Aufgabe hat. Ausf&uuml;hrungsbedingungen, Logikbausteine und Berichte
+beziehen sich auf eine Aufgabe &uuml;ber ihre Nummer. RFiDGear weist eine doppelte Nummer ab.</td></tr>
+<tr><td><strong>Aufgabentyp</strong></td><td>was die Aufgabe tut</td></tr>
+<tr><td><strong>Aufgabenbeschreibung</strong></td><td>Ihr eigener Text; er steht in der Liste</td></tr>
+<tr><td><strong>Ausf&uuml;hrungsbedingung f&uuml;r diese Aufgabe</strong></td><td>siehe unten</td></tr>
+</table>
+
+<h2>Die Reihenfolge</h2>
+
+<p>Die Liste ist nach der Aufgabennummer geordnet, und die Aufgaben laufen von oben nach unten, also in aufsteigender Nummer. Ein Klick auf eine Spalten&uuml;berschrift &auml;ndert nur, wie die Liste angezeigt wird: die Aufgaben laufen weiter in der Reihenfolge ihrer Nummern, eine absteigend angezeigte Liste l&auml;uft also nicht r&uuml;ckw&auml;rts. Nach dem Anlegen oder &Auml;ndern einer
+Aufgabe sortiert RFiDGear die Liste neu.</p>
+
+<p>Ziehen Sie eine Zeile mit der Maus an eine andere Stelle, bekommt die Aufgabe die erste freie Nummer zwischen ihren neuen Nachbarn. Ist dort keine
+Nummer frei, zeigt RFiDGear eine Warnung (<em>Task Index Update</em>), und die Zeile bleibt, wo sie war.</p>
+
+<div class="note">Lassen Sie beim Nummerieren L&uuml;cken (10, 20, 30, ...), dann k&ouml;nnen Sie sp&auml;ter Aufgaben dazwischen einf&uuml;gen.</div>
+
+<h2>Die Ausf&uuml;hrungsbedingung</h2>
+
+<p>Mit einer Ausf&uuml;hrungsbedingung l&auml;uft eine Aufgabe nur, wenn eine fr&uuml;here Aufgabe mit einem bestimmten Ergebnis endete. Im Dialog stellen Sie zwei
+Felder ein:</p>
+
+<ul>
+<li><strong>Ziel Aufgabennummer</strong>: die Nummer der fr&uuml;heren Aufgabe.</li>
+<li><strong>Ziel Aufgabenergebnis</strong>: das Ergebnis, das sie haben muss.</li>
+</ul>
+
+<p>Hatte die fr&uuml;here Aufgabe ein anderes Ergebnis, &uuml;berspringt RFiDGear die Aufgabe. Das ist kein Fehler. So bauen Sie Zweige: eine Aufgabe
+pr&uuml;ft, ob eine Applikation existiert; eine zweite l&auml;uft nur, wenn diese Pr&uuml;fung mit <strong>Ist Nicht Wahr</strong> endete, und legt die Applikation an.
+Die Bedingung bezieht sich auf eine Aufgabe, die vor dieser l&auml;uft.</p>
+
+<h2>Die Ergebnisse einer Aufgabe</h2>
+
+<p>Jede Aufgabe endet mit einem Ergebnis. Das Symbol in der Liste zeigt nur gelungen oder fehlgeschlagen; das Ergebnis selbst nennen die
+Auswahlfelder der Ausf&uuml;hrungsbedingung und der Pr&uuml;fpunkte.</p>
+
+<table>
+<tr><th>Ergebnis</th><th>Bedeutung</th></tr>
+<tr><td><strong>Kein Fehler</strong></td><td>gelungen</td></tr>
+<tr><td><strong>Ist Nicht Wahr</strong></td><td>eine Pr&uuml;fung hat &bdquo;nein&ldquo; geantwortet: ihre Bedingung traf nicht zu. Das ist die Antwort der Pr&uuml;fung, kein Fehler von Leser oder Karte.</td></tr>
+<tr><td><strong>Ist Nicht Unwahr</strong></td><td>das Gegenst&uuml;ck, das sich in Bedingungen und Pr&uuml;fpunkten w&auml;hlen l&auml;sst; keine Aufgabe dieser Version endet damit</td></tr>
+<tr><td><strong>Authentifizierung fehlgeschlagen</strong></td><td>die Karte hat den Schl&uuml;ssel abgelehnt</td></tr>
+<tr><td><strong>Zugriff verweigert</strong></td><td>die Karte verbietet diese Operation mit den aktuellen Zugriffsrechten</td></tr>
+<tr><td><strong>Protokolleinschr&auml;nkung</strong></td><td>Leser oder Karte k&ouml;nnen das nicht, zum Beispiel ein NTAG an einem PC/SC-Leser</td></tr>
+<tr><td><strong>Transportfehler</strong></td><td>die Verbindung brach ab, zum Beispiel weil die Karte entfernt wurde</td></tr>
+<tr><td><strong>Unbekannter Fehler</strong></td><td>der Ausgang ist nicht bekannt, zum Beispiel wenn ein geschriebener Block beim Zur&uuml;cklesen nicht stimmt</td></tr>
+<tr><td><strong>Nicht gen&uuml;gend Speicher</strong></td><td>auf der Karte ist kein Platz mehr</td></tr>
+<tr><td><strong>Schl&uuml;ssel nicht verf&uuml;gbar</strong></td><td>ein Schl&uuml;ssel, den die Aufgabe &uuml;ber eine Referenz benennt, lie&szlig; sich aus seinem Schl&uuml;sselspeicher nicht holen; daf&uuml;r ging kein Befehl an die Karte. Ein Fehler einer SAM ist ein anderer Fall. Siehe <a href="keys.html">Schl&uuml;ssel</a>.</td></tr>
+<tr><td><strong>Karte nicht erwartet</strong></td><td>die Karte auf dem Leser ist nicht die, die der Aufrufer erwartet (<a href="tasks_generic_chip.html">Pr&uuml;fung der UID</a>
+mit einer Variablen)</td></tr>
+</table>
+
+<div class="warn">Aufgaben, die auf den Chip schreiben, &auml;ndern ihn ohne R&uuml;ckfrage und ohne R&uuml;ckweg. RFiDGear wiederholt einen Schreibversuch
+nie von selbst: bricht er ab, steht im Ergebnis, was geschah, und Sie entscheiden, wie es weitergeht.</div>
+
+<div class="nav">Vorherige Seite: <a href="projects.html">Projekte</a> &middot; N&auml;chste Seite: <a href="tasks_common.html">Allgemeine Aufgaben: Bericht, Logik, Programm</a></div>
+
+</body>
+</html>

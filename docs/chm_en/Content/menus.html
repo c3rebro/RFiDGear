@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>The menus and shortcuts</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>The menus and keyboard shortcuts</h1>
+
+<p>The menus are at the top of the main window. An underlined letter in a menu text is the key combination with <kbd>Alt</kbd>:
+<kbd>Alt</kbd> + <kbd>F</kbd> opens the menu <strong>File</strong>, for example.</p>
+
+<h2>Keyboard shortcuts</h2>
+
+<table>
+<tr><th>Keys</th><th>Effect</th></tr>
+<tr><td><kbd>F1</kbd></td><td>opens this help</td></tr>
+<tr><td><kbd>Ctrl</kbd> + <kbd>R</kbd></td><td><strong>Read Chip Public</strong></td></tr>
+<tr><td><kbd>Ctrl</kbd> + <kbd>O</kbd></td><td><strong>Open Project...</strong></td></tr>
+<tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td><strong>Save Tasks...</strong></td></tr>
+<tr><td><kbd>Ctrl</kbd> + <kbd>X</kbd></td><td><strong>Run All Tasks On Selected Chip Just Once</strong></td></tr>
+<tr><td><kbd>Ctrl</kbd> + <kbd>Q</kbd></td><td><strong>Perform Quick Check</strong></td></tr>
+<tr><td><kbd>Esc</kbd></td><td>closes RFiDGear (with the question about a run in progress, see below)</td></tr>
+</table>
+
+<h2>File</h2>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>Open Project...</strong></td><td>loads a project file (<code>.rfPrj</code> or <code>.xml</code>)</td></tr>
+<tr><td><strong>Save Tasks</strong></td><td>writes the open project to its file. If no file is known, <strong>Save Tasks...</strong> opens</td></tr>
+<tr><td><strong>Save Tasks...</strong></td><td>asks for a file name and asks whether the project is to be the default</td></tr>
+<tr><td><strong>Save Chips...</strong></td><td>saves the chips of the chip tree as an XML file</td></tr>
+<tr><td><strong>Key manager...</strong></td><td>opens the management of stored keys (see <a href="keys.html">Keys</a>)</td></tr>
+<tr><td><strong>Move keys of a project to the Credential Manager...</strong></td><td>puts the keys of an existing project into the Windows Credential
+Manager and saves a new project (see <a href="keys.html">Keys</a>)</td></tr>
+<tr><td><strong>Install extension update...</strong></td><td>installs an extension package (<code>.rfext</code>), see
+<a href="updates_extensions.html">Updates and extensions</a></td></tr>
+<tr><td><strong>Exit</strong></td><td>closes RFiDGear</td></tr>
+</table>
+
+<h2>Edit</h2>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>Add / Edit Task(s)</strong></td><td>opens the submenu of the task types:
+<strong>Add / Edit Generic (Non-Chip) Task...</strong> (report, logic, program), <strong>Add / Edit Generic Chip Task...</strong>
+(check UID and chip type) and <strong>Mifare</strong> with <strong>Add/Edit Mifare Classic Task</strong>,
+<strong>Add/Edit Mifare Desfire Task</strong> and <strong>Add/Edit Mifare Ultralight / NTAG Task</strong></td></tr>
+<tr><td><strong>Remove Cards</strong></td><td>empties the chip tree</td></tr>
+<tr><td><strong>Remove All Tasks</strong></td><td>empties the task list</td></tr>
+<tr><td><strong>Set Taskstatus to 'Undone'</strong></td><td>sets the results of all tasks back to "not run yet"</td></tr>
+<tr><td><strong>Reset Report Target Paths</strong></td><td>clears the target paths of the reports</td></tr>
+</table>
+
+<p>Some entries in these menus are gray and without function: the task types for MIFARE Plus and SAM and the Tag-It entry. They are
+placeholders.</p>
+
+<h2>Programming</h2>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>Read Chip Public</strong></td><td>reads the chip on the reader and shows it in the tree</td></tr>
+<tr><td><strong>Perform Quick Check</strong></td><td>reads the chip with the default keys from the settings (see
+<a href="settings.html">Settings</a>) and shows the result in the tree</td></tr>
+<tr><td><strong>Run All Tasks On Selected Chip Just Once</strong></td><td>runs the whole list once</td></tr>
+<tr><td><strong>Run All Tasks Automatically</strong></td><td>switches the automatic mode on or off: for each newly placed card the list
+runs once (see <a href="running_tasks.html">Running tasks</a>)</td></tr>
+<tr><td><strong>Run Selected Task on Chip Just Once</strong></td><td>runs the selected task only</td></tr>
+</table>
+
+<p>The entry <strong>Run Selected Task Automatically</strong> has no function today.</p>
+
+<h2>Tools</h2>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>Settings...</strong></td><td>opens the settings (see <a href="settings.html">Settings</a>)</td></tr>
+<tr><td><strong>MIFARE SAM AV3 setup...</strong></td><td>opens the window that sets up a MIFARE SAM AV3 (see
+<a href="sam_setup.html">Setting up a MIFARE SAM AV3</a>)</td></tr>
+<tr><td><strong>Language</strong></td><td>the language of the interface: <strong>german</strong> or <strong>english</strong>. The change takes effect after RFiDGear
+is restarted. This help changes its language then, too.</td></tr>
+</table>
+
+<h2>Extensions</h2>
+
+<p>This menu has an entry for each installed extension, for example the Card Check Assistant. It is empty when no extension is
+installed. See <a href="updates_extensions.html">Updates and extensions</a>.</p>
+
+<h2>Help</h2>
+
+<table>
+<tr><th>Entry</th><th>Effect</th></tr>
+<tr><td><strong>Help</strong></td><td>opens this help (<kbd>F1</kbd>)</td></tr>
+<tr><td><strong>Check for Updates</strong></td><td>looks for a newer version of RFiDGear</td></tr>
+<tr><td><strong>Changelog</strong></td><td>shows the release notes of the update source, even when there is no update; this window does not offer an update</td></tr>
+<tr><td><strong>About RFiDGear</strong></td><td>shows the version number</td></tr>
+</table>
+
+<div class="warn">If a run that another program started through external control is in progress, RFiDGear asks when you close it:
+closing cuts the run off on the card, and the other program gets no result.</div>
+
+<div class="nav">Previous page: <a href="main_window.html">The main window</a> &middot; Next page: <a href="settings.html">Settings</a></div>
+
+</body>
+</html>

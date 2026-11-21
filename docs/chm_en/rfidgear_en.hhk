@@ -6,23 +6,499 @@
 </HEAD><BODY>
 <UL>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value=".rfPrj">
+		<param name="Local" value="Content\projects.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="%DATETIME">
+		<param name="Local" value="Content\reports.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="%EXIT">
+		<param name="Local" value="Content\tasks_common.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="%UID">
+		<param name="Local" value="Content\reports.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="$EXPECTEDUID">
+		<param name="Local" value="Content\tasks_generic_chip.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="About RFiDGear">
+		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Access bits">
+		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Activate a SAM">
+		<param name="Local" value="Content\sam_setup.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Add a task">
+		<param name="Local" value="Content\tasks_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Application">
+		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Automatic mode">
+		<param name="Local" value="Content\running_tasks.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="AUTOMODE">
+		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="AUTORUN">
+		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Cancel">
+		<param name="Local" value="Content\running_tasks.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Card Check Assistant">
+		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Card reader">
+		<param name="Local" value="Content\welcome.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Card status">
+		<param name="Local" value="Content\main_window.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Change a key">
+		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Change the task list">
+		<param name="Local" value="Content\projects.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Changelog">
+		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Check file settings">
+		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Check for updates">
+		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Check type of chip">
+		<param name="Local" value="Content\tasks_generic_chip.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Check UID">
+		<param name="Local" value="Content\tasks_generic_chip.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Checkpoint">
+		<param name="Local" value="Content\reports.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Checkpoint">
+		<param name="Local" value="Content\tasks_common.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Chip tree">
+		<param name="Local" value="Content\main_window.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Command line">
+		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Context menu">
+		<param name="Local" value="Content\main_window.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Counter in the file name">
+		<param name="Local" value="Content\reports.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Credential Manager">
+		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Default keys">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Default project">
+		<param name="Local" value="Content\projects.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Elatec TWN4">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Error results">
+		<param name="Local" value="Content\troubleshooting.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Execute condition">
+		<param name="Local" value="Content\tasks_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Export chips">
+		<param name="Local" value="Content\projects.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Extension">
+		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="EXTERNALCONTROL">
+		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="F1">
 		<param name="Local" value="Content\about_this_help.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="File">
+		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="File menu">
+		<param name="Local" value="Content\menus.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="First steps">
+		<param name="Local" value="Content\first_steps.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="First task">
+		<param name="Local" value="Content\first_steps.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Format a card">
+		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Generic task">
+		<param name="Local" value="Content\tasks_common.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Glossary">
+		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Install extension update">
+		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="JSON-RPC pipe server">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Key entry">
+		<param name="Local" value="Content\sam_setup.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Key manager">
+		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Key unavailable">
+		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Keyboard shortcuts">
+		<param name="Local" value="Content\menus.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Keys">
+		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Language">
+		<param name="Local" value="Content\menus.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Language of the help">
 		<param name="Local" value="Content\about_this_help.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Opening the help">
+		<param name="Name" value="Log file">
+		<param name="Local" value="Content\troubleshooting.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Logic block">
+		<param name="Local" value="Content\tasks_common.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="MAD">
+		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Main window">
+		<param name="Local" value="Content\main_window.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Menus">
+		<param name="Local" value="Content\menus.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="MIFARE Classic">
+		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="MIFARE DESFire">
+		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="MIFARE Ultralight">
+		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Move keys">
+		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Multi-technology card">
+		<param name="Local" value="Content\tasks_generic_chip.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="No reader found">
+		<param name="Local" value="Content\troubleshooting.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Notation">
 		<param name="Local" value="Content\about_this_help.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Reader">
-		<param name="Local" value="Content\welcome.html">
+		<param name="Name" value="NTAG">
+		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Open a project">
+		<param name="Local" value="Content\projects.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Open the help">
+		<param name="Local" value="Content\about_this_help.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Order of tasks">
+		<param name="Local" value="Content\tasks_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="PACK">
+		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Password">
+		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="PC/SC">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="PDF template">
+		<param name="Local" value="Content\reports.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="PICC master key">
+		<param name="Local" value="Content\tasks_desfire.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Port not accessible">
+		<param name="Local" value="Content\troubleshooting.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Project">
+		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Project">
+		<param name="Local" value="Content\projects.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Protected pages">
+		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Quick check">
+		<param name="Local" value="Content\menus.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Quick start">
+		<param name="Local" value="Content\first_steps.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Read a chip">
+		<param name="Local" value="Content\first_steps.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Read and write data">
+		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Read and write pages">
+		<param name="Local" value="Content\tasks_ultralight.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Reference">
+		<param name="Local" value="Content\keys.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Remote Desktop">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Remote Desktop">
+		<param name="Local" value="Content\troubleshooting.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Remove the card">
+		<param name="Local" value="Content\running_tasks.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Report">
+		<param name="Local" value="Content\reports.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="REPORTTARGETPATH">
+		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Result of a run">
+		<param name="Local" value="Content\running_tasks.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Result of a task">
+		<param name="Local" value="Content\tasks_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Run">
+		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Run application">
+		<param name="Local" value="Content\tasks_common.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Run once">
+		<param name="Local" value="Content\running_tasks.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Run tasks">
+		<param name="Local" value="Content\running_tasks.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SAM">
+		<param name="Local" value="Content\sam_setup.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SAM AV3">
+		<param name="Local" value="Content\sam_setup.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="SAM reader">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Save a project">
+		<param name="Local" value="Content\projects.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Sector">
+		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Sector trailer">
+		<param name="Local" value="Content\tasks_classic.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Select a reader">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Set up a reader">
+		<param name="Local" value="Content\first_steps.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Settings">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Start-up arguments">
+		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Status bar">
+		<param name="Local" value="Content\main_window.html">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="System requirements">
+		<param name="Local" value="Content\welcome.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Task">
+		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Task">
+		<param name="Local" value="Content\tasks_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Task index">
+		<param name="Local" value="Content\tasks_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Task list">
+		<param name="Local" value="Content\main_window.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Task type">
+		<param name="Local" value="Content\tasks_overview.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Terms">
+		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Tools menu">
+		<param name="Local" value="Content\menus.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Troubleshooting">
+		<param name="Local" value="Content\troubleshooting.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Update">
+		<param name="Local" value="Content\updates_extensions.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Updates on start">
+		<param name="Local" value="Content\settings.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Use a SAM key">
+		<param name="Local" value="Content\sam_setup.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Variables">
+		<param name="Local" value="Content\command_line.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Variables in a report">
+		<param name="Local" value="Content\reports.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Welcome">
 		<param name="Local" value="Content\welcome.html">
 		</OBJECT>
 </UL>

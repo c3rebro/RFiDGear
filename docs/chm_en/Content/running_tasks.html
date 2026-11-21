@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Running tasks</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Running tasks</h1>
+
+<h2>Start a run</h2>
+
+<table>
+<tr><th>What</th><th>How</th></tr>
+<tr><td>the whole list once</td><td><strong>Programming &gt; Run All Tasks On Selected Chip Just Once</strong> (<kbd>Ctrl</kbd> + <kbd>X</kbd>), or <strong>Run All Tasks</strong> in the context menu</td></tr>
+<tr><td>one task only</td><td>select the row and choose <strong>Programming &gt; Run Selected Task on Chip Just Once</strong>, or <strong>Run Task</strong> in the context menu of the row</td></tr>
+<tr><td>automatically for each new card</td><td><strong>Programming &gt; Run All Tasks Automatically</strong> (see below)</td></tr>
+<tr><td>at program start</td><td>the start-up argument <code>AUTORUN=1</code> (see <a href="command_line.html">Start-up arguments</a>)</td></tr>
+</table>
+
+<p>Only one run goes on at a time. While one works, the status bar shows <strong>BUSY</strong>, and RFiDGear does not accept a second one.</p>
+
+<h2>What a run does</h2>
+
+<ol>
+<li>In a run of the whole list RFiDGear first resets all results. A run of the selected task only leaves the other results as they are.</li>
+<li>RFiDGear reads the chip on the reader and remembers its UID.</li>
+<li>It runs the tasks in the order of their numbers (from top to bottom, whatever order the list is shown in). A task with an execute condition runs only if the earlier task had the result that is asked for; otherwise it is
+skipped (see <a href="tasks_overview.html">Tasks at a glance</a>).</li>
+<li>Each task shows its result at the start of its row: tick or cross.</li>
+</ol>
+
+<p>Do not remove the card while a run works. A task that fails on a removed card ends with <strong>Transport Error</strong>. RFiDGear never repeats write tasks on its own: what they
+wrote in part stays on the card, and the result says where they failed.</p>
+
+<h2>Reset results</h2>
+
+<p>The results stay after a run until you reset them or the next run of the whole list begins. Reset them by hand with <strong>Edit &gt; Set Taskstatus to 'Undone'</strong> or, for one task, with
+<strong>Reset Task</strong> in the context menu; <strong>Reset All Tasks</strong> does it for all, <strong>Run All Tasks</strong> resets and then starts the run.</p>
+
+<p>A check of the task kind generic chip (Check UID, Check Type Of Chip, Check Tag Is MultiTag) that already has a result is not run again by <strong>Run Task</strong> or <strong>Run Selected Task on Chip Just Once</strong>. After you swapped the card, use <strong>Reset Task</strong> first, or run the whole list.</p>
+
+<h2>When a run has succeeded</h2>
+
+<p>A program that asks for a run through external control or an extension gets one of three answers as the result:</p>
+
+<table>
+<tr><th>Result</th><th>When</th></tr>
+<tr><td>succeeded</td><td>every task that ran ended with <strong>No Error</strong>, and all tasks were reached</td></tr>
+<tr><td>succeeded, with intended failures</td><td>a check said "no" (<strong>Is Not True</strong>), or a task failed and a later task caught that with an execute condition</td></tr>
+<tr><td>failed</td><td>a task failed and no later task reacted to it (a failed program start counts like any other failure); <strong>Card not expected</strong> occurred; or the run ended before all tasks were reached (a run that another program asked for and that ends at <code>%EXIT</code> excepted)</td></tr>
+</table>
+
+<p>A task that was skipped because of its execute condition is not an error.</p>
+
+<div class="note"><code>AUTORUN</code> gives no such answer: it starts the run, and RFiDGear stays open. A script that starts RFiDGear with <code>AUTORUN</code> cannot tell success from failure by the end of the process; for the result it needs external control (Part 2 of this help).</div>
+
+<h2>Quick check</h2>
+
+<p><strong>Programming &gt; Perform Quick Check</strong> (<kbd>Ctrl</kbd> + <kbd>Q</kbd>) or the entry <strong>QuickCheck</strong> in the chip tree reads a chip without your having to add tasks:</p>
+
+<ul>
+<li>With <strong>MIFARE Classic</strong> it tries to read all data blocks of the card with the default keys and shows the result, with the sector trailers, in the tree. The keys come from the
+<a href="settings.html">Settings</a> (tab <strong>Default Keys</strong>), after a question depending on the setting.</li>
+<li>With <strong>MIFARE DESFire</strong> it lists the applications that are present and tries to collect their key settings.</li>
+</ul>
+
+<h2>Automatic mode</h2>
+
+<p>With <strong>Programming &gt; Run All Tasks Automatically</strong> RFiDGear works through a series of cards: you put a card on the reader, the list runs once, you take the card away and put the next one on. <code>AUTOMODE=1</code> at start
+switches it on, too.</p>
+
+<ul>
+<li>Each card runs <strong>once per placing</strong>. If a card stays on the reader, it does not run again. Only when the reader was empty and a card (even the same one) is placed again does a new run begin.</li>
+<li>A run that fails is never repeated. A card that you ran by hand counts as processed.</li>
+<li>The mode <strong>stops</strong> when something unusual happens: a fault in the program, a task that does not finish, a lost reader. An ordinary failure of a task does not stop it. Switch it on again
+deliberately afterwards.</li>
+<li>Another program that starts the mode through external control can have each card shown to it first and released by it (Part 2 of this help).</li>
+</ul>
+
+<div class="note">The entry <strong>Run Selected Task Automatically</strong> has no function.</div>
+
+<div class="nav">Previous page: <a href="tasks_ultralight.html">MIFARE Ultralight and NTAG</a> &middot; Next page: <a href="reports.html">Reports (PDF)</a></div>
+
+</body>
+</html>

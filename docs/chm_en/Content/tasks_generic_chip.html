@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Chip tasks for any card</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Chip tasks for any card</h1>
+
+<p>These tasks check the chip, whatever family it belongs to. Add them with <strong>Edit &gt; Add / Edit Task(s) &gt; Add / Edit Generic Chip Task...</strong>; the dialog opens only when
+a reader is connected. They are checks: they do not change the chip.</p>
+
+<table>
+<tr><th>Task type</th><th>Field</th><th>Checks</th></tr>
+<tr><td><strong>Check UID</strong></td><td><strong>UID</strong></td><td>whether the UID of the card is the expected one</td></tr>
+<tr><td><strong>Check Type Of Chip</strong></td><td><strong>Is Chip Of Type</strong></td><td>whether the card is of this type</td></tr>
+<tr><td><strong>Check Tag Is MultiTag</strong></td><td>&ndash;</td><td>whether the card carries more than one chip: besides the main chip a second one (the report variables
+<code>%SLAVEUID</code> and <code>%SLAVECHIPTYPE</code> name it)</td></tr>
+</table>
+
+<p>Each task ends with <strong>No Error</strong> if the check holds and with <strong>Is Not True</strong> if not. A project can use the answer for branches with an
+execute condition (see <a href="tasks_overview.html">Tasks at a glance</a>). RFiDGear counts a "no" as the answer of the check, not as a fault of the run.</p>
+
+<h2>Check UID</h2>
+
+<p>The field <strong>UID</strong> holds one of two things:</p>
+
+<ul>
+<li><strong>A UID</strong>, for example <code>04A1B2C3D4E5F6</code>. Upper and lower case do not matter, white space at the edges does not count. If the UID of the card matches, the task
+ends with <strong>No Error</strong>, otherwise with <strong>Is Not True</strong>. That is a question that the project can build on.</li>
+<li><strong>A variable</strong>, for example <code>$EXPECTEDUID</code>: the name of a variable of the run that is supplied by the program that asks for the run (a start-up argument, another program
+through external control or an extension). So one project serves every card of a series, and only the caller knows which card is due. A variable name starts with <code>$</code> and has at most
+64 letters, digits or underscores.</li>
+</ul>
+
+<p>With a variable the task ends differently when something is wrong: if the variable has no value, an empty one or the UID of another card, the task ends with
+<strong>Card not expected</strong>. That is not a "no" answer but a refusal: a run that ends so has failed, even if a branch of the project reacts to it, and a branch for "another
+card" (condition <strong>Is Not True</strong>) is not taken for it.</p>
+
+<p>The check compares the UID that the run read from the card at its start. It never uses what the reader may still hold of an earlier card.</p>
+
+<div class="note">Typical use: another program releases a card and starts the run with <code>$EXPECTEDUID</code>. The check alone stops nothing: make <strong>Check UID</strong> the first task and give every task that touches the card an execute condition on it (the Check UID task, result <strong>No Error</strong>). A task without that condition runs whatever the check said, and the run ends as failed only afterwards.
+See <a href="command_line.html">Start-up arguments</a> and Part 2 of this help.</div>
+
+<h2>Check Type Of Chip</h2>
+
+<p>Choose a type from the list under <strong>Is Chip Of Type</strong>, for example <strong>Mifare Desfire EV1</strong>. The task ends with <strong>No Error</strong> if the card on the reader is of
+this type.</p>
+
+<div class="nav">Previous page: <a href="tasks_common.html">Generic tasks: report, logic, program</a> &middot; Next page: <a href="tasks_classic.html">MIFARE Classic</a></div>
+
+</body>
+</html>

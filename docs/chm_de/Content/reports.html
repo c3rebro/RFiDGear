@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Berichte (PDF)</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Berichte (PDF)</h1>
+
+<p>Ein Bericht h&auml;lt fest, was in einem Lauf mit einem Chip geschah. RFiDGear f&uuml;llt dazu die Formularfelder einer PDF-Vorlage und speichert das Ergebnis als neue PDF-Datei. Den Bericht legen Sie als Aufgabe an:
+<strong>Bearbeiten &gt; Aufgabe erstellen / bearbeiten &gt; Allgemeine Aufgabe erstellen / bearbeiten...</strong>, Aufgabentyp <strong>Bericht erstellen / bearbeiten</strong> (die Felder des Dialogs beschreibt die Seite
+<a href="tasks_common.html">Allgemeine Aufgaben</a>).</p>
+
+<h2>So entsteht ein Bericht</h2>
+
+<ol>
+<li>Sie brauchen eine PDF-Vorlage mit <strong>Formularfeldern</strong>. Jedes Feld hat einen Namen; ein PDF-Editor mit Formularfunktion legt solche Felder an.</li>
+<li>Im Dialog &ouml;ffnen Sie die Vorlage mit <strong>Datei &ouml;ffnen...</strong>. Die Namen ihrer Felder stehen danach in der Auswahl <strong>Berichtfeld</strong>.</li>
+<li>F&uuml;r jedes Feld, das Sie f&uuml;llen wollen, legen Sie einen <strong>Pr&uuml;fpunkt</strong> an: das Feld, den Inhalt, die Aufgabe, auf die er sich bezieht, und das Ergebnis, das sie haben muss.</li>
+<li>Der Bericht steht in der Aufgabenliste <em>nach</em> den Aufgaben, deren Ergebnis er festh&auml;lt, denn er liest ihre Ergebnisse, wenn er l&auml;uft.</li>
+</ol>
+
+<p>Beim Lauf schreibt RFiDGear jeden Pr&uuml;fpunkt, dessen Zielaufgabe das erwartete Ergebnis hat, in sein Feld. Ein Pr&uuml;fpunkt, dessen Zielaufgabe ein anderes Ergebnis hatte, bleibt unbeachtet. So
+tr&auml;gt ein Bericht je nach Ausgang einer Pr&uuml;fung &bdquo;bestanden&ldquo; oder &bdquo;nicht bestanden&ldquo; ein: zwei Pr&uuml;fpunkte f&uuml;r dasselbe Feld, einer f&uuml;r <strong>Kein Fehler</strong>, einer f&uuml;r <strong>Ist Nicht Wahr</strong>.</p>
+
+<div class="warn">Ein Pr&uuml;fpunkt, dessen Zielaufgabe nicht (mehr) existiert (Sie haben sie gel&ouml;scht oder neu nummeriert), wird <strong>in jedem Fall</strong> geschrieben: er pr&uuml;ft nichts mehr, und ein Bericht kann dann &bdquo;bestanden&ldquo; sagen, ohne dass ein Ergebnis dahintersteht. Pr&uuml;fen Sie nach dem L&ouml;schen oder Neunummerieren von Aufgaben die Ziele des Berichts.</div>
+
+<h2>Variablen im Inhalt eines Pr&uuml;fpunkts</h2>
+
+<p>Der <strong>Feldinhalt</strong> darf Platzhalter enthalten, die beim Lauf ersetzt werden:</p>
+
+<table>
+<tr><th>Platzhalter</th><th>wird ersetzt durch</th></tr>
+<tr><td><code>%UID</code></td><td>die UID des Chips</td></tr>
+<tr><td><code>%CHIPTYPE</code></td><td>den Kartentyp</td></tr>
+<tr><td><code>%SLAVEUID</code>, <code>%SLAVECHIPTYPE</code></td><td>UID und Typ des zweiten Chips einer Multitechnologiekarte</td></tr>
+<tr><td><code>%DATE</code></td><td>das Datum, <code>TT/MM/JJJJ</code></td></tr>
+<tr><td><code>%DATETIME</code></td><td>Datum und Uhrzeit in der Schreibweise Ihres Windows</td></tr>
+<tr><td><code>%FREEMEM</code></td><td>der freie Speicher einer DESFire-Karte in Bytes</td></tr>
+<tr><td><code>%FREECLASSICMEM</code></td><td>soll der freie Speicher einer MIFARE-Classic-Karte sein; <strong>in dieser Version nicht verf&uuml;gbar</strong>, es bleibt immer leer</td></tr>
+<tr><td><code>%LISTAPPS</code>, <code>%COUNTAPPS</code></td><td>die Applikations-IDs einer DESFire-Karte, durch Komma getrennt, und ihre Zahl</td></tr>
+<tr><td><code>%n</code>, <code>%nn</code>, <code>%nnn</code></td><td>ein laufender Z&auml;hler, ein-, zwei- oder dreistellig (<code>1</code>, <code>01</code>, <code>001</code>). Er beginnt mit jedem Programmstart bei 1 und steigt bei jeder Verwendung
+um 1</td></tr>
+<tr><td><code>$NAME</code></td><td>der Wert einer Variablen des Laufs, zum Beispiel aus einem Startargument (siehe <a href="command_line.html">Startargumente</a>)</td></tr>
+<tr><td><code>%NEWLINE</code></td><td>ein Zeilenumbruch; der Inhalt wird angeh&auml;ngt</td></tr>
+<tr><td><code>%CONCAT</code></td><td>h&auml;ngt den Inhalt an das Feld an, statt es zu ersetzen</td></tr>
+</table>
+
+<p>Enth&auml;lt der Inhalt <code>$NAME</code>, <code>%NEWLINE</code> oder <code>%CONCAT</code>, wird er an den bisherigen Feldinhalt angeh&auml;ngt; sonst ersetzt er ihn.</p>
+
+<h2>Wohin der Bericht geschrieben wird</h2>
+
+<ul>
+<li>Ist die Variable <code>REPORTTARGETPATH</code> (auch <code>REPORTOUTPUTPATH</code>) gesetzt, speichert RFiDGear den Bericht unter diesem Pfad. Der Ordner muss existieren. Ein <code>?</code>, <code>??</code> oder <code>???</code> im Dateinamen steht
+f&uuml;r die n&auml;chste freie Nummer in diesem Ordner, ein-, zwei- oder dreistellig: aus <code>C:\Berichte\bericht-???.pdf</code> wird <code>bericht-001.pdf</code>, wenn es keine solche Datei gibt. Die Nummer wird <strong>einmal</strong> gew&auml;hlt, wenn RFiDGear mit dem Argument startet.</li>
+<li>Die Variable <code>REPORTTEMPLATEFILE</code> (auch <code>REPORTTEMPLATEPATH</code>) w&auml;hlt eine andere Vorlage als die im Dialog, wenn die Datei existiert.</li>
+<li>Ohne <code>REPORTTARGETPATH</code> fragt RFiDGear im Lauf mit dem Fenster <strong>PDF Bericht Speichern unter...</strong> nach dem Dateinamen. RFiDGear merkt sich den Pfad, aus einem Startargument oder aus diesem Fenster, auch <strong>f&uuml;r die folgenden L&auml;ufe</strong>: jeder Lauf schreibt in dieselbe Datei, bis Sie den Pfad mit
+<strong>Bearbeiten &gt; Berichtausgabepfade zur&uuml;cksetzen</strong> vergessen lassen.</li>
+</ul>
+
+<p>Die Variablen geben Sie als Startargumente an oder ein anderes Programm liefert sie mit dem Lauf. Die Seite <a href="command_line.html">Startargumente</a> zeigt Beispiele.</p>
+
+<div class="warn">Bei einer Serie von Karten, auch im automatischen Modus, &uuml;berschreibt jeder Bericht den vorigen, solange der Zielpfad gemerkt bleibt. Geben Sie jedem Lauf sein eigenes Ziel: ein Programm, das die L&auml;ufe anfordert, kann das Ziel f&uuml;r jeden Lauf nennen (Teil 2 dieser Hilfe), oder Sie setzen den Pfad zwischen den Karten zur&uuml;ck.</div>
+
+<div class="nav">Vorherige Seite: <a href="running_tasks.html">Aufgaben ausf&uuml;hren</a> &middot; N&auml;chste Seite: <a href="keys.html">Schl&uuml;ssel</a></div>
+
+</body>
+</html>
