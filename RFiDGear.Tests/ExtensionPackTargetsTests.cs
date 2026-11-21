@@ -114,14 +114,111 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task NoPackageIsMade_UnlessAskedFor()
+        public async Task APackageIsMade_WithoutAskingForIt_AndTheBuildSaysWhereItIs()
         {
             WriteOutput();
 
             var (exitCode, output) = await Build();
 
             Assert.True(exitCode == 0, output);
+            var path = Assert.Single(Directory.GetFiles(PackageFolder));
+            Assert.Equal("RFiDGear.Extensions.Fake-1.2.3-x64.rfext", Path.GetFileName(path));
+            Assert.Contains("Extension package: " + path, output, StringComparison.Ordinal);
+            Assert.True(ExtensionPackageReader.Read(path).Success);
+        }
+
+        [Fact]
+        public async Task NoPackageIsMade_WhenItIsSwitchedOff()
+        {
+            WriteOutput();
+
+            var (exitCode, output) = await Build("-p:PackExtension=false");
+
+            Assert.True(exitCode == 0, output);
             Assert.False(Directory.Exists(PackageFolder));
+        }
+
+        [Fact]
+        public async Task ABuildForAnyCpu_ThatDidNotAskForAPackage_WarnsAndGoesOn()
+        {
+            WriteOutput();
+
+            // The payload (sni.dll) is native, so an AnyCPU build cannot say which platform a package would be for: it is no reason to
+            // fail a build that never asked for one, but the person is told why there is none.
+            var (exitCode, output) = await Build("-p:Platform=AnyCPU");
+
+            Assert.True(exitCode == 0, output);
+            Assert.Contains("No extension package was made", output, StringComparison.Ordinal);
+            Assert.Contains("ExtensionPackagePlatform", output, StringComparison.Ordinal);
+            Assert.False(Directory.Exists(PackageFolder) && Directory.GetFiles(PackageFolder).Length > 0);
+        }
+
+        [Fact]
+        public async Task AProjectThatNamesThePlatformOfItsPayload_GetsAPackageForAnyCpuWithoutAskingForIt()
+        {
+            WriteOutput();
+
+            var (exitCode, output) = await Build("-p:Platform=AnyCPU", "-p:ExtensionPackagePlatform=x86");
+
+            Assert.True(exitCode == 0, output);
+            Assert.Equal("RFiDGear.Extensions.Fake-1.2.3-x86.rfext", Path.GetFileName(Assert.Single(Directory.GetFiles(PackageFolder))));
+        }
+
+        [Fact]
+        public async Task AnotherConfigurationThanRelease_HasAFileNameOfItsOwn_AndNeverReplacesTheReleasePackage()
+        {
+            WriteOutput();
+            Assert.Equal(0, (await Build("-p:Configuration=Release")).ExitCode);
+            var release = Path.Combine(PackageFolder, "RFiDGear.Extensions.Fake-1.2.3-x64.rfext");
+            var before = File.ReadAllBytes(release);
+
+            var (exitCode, output) = await Build("-p:Configuration=Debug");
+
+            Assert.True(exitCode == 0, output);
+            Assert.Equal(
+                new[] { "RFiDGear.Extensions.Fake-1.2.3-x64-Debug.rfext", "RFiDGear.Extensions.Fake-1.2.3-x64.rfext" },
+                Directory.GetFiles(PackageFolder).Select(file => Path.GetFileName(file)).OrderBy(name => name, StringComparer.Ordinal).ToArray());
+            Assert.Equal(before, File.ReadAllBytes(release));
+        }
+
+        [Fact]
+        public async Task AFolderThatCannotBeMade_IsAWarningForABuildThatDidNotAsk_AndNoPackageIsLeftHalfWritten()
+        {
+            WriteOutput();
+
+            // A folder cannot be made below a file.
+            var file = Path.Combine(_folder.Path, "a file");
+            File.WriteAllText(file, "not a folder");
+            var folder = "-p:ExtensionPackageFolder=" + Path.Combine(file, "package");
+
+            var (exitCode, output) = await Build(folder);
+
+            Assert.True(exitCode == 0, output);
+            Assert.Contains("warning", output, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Extension package:", output, StringComparison.Ordinal);
+            Assert.False(Directory.Exists(PackageFolder));
+
+            var (askedExitCode, _) = await Build(folder, "-p:PackExtension=true");
+            Assert.NotEqual(0, askedExitCode);
+        }
+
+        [Fact]
+        public async Task APackageFileThatIsHeldOpen_IsAWarningForABuildThatDidNotAsk_AndAnErrorForOneThatDid()
+        {
+            WriteOutput();
+            Assert.Equal(0, (await Build()).ExitCode);
+            var path = Assert.Single(Directory.GetFiles(PackageFolder));
+
+            using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                var (exitCode, output) = await Build();
+                Assert.True(exitCode == 0, output);
+                Assert.Contains("warning", output, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("Extension package:", output, StringComparison.Ordinal);
+
+                var (askedExitCode, _) = await Build("-p:PackExtension=true");
+                Assert.NotEqual(0, askedExitCode);
+            }
         }
 
         [Fact]
