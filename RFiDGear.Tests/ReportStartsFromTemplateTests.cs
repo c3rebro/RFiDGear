@@ -88,6 +88,28 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task AWorkingCopyThatCannotBeRemoved_StopsTheNewReport_InsteadOfLeavingTheFieldsOfTheCardBefore()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var kit = new ReportTestKit();
+                var work = new ProjectManager(Path.Combine(kit.Folder, "work"));
+                using var writer = new ReportReaderWriter(work) { ReportTemplateFile = kit.Template("A"), ReportOutputPath = Path.Combine(kit.Folder, "report.pdf") };
+                await ReportTask("0", ("A", "card one")).WriteReportCommand.ExecuteAsync(writer);
+
+                // Somebody holds the working copy: it cannot be removed.
+                using (new FileStream(work.GetTemporaryReportTemplatePath(), FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    Assert.ThrowsAny<IOException>(() => writer.StartNewReport());
+                }
+
+                // Released, it can.
+                writer.StartNewReport();
+                Assert.False(File.Exists(work.GetTemporaryReportTemplatePath()));
+            });
+        }
+
+        [Fact]
         public async Task TheServiceStartsANewReportForEveryRun_OfTheWriterOfTheWindow()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>

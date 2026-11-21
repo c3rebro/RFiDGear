@@ -191,16 +191,12 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// forgotten, so that the next change starts from the template and not from the report of the card before. The task execution
         /// service calls it once when a run starts, never between the report tasks of one run, which go on adding to one report.
         /// </summary>
+        /// <exception cref="IOException">The working copy could not be removed. It is not ignored: the next report would start from the one
+        /// before, with the fields of another card in it, so the run does not start.</exception>
+        /// <exception cref="UnauthorizedAccessException">The working copy could not be removed (the same).</exception>
         public void StartNewReport()
         {
-            try
-            {
-                CleanupTemporaryTemplate();
-            }
-            catch (Exception e)
-            {
-                logger.Error(e, "Failed to start a new report");
-            }
+            CleanupTemporaryTemplate();
         }
 
         public void DeleteDatabase()
