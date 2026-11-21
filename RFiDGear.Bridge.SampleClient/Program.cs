@@ -18,13 +18,7 @@ namespace RFiDGear.Bridge.SampleClient
     [SupportedOSPlatform("windows")]
     internal static class Program
     {
-        private const string ApproveWithOption = "--approve-with=";
-        private const string DeclineOption = "--decline";
         private const string ExpectRevisionOption = "--expect-revision=";
-        private const string NoAnswerOption = "--no-answer";
-        private const string NoPinOption = "--no-pin";
-        private const string SetOption = "--set=";
-        private const string WaitOption = "--wait=";
         private const string OwnRunsOnlyOption = "--own-runs-only";
         private const string RunOption = "--run=";
         private const string VariableOption = "--variable=";
@@ -266,19 +260,17 @@ namespace RFiDGear.Bridge.SampleClient
             return 0;
         }
 
-        // With --approve-with=$NAME, --decline or --no-answer the mode waits for approval: every card that is put on the reader is shown
-        // and this command decides about it by one fixed rule, to try the flow by hand (a program that writes cards decides here, with its
-        // job and its list of cards: see ApprovalModeLoop and the guide).
-        //   --approve-with=$NAME  approves EVERY card with the variable set to its UID and the project held to the state the card was shown
-        //                         with (--no-pin leaves that out); --wait=<seconds> thinks that long first (time to change the project, take
-        //                         the card away or kill this program); --set=NAME=value adds a variable to every approval (a report path).
-        //   --decline             declines every card.
-        //   --no-answer           never answers, so that the time limit of RFiDGear ends the wait.
+        // A bare "auto" switches on the mode that runs every card. With any option after it the mode waits for approval: every card that
+        // is put on the reader is shown and this command decides about it by one fixed rule, to try the flow by hand (a program that
+        // writes cards decides here, with its job and its list of cards: see ApprovalModeLoop and the guide). The rules and their
+        // options are ApprovalPolicy's, and an option that it does not understand is refused: it must never start the plain mode.
         private static async Task<int> AutoAsync(string[] args, CancellationToken cancellationToken)
         {
-            if (args.Any(arg => arg.StartsWith(ApproveWithOption, StringComparison.Ordinal) || arg == DeclineOption || arg == NoAnswerOption))
+            var options = args.Skip(1).ToArray();
+
+            if (!ApprovalPolicy.IsPlainMode(options))
             {
-                return await ApprovalAutoAsync(args, cancellationToken);
+                return await ApprovalAutoAsync(options, cancellationToken);
             }
 
             var events = new[] { BridgeEvents.AutoModeChanged, BridgeEvents.AutoRunCompleted };
@@ -311,9 +303,9 @@ namespace RFiDGear.Bridge.SampleClient
             return 0;
         }
 
-        private static async Task<int> ApprovalAutoAsync(string[] args, CancellationToken cancellationToken)
+        private static async Task<int> ApprovalAutoAsync(string[] options, CancellationToken cancellationToken)
         {
-            if (!TryReadPolicy(args, out var decide, out var description, out var error))
+            if (!ApprovalPolicy.TryRead(options, out var decide, out var description, out var error))
             {
                 return Fail(error);
             }
@@ -342,95 +334,6 @@ namespace RFiDGear.Bridge.SampleClient
             Console.WriteLine(outcomes.Count + " cards were shown");
 
             return 0;
-        }
-
-        // Reads the one rule by which the command decides about every card.
-        private static bool TryReadPolicy(
-            string[] args,
-            out Func<CardPresentedEvent, CancellationToken, Task<CardDecision>>? decide,
-            out string description,
-            out string error)
-        {
-            decide = null;
-            description = string.Empty;
-            error = string.Empty;
-
-            if (args.Contains(DeclineOption))
-            {
-                decide = (_, _) => Task.FromResult(CardDecision.Decline);
-                description = "every card is declined";
-
-                return true;
-            }
-
-            if (args.Contains(NoAnswerOption))
-            {
-                decide = async (_, token) =>
-                {
-                    await Task.Delay(Timeout.Infinite, token).ConfigureAwait(false);
-
-                    return CardDecision.Decline;
-                };
-                description = "no card is answered, so that the time limit of RFiDGear ends the wait";
-
-                return true;
-            }
-
-            var variable = args.First(arg => arg.StartsWith(ApproveWithOption, StringComparison.Ordinal)).Substring(ApproveWithOption.Length);
-
-            if (!variable.StartsWith('$') || variable.Length < 2)
-            {
-                error = "The variable is a dollar sign and a name, such as $EXPECTEDUID.";
-
-                return false;
-            }
-
-            var pinRevision = !args.Contains(NoPinOption);
-            var wait = TimeSpan.Zero;
-            var fixedVariables = new Dictionary<string, string>(StringComparer.Ordinal);
-
-            foreach (var arg in args.Where(arg => arg.StartsWith(WaitOption, StringComparison.Ordinal)))
-            {
-                if (!double.TryParse(arg.Substring(WaitOption.Length), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds) || seconds < 0 || seconds > 600)
-                {
-                    error = "--wait takes a number of seconds from 0 to 600.";
-
-                    return false;
-                }
-
-                wait = TimeSpan.FromSeconds(seconds);
-            }
-
-            foreach (var arg in args.Where(arg => arg.StartsWith(SetOption, StringComparison.Ordinal)))
-            {
-                var pair = arg.Substring(SetOption.Length);
-                var at = pair.IndexOf('=', StringComparison.Ordinal);
-
-                if (at < 1)
-                {
-                    error = "--set takes NAME=value.";
-
-                    return false;
-                }
-
-                fixedVariables[pair.Substring(0, at)] = pair.Substring(at + 1);
-            }
-
-            decide = async (shown, token) =>
-            {
-                if (wait > TimeSpan.Zero)
-                {
-                    await Task.Delay(wait, token).ConfigureAwait(false);
-                }
-
-                var variables = new Dictionary<string, string>(fixedVariables, StringComparer.Ordinal) { [variable] = shown.Uid };
-
-                return CardDecision.ApproveWith(variables, pinRevision);
-            };
-            description = "every card is approved with " + variable + " = its UID" + (pinRevision ? " and the state of the project" : string.Empty)
-                + (wait > TimeSpan.Zero ? ", after " + wait.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture) + " seconds" : string.Empty);
-
-            return true;
         }
 
         // Waits for Ctrl+C or for the end of the connection, whichever comes first.

@@ -407,6 +407,8 @@ card is waited for. Check `autoMode.approval` first, because an older RFiDGear
 rejects the fields, and ask `hello` for `cardPresented`,
 `cardPresentationEnded` and `autoModeChanged`. A start with approval is never
 agreed on again (`autoModeActive`): stop the mode and start the one you mean.
+A refused start leaves nothing to clean up: the mode that is on is not yours,
+so do not stop it (the sample's loop stops only a mode it switched on itself).
 
 For every card:
 
@@ -417,7 +419,10 @@ For every card:
    RFiDGear asks again. Whether this UID was written already is yours to know:
    RFiDGear does not remember what you approved.
 2. Decide, in your own program: the job, the profile, the serial number, the
-   list of cards that were written already. That is the approval.
+   list of cards that were written already. That is the approval. The events go
+   on while you decide, and the wait for the card can end under you (declined,
+   expired, taken away, the mode stopped): drop the decision then and send
+   nothing (the sample cancels the token of the decision).
 3. `approveCard` with the `presenceId`, the `variables` of this one run (the
    Check UID task of the project reads `$EXPECTEDUID` from here, set to the UID
    you approved) and `expectProjectRevision` (the one that came with the card:

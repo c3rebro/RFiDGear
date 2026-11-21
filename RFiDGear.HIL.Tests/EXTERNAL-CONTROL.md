@@ -269,12 +269,13 @@ cards, A and B, with different UIDs. Switch the automatic mode of the user off
 (menu) and have the log of RFiDGear at hand. The command decides about every
 card by one rule: `auto --approve-with=$EXPECTEDUID` approves every card (the
 variable is set to its UID, and the project is held to the state the card was
-shown with), `--wait=<seconds>` thinks first, `--set=NAME=value` adds a variable
-to every approval, `--no-pin` leaves out the state of the project, `--decline`
-declines every card and `--no-answer` never answers. Ctrl+C ends the command
-and stops the mode. A card that is shown prints `card <UID> shown`, and every
-card ends with a line that says what the sample answered and what RFiDGear says
-about the end.
+shown with), `--wait=<seconds>` thinks first (less than the 15 seconds that
+RFiDGear waits for an answer, or the card expires first), `--set=NAME=value`
+adds a variable to every approval, `--no-pin` leaves out the state of the
+project, `--decline` declines every card and `--no-answer` never answers. Ctrl+C
+ends the command and stops the mode. A card that is shown prints `card <UID>
+shown`, and every card ends with a line that says what the sample answered and
+what RFiDGear says about the end.
 
 - 52, a card is run once: `auto --approve-with=$EXPECTEDUID`, put A on the
   reader. `card <A> shown`, the run (the write task runs), `card processed:
@@ -287,28 +288,30 @@ about the end.
   declined`, and the card is untouched. Leave it: nothing more. Take it away
   and put it back: it is shown and declined again.
 - 55, no answer: `auto --no-answer`, put A on. After the limit (15 seconds) the
-  end says `expired`, and the card is untouched.
+  end says `expired` (the sample says `answered none`: it never decided), and
+  the card is untouched. Put A on again after taking it away: it is shown again.
 - 56, a replaced card: `auto --no-answer`, put A on and, within the 15 seconds,
   take it away and put B on. The end of A says `cardChanged` and not `expired`,
   and B is shown as a new presence.
-- 57, a changed project: `auto --approve-with=$EXPECTEDUID --wait=15`, put A on
+- 57, a changed project: `auto --approve-with=$EXPECTEDUID --wait=8`, put A on
   and, while the sample thinks, change a text of a task in RFiDGear and close
   its dialog. The end says `projectChanged`, nothing is written, and the card
   is shown again (and approved, now in the new state).
 - 58, the same without pinning: add `--no-pin` and make the same change: the
   run starts, because the approval did not name the state. This is why the
   sample pins by default.
-- 59, a swap while it thinks: `--wait=15`, put A on and replace it by B before
-  the 15 seconds are over: `cardChanged` for A, nothing is written, and B is
-  shown as a new presence.
-- 60, a lost connection: `--wait=15`, put A on and kill the sample (Task
+- 59, a swap while it thinks: `--wait=8`, put A on and replace it by B before
+  the 8 seconds are over: `cardChanged` for A (answered none: the decision was
+  dropped), nothing is written, and B is shown as a new presence.
+- 60, a lost connection: `--wait=8`, put A on and kill the sample (Task
   Manager) while it thinks. The mode is off in RFiDGear (the menu item is not
   ticked), nothing was written, and the log says that the connection ended.
   Start the sample again: nothing runs until you do, and then A is shown as a
   new presence.
 - 61, the mode of the user: switch the automatic mode of RFiDGear on in the
   menu and start `auto --approve-with=$EXPECTEDUID`: it is refused
-  (`autoModeActive`), and the mode of the user is untouched.
+  (`autoModeActive`), and the mode of the user stays on: the sample does not
+  stop a mode that it did not switch on.
 - 62, a refused variable: add `--set=REPORTTARGETPATH=relative.pdf`. The
   approval is refused (`invalidRequest`), the sample declines the card
   (`answered declined`), and nothing is written.
@@ -321,6 +324,10 @@ about the end.
   copy of the project that only reads in RFiDGear, and start the sample again
   with `--approve-with`: the project that reads runs for the cards, and the
   one that writes does not.
+- 65, a mistyped option: `auto --approve-with $EXPECTEDUID` (no equals sign),
+  `auto --no-pin` and `auto --aprove-with=$EXPECTEDUID`. Each is refused with a
+  message, nothing is started, and the mode of RFiDGear stays off. Only a bare
+  `auto` switches on the mode that runs every card.
 
 Not in this list: the keys of an approved run with `ownRunsOnly`. The `keys`
 command and `auto` each hold the one connection of the bridge, so the sample
