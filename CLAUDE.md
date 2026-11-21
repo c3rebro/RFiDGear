@@ -506,14 +506,22 @@ passed with a real reader; until then a snapshot may be re-baselined.
   `expectProjectRevision`, and `variables` that are merged over the start-up
   variables for that one run and for no other) or `declineCard`. Only the
   connection that started the mode can answer, once, for the card that is
-  waited for; every other answer is `approvalNotPending`.
+  waited for; every other answer is `approvalNotPending`. What the gate says
+  is addressed to that connection (`BridgeServer.Publish` takes it): a client
+  that connects after it left never sees a card, or the end of a card, of the
+  start that ended, and a card that arrives after the start ended is not shown.
+  The wait ends at the time `cardPresented` announced (`expiresAt`), not a
+  whole limit after the revision was read.
 - What each end of the wait does (`cardPresentationEnded` says it, with the
   run id for `approved`): declined, not answered in time (`expired`), overtaken
   by a stop, a connection that ended (`clientLost`): nothing runs, and the card
   stays remembered, so it is not offered again until a poll found the reader
   empty. A run that was not admitted (`notAdmitted`) or a project that is not
   the revision the approval named (`projectChanged`) does not run either, but
-  the card is offered again with a new presence id. The revision is checked in
+  the card is offered again with a new presence id. A request that fails before
+  it was admitted (an exception) is told as `notAdmitted` too, so that the
+  program does not wait for the end of the presence, and the mode stops; a run
+  that was admitted is never told as refused. The revision is checked in
   `RunAllOnceCoreAsync` after the window holds the execution slot, so nothing
   can change the project between the check and the run. The result of the run
   carries the `presenceId`. The revision in a result is the one the run started
