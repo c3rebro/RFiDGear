@@ -1209,10 +1209,13 @@ namespace RFiDGear.Tests.ExternalControl
             await WaitUntilAsync(() => Volatile.Read(ref approvals) == 1);
             await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = "p-1" });
             Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(5)));
+            await WaitUntilAsync(() => { lock (seen) { return seen.Count == 1; } });
+
+            // The request that was never replied to fails at last, when its card is long over: that is of no interest to the loop.
+            hang.SetException(new InvalidOperationException("The connection of the request broke."));
             var next = await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5));
             next!.NotifyRunAdmitted("run-2");
             var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
-            hang.SetResult(true);
 
             // The loop went on with the next card although the first answer was never replied to, and sent nothing twice.
             Assert.Equal(("p-1", "pending", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
@@ -1248,6 +1251,42 @@ namespace RFiDGear.Tests.ExternalControl
             await loop.WaitAsync(TimeSpan.FromSeconds(5));
 
             Assert.Equal(0, host.AutoModeHost.StopCalls);
+        }
+
+        // What RFiDGear says about the mode that is on: the approval mode of a client, whoever's it is.
+        private static IBridgeService ThatSaysTheModeIsTheApprovalModeOfAClient(IBridgeService real)
+        {
+            ServiceStandIn.Wrap(real, out var service).Replace(nameof(IBridgeService.GetStatus), (_, _) =>
+                Task.FromResult(new StatusResponse { AutoMode = new AutoModeStatusDto { Enabled = true, StartedBy = RunSources.Bridge, RequireApproval = true } }));
+
+            return service;
+        }
+
+        [Fact]
+        public async Task TheLoop_DoesNotStopAModeItDidNotStart_EvenWhenItLooksLikeTheApprovalModeOfAClient()
+        {
+            // The start of this loop is refused because the approval mode of another loop of the same client is on (here: any mode).
+            var (_, pipe, host, _) = Start();
+            host.AutoModeHost.IsAutoModeEnabled = true;
+            var client = await ConnectAsync(pipe);
+
+            await Assert.ThrowsAsync<RemoteInvocationException>(() =>
+                new ApprovalModeLoop(client, ThatSaysTheModeIsTheApprovalModeOfAClient(client.Service)).RunAsync((_, _) => Task.FromResult(CardDecision.Decline)));
+
+            Assert.True(host.AutoModeHost.IsAutoModeEnabled);
+            Assert.Equal(0, host.AutoModeHost.StopCalls);
+        }
+
+        [Fact]
+        public async Task TheLoop_DoesNotStopAModeThatEnded_EvenWhenAnotherOneLooksLikeTheApprovalModeOfAClient()
+        {
+            var (_, host, loop, _, _) = await StartLoopAsync((_, _) => Task.FromResult(CardDecision.ApproveWith()), wrap: ThatSaysTheModeIsTheApprovalModeOfAClient);
+
+            host.AutoModeHost.StopFor(AutoModeStopReason.RunAborted);
+            await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // Only the stop of the test itself was made: the loop sent none.
+            Assert.Equal(1, host.AutoModeHost.StopCalls);
         }
 
         [Fact]
