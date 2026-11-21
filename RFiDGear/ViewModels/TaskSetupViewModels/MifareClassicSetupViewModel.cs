@@ -510,17 +510,37 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedDataBlockToReadWrite = value;
-                foreach (var gCNVM in ChildNodeViewModelTemp.Children)
-                {
-                    gCNVM.IsFocused = false;
-                }
-
-                ChildNodeViewModelTemp.Children.First(x => x.DataBlockNumber == (int)SelectedDataBlockToReadWrite).IsFocused = true;
+                FocusSelectedDataBlock();
 
                 OnPropertyChanged(nameof(SelectedDataBlockToReadWrite));
             }
         }
         private DataExplorer_DataBlock selectedDataBlockToReadWrite;
+
+        // The row of the selected block gets the focus. "Sector Trailer" is the last block of the sector, whatever its size, so which
+        // row it is depends on the sector as well.
+        private void FocusSelectedDataBlock()
+        {
+            var rows = ChildNodeViewModelTemp?.Children;
+
+            if (rows == null)
+            {
+                return;
+            }
+
+            foreach (var row in rows)
+            {
+                row.IsFocused = false;
+            }
+
+            var index = DataExplorerBlocks.IndexInSector(selectedDataBlockToReadWrite, selectedClassicSectorCurrentAsInt);
+            var selected = rows.FirstOrDefault(x => x.DataBlockNumber == index);
+
+            if (selected != null)
+            {
+                selected.IsFocused = true;
+            }
+        }
 
         /// <summary>
         ///
@@ -1470,6 +1490,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
                         }
                     }
+                    // The trailer is another row in a sector of 16 blocks than in one of 4: the focus follows the sector.
+                    if (selectedDataBlockToReadWrite == DataExplorer_DataBlock.Block3)
+                    {
+                        FocusSelectedDataBlock();
+                    }
+
                     OnPropertyChanged(nameof(SelectedClassicSectorCurrent));
                 }
             }
@@ -2219,8 +2245,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         // The bytes of the block are copied once, here: the editor of the dialog can change them while the write waits for the reader,
                         // and what is checked is what is written. What needs no card is decided before a key is asked for and before the chip is
                         // selected: a block without 16 bytes, block 0, or a trailer whose access bits are not consistent is never sent.
-                        var block = CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite);
-                        var blockData = childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data?.ToArray();
+                        var blockIndex = DataExplorerBlocks.IndexInSector(SelectedDataBlockToReadWrite, selectedClassicSectorCurrentAsInt);
+                        var block = CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, blockIndex);
+                        var blockData = childNodeViewModelTemp.Children[blockIndex].MifareClassicDataBlock.Data?.ToArray();
                         var preflight = ClassicWritePolicy.CheckBlock(block, blockData, new ClassicWriteOptions { AllowTrailer = true });
 
                         if (!preflight.IsAllowed)
@@ -2258,7 +2285,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             {
                                 StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
                                                                         DateTime.Now,
-                                                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
+                                                                        childNodeViewModelFromChip.Children[blockIndex].DataBlockNumber,
                                                                         CustomConverter.HexToString(blockData));
                                 CurrentTaskErrorLevel = ERROR.NoError;
                             }

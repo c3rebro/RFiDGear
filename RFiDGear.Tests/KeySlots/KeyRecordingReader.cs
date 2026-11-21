@@ -37,6 +37,9 @@ namespace RFiDGear.Tests.KeySlots
         /// <summary>Gets every call that carried a key, in the order it happened.</summary>
         public List<KeyCall> Calls { get; } = new List<KeyCall>();
 
+        /// <summary>Gets the blocks that single-block writes were asked for (the number counted from the first block of the chip) and the bytes.</summary>
+        public List<(int Block, byte[] Data)> BlockWrites { get; } = new List<(int Block, byte[] Data)>();
+
         /// <summary>Gets or sets the method that answers an error instead of success (<see cref="FailWith"/>); <c>null</c> for none.</summary>
         public string? FailMethod { get; set; }
 
@@ -367,8 +370,12 @@ namespace RFiDGear.Tests.KeySlots
             Task.FromResult(Record(nameof(WriteMifareClassicSingleSector), aKey, bKey));
 
         /// <inheritdoc />
-        public override Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer) =>
-            Task.FromResult(Record(nameof(WriteMifareClassicSingleBlock), aKey, bKey));
+        public override Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
+        {
+            BlockWrites.Add((_blockNumber, buffer));
+
+            return Task.FromResult(Record(nameof(WriteMifareClassicSingleBlock), aKey, bKey));
+        }
 
         /// <inheritdoc />
         public override Task<ERROR> WriteMifareClassicWithMAD(
