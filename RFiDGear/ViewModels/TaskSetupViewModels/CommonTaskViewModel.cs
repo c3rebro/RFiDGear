@@ -990,6 +990,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
+        // The task numbers that checkpoints of the last report named without such a task existing: their fields were not written.
+        private readonly List<string> skippedCheckpointTargets = new List<string>();
+
+        /// <summary>Gets the task numbers that checkpoints of the last report run named although no such task exists (their fields were not written).</summary>
+        internal IReadOnlyList<string> SkippedCheckpointTargets => skippedCheckpointTargets;
+
         /// <summary>
         /// 
         /// </summary>
@@ -997,6 +1003,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private async Task OnNewWriteReportCommand(ReportReaderWriter _reportReaderWriter)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
+            skippedCheckpointTargets.Clear();
 
             if (_reportReaderWriter != null)
             {
@@ -1022,6 +1029,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                         foreach (var checkpoint in Checkpoints)
                         {
+                            // A checkpoint without a target is a plain field (a date, a UID, a fixed text) and is always written. A target
+                            // that names a task that does not exist (it was deleted, or the tasks were renumbered) has no result to hold the
+                            // field to: nothing is written, and the content is not even looked at. The log says which task number is missing
+                            // (never the content).
+                            var hasTarget = !string.IsNullOrWhiteSpace(checkpoint.TaskIndex);
+                            var targetIndex = -1;
+
+                            if (hasTarget && !checkpointDictionary.TryGetValue(checkpoint.TaskIndex, out targetIndex))
+                            {
+                                Logger.Warning("A checkpoint of the report names task {TaskIndex}, which does not exist: its field is not written.", checkpoint.TaskIndex);
+                                skippedCheckpointTargets.Add(checkpoint.TaskIndex);
+
+                                continue;
+                            }
+
                             var hasVariable = false;
                             var concatenate = false;
 
@@ -1079,7 +1101,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             if (temporaryContent.Contains("%LISTAPPS"))
                             {
-                                temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
+                                temporaryContent = temporaryContent.Replace("%LISTAPPS", DesfireChip?.AppList == null ? "" : string.Join(", ", DesfireChip.AppList.Select(x => x.appID)));
                                 hasVariable = true;
                             }
 
@@ -1135,39 +1157,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 concatenate = true;
                             }
 
-                            // Does the targeted Task Equals the selected TaskResult ?
-                            // targeted Taskindex ist not "null" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                            // .ConfigureAwait(false) due to fileAccess
-                            if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex ?? "-1", out var targetIndex))
+                            // A checkpoint with a target writes its field only when that task ended with the result the checkpoint names.
+                            if (hasTarget && (AvailableTasks[targetIndex] as IGenericTask).CurrentTaskErrorLevel != checkpoint.ErrorLevel)
                             {
-                                if ((AvailableTasks[targetIndex] as IGenericTask).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
-                                {
-                                    if (concatenate)
-                                    {
-                                        await reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                    }
-                                    else
-                                    {
-                                        await reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                    }
-                                }
-                                else
-                                {
-                                    targetIndex++;
-                                }
+                                continue;
                             }
 
-                            // The targeted Task does not Exist: Continue Execution anyway...
+                            if (concatenate)
+                            {
+                                await reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                            }
                             else
                             {
-                                if (concatenate)
-                                {
-                                    await reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                }
-                                else
-                                {
-                                    await reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content).ConfigureAwait(false);
-                                }
+                                await reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
                             }
                         }
                     }
