@@ -31,7 +31,10 @@
 
     <ItemGroup>
       <SqlDriverPayload Include="$(PkgSystem_Data_SqlClient)\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
-      <SqlDriverPayload Include="$(_SqlNativeFolder)\runtimes\win-$(_SqlNativePlatform)\native\sni.dll" />
+      <!-- NativePlatform: what the native file is for, so that a package can say it (PackExtension.targets) without reading it out of a path. -->
+      <SqlDriverPayload Include="$(_SqlNativeFolder)\runtimes\win-$(_SqlNativePlatform)\native\sni.dll">
+        <NativePlatform>$(_SqlNativePlatform)</NativePlatform>
+      </SqlDriverPayload>
     </ItemGroup>
 
     <Error Condition="!Exists('%(SqlDriverPayload.FullPath)')" Text="A file of the SQL driver is missing: %(SqlDriverPayload.FullPath). The package may have changed its layout." />

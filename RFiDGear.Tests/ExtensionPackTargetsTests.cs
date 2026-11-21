@@ -182,6 +182,27 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task AFolderThatCannotBeMade_IsAWarningForABuildThatDidNotAsk_AndNoPackageIsLeftHalfWritten()
+        {
+            WriteOutput();
+
+            // A folder cannot be made below a file.
+            var file = Path.Combine(_folder.Path, "a file");
+            File.WriteAllText(file, "not a folder");
+            var folder = "-p:ExtensionPackageFolder=" + Path.Combine(file, "package");
+
+            var (exitCode, output) = await Build(folder);
+
+            Assert.True(exitCode == 0, output);
+            Assert.Contains("warning", output, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Extension package:", output, StringComparison.Ordinal);
+            Assert.False(Directory.Exists(PackageFolder));
+
+            var (askedExitCode, _) = await Build(folder, "-p:PackExtension=true");
+            Assert.NotEqual(0, askedExitCode);
+        }
+
+        [Fact]
         public async Task APackageFileThatIsHeldOpen_IsAWarningForABuildThatDidNotAsk_AndAnErrorForOneThatDid()
         {
             WriteOutput();

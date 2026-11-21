@@ -80,15 +80,18 @@
       <_PackSource Include="@(ExtensionPayloadFile)" />
     </ItemGroup>
 
+    <!-- Every step that writes follows the policy of _PackContinue (an error for a build that asked for a package, a warning for any
+         other), and a step runs only when the one before it went well (MSBuildLastTaskResult), so that a failed step never leaves an
+         incomplete archive: the first one that fails ends the package and the build goes on. -->
     <!-- A folder of its own and new each time: nothing of an earlier build is in the package. -->
-    <RemoveDir Directories="$(_PackStage)" />
-    <MakeDir Directories="$(_PackStage);$(ExtensionPackageFolder)" />
-    <Copy SourceFiles="@(_PackSource)" DestinationFolder="$(_PackStage)" />
+    <RemoveDir Directories="$(_PackStage)" ContinueOnError="$(_PackContinue)" />
+    <MakeDir Directories="$(_PackStage);$(ExtensionPackageFolder)" Condition="'$(MSBuildLastTaskResult)' == 'true'" ContinueOnError="$(_PackContinue)" />
+    <Copy SourceFiles="@(_PackSource)" DestinationFolder="$(_PackStage)" Condition="'$(MSBuildLastTaskResult)' == 'true'" ContinueOnError="$(_PackContinue)" />
 
     <ItemGroup>
       <_PackStaged Include="$(_PackStage)*.dll" />
     </ItemGroup>
-    <GetFileHash Files="@(_PackStaged)" Algorithm="SHA256" HashEncoding="hex">
+    <GetFileHash Files="@(_PackStaged)" Algorithm="SHA256" HashEncoding="hex" Condition="'$(MSBuildLastTaskResult)' == 'true'" ContinueOnError="$(_PackContinue)">
       <Output TaskParameter="Items" ItemName="_PackHashed" />
     </GetFileHash>
 
@@ -102,12 +105,12 @@
       <_PackManifest>{ &quot;schema&quot;: 1, &quot;id&quot;: &quot;$(TargetName)&quot;, &quot;displayName&quot;: &quot;$(_PackNameJson)&quot;, &quot;version&quot;: &quot;$(Version)&quot;, &quot;platform&quot;: &quot;$(_PackPlatform)&quot;, $(_PackMinHost)&quot;files&quot;: [ $(_PackFiles) ] }</_PackManifest>
     </PropertyGroup>
     <!-- Lines is a list that is split at semicolons: one in the name must stay in its line. -->
-    <WriteLinesToFile File="$(_PackStage)extension.json" Lines="$(_PackManifest.Replace(';', '%3B'))" Overwrite="true" />
+    <WriteLinesToFile File="$(_PackStage)extension.json" Lines="$(_PackManifest.Replace(';', '%3B'))" Overwrite="true" Condition="'$(MSBuildLastTaskResult)' == 'true'" ContinueOnError="$(_PackContinue)" />
 
     <!-- The two tasks that touch the package file itself: a file that is held open (RFiDGear is installing from it) is a warning
          for a build that did not ask for a package, and the message that says where it is follows only a package that was written. -->
-    <Delete Files="$(_PackFile)" ContinueOnError="$(_PackContinue)" />
-    <ZipDirectory SourceDirectory="$(_PackStage)" DestinationFile="$(_PackFile)" Overwrite="true" ContinueOnError="$(_PackContinue)" />
+    <Delete Files="$(_PackFile)" Condition="'$(MSBuildLastTaskResult)' == 'true'" ContinueOnError="$(_PackContinue)" />
+    <ZipDirectory SourceDirectory="$(_PackStage)" DestinationFile="$(_PackFile)" Overwrite="true" Condition="'$(MSBuildLastTaskResult)' == 'true'" ContinueOnError="$(_PackContinue)" />
     <Message Importance="high" Condition="'$(MSBuildLastTaskResult)' == 'true'" Text="Extension package: $(_PackFile)" />
   </Target>
 </Project>
