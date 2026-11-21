@@ -137,9 +137,22 @@ namespace RFiDGear.Infrastructure.Tasks
 
                 // A name may start anywhere (JOB$ID): every position is tried, the longest name first. The case does not matter,
                 // as everywhere else a variable of a run is looked up; the value is that of the name as the dictionary holds it.
+                // A dictionary that tells two spellings apart ($job and $JOB) keeps both values: the very spelling wins over another case.
                 foreach (var name in names)
                 {
-                    if (string.Compare(text, position, name, 0, name.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (hit != null && name.Length < hit.Length)
+                    {
+                        break;
+                    }
+
+                    if (string.Compare(text, position, name, 0, name.Length, StringComparison.OrdinalIgnoreCase) != 0)
+                    {
+                        continue;
+                    }
+
+                    hit ??= name;
+
+                    if (string.CompareOrdinal(text, position, name, 0, name.Length) == 0)
                     {
                         hit = name;
                         break;

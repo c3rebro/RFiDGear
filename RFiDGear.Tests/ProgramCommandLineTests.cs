@@ -133,6 +133,18 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void TwoSpellingsOfOneName_KeepTheirOwnValues_AndAThirdSpellingTakesTheFirstInOrder()
+        {
+            // A dictionary that is not case-insensitive can hold both. $JOB comes before $job in the ordinal order.
+            var start = ProgramCommandLine.Build(
+                "\"a.exe\" $JOB $job $Job",
+                Values(new Dictionary<string, string> { ["$job"] = "lower", ["$JOB"] = "upper" }));
+
+            Assert.NotNull(start);
+            Assert.Equal("upper lower upper", start.Arguments);
+        }
+
+        [Fact]
         public void AVariableThatIsNotNamed_IsLeftAsTyped()
         {
             var start = ProgramCommandLine.Build("\"a.exe\" $OTHER", Values(new Dictionary<string, string> { ["$JOB"] = "x" }));
