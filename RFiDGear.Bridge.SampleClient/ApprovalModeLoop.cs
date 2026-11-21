@@ -53,8 +53,11 @@ namespace RFiDGear.Bridge.SampleClient
     /// never touched. A mode that RFiDGear started without waiting for approval is such a mode too, and is stopped. A program that owns
     /// its connection ends its mode without any such question by closing it. Neither request waits for longer than
     /// <see cref="Grace"/>, and whatever they do, the loop ends.</item>
+    /// <item>A notice that a mode ended is checked against the status of RFiDGear before it ends the loop: the loop listens from before
+    /// its own start, so a notice about an earlier mode can be the first thing it reads, and its own mode is on.</item>
     /// <item>Every card that was shown is reported when RFiDGear says how its wait ended, also when the loop is cancelled or the mode
-    /// stops meanwhile (for as long as <see cref="Grace"/>; what RFiDGear does not say is not made up).</item>
+    /// stops meanwhile (for as long as <see cref="Grace"/>; what RFiDGear does not say is not made up). A card that was shown and that
+    /// the loop had not looked at yet when it ended is reported as one that got no answer.</item>
     /// <item>It never decides for a card it was not shown: the decision gets the event, and the answer carries its presence id.</item>
     /// </list>
     /// </summary>
@@ -141,8 +144,18 @@ namespace RFiDGear.Bridge.SampleClient
                     {
                         if (item is AutoModeChangedEvent { Enabled: false })
                         {
-                            // The mode is off already: a stop now could stop a mode that somebody else switched on since.
-                            _weStartedTheMode = false;
+                            var ownModeIsOn = await OwnModeIsOnAsync().ConfigureAwait(false);
+
+                            if (ownModeIsOn == true)
+                            {
+                                // A notice about a mode that ended before this loop's own was started: the loop listens from before the
+                                // start, so it can come first. The loop's own mode is on, and nobody else decides about its cards.
+                                continue;
+                            }
+
+                            // The mode is off already (a stop now could stop a mode that somebody else switched on since), or RFiDGear
+                            // cannot say, and then the stop below asks once more.
+                            _weStartedTheMode = ownModeIsOn == null;
 
                             break;
                         }
@@ -156,8 +169,14 @@ namespace RFiDGear.Bridge.SampleClient
                 }
                 finally
                 {
-                    await ShutDownAsync().ConfigureAwait(false);
-                    _owner._client.EventReceived -= Queue;
+                    try
+                    {
+                        await ShutDownAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        _owner._client.EventReceived -= Queue;
+                    }
                 }
 
                 return _outcomes;
@@ -245,7 +264,7 @@ namespace RFiDGear.Bridge.SampleClient
 
                     try
                     {
-                        card.Cancel.Cancel();
+                        CancelQuietly(card.Cancel);
                         answered = await card.Answer.WaitAsync(_owner.Grace).ConfigureAwait(false);
                     }
                     catch (TimeoutException)
@@ -278,7 +297,7 @@ namespace RFiDGear.Bridge.SampleClient
             {
                 foreach (var card in _pending.Values)
                 {
-                    card.Cancel.Cancel();
+                    CancelQuietly(card.Cancel);
                 }
 
                 if (_weStartedTheMode)
@@ -299,14 +318,14 @@ namespace RFiDGear.Bridge.SampleClient
             // connection.
             private async Task StopOwnModeAsync()
             {
+                if (await OwnModeIsOnAsync().ConfigureAwait(false) != true)
+                {
+                    return;
+                }
+
                 try
                 {
-                    var status = (await _owner._service.GetStatus(new GetStatusRequest()).WaitAsync(_owner.Grace).ConfigureAwait(false)).AutoMode;
-
-                    if (status is { Enabled: true } && status.StartedBy == RunSources.Bridge)
-                    {
-                        await _owner._service.StopAutoMode(new StopAutoModeRequest()).WaitAsync(_owner.Grace).ConfigureAwait(false);
-                    }
+                    await _owner._service.StopAutoMode(new StopAutoModeRequest()).WaitAsync(_owner.Grace).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
@@ -315,24 +334,63 @@ namespace RFiDGear.Bridge.SampleClient
                 }
             }
 
-            // After the stop RFiDGear ends the wait for the card that was shown last; it is reported when that notice comes, for a moment.
+            // Whether the mode that is on is a mode of a client, which is this loop's own because RFiDGear serves one client at a time;
+            // nothing when RFiDGear cannot say (it does not answer in time, answers with a failure, or the connection is gone).
+            private async Task<bool?> OwnModeIsOnAsync()
+            {
+                try
+                {
+                    var status = (await _owner._service.GetStatus(new GetStatusRequest()).WaitAsync(_owner.Grace).ConfigureAwait(false)).AutoMode;
+
+                    return status is { Enabled: true } && status.StartedBy == RunSources.Bridge;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+
+            // A callback that the program registered on the token of its decision can throw when the token is cancelled: that must not
+            // keep the loop from ending, and the mode from being stopped.
+            private static void CancelQuietly(CancellationTokenSource cancel)
+            {
+                try
+                {
+                    cancel.Cancel();
+                }
+                catch (Exception)
+                {
+                    // The token is cancelled all the same.
+                }
+            }
+
+            // What was queued when the loop ended is looked at first: a card that was shown and not looked at yet is in it, and gets no
+            // decision. After the stop RFiDGear ends the wait for the card that was shown last; it is reported when that notice comes, for
+            // a moment.
             private async Task CollectEndsAsync()
             {
-                if (_pending.Count == 0)
-                {
-                    return;
-                }
-
                 using var grace = new CancellationTokenSource(_owner.Grace);
 
                 try
                 {
-                    while (_pending.Count > 0 && await NextAsync(_queue.Reader, grace.Token).ConfigureAwait(false) is { } item)
+                    while (true)
                     {
-                        if (item is CardPresentationEndedEvent ended)
+                        if (!_queue.Reader.TryRead(out var item))
                         {
-                            Report(await EndAsync(ended).ConfigureAwait(false));
+                            if (_pending.Count == 0)
+                            {
+                                break;
+                            }
+
+                            item = await NextAsync(_queue.Reader, grace.Token).ConfigureAwait(false);
+
+                            if (item == null)
+                            {
+                                break;
+                            }
                         }
+
+                        await CollectAsync(item).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
@@ -342,6 +400,18 @@ namespace RFiDGear.Bridge.SampleClient
                 catch (Exception)
                 {
                     // An answer that failed while the loop ended: there is nobody left to tell.
+                }
+            }
+
+            private async Task CollectAsync(object item)
+            {
+                if (item is CardPresentedEvent shown && !_pending.ContainsKey(shown.PresenceId))
+                {
+                    _pending[shown.PresenceId] = new PendingCard(shown.Uid, new CancellationTokenSource(), Task.FromResult("none"));
+                }
+                else if (item is CardPresentationEndedEvent ended)
+                {
+                    Report(await EndAsync(ended).ConfigureAwait(false));
                 }
             }
 
