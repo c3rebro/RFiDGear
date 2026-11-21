@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Bauen und testen</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Bauen und testen</h1>
+
+<h2>Voraussetzungen</h2>
+
+<ul>
+<li>Alles zielt auf .NET 10: der Host, die Testprojekte, das Beispiel-Plugin, die Vertr&auml;ge und der Card Check Assistant als <code>net10.0-windows</code>, der Beispielclient und die Bibliothek <code>CardCheck</code> als <code>net10.0</code>. <code>global.json</code> h&auml;ngt das SDK an 10.0.x (ein neueres Vorschau-SDK auf dem Rechner w&uuml;rde sonst gew&auml;hlt).</li>
+<li>Visual Studio 2022 kann <code>net10.0</code> nicht: verwenden Sie Visual Studio 2026 oder die <code>dotnet</code>-Befehlszeile.</li>
+<li>Das Projekt ist ein WPF-Programm f&uuml;r Windows (x64 und x86).</li>
+</ul>
+
+<h2>Befehle</h2>
+
+<pre>dotnet build RFiDGear.sln -c Debug
+dotnet build RFiDGear.sln -c Release
+
+dotnet test RFiDGear.Tests/RFiDGear.Tests.csproj
+dotnet test RFiDGear.Tests/RFiDGear.Tests.csproj --filter "FullyQualifiedName~MeineKlasse.MeineMethode"</pre>
+
+<h2>Die Tests</h2>
+
+<ul>
+<li><code>RFiDGear.Tests</code> sind die Einheits- und Integrationstests, ohne Leser. Sie laufen auf xunit.v3 (das Paket <code>xunit.v3.mtp-off</code>; das .NET-10-SDK verweigert sonst, ein auf Microsoft.Testing.Platform gebautes Projekt &uuml;ber den VSTest-Weg von <code>dotnet test</code> auszuf&uuml;hren). Die Testprojekte sind deshalb ausf&uuml;hrbare Dateien; <code>dotnet test</code> und <code>--filter</code> funktionieren wie gewohnt.</li>
+<li>Ein Test, der WPF ber&uuml;hrt, braucht einen STA-Thread (<code>StaTestRunner.cs</code>). Ein Test, der ein Hauptfenster baut, &uuml;bergibt einen tempor&auml;ren Journalordner und einen eindeutigen Pipe-Namen.</li>
+<li><strong>Freigegebene Schnappsch&uuml;sse</strong> halten die &ouml;ffentliche Fl&auml;che der Vertr&auml;ge fest (<code>RFiDGear.Tests/ApiSurface/</code>). Eine &Auml;nderung l&auml;sst den Test scheitern; Sie nehmen sie an, indem Sie den Schnappschuss neu erzeugen: <code>RFIDGEAR_UPDATE_API_SNAPSHOT=1</code> und der Filter <code>BridgeContractsApiSurface</code> (oder <code>ExtensionSdkApiSurface</code>). Ein Mutationslauf, der die Vertr&auml;ge &auml;ndert, muss <code>FullyQualifiedName~ApiSurface</code> im Filter haben.</li>
+<li><code>BridgeSamples</code> und <code>BridgeGolden</code> halten je einen Wert jeder Nachricht der externen Steuerung und sein JSON: eine &Auml;nderung der Leitung ist ein Unterschied in einem Test.</li>
+<li>Die Tests der Hilfe (<code>HelpFilesTests</code>, <code>HelpFileTests</code>) lesen die echten Dateien unter <code>docs</code>.</li>
+</ul>
+
+<h2>Hardwaretests</h2>
+
+<p><code>RFiDGear.HIL.Tests</code> laufen an einem echten Leser mit echten Karten. Sie geh&ouml;ren nicht zum normalen Testlauf; die L&ouml;sung &uuml;bersetzt sie nur. Der Start geht &uuml;ber <code>Run-HilTests.bat</code>;
+<code>hil.settings.json</code> daneben schaltet die F&auml;lle ein: <code>readerScan</code>, <code>interactive</code>, <code>secureKeys</code>, <code>cardWrites</code> und <code>readerKind</code> (<code>auto</code>, <code>elatec</code> oder <code>pcsc</code>). Die Pr&uuml;flisten stehen in <code>EXTERNAL-CONTROL.md</code>, <code>CLASSIC.md</code>, <code>ULTRALIGHT.md</code>, <code>SECURE-KEYS.md</code>,
+<code>SAM-AV3.md</code> und <code>SAM-PICC.md</code>. F&auml;lle mit <code>cardWrites</code> schreiben auf Karten: verwenden Sie Karten, die Sie nicht mehr brauchen.</p>
+
+<h2>Erweiterungen, Hilfe, Installer</h2>
+
+<ul>
+<li>Erweiterungen beim Entwickeln ausprobieren und Pakete bauen: siehe <a href="extensions.html">Erweiterungen schreiben</a> und <a href="extension_packages.html">Erweiterungspakete</a>.</li>
+<li>Die Hilfe baut <code>docs/Build-Help.ps1</code> mit <code>hhc.exe</code> von HTML Help Workshop; die &uuml;bersetzten <code>.chm</code> liegen neben ihren Quellen im Repository, weil ein normaler Bau (und jeder Test) HTML Help Workshop nicht braucht.</li>
+<li>Die Installer (<code>RFiDGearBundleSetup</code> und die beiden MSI-Projekte) benutzen WiX 3.14 und werden getrennt gebaut, nicht mit <code>dotnet build</code>: zuerst Host und Beispiel-Plugin im Release f&uuml;r die Plattform, dann die MSI-Projekte, dann das B&uuml;ndel, mit dem MSBuild von Visual Studio 2026. Ein Release macht <code>RFiDGearBundleSetup\Build-Release.ps1</code>, dann <code>Sign-Release.ps1</code> und <code>Pack-Release.ps1</code>
+(<code>Make-Release.bat</code> f&uuml;hrt die drei aus). Die Version steht von Hand in <code>RFiDGear.csproj</code>, <code>Bundle.wxs</code> und <code>update.xml</code>; ein Test stoppt ein Release, in dem sie abweichen. Das Zertifikat liegt nicht im Repository (<code>RFIDGEAR_SIGN_PFX</code>, <code>RFIDGEAR_SIGN_PASSWORD</code>).</li>
+</ul>
+
+<div class="nav">Vorherige Seite: <a href="files_folders.html">Dateien und Ordner</a> &middot; N&auml;chste Seite: <a href="maturity.html">Was erprobt ist und was nicht</a></div>
+
+</body>
+</html>

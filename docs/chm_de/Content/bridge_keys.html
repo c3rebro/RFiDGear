@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Schl&uuml;ssel &uuml;ber die externe Steuerung</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Schl&uuml;ssel &uuml;ber die externe Steuerung</h1>
+
+<p>Ein Projekt kann einen Schl&uuml;ssel &uuml;ber eine Referenz auf einen Anbieter nennen, statt ihn zu enthalten (siehe <a href="keys.html">Schl&uuml;ssel</a>). Der eingebaute Anbieter <code>bridge-client</code> geh&ouml;rt dem verbundenen Client, der <code>registerKeyProvider</code> aufgerufen hat; RFiDGear ruft dann
+<code>resolveKey</code> auf dem Client, innerhalb der Grenzen der Schl&uuml;sselverwaltung. Ohne einen angemeldeten Client endet eine Aufgabe, die den Anbieter nennt, mit <code>KeyUnavailable</code> und r&uuml;hrt die Karte nicht an; der eingetippte Schl&uuml;ssel im Projekt ist kein Ersatz.</p>
+
+<h2>So melden Sie sich an</h2>
+
+<ol>
+<li>Rufen Sie <code>registerKeyProvider</code> nach <code>hello</code>. Die Antwort nennt die Anbieter-ID (<code>bridge-client</code>), die Zeit, die Sie zum Antworten haben (<code>timeoutMs</code>, <code>interactiveTimeoutMs</code>), und ob <code>ownRunsOnly</code> gilt.</li>
+<li>Eine Person bindet in einem Aufgabendialog einen Schl&uuml;sselplatz an diesen Anbieter und tippt eine Referenz Ihrer Wahl, etwa <code>orders/4711</code>.</li>
+<li>Braucht eine Aufgabe den Schl&uuml;ssel, ruft RFiDGear <code>resolveKey</code> auf Ihnen: mit der Referenz, wof&uuml;r der Schl&uuml;ssel ist (Algorithmus, Verwendung, Applikation, Schl&uuml;sselnummer), dem Lauf, der Aufgabe und der UID der Karte.</li>
+<li>Die Anmeldung endet mit der Verbindung; melden Sie sich nach dem erneuten Verbinden wieder an.</li>
+</ol>
+
+<h2>Die Regeln f&uuml;r <code>resolveKey</code></h2>
+
+<ul>
+<li>Setzen Sie es asynchron um und beachten Sie das Abbruchzeichen. Es wird abgebrochen, wenn die Zeit um ist (10 Sekunden, 5 Minuten, wenn eine Person gefragt werden darf) oder der Lauf aufgegeben wird; ein Schl&uuml;ssel, der sp&auml;ter kommt, wird verworfen.</li>
+<li><strong>Pr&uuml;fen Sie die Referenz gegen das, was Sie bedienen.</strong> Jedes Programm des Benutzers kann jede Referenz in ein Projekt schreiben, und jeder Lauf fragt Sie, solange Sie angemeldet sind, wer ihn auch startete. Antworten Sie <code>notAuthorized</code> auf eine Referenz, die Sie nicht erkennen, und <code>notFound</code> auf eine, die Sie erkennen, zu der Sie aber keinen Schl&uuml;ssel haben.</li>
+<li>Die Antwort ist <code>resolved</code> mit dem Schl&uuml;ssel als Base64 (1 bis 32 Bytes) oder eine von <code>notFound</code>, <code>notAuthorized</code>, <code>invalidKey</code>, <code>unsupported</code>. Alles andere oder eine Ausnahme ist ein Fehler Ihrer Seite.</li>
+<li>Das Passwort und das PACK eines MIFARE Ultralight EV1 oder NTAG fragt RFiDGear nicht: das Protokoll hat daf&uuml;r noch keinen Namen, ein solcher Platz, der an <code>bridge-client</code> gebunden ist, endet mit <code>KeyUnavailable</code>, und es gibt keinen Aufruf von <code>resolveKey</code>. Der Schl&uuml;ssel eines Ultralight C ist ein <code>tripleDes2K</code>-Schl&uuml;ssel.</li>
+<li>Protokollieren Sie weder die Anfrage noch die Antwort und behalten Sie den Schl&uuml;ssel nicht l&auml;nger, als die Antwort es braucht. RFiDGear tut beides nicht und h&auml;lt seine Kopie nur f&uuml;r die Kartenoperation, in einem Puffer, den es l&ouml;scht. <strong>Keine Seite kann den JSON-Text der Nachricht l&ouml;schen:</strong> das sch&uuml;tzt gegen Protokolle, Dateien und Kommandozeilen, nicht gegen einen Speicherabzug eines Prozesses desselben Benutzers.</li>
+</ul>
+
+<h2>Woher ein Lauf kommt (<code>keys.context</code>)</h2>
+
+<p>Bietet RFiDGear <code>keys.context</code> an, sagt jede Anfrage nach einem Schl&uuml;ssel, woher ihr Lauf kommt:</p>
+
+<table>
+<tr><th>Feld</th><th>Inhalt</th></tr>
+<tr><td><code>source</code></td><td><code>bridge</code> (ein Lauf eines Clients dieser Schnittstelle, irgendeines: vergleichen Sie die <code>requestId</code>), <code>autoMode</code>, <code>gui</code> (ein Lauf, den der Benutzer im Hauptfenster oder mit einem Startargument gestartet hat) oder <code>other</code> (eine Erweiterung, eine Schaltfl&auml;che im Aufgabendialog, ein Lauf, den RFiDGear nicht zuordnen kann). Ein fehlender Wert gilt als <code>other</code>.</td></tr>
+<tr><td><code>requestId</code></td><td>bei einem Lauf eines Clients die ID, die der Client bei <code>startRun</code> w&auml;hlte. Schreiben Sie sie vor dem Aufruf von <code>startRun</code> auf, denn die erste Schl&uuml;sselanfrage kann der Antwort auf <code>startRun</code> zuvorkommen.</td></tr>
+<tr><td><code>projectRevision</code></td><td>bei einem Lauf eines Clients die Revision, mit der der Lauf <em>begann</em>; vergleichen Sie sie mit der, die Sie f&uuml;r diese Anfrage freigegeben haben</td></tr>
+</table>
+
+<p>Das ist Information. Ob Sie gefragt werden und was Sie antworten d&uuml;rfen, &auml;ndert sich nicht, wenn Sie es ignorieren; die Entscheidung bleibt bei Ihrem Tresor. Ein Tresor, der einen Schl&uuml;ssel nur f&uuml;r eine Anfrage herausgibt, die <code>source: bridge</code> hat, deren <code>requestId</code> er selbst sandte, deren
+<code>projectRevision</code> er freigab und deren <code>cardUid</code> die Karte ist, die er freigab, hat eine Freigabe, die an einen Auftrag gebunden ist.</p>
+
+<p><code>ownRunsOnly</code> in <code>registerKeyProvider</code> (Voreinstellung aus) geht einen Schritt weiter: RFiDGear antwortet dann selbst <code>notAuthorized</code> auf jeden Lauf, der nicht &uuml;ber <strong>diese Verbindung</strong> gestartet wurde, und ruft Sie daf&uuml;r nicht auf. Dazu geh&ouml;ren ein Lauf, den der Benutzer im Fenster startet, eine Schaltfl&auml;che im Aufgabendialog und ein Lauf,
+den eine fr&uuml;here Verbindung zur&uuml;cklie&szlig;. Der Lauf einer Karte, die <em>Sie</em> im automatischen Modus freigegeben haben, ist auch Ihr eigener. Die Antwort auf die Anmeldung sagt, ob die Einschr&auml;nkung gilt; pr&uuml;fen Sie es. Senden Sie das Feld nur, wenn <code>keys.context</code> angeboten wird: ein &auml;lteres RFiDGear weist ein Mitglied zur&uuml;ck, das es nicht kennt.</p>
+
+<div class="warn"><strong>Wogegen das sch&uuml;tzt und wogegen nicht.</strong> Die Felder und die Einschr&auml;nkung sch&uuml;tzen gegen Verwechslungen und Fehler: ein Lauf aus dem Fenster, w&auml;hrend Ihr Auftrag gemeint war, ein Lauf des automatischen Modus, ein Projekt, das nach Ihrer Freigabe ge&auml;ndert wurde, eine Anfrage f&uuml;r eine Karte, die Sie nicht freigegeben haben.
+Sie sch&uuml;tzen nicht gegen ein feindliches Programm desselben Windows-Benutzers: es hat dieselben Rechte wie der Benutzer. Behandeln Sie eine an einen Lauf gebundene Freigabe als zweites Schloss, nicht als das einzige.</div>
+
+<div class="nav">Vorherige Seite: <a href="bridge_approval.html">Eine Karte, eine Freigabe, ein Lauf</a> &middot; N&auml;chste Seite: <a href="bridge_sample_client.html">Der Beispielclient</a></div>
+
+</body>
+</html>

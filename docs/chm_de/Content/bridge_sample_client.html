@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Der Beispielclient</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Der Beispielclient</h1>
+
+<p><code>RFiDGear.Bridge.SampleClient</code> ist ein kleiner Client der externen Steuerung zum Lesen und Ausprobieren. Er ist <code>net10.0</code>, verweist nur auf <code>RFiDGear.Bridge.Contracts</code> und StreamJsonRpc und tut, was der Leitfaden verlangt. Seine Tests (<code>BridgeSampleClientTests</code>) sind der Beleg, dass der Rat
+in diesem Teil der Hilfe funktioniert.</p>
+
+<h2>Die Befehle</h2>
+
+<p>Starten Sie RFiDGear mit der Einstellung f&uuml;r die externe Steuerung oder mit <code>EXTERNALCONTROL=1</code>. Dann:</p>
+
+<table>
+<tr><th>Befehl</th><th>Wirkung</th></tr>
+<tr><td><code>status</code></td><td>zeigt, was <code>getStatus</code> sagt</td></tr>
+<tr><td><code>run &lt;requestId&gt; &lt;projekt.rfPrj&gt; $JOBNUMBER=4711</code></td><td>l&auml;dt ein Projekt, notiert seinen Zustand und f&uuml;hrt es aus. Es schreibt die Request-ID, <em>bevor</em> es ruft, damit Sie nach dem Lauf fragen k&ouml;nnen, auch wenn das Programm unterwegs beendet wird. Ein Ergebnis, das sich nicht kl&auml;ren l&auml;sst, wird als <code>Unknown</code> mit dem Rat gedruckt, zuerst die Karte anzusehen; der Exitcode ist dann nicht null. <code>--expect-revision=&lt;revision&gt;</code> gibt eine Revision vor, die Sie
+aus <code>status</code> notiert haben</td></tr>
+<tr><td><code>result &lt;requestId&gt;</code></td><td>fragt, was aus einer Anfrage wurde</td></tr>
+<tr><td><code>results &lt;nummer&gt;</code></td><td>listet, was ein Client verpasst hat</td></tr>
+<tr><td><code>approved-run &lt;requestId&gt; &lt;projekt.rfPrj&gt;</code></td><td>der Ablauf f&uuml;r eine Karte: l&auml;dt, merkt die Revision, schaut auf den Leser, zeigt die UID und fragt nach <code>yes</code>, startet einen Lauf mit der UID in <code>$EXPECTEDUID</code> (<code>--variable=$NAME</code> f&uuml;r einen anderen Namen; <code>--yes</code> antwortet f&uuml;r Sie, zum Testen) und vergleicht dann die Karte aus dem Ergebnis mit der freigegebenen. Der Exitcode ist nur bei einem best&auml;tigten Lauf 0</td></tr>
+<tr><td><code>auto</code></td><td>schaltet den gew&ouml;hnlichen automatischen Modus ein, bis Sie <kbd>Strg</kbd> + <kbd>C</kbd> dr&uuml;cken</td></tr>
+<tr><td><code>auto --approve-with=$EXPECTEDUID [--no-pin] [--wait=8] [--set=NAME=value]</code></td><td>der Modus mit Freigabe: jede Karte wird nach einer festen Regel freigegeben. <code>--decline</code> lehnt jede ab, <code>--no-answer</code> antwortet nie: so sehen Sie jedes Ende von Hand</td></tr>
+<tr><td><code>keys orders/4711 --own-runs-only --run=job-2</code></td><td>liefert einen Schl&uuml;ssel f&uuml;r eine Referenz (eingetippt an einer Eingabe, die ihn nicht zeigt); <code>--own-runs-only</code> bittet RFiDGear, f&uuml;r jeden Lauf zu antworten, den das Beispiel nicht gestartet hat, und pr&uuml;ft es selbst noch einmal; <code>--run=&lt;id&gt;</code> startet auf derselben Verbindung einen Lauf, denn die Schnittstelle bedient einen Client zur Zeit</td></tr>
+</table>
+
+<div class="warn"><code>run</code> und <code>approved-run</code> schreiben auf eine Karte: verwenden Sie eine Testkarte.</div>
+
+<h2>Die Teile</h2>
+
+<table>
+<tr><th>Klasse</th><th>Wof&uuml;r</th></tr>
+<tr><td><code>BridgeSampleClient</code></td><td>die Pipe des aktuellen Benutzers (mit <code>CurrentUserOnly</code>), die lesbar gemachten Fehlerdaten, der Handschlag und die Pr&uuml;fung der F&auml;higkeiten, <code>RunOnceAsync</code> (startet einen Lauf und wiederholt ihn <strong>nie</strong> als neue Anfrage), <code>ResumeAsync</code>
+(der Weg zur&uuml;ck nach einem Verbindungsverlust oder Neustart), <code>CatchUpAsync</code> und <code>KeyVault</code>, der Haken f&uuml;r Ihren eigenen Tresor</td></tr>
+<tr><td><code>ApprovalModeLoop</code></td><td>die Schleife eines Programms, das im automatischen Modus &uuml;ber jede Karte entscheidet: Modus mit <code>requireApproval</code> einschalten, jede Karte Ihrer Entscheidung geben (<code>ApproveWith</code> mit den Variablen der Karte oder <code>Decline</code>), mit der <code>presenceId</code> antworten, eine Entscheidung, die eine Ausnahme wirft, als Ablehnung behandeln, eine Entscheidung verwerfen, deren Karte inzwischen aufgegeben ist, und den Modus nur anhalten, wenn es ihn selbst eingeschaltet hat</td></tr>
+<tr><td><code>ApprovalPolicy</code></td><td>die festen Regeln der Befehle <code>auto --approve-with</code>, <code>--decline</code> und <code>--no-answer</code></td></tr>
+<tr><td><code>SampleVault</code></td><td>ein Tresor, der eine Referenz beantwortet und alle anderen verweigert: das ist die Form, die jeder Tresor haben sollte</td></tr>
+</table>
+
+<p>Den Tresor gibt es absichtlich nicht auf der Kommandozeile: ein Schl&uuml;ssel geh&ouml;rt nicht in ein Argument.</p>
+
+<div class="nav">Vorherige Seite: <a href="bridge_keys.html">Schl&uuml;ssel &uuml;ber die externe Steuerung</a> &middot; N&auml;chste Seite: <a href="key_providers.html">Schl&uuml;sselanbieter schreiben</a></div>
+
+</body>
+</html>

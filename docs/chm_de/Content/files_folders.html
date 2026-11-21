@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Dateien und Ordner</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Dateien und Ordner</h1>
+
+<p>Wo RFiDGear etwas ablegt, und was darin steht.</p>
+
+<h2>Die Ordner</h2>
+
+<table>
+<tr><th>Ort</th><th>Inhalt</th></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\settings.xml</code></td><td>die Einstellungen (XML), auch die Standardschl&uuml;ssel des Einstellungsfensters <strong>im Klartext</strong></td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\runtime-defaults.json</code></td><td>die ersten Werte beim ersten Start: Leserwahl, Sprache, COM-Ports, Standardschl&uuml;ssel f&uuml;r MIFARE, Verhalten des Updates. Das Einstellungsfenster speichert nach <code>settings.xml</code></td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\log\</code></td><td>das Protokoll (Serilog, rollende Dateien, 30 Tage). Fehler gehen nur dorthin, nicht in das Ereignisprotokoll von Windows</td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\bridge\</code></td><td>das Journal der externen Steuerung: ein Lauf wird dort aufgeschrieben, bevor er beginnt, damit nach einem Neustart die zugelassenen Request-IDs noch bekannt sind</td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\report-work\&lt;runId&gt;</code></td><td>der Arbeitsordner eines Berichts, den die Freigabe einer Karte ausl&ouml;st; er wird nach dem Lauf entfernt</td></tr>
+<tr><td><code>%LocalAppData%\RFiDGear\InstalledExtensions\&lt;id&gt;\&lt;version&gt;</code></td><td>die Erweiterungen, die der Benutzer als Paket installiert hat (siehe <a href="extension_packages.html">Erweiterungspakete</a>)</td></tr>
+<tr><td><code>%ProgramData%\RFiDGear\Extensions\</code></td><td>die Erweiterungen f&uuml;r alle Benutzer; ein normaler Benutzer kann dort nicht schreiben</td></tr>
+<tr><td>der Ordner von <code>RFiDGear.exe</code></td><td>das Programm, <code>RFiDGear.Bridge.Contracts.dll</code> f&uuml;r Clients der externen Steuerung und die Hilfe (<code>RFiDGear_de.chm</code>, <code>RFiDGear_en.chm</code>)</td></tr>
+<tr><td>Windows-Anmeldeinformationsverwaltung, Namen unter <code>RFiDGear/key/</code></td><td>die gespeicherten Kartenschl&uuml;ssel (siehe <a href="keys.html">Schl&uuml;ssel</a>)</td></tr>
+</table>
+
+<h2>Projektdateien</h2>
+
+<ul>
+<li><code>.rfPrj</code>: ein Zip-Archiv mit den Aufgaben als versioniertes XML. RFiDGear schreibt ein Projekt unmittelbar in sein Archiv; keine Klartextkopie mit eingetippten Schl&uuml;sseln bleibt in <code>%LocalAppData%</code> zur&uuml;ck.</li>
+<li><code>.xml</code>: ein Projekt als reine XML-Datei.</li>
+<li>Die Revision eines Projekts (externe Steuerung) ist ein Hash des Textes, den ein Speichern schriebe, mit einem Schl&uuml;ssel, den RFiDGear beim Start bildet und nie schreibt: ein eingetippter Schl&uuml;ssel l&auml;sst sich aus ihr nicht ermitteln, und sie gilt nur f&uuml;r einen Prozess.</li>
+</ul>
+
+<h2>Was Sie beim &Auml;ndern wissen sollten</h2>
+
+<ul>
+<li>Ein <code>DatabaseReaderWriter</code> l&ouml;scht beim Anlegen Dateien im Wurzelordner seines Projektverwalters. Das Verschieben der Schl&uuml;ssel eines Projekts l&auml;uft deshalb auf einem eigenen Projektverwalter.</li>
+<li>Kein Protokolleintrag von RFiDGear enth&auml;lt einen Schl&uuml;ssel, eine Referenz, einen Lesernamen, die Seriennummer einer SAM oder den Text einer Ausnahme der SAM-Bibliothek. Die eigene Ablaufverfolgung von LibLogicalAccess (<code>config.log.enabled</code> mit <code>seecommunication</code>) w&uuml;rde die ganze Antwort schreiben: lassen Sie sie aus, solange eine SAM im Leser steckt.</li>
+<li>Die Datei <code>hil.settings.json</code> der Hardwaretests liegt neben <code>Run-HilTests.bat</code> und geh&ouml;rt nicht in git.</li>
+</ul>
+
+<div class="nav">Vorherige Seite: <a href="extension_packages.html">Erweiterungspakete (.rfext)</a> &middot; N&auml;chste Seite: <a href="build_test.html">Bauen und testen</a></div>
+
+</body>
+</html>

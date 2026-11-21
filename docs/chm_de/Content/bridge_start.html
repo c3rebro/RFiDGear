@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Externe Steuerung: Schnellstart</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Externe Steuerung: Schnellstart</h1>
+
+<p>Ein Programm neben RFiDGear kann den offiziellen Prozess &uuml;ber <strong>eine</strong> Named Pipe mit JSON-RPC 2.0 steuern: ein Projekt laden, seine Aufgaben an einer Karte ausf&uuml;hren, die Ergebnisse lesen und Kartenschl&uuml;ssel liefern. Der Anlass war
+ein Programm, das Karten in Serie kodiert; die Schnittstelle ist aber allgemein gehalten.</p>
+
+<h2>1. Einschalten</h2>
+
+<p>RFiDGear h&ouml;rt nur, wenn Sie es verlangen:</p>
+
+<ul>
+<li>die Einstellung <strong>JSON-RPC Pipe Server aktivieren</strong> (<strong>Extras &gt; Einstellungen...</strong>, Reiter <strong>Erweiterte Einstellungen</strong>); eine &Auml;nderung wirkt nach einem Neustart, oder</li>
+<li>das Startargument <code>EXTERNALCONTROL=1</code> f&uuml;r einen Lauf von RFiDGear (siehe <a href="command_line.html">Startargumente</a>).</li>
+</ul>
+
+<p>Eins von beiden gen&uuml;gt. W&auml;hrend die externe Steuerung ein Programm bedient, zeigt die Statusleiste <strong>Externe Steuerung: verbunden</strong>. Es l&auml;uft eine RFiDGear-Instanz je Windows-Sitzung; eine zweite beendet sich sofort,
+ein Programm verbindet sich also mit der laufenden oder startet genau eine.</p>
+
+<h2>2. Die Pipe</h2>
+
+<ul>
+<li>Name: <code>\\.\pipe\RFiDGear.Bridge.&lt;SID&gt;</code>, wobei <code>&lt;SID&gt;</code> die Sicherheitskennung des Windows-Benutzers ist, der RFiDGear ausf&uuml;hrt
+(<code>BridgeProtocol.PipeNameFor</code>).</li>
+<li>Nur dieser Benutzer kann sie &ouml;ffnen. RFiDGear legt sie mit <code>CurrentUserOnly</code> an; &ouml;ffnen Sie sie im Client auch so, damit Sie nie mit einer Pipe sprechen, die ein anderer unter diesem Namen angelegt hat.</li>
+<li>Ein Client zur Zeit: ein zweiter wartet, bis der erste gegangen ist.</li>
+<li>Starten Sie RFiDGear und den Client mit denselben Rechten (die Wirkung unterschiedlicher Erh&ouml;hung ist nicht erprobt).</li>
+</ul>
+
+<h2>3. Was der Client braucht</h2>
+
+<ul>
+<li><code>RFiDGear.Bridge.Contracts.dll</code> aus dem Installationsordner (ein Paket gibt es noch nicht). Sie hat keine Verweise, ist <code>net10.0</code> und beh&auml;lt die Assemblyversion <code>1.0.0.0</code>.</li>
+<li>StreamJsonRpc in der Version, die RFiDGear verwendet (2.26.150), oder einer kompatiblen.</li>
+</ul>
+
+<h2>4. Verbinden und <code>hello</code></h2>
+
+<pre>using var pipe = new NamedPipeClientStream(".", BridgeProtocol.PipeNameFor(sid), PipeDirection.InOut,
+    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+await pipe.ConnectAsync(TimeSpan.FromSeconds(10));
+
+var formatter = new SystemTextJsonFormatter { JsonSerializerOptions = BridgeJson.CreateClientOptions() };
+var rpc = new ErrorDataRpc(new HeaderDelimitedMessageHandler(pipe, formatter));   // siehe unten
+
+var names = new JsonRpcTargetOptions { MethodNameTransform = CommonMethodNameTransforms.CamelCase };
+rpc.AddLocalRpcTarget&lt;IBridgeClientEvents&gt;(events, names);
+rpc.AddLocalRpcTarget&lt;IBridgeClientKeys&gt;(keys, names);
+var service = rpc.Attach&lt;IBridgeService&gt;(new JsonRpcProxyOptions { MethodNameTransform = CommonMethodNameTransforms.CamelCase });
+rpc.StartListening();
+
+var hello = await service.Hello(new HelloRequest
+{
+    ClientName = "MeinProgramm", ClientVersion = "1.0",
+    ProtocolMajorMin = BridgeProtocol.Major, ProtocolMajorMax = BridgeProtocol.Major,
+    Events = new[] { "runCompleted" }
+});</pre>
+
+<p><code>sid</code> ist die Sicherheitskennung des aktuellen Windows-Benutzers (<code>WindowsIdentity.GetCurrent().User.Value</code>).</p>
+
+<p><strong>Wichtig:</strong> leiten Sie <code>JsonRpc</code> ab und &uuml;berschreiben Sie <code>GetErrorDetailsDataType</code> mit <code>return typeof(BridgeErrorData);</code>. Ohne das liest die Bibliothek <code>error.data</code> als
+ihren eigenen Typ, die Daten der Schnittstelle (die Art, die Fehler-ID, <code>neverStarted</code>) gehen verloren, und Sie k&ouml;nnen eine Absage nicht von einem Zweifel unterscheiden.</p>
+
+<p>Ein Methodenname im Vertrag ist der Name in Camel-Case: <code>hello</code>, <code>getStatus</code>, <code>startRun</code>.</p>
+
+<h2>5. Was Sie aus der Antwort auf <code>hello</code> lesen</h2>
+
+<ul>
+<li>Die <strong>F&auml;higkeiten</strong> (<code>capabilities</code>): rufen Sie nur auf, was angeboten wird. Eine Methode, deren F&auml;higkeit fehlt, endet mit <code>capabilityNotSupported</code>, nie als stille Wirkungslosigkeit.</li>
+<li>Die <code>instanceId</code>: die Kennung des RFiDGear-Prozesses. &Auml;ndert sie sich zwischen zwei Verbindungen, wurde RFiDGear neu gestartet, die Ergebnisnummern beginnen von vorn, und was Sie gemerkt haben, steht dort nicht mehr.</li>
+<li>Die <strong>Grenzen</strong> (<code>limits</code>): bleiben Sie darin.</li>
+<li>Bis <code>getStatus</code> <code>startupComplete</code> meldet, antwortet alles au&szlig;er <code>hello</code> und <code>getStatus</code> mit <code>notReady</code>: warten Sie und fragen Sie neu.</li>
+</ul>
+
+<h2>6. Ausprobieren</h2>
+
+<p>Starten Sie RFiDGear mit <code>EXTERNALCONTROL=1</code> und dann <code>RFiDGear.Bridge.SampleClient status</code>. Der Beispielclient (siehe <a href="bridge_sample_client.html">Der Beispielclient</a>) tut alles auf dieser Seite und mehr.</p>
+
+<div class="warn">Ein Lauf schreibt auf Karten. Probieren Sie die externe Steuerung zuerst mit einem Projekt, das nur liest, und an einer Karte, die Sie nicht mehr brauchen.</div>
+
+<div class="nav">Vorherige Seite: <a href="dev_overview.html">&Uuml;berblick f&uuml;r Entwickler</a> &middot; N&auml;chste Seite: <a href="bridge_protocol.html">Das Protokoll</a></div>
+
+</body>
+</html>

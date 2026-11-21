@@ -97,10 +97,75 @@
 				<param name="Name" value="Fehlersuche">
 				<param name="Local" value="Content\troubleshooting.html">
 				</OBJECT>
+		</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Teil 2: F&uuml;r Entwickler">
+		</OBJECT>
+		<UL>
 			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Glossar">
-				<param name="Local" value="Content\glossary.html">
+				<param name="Name" value="&Uuml;berblick f&uuml;r Entwickler">
+				<param name="Local" value="Content\dev_overview.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Externe Steuerung: Schnellstart">
+				<param name="Local" value="Content\bridge_start.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Das Protokoll">
+				<param name="Local" value="Content\bridge_protocol.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Methoden und Ereignisse">
+				<param name="Local" value="Content\bridge_methods.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Das Ergebnis eines Laufs">
+				<param name="Local" value="Content\bridge_results.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="L&auml;ufe sicher anfordern">
+				<param name="Local" value="Content\bridge_safe_runs.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Eine Karte, eine Freigabe, ein Lauf">
+				<param name="Local" value="Content\bridge_approval.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Schl&uuml;ssel &uuml;ber die externe Steuerung">
+				<param name="Local" value="Content\bridge_keys.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Der Beispielclient">
+				<param name="Local" value="Content\bridge_sample_client.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Schl&uuml;sselanbieter schreiben">
+				<param name="Local" value="Content\key_providers.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Erweiterungen schreiben">
+				<param name="Local" value="Content\extensions.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Erweiterungspakete (.rfext)">
+				<param name="Local" value="Content\extension_packages.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Dateien und Ordner">
+				<param name="Local" value="Content\files_folders.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Bauen und testen">
+				<param name="Local" value="Content\build_test.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Was erprobt ist und was nicht">
+				<param name="Local" value="Content\maturity.html">
 				</OBJECT>
 		</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Glossar">
+		<param name="Local" value="Content\glossary.html">
+		</OBJECT>
 </UL>
 </BODY></HTML>

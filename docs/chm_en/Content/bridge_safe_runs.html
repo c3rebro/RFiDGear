@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Requesting runs safely</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Requesting runs safely</h1>
+
+<div class="warn"><strong>The one rule.</strong> RFiDGear writes cards. A request that may have reached it has to be treated as if it had, until you have asked. So when <code>startRun</code> gets no answer (a timeout, a lost connection, an error without
+<code>neverStarted: true</code>), <strong>do not make a new request id and do not start the job again</strong>. Ask about the same request id with <code>getRunResult</code>. Only an error that carries <code>neverStarted: true</code> says that nothing was started,
+and only then may you try again.</div>
+
+<h2>Running a job</h2>
+
+<ol>
+<li><strong>Make the request id and write it down before you call.</strong> Build it from your job (an order number plus an attempt number, say). It is the only way to ask about the run if you lose the connection. While RFiDGear still knows the id (the last 1024, and after a
+restart only with the capability <code>execution.journal</code>), the same id with the same content never starts a second run. Past that it can: this is why a client asks after a doubt and does not send again.</li>
+<li><strong>Pin the project.</strong> Load it with <code>loadProject</code>; note <code>path</code>, <code>taskCount</code> and <code>revision</code> as the state you approve for this job.</li>
+<li><strong>Call <code>startRun</code></strong> with the request id, the <code>variables</code> and the <code>expectProjectPath</code>, <code>expectTaskCount</code> and <code>expectProjectRevision</code> of the load. The answer comes when the run is admitted (<code>running</code>), not when it ends. On an error:
+<ul>
+<li><code>neverStarted: true</code> (<code>busy</code>, <code>noProjectLoaded</code>, <code>noReader</code>, <code>projectMismatch</code>, <code>uiUnresponsive</code>, <code>shuttingDown</code>, <code>notReady</code> and others): nothing was started. Fix the cause or wait, and try again.</li>
+<li>no <code>neverStarted</code>, a timeout or a lost connection: <strong>ask</strong>, do not send. (<code>invalidRequest</code> is a mistake of the program; the details name the field.)</li>
+</ul></li>
+<li><strong>Wait for the end</strong> with <code>getRunResult</code> by request id and <code>waitMs</code> up to 30000; it returns as soon as the run ends or the wait runs out, and you ask again while it says <code>running</code>. Or listen to <code>runCompleted</code> and use <code>getRunResult</code> only as the fallback.
+Do not poll <code>getStatus</code> in a tight loop.</li>
+<li><strong>Read the result</strong> (see <a href="bridge_results.html">The result of a run</a>). <code>bridgeFault</code> as the reason means that RFiDGear could not give you a complete result and the card may have been touched.</li>
+</ol>
+
+<h2>The revision of the project (<code>project.revision</code>)</h2>
+
+<p><code>loadProject</code> and the <code>project</code> of <code>getStatus</code> carry a <code>revision</code>: an opaque text that says in which state the project is in RFiDGear now. It covers what a save would write, so a change that was made in the window and not saved is part of it. It does not change when a
+run only leaves its results on the tasks: the data that a task read from a card is no part of it. The data that a write task is going to write is part of it. <code>startRun</code> with <code>expectProjectRevision</code> is refused (<code>projectMismatch</code>, <code>neverStarted</code>) before anything is touched
+when the project is in another state. The result carries <code>projectRevision</code>: the state the run started with.</p>
+
+<ul>
+<li>Take the revision from <code>loadProject</code>, or from <code>getStatus</code> after you decided to approve that state, and pass it to <code>startRun</code>. Compare nothing else about it: do not parse it.</li>
+<li>A revision is valid for <strong>one RFiDGear process</strong>. After a restart the same project has another one; the <code>instanceId</code> tells the processes apart. Do not store one for later.</li>
+<li>A run changes the project it runs (the tasks write some of their own settings). The state that a run started with <code>startRun</code> leaves behind is recognized as the project it started with; not recognized are a change made in the window afterwards, what a run left that was started in the window, by
+automatic mode or by an extension, and a run whose state could not be read at its end. Such a state is refused: read the revision again and approve it.</li>
+<li>If RFiDGear offers the capability but the answer to <code>loadProject</code> has no <code>revision</code>, do not start.</li>
+</ul>
+
+<h2>After a doubt, a lost connection or a restart</h2>
+
+<p>Connect again, make the <code>hello</code> and call <code>getRunResult</code> with the request id. The states are on the page <a href="bridge_results.html">The result of a run</a>. For <code>interruptedByRestart</code> and <code>unknown</code>, look at the card (read it with a task that does not write)
+before you decide.</p>
+
+<h2>Catching up on results</h2>
+
+<p><code>getStatus</code> tells you the number of the latest result (<code>lastResultSeq</code>). <code>listRunResults</code> with the number of the last result you have returns the results after it, oldest first, those of automatic mode too, up to the last 64. <code>gap: true</code> says that some
+were dropped from the history in between. A number that RFiDGear has not given out (you kept it over a restart) is refused with <code>invalidRequest</code>: check the <code>instanceId</code> first.</p>
+
+<h2>What not to do</h2>
+
+<ul>
+<li>Send a job again under a new request id after a doubt.</li>
+<li>Poll <code>getStatus</code> in a tight loop to find out when a run ended.</li>
+<li>Assume that a card is on the reader because the last status said so: read <code>scanReader</code> or let the result of the run tell you.</li>
+<li>Treat <code>unknown</code>, or the end of the connection, as "nothing happened".</li>
+<li>Run RFiDGear and the client with different rights, or start more than one RFiDGear.</li>
+<li>Log variables, paths, UIDs or keys. Log the request id, the run id, the result number, the status and the kinds of errors.</li>
+</ul>
+
+<div class="nav">Previous page: <a href="bridge_results.html">The result of a run</a> &middot; Next page: <a href="bridge_approval.html">One card, one approval, one run</a></div>
+
+</body>
+</html>

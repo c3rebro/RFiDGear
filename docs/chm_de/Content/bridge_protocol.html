@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Das Protokoll</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Das Protokoll</h1>
+
+<p>Die Pipe spricht JSON-RPC 2.0 (StreamJsonRpc, <code>HeaderDelimitedMessageHandler</code> mit <code>Content-Length</code>-Kopfzeilen), UTF-8-JSON.</p>
+
+<h2>Die Form der Nachrichten</h2>
+
+<ul>
+<li>Die Parameter sind positionell mit genau <strong>einem</strong> Objekt: dem Anfragetyp der Methode.</li>
+<li>Die Namen sind Camel-Case und stehen ausdr&uuml;cklich im Vertrag (<code>BridgeJson</code> hat die Optionen). RFiDGear weist Mitglieder zur&uuml;ck, die es nicht kennt; ein Client &uuml;berspringt Mitglieder, die er nicht kennt.</li>
+<li>Eine Nachricht von mehr als 1 MiB beendet die Verbindung.</li>
+<li>RFiDGear sendet Benachrichtigungen nacheinander. Ein Client, der eine Benachrichtigung nicht innerhalb von zehn Sekunden annimmt (ein Senden dauert l&auml;nger), wird getrennt, ebenso einer, bei dem mehr als 64 dauerhafte Benachrichtigungen warten (Ergebnisse, Moduswechsel und die Meldungen &uuml;ber eine gezeigte Karte). Die Ergebnisse bleiben im Verlauf; nach dem erneuten Verbinden holen Sie sie nach. Eine ruhende Verbindung wird nicht getrennt.</li>
+</ul>
+
+<h2>Regeln f&uuml;r jeden Aufruf</h2>
+
+<ul>
+<li><code>hello</code> kommt zuerst. Alles andere davor endet mit <code>handshakeRequired</code>.</li>
+<li>Eine Methode, deren F&auml;higkeit das RFiDGear nicht anbietet, endet mit <code>capabilityNotSupported</code>. Ein Client entscheidet aus den F&auml;higkeiten in der Antwort auf <code>hello</code> und nie aus der Version der Anwendung, was er aufrufen darf.</li>
+<li>Bis RFiDGear fertig gestartet ist, endet alles au&szlig;er <code>hello</code> und <code>getStatus</code> mit <code>notReady</code>.</li>
+<li>RFiDGear wiederholt keine Kartenoperation, und ein Client darf es auch nicht (siehe <a href="bridge_safe_runs.html">L&auml;ufe sicher anfordern</a>).</li>
+</ul>
+
+<h2>Die F&auml;higkeiten</h2>
+
+<table>
+<tr><th>F&auml;higkeit</th><th>Was sie anbietet</th></tr>
+<tr><td><code>session</code></td><td><code>hello</code>: Aushandlung der Protokollversion, F&auml;higkeiten, Ereignisse, Grenzen</td></tr>
+<tr><td><code>status</code></td><td><code>getStatus</code></td></tr>
+<tr><td><code>project.load</code></td><td><code>loadProject</code></td></tr>
+<tr><td><code>execution.run</code>, <code>execution.cancel</code></td><td><code>startRun</code>, <code>cancelRun</code></td></tr>
+<tr><td><code>execution.resultLookup</code>, <code>execution.resultLog</code></td><td><code>getRunResult</code>, <code>listRunResults</code></td></tr>
+<tr><td><code>reader.scan</code></td><td><code>scanReader</code></td></tr>
+<tr><td><code>autoMode</code>, <code>autoMode.approval</code></td><td><code>startAutoMode</code>, <code>stopAutoMode</code>; mit Freigabe: <code>approveCard</code>, <code>declineCard</code></td></tr>
+<tr><td><code>keys.provider</code></td><td><code>registerKeyProvider</code> und der Aufruf <code>resolveKey</code> von RFiDGear an den Client</td></tr>
+<tr><td><code>events.execution</code>, <code>events.running</code>, <code>events.reader</code>, <code>events.project</code>, <code>events.autoMode</code>, <code>events.lifecycle</code></td><td>die Gruppen der Ereignisse</td></tr>
+<tr><td><code>project.revision</code></td><td>Garantie: Revision des geladenen Projekts</td></tr>
+<tr><td><code>execution.journal</code></td><td>Garantie: ein Lauf wird vor dem Start aufgeschrieben; nach einem Neustart sind die zugelassenen Request-IDs noch bekannt</td></tr>
+<tr><td><code>execution.verificationDetails</code></td><td>Garantie: eine vergleichende Aufgabe nennt, was sie verglichen hat</td></tr>
+<tr><td><code>keys.context</code></td><td>Garantie: eine Schl&uuml;sselanfrage sagt, woher ihr Lauf kommt; mit <code>ownRunsOnly</code> beantwortet RFiDGear fremde L&auml;ufe selbst</td></tr>
+</table>
+
+<p>Jede Methode und jedes Ereignis hat genau <em>eine</em> F&auml;higkeit; die Antwort auf <code>hello</code> wird aus diesen Angaben erzeugt, eine F&auml;higkeit kann also nicht ohne ihre Methode angeboten werden. Ein neues Feld in einer Anfrage kommt nur mit einer
+neuen F&auml;higkeit, die ein Client gesehen hat.</p>
+
+<h2>Fehler</h2>
+
+<p>Ein Fehler ist ein JSON-RPC-Fehler mit einem Anwendungscode; <code>error.data</code> enth&auml;lt <code>kind</code>, optional <code>errorId</code> (sie steht auch im Protokoll von RFiDGear), <code>neverStarted</code> und <code>details</code>.
+Der Text des Fehlers ist nie der Text einer Ausnahme. Eine unbekannte Methode und eine Anfrage, die nicht passt, erreichen den Client als <code>-32601</code> und <code>-32602</code>.</p>
+
+<table>
+<tr><th>Code</th><th>Art (<code>kind</code>)</th><th>Bedeutung</th></tr>
+<tr><td>1001</td><td><code>handshakeRequired</code></td><td><code>hello</code> fehlt</td></tr>
+<tr><td>1002</td><td><code>incompatibleProtocol</code></td><td>die Details nennen den Bereich, den RFiDGear spricht</td></tr>
+<tr><td>1003</td><td><code>capabilityNotSupported</code></td><td>die F&auml;higkeit wird nicht angeboten</td></tr>
+<tr><td>1004</td><td><code>invalidRequest</code></td><td>die Details nennen das Feld, nie seinen Wert</td></tr>
+<tr><td>1005</td><td><code>notReady</code></td><td>RFiDGear startet noch</td></tr>
+<tr><td>1006</td><td><code>busy</code></td><td>die Details sagen womit: <code>run</code>, <code>load</code>, <code>edit</code>, <code>scan</code> oder <code>other</code></td></tr>
+<tr><td>1007</td><td><code>autoModeActive</code></td><td>der automatische Modus l&auml;uft</td></tr>
+<tr><td>1008 bis 1012</td><td><code>projectNotFound</code>, <code>projectUnsupportedFormat</code>, <code>projectLoadFailed</code>, <code>noProjectLoaded</code>, <code>projectMismatch</code></td><td>das Projekt</td></tr>
+<tr><td>1013</td><td><code>requestIdConflict</code></td><td>dieselbe ID mit anderem Inhalt</td></tr>
+<tr><td>1014, 1015</td><td><code>uiUnresponsive</code>, <code>shuttingDown</code></td><td>das Fenster antwortet nicht; RFiDGear schlie&szlig;t</td></tr>
+<tr><td>1016, 1017</td><td><code>internalError</code>, <code>noReader</code></td><td>ein Fehler in RFiDGear; kein Leser</td></tr>
+<tr><td>1018</td><td><code>approvalNotPending</code></td><td>eine Antwort auf eine Karte, auf die nicht (mehr) gewartet wird, die schon beantwortet wurde oder von einer anderen Verbindung kommt</td></tr>
+</table>
+
+<p><code>neverStarted: true</code> sagt, dass die Anfrage keine Karte ber&uuml;hrt hat und ein neuer Versuch sicher ist. Ein Fehler ohne das Feld sagt nicht das Gegenteil: fragen Sie nach.</p>
+
+<h2>Grenzen</h2>
+
+<p>Auch in <code>hello</code> zu lesen: 1 MiB je Nachricht, 64 Variablen, 128 Zeichen je Name, 2048 je Wert, 4096 je Pfad, 64 Ergebnisse und 1024 Request-IDs im Verlauf, 30 Sekunden Wartezeit je <code>getRunResult</code>, 32 Bytes je Schl&uuml;ssel.</p>
+
+<h2>Versionierung</h2>
+
+<p>Das Protokoll hat eine Hauptversion (heute 1), die der Client in <code>hello</code> als Bereich nennt. Innerhalb der Hauptversion wird nichts entfernt oder umgedeutet, sobald das Protokoll eingefroren ist; ein Client liest, was ein neueres RFiDGear hinzuf&uuml;gt,
+als optional. Die Assemblyversion des Vertrags bleibt <code>1.0.0.0</code>.</p>
+
+<div class="nav">Vorherige Seite: <a href="bridge_start.html">Externe Steuerung: Schnellstart</a> &middot; N&auml;chste Seite: <a href="bridge_methods.html">Methoden und Ereignisse</a></div>
+
+</body>
+</html>

@@ -37,6 +37,21 @@ Content\sam_setup.html
 Content\command_line.html
 Content\updates_extensions.html
 Content\troubleshooting.html
+Content\dev_overview.html
+Content\bridge_start.html
+Content\bridge_protocol.html
+Content\bridge_methods.html
+Content\bridge_results.html
+Content\bridge_safe_runs.html
+Content\bridge_approval.html
+Content\bridge_keys.html
+Content\bridge_sample_client.html
+Content\key_providers.html
+Content\extensions.html
+Content\extension_packages.html
+Content\files_folders.html
+Content\build_test.html
+Content\maturity.html
 Content\glossary.html
 
 [INFOTYPES]

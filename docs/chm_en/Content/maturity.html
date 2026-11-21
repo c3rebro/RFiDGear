@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>What is proven and what is not</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>What is proven and what is not</h1>
+
+<p>This page says honestly what you can rely on and what has so far run only in a test or not at all. It follows the notes in the source repository; where the files there are newer, they are right.</p>
+
+<h2>External control</h2>
+
+<ul>
+<li><strong>The protocol is not frozen.</strong> It will be frozen when the checklist <code>RFiDGear.HIL.Tests/EXTERNAL-CONTROL.md</code> has passed with a real reader. Until then a name may still change; after it, nothing is removed or re-meant within major version 1, and a client reads what a newer RFiDGear adds as optional.</li>
+<li><strong>Tested against a simulated reader:</strong> the basic frame, the revision of the project, the origin of a request for a key and the mode with approval. The tests run the real interface on a real pipe, the real state machine of automatic mode and the real main window against a reader that plays a script.
+A <strong>real reader and a real card</strong> are needed to see how a real reader reports a card that is taken away between two polls, how long a real read takes against the time you allow, and what a real task does to a real card. The cases from 52 on in <code>EXTERNAL-CONTROL.md</code> are for that.</li>
+<li>The <strong>sample client</strong> and its tests prove that the advice in this help works together with the interface; they do not prove that your client does it right.</li>
+</ul>
+
+<h2>Tasks and readers</h2>
+
+<table>
+<tr><th>Area</th><th>State</th></tr>
+<tr><td>MIFARE Classic</td><td>With a PC/SC reader, reading (and the reselect) has been tried on a 4K card. The layers for writing and the MAD, and the dialogs, are checked only against a chip simulated in memory; with an Elatec TWN4 no card has been tried. Checklist: <code>CLASSIC.md</code>.</td></tr>
+<tr><td>Ultralight, Ultralight C, EV1 and NTAG</td><td>The reader layers were probed with an NTAG215 on an Elatec reader (reading, writing, a refused password) and on a PC/SC reader (which does not know the chip). The task, the dialog and the hardware cases have not run on a card; a plain Ultralight, an Ultralight C and an EV1 have not been tried at all. Checklist: <code>ULTRALIGHT.md</code>.</td></tr>
+<tr><td>MIFARE SAM AV3</td><td>Activation, host authentication, and writing and reading back a key entry have run on a real SAM in a PC/SC reader. Through a TWN4 of hardware revision G the SAM was found, its version read and the host authentication made; the activation was not done through the TWN4 (the SAM was activated already). The key changes of a DESFire card with keys of the SAM have been played through with a TWN4 and a test card. The setup window has not been clicked through with a real SAM, and nothing has run through the window of the task yet. Checklists: <code>SAM-AV3.md</code>, <code>SAM-PICC.md</code>.</td></tr>
+<tr><td>Keys in the Credential Manager</td><td>The building blocks are tested; the checklist with a real reader is <code>SECURE-KEYS.md</code>.</td></tr>
+<tr><td>Extension packages</td><td>The signature is shown, not enforced: a package is accepted when the SHA-256 of each file is the one it lists. Where packages are published is not decided.</td></tr>
+</table>
+
+<h2>What that means for your work</h2>
+
+<ul>
+<li>Do not write in series through external control until you have played the flow through by hand with your project on test cards (the sample client helps), and check the result of every card yourself: a positive end of the task list is not the same as a card that holds what was meant.</li>
+<li>Build a client so that it copes with a name that may still change: read the capabilities, not the version.</li>
+<li>What the help calls "not implemented" or "without function", do not use.</li>
+</ul>
+
+<div class="nav">Previous page: <a href="build_test.html">Building and testing</a> &middot; Next page: <a href="glossary.html">Glossary</a></div>
+
+</body>
+</html>

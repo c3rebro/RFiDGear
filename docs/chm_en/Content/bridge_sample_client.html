@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>The sample client</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>The sample client</h1>
+
+<p><code>RFiDGear.Bridge.SampleClient</code> is a small client of external control, to read and to try. It is <code>net10.0</code>, references only <code>RFiDGear.Bridge.Contracts</code> and StreamJsonRpc, and does what the guide asks for. Its tests (<code>BridgeSampleClientTests</code>) are the proof that the advice
+in this part of the help works.</p>
+
+<h2>The commands</h2>
+
+<p>Start RFiDGear with the setting for external control or with <code>EXTERNALCONTROL=1</code>. Then:</p>
+
+<table>
+<tr><th>Command</th><th>Effect</th></tr>
+<tr><td><code>status</code></td><td>shows what <code>getStatus</code> says</td></tr>
+<tr><td><code>run &lt;requestId&gt; &lt;project.rfPrj&gt; $JOBNUMBER=4711</code></td><td>loads a project, notes its state and runs it. It prints the request id <em>before</em> it calls, so that you can ask about the run even if the program is killed on the way. A result that cannot be told is printed as <code>Unknown</code> with the advice to look at the card first; the exit code is then not zero. <code>--expect-revision=&lt;revision&gt;</code> passes a revision that you noted
+from <code>status</code></td></tr>
+<tr><td><code>result &lt;requestId&gt;</code></td><td>asks what became of a request</td></tr>
+<tr><td><code>results &lt;number&gt;</code></td><td>lists what a client missed</td></tr>
+<tr><td><code>approved-run &lt;requestId&gt; &lt;project.rfPrj&gt;</code></td><td>the flow for one card: loads, notes the revision, looks at the reader, shows the UID and asks you to type <code>yes</code>, starts one run with the UID in <code>$EXPECTEDUID</code> (<code>--variable=$NAME</code> for another name; <code>--yes</code> answers for you, for a test), and then compares the card of the result with the approved one. The exit code is 0 only for a confirmed run</td></tr>
+<tr><td><code>auto</code></td><td>switches the plain automatic mode on until you press <kbd>Ctrl</kbd> + <kbd>C</kbd></td></tr>
+<tr><td><code>auto --approve-with=$EXPECTEDUID [--no-pin] [--wait=8] [--set=NAME=value]</code></td><td>the mode with approval: every card is approved by one fixed rule. <code>--decline</code> declines every card, <code>--no-answer</code> never answers: so that you can see each end by hand</td></tr>
+<tr><td><code>keys orders/4711 --own-runs-only --run=job-2</code></td><td>serves a key for one reference (typed at a prompt that does not show it); <code>--own-runs-only</code> asks RFiDGear to answer for every run that the sample did not start and checks it again itself; <code>--run=&lt;id&gt;</code> starts a run on the same connection, because the interface serves one client at a time</td></tr>
+</table>
+
+<div class="warn"><code>run</code> and <code>approved-run</code> write to a card: use a test card.</div>
+
+<h2>The parts</h2>
+
+<table>
+<tr><th>Class</th><th>What for</th></tr>
+<tr><td><code>BridgeSampleClient</code></td><td>the pipe of the current user (with <code>CurrentUserOnly</code>), the error data made readable, the handshake and the check of the capabilities, <code>RunOnceAsync</code> (starts a run and <strong>never</strong> repeats it as a new request), <code>ResumeAsync</code>
+(the way back after a lost connection or a restart), <code>CatchUpAsync</code> and <code>KeyVault</code>, the hook for your own vault</td></tr>
+<tr><td><code>ApprovalModeLoop</code></td><td>the loop of a program that decides about every card in automatic mode: switch the mode on with <code>requireApproval</code>, hand every card to your decision (<code>ApproveWith</code> with the variables of the card, or <code>Decline</code>), answer with the <code>presenceId</code>, treat a decision that throws as a refusal, drop a decision whose card is given up meanwhile, and stop the mode only if it switched it on itself</td></tr>
+<tr><td><code>ApprovalPolicy</code></td><td>the fixed rules of the commands <code>auto --approve-with</code>, <code>--decline</code> and <code>--no-answer</code></td></tr>
+<tr><td><code>SampleVault</code></td><td>a vault that answers one reference and refuses all others: that is the shape every vault should have</td></tr>
+</table>
+
+<p>The vault is not on the command line on purpose: a key does not belong in an argument.</p>
+
+<div class="nav">Previous page: <a href="bridge_keys.html">Keys through external control</a> &middot; Next page: <a href="key_providers.html">Writing a key provider</a></div>
+
+</body>
+</html>

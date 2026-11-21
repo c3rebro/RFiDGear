@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>L&auml;ufe sicher anfordern</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>L&auml;ufe sicher anfordern</h1>
+
+<div class="warn"><strong>Die eine Regel.</strong> RFiDGear schreibt Karten. Eine Anfrage, die RFiDGear erreicht haben kann, ist so zu behandeln, als h&auml;tte sie es, bis Sie gefragt haben. Bekommt <code>startRun</code> keine Antwort (Zeit&uuml;berschreitung, verlorene Verbindung, ein Fehler ohne
+<code>neverStarted: true</code>), dann <strong>vergeben Sie keine neue Request-ID und starten Sie den Auftrag nicht neu</strong>. Fragen Sie mit <code>getRunResult</code> nach derselben Request-ID. Nur ein Fehler mit <code>neverStarted: true</code> sagt, dass nichts gestartet wurde,
+und nur dann d&uuml;rfen Sie es noch einmal versuchen.</div>
+
+<h2>Einen Auftrag ausf&uuml;hren</h2>
+
+<ol>
+<li><strong>Request-ID bilden und aufschreiben, bevor Sie rufen.</strong> Bilden Sie sie aus Ihrem Auftrag (zum Beispiel Auftragsnummer plus Versuchsnummer). Sie ist der einzige Weg, nach einem Verbindungsverlust nach dem Lauf zu fragen. Solange RFiDGear die ID noch kennt (die letzten 1024, nach
+einem Neustart nur mit der F&auml;higkeit <code>execution.journal</code>), startet dieselbe ID mit demselben Inhalt nie einen zweiten Lauf. Ist sie &auml;lter, kann er doch starten: deshalb fragt ein Client nach einem Zweifel, statt noch einmal zu senden.</li>
+<li><strong>Das Projekt festhalten.</strong> Laden Sie es mit <code>loadProject</code>; notieren Sie <code>path</code>, <code>taskCount</code> und <code>revision</code> als den Zustand, den Sie f&uuml;r diesen Auftrag freigeben.</li>
+<li><strong><code>startRun</code> rufen</strong> mit der Request-ID, den <code>variables</code> und <code>expectProjectPath</code>, <code>expectTaskCount</code> und <code>expectProjectRevision</code> des Ladens. Die Antwort kommt, wenn der Lauf zugelassen ist (<code>running</code>), nicht, wenn er endet. Bei einem Fehler:
+<ul>
+<li><code>neverStarted: true</code> (<code>busy</code>, <code>noProjectLoaded</code>, <code>noReader</code>, <code>projectMismatch</code>, <code>uiUnresponsive</code>, <code>shuttingDown</code>, <code>notReady</code> und andere): nichts wurde gestartet. Beheben Sie die Ursache oder warten Sie, und versuchen Sie es noch einmal.</li>
+<li>kein <code>neverStarted</code>, eine Zeit&uuml;berschreitung oder eine verlorene Verbindung: <strong>fragen</strong>, nicht senden. (<code>invalidRequest</code> ist ein Fehler des Programms; die Details nennen das Feld.)</li>
+</ul></li>
+<li><strong>Auf das Ende warten</strong> mit <code>getRunResult</code> nach Request-ID und <code>waitMs</code> bis 30000; die Antwort kommt, sobald der Lauf endet oder die Wartezeit abl&auml;uft, solange sie <code>running</code> sagt, fragen Sie wieder. Oder h&ouml;ren Sie auf <code>runCompleted</code> und verwenden <code>getRunResult</code> nur als R&uuml;ckfall.
+Fragen Sie nicht in einer engen Schleife <code>getStatus</code> ab.</li>
+<li><strong>Das Ergebnis lesen</strong> (siehe <a href="bridge_results.html">Das Ergebnis eines Laufs</a>). <code>bridgeFault</code> als Grund hei&szlig;t, RFiDGear konnte kein vollst&auml;ndiges Ergebnis geben und die Karte kann ber&uuml;hrt worden sein.</li>
+</ol>
+
+<h2>Die Revision des Projekts (<code>project.revision</code>)</h2>
+
+<p><code>loadProject</code> und das <code>project</code> von <code>getStatus</code> tragen eine <code>revision</code>: ein undurchsichtiger Text, der sagt, in welchem Zustand das Projekt jetzt in RFiDGear ist. Er deckt ab, was ein Speichern schriebe, also auch eine &Auml;nderung im Fenster, die nicht gespeichert wurde. Er &auml;ndert sich nicht, wenn ein
+Lauf nur seine Ergebnisse an den Aufgaben hinterl&auml;sst: Daten, die eine Aufgabe von der Karte las, geh&ouml;ren nicht dazu. Die Daten, die eine Schreibaufgabe schreiben will, geh&ouml;ren dazu. <code>startRun</code> mit <code>expectProjectRevision</code> wird abgelehnt (<code>projectMismatch</code>, <code>neverStarted</code>), bevor etwas ber&uuml;hrt wird,
+wenn das Projekt in einem anderen Zustand ist. Das Ergebnis tr&auml;gt <code>projectRevision</code>: den Zustand, mit dem der Lauf begann.</p>
+
+<ul>
+<li>Nehmen Sie die Revision von <code>loadProject</code> oder von <code>getStatus</code>, nachdem Sie diesen Zustand freigegeben haben, und geben Sie sie an <code>startRun</code> weiter. Vergleichen Sie nichts anderes daran: werten Sie sie nicht aus.</li>
+<li>Eine Revision gilt f&uuml;r <strong>einen RFiDGear-Prozess</strong>. Nach einem Neustart hat dasselbe Projekt eine andere; die <code>instanceId</code> unterscheidet die Prozesse. Merken Sie sich keine f&uuml;r sp&auml;ter.</li>
+<li>Ein Lauf &auml;ndert das Projekt, das er ausf&uuml;hrt (die Aufgaben schreiben einiges in ihre eigenen Einstellungen). Der Zustand, den ein per <code>startRun</code> gestarteter Lauf hinterl&auml;sst, gilt als das Projekt, mit dem er begann; nicht erkannt werden eine &Auml;nderung im Fenster danach, was ein im Fenster, vom
+automatischen Modus oder von einer Erweiterung gestarteter Lauf hinterlie&szlig;, und ein Lauf, dessen Zustand am Ende nicht zu lesen war. Ein solcher Zustand wird abgelehnt: lesen Sie die Revision neu und geben Sie sie frei.</li>
+<li>Bietet RFiDGear die F&auml;higkeit an, die Antwort auf <code>loadProject</code> hat aber keine <code>revision</code>, starten Sie nicht.</li>
+</ul>
+
+<h2>Nach einem Zweifel, einem Verbindungsverlust oder einem Neustart</h2>
+
+<p>Verbinden Sie sich neu, machen Sie das <code>hello</code> und rufen Sie <code>getRunResult</code> mit der Request-ID. Die Zust&auml;nde stehen auf der Seite <a href="bridge_results.html">Das Ergebnis eines Laufs</a>. Bei <code>interruptedByRestart</code> und <code>unknown</code> sehen Sie sich die Karte an
+(lesen Sie sie mit einer Aufgabe, die nicht schreibt), bevor Sie entscheiden.</p>
+
+<h2>Verpasste Ergebnisse nachholen</h2>
+
+<p><code>getStatus</code> nennt die Nummer des letzten Ergebnisses (<code>lastResultSeq</code>). <code>listRunResults</code> mit der Nummer des letzten Ergebnisses, das Sie haben, liefert die danach, die &auml;ltesten zuerst, auch die des automatischen Modus, bis zu den letzten 64. <code>gap: true</code> sagt, dass
+dazwischen welche aus dem Verlauf fielen. Eine Nummer, die RFiDGear nicht vergeben hat (Sie haben sie &uuml;ber einen Neustart behalten), wird mit <code>invalidRequest</code> abgelehnt: pr&uuml;fen Sie zuerst die <code>instanceId</code>.</p>
+
+<h2>Was Sie nicht tun</h2>
+
+<ul>
+<li>Einen Auftrag nach einem Zweifel unter neuer Request-ID noch einmal senden.</li>
+<li><code>getStatus</code> in einer engen Schleife abfragen, um das Ende eines Laufs zu erfahren.</li>
+<li>annehmen, dass eine Karte auf dem Leser liegt, weil der letzte Status es sagte: lesen Sie mit <code>scanReader</code> oder lassen Sie das Ergebnis des Laufs es sagen.</li>
+<li><code>unknown</code> oder das Ende der Verbindung als &bdquo;es ist nichts geschehen&ldquo; deuten.</li>
+<li>RFiDGear und den Client mit verschiedenen Rechten starten, oder mehr als ein RFiDGear.</li>
+<li>Variablen, Pfade, UIDs oder Schl&uuml;ssel protokollieren. Protokollieren Sie die Request-ID, die Lauf-ID, die Ergebnisnummer, den Status und die Art der Fehler.</li>
+</ul>
+
+<div class="nav">Vorherige Seite: <a href="bridge_results.html">Das Ergebnis eines Laufs</a> &middot; N&auml;chste Seite: <a href="bridge_approval.html">Eine Karte, eine Freigabe, ein Lauf</a></div>
+
+</body>
+</html>

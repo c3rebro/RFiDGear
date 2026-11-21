@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Das Ergebnis eines Laufs</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Das Ergebnis eines Laufs</h1>
+
+<p>Ein Ergebnis (<code>RunResultDto</code>) sagt, wie ein Lauf endete. Ein Client traut ihm nur, wenn <code>taskOutcomes</code> genau <code>totalTasks</code> Eintr&auml;ge hat: ein unvollst&auml;ndiges Ergebnis wird nie als vollst&auml;ndiges ausgegeben,
+sondern mit dem Grund <code>bridgeFault</code>.</p>
+
+<h2>Die Felder</h2>
+
+<table>
+<tr><th>Feld</th><th>Inhalt</th></tr>
+<tr><td><code>requestId</code>, <code>runId</code></td><td>die Request-ID (wenn ein Client den Lauf gestartet hat) und die Lauf-ID</td></tr>
+<tr><td><code>source</code></td><td><code>bridge</code> oder <code>autoMode</code></td></tr>
+<tr><td><code>status</code></td><td><code>success</code>, <code>completedWithIntentionalFailures</code>, <code>failure</code>, <code>cancelled</code> oder <code>timedOut</code></td></tr>
+<tr><td><code>failureReason</code></td><td><code>none</code>, <code>cancelled</code>, <code>timedOut</code>, <code>faulted</code>, <code>bridgeFault</code> oder <code>unknown</code></td></tr>
+<tr><td><code>totalTasks</code>, <code>failedTasks</code></td><td>die Zahlen</td></tr>
+<tr><td><code>startedAt</code>, <code>completedAt</code></td><td>die Zeiten</td></tr>
+<tr><td><code>cardUid</code></td><td>die UID der Karte, die der Lauf selbst am Anfang gelesen hat, wenn sie bekannt ist</td></tr>
+<tr><td><code>resultSeq</code></td><td>die Nummer in der einen Folge der Ergebnisse (L&auml;ufe von Clients und des automatischen Modus); RFiDGear beh&auml;lt die letzten 64</td></tr>
+<tr><td><code>projectRevision</code></td><td>die Revision des Projekts, mit der der Lauf begann</td></tr>
+<tr><td><code>presenceId</code></td><td>bei einer Karte, die im automatischen Modus freigegeben wurde</td></tr>
+<tr><td><code>taskOutcomes</code></td><td>ein Eintrag je Aufgabe (unten)</td></tr>
+</table>
+
+<h2>Wann ein Lauf gelungen ist</h2>
+
+<table>
+<tr><th><code>status</code></th><th>Wann</th></tr>
+<tr><td><code>success</code></td><td>jede Aufgabe, die lief, endete ohne Fehler, und alle Aufgaben wurden erreicht</td></tr>
+<tr><td><code>completedWithIntentionalFailures</code></td><td>eine Pr&uuml;fung hat &bdquo;nein&ldquo; gesagt, oder eine Aufgabe ist fehlgeschlagen und eine sp&auml;tere hat das mit einer Ausf&uuml;hrungsbedingung aufgefangen. <code>CardNotExpected</code> kann so nie enden</td></tr>
+<tr><td><code>failure</code></td><td>eine Aufgabe ist fehlgeschlagen und keine sp&auml;tere hat darauf reagiert; <code>CardNotExpected</code> trat auf; oder der Lauf endete, bevor alle Aufgaben erreicht waren</td></tr>
+<tr><td><code>cancelled</code>, <code>timedOut</code></td><td>der Lauf wurde angehalten oder gab zu viel Zeit aus</td></tr>
+</table>
+
+<div class="warn">Ein positives Ende der Aufgabenliste ist nicht dasselbe wie eine Karte, die enth&auml;lt, was gemeint war. Pr&uuml;fen Sie die Karte selbst, und halten Sie einen Lauf erst f&uuml;r best&auml;tigt, wenn auch <code>cardUid</code> die UID ist, die Sie freigegeben haben
+(siehe <a href="bridge_approval.html">Eine Karte, eine Freigabe, ein Lauf</a>).</div>
+
+<h2>Eine Aufgabe im Ergebnis</h2>
+
+<table>
+<tr><th>Feld</th><th>Inhalt</th></tr>
+<tr><td><code>position</code></td><td>die Stelle im Ergebnis, ab 0: erst die Aufgaben, die der Lauf erreichte, in der Reihenfolge, dann die, die er nicht erreichte</td></tr>
+<tr><td><code>projectTaskIndex</code></td><td>die Aufgabennummer, wie das Projekt sie schreibt (freier Text: nicht auswerten)</td></tr>
+<tr><td><code>taskTypeName</code></td><td>die Art der Aufgabe</td></tr>
+<tr><td><code>isSuccess</code></td><td><code>true</code>, wenn sie lief und gelang; <code>false</code>, wenn sie lief und scheiterte; fehlt, wenn sie nicht lief oder ihr Ergebnis nicht bekannt ist</td></tr>
+<tr><td><code>normalizedErrorCode</code></td><td>der normalisierte Fehlercode (<code>NoError</code>, <code>AuthFailure</code>, <code>PermissionDenied</code>, <code>ProtocolConstraint</code>, <code>TransportError</code>, <code>Unknown</code>, <code>KeyUnavailable</code>, <code>CardNotExpected</code>, ...); enth&auml;lt nie Schl&uuml;sselmaterial</td></tr>
+<tr><td><code>skipReason</code></td><td>warum die Aufgabe nicht lief, wenn sie nicht lief</td></tr>
+<tr><td><code>verificationDetails</code></td><td>was eine vergleichende Aufgabe verglichen hat (unten)</td></tr>
+</table>
+
+<h2>Die Zust&auml;nde einer Abfrage</h2>
+
+<p><code>getRunResult</code> antwortet mit einem Zustand:</p>
+
+<table>
+<tr><th><code>state</code></th><th>Bedeutung</th></tr>
+<tr><td><code>running</code></td><td>der Lauf geht weiter; fragen Sie wieder</td></tr>
+<tr><td><code>completed</code></td><td>er ist zu Ende; das Ergebnis ist da, es sei denn, der Verlauf hat es verworfen (dann wissen Sie, dass er endete, aber nicht wie)</td></tr>
+<tr><td><code>interruptedByRestart</code></td><td>RFiDGear wurde geschlossen oder starb, w&auml;hrend der Lauf ging. Die Karte kann beschrieben sein</td></tr>
+<tr><td><code>unknown</code></td><td>RFiDGear kennt die ID nicht: die Anfrage kam nie an, oder sie ist &auml;lter als die letzten 1024. <strong>Das beweist nicht, dass nichts gestartet wurde.</strong></td></tr>
+</table>
+
+<h2>Warum eine Pr&uuml;fung scheiterte: <code>verificationDetails</code></h2>
+
+<p>Eine Aufgabe, die Werte vergleicht, kann sagen, was sie verglichen hat, damit die Aufzeichnung einer gescheiterten Pr&uuml;fung mehr enth&auml;lt als &bdquo;gescheitert&ldquo;. Heute hat nur die DESFire-Aufgabe &bdquo;Pr&uuml;fung: Dateieinstellungen&ldquo; solche Angaben (Art <code>desfire.fileSettings</code>).
+Sie enthalten <code>schemaVersion</code> (1), <code>kind</code>, <code>overallMatch</code>, <code>compareMode</code> (<code>all</code> oder <code>any</code>), <code>applicationId</code>, <code>fileNumber</code>, <code>errorCode</code> (<code>notRead</code>) und <code>checks</code>: einen Eintrag je Einstellung in
+fester Reihenfolge (<code>fileType</code>, <code>fileSize</code>, <code>communicationMode</code>, <code>accessRead</code>, <code>accessWrite</code>, <code>accessReadWrite</code>, <code>accessChange</code>) mit <code>compared</code> und <code>result</code>
+(<code>match</code>, <code>mismatch</code>, <code>notRead</code> oder <code>notCompared</code>); eine verglichene Einstellung hat <code>expected</code> und, wenn sie lesbar war, <code>actual</code>, beide als Zahlen (bei der Gr&ouml;&szlig;e auch <code>rule</code>: <code>exact</code>,
+<code>atLeast</code>, <code>atMost</code>). Nur Zahlen und feste W&ouml;rter, nie ein Schl&uuml;ssel, ein Text oder der Inhalt einer Datei.</p>
+
+<p>Was ein Client nicht kennt (eine andere <code>kind</code>, eine sp&auml;tere <code>schemaVersion</code>, ein neues Ergebniswort), ist kein Fehler: zeigen Sie es so an, wie es ist, und entscheiden Sie nie etwas aufgrund eines Wortes, das Sie nicht kennen.</p>
+
+<div class="nav">Vorherige Seite: <a href="bridge_methods.html">Methoden und Ereignisse</a> &middot; N&auml;chste Seite: <a href="bridge_safe_runs.html">L&auml;ufe sicher anfordern</a></div>
+
+</body>
+</html>

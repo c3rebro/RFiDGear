@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Eine Karte, eine Freigabe, ein Lauf</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Eine Karte, eine Freigabe, ein Lauf</h1>
+
+<p>Eine Karte soll erst beschrieben werden, nachdem das Programm, dem der Auftrag geh&ouml;rt, sie angesehen und freigegeben hat (ihre UID, den Auftrag, eine Pr&uuml;fung auf Doppelte). Das Projekt hat daf&uuml;r einen Platz: die Aufgabe <strong>Pr&uuml;fung der UID</strong> darf statt einer UID eine
+<strong>Variable</strong> nennen, geschrieben als Dollarzeichen und Name, zum Beispiel <code>$EXPECTEDUID</code>. Der Aufrufer liefert die UID, die er freigegeben hat, als diese Variable (bei <code>startRun</code> als eines der <code>variables</code>: <code>{ "name": "$EXPECTEDUID", "value": "04A1B2C3D4E5F6" }</code>).
+Das Projekt &auml;ndert sich von Karte zu Karte nicht, seine Revision auch nicht.</p>
+
+<h2>Wie das Projekt aussehen muss</h2>
+
+<ul>
+<li>Die <strong>erste Aufgabe</strong> ist die Pr&uuml;fung der UID mit der Variablen <code>$EXPECTEDUID</code>.</li>
+<li><strong>Jede Aufgabe, die die Karte ber&uuml;hrt</strong>, h&auml;ngt von ihr ab: ihre Ausf&uuml;hrungsbedingung ist die Pr&uuml;fung mit dem Ergebnis <code>NoError</code>; eine Aufgabe dahinter h&auml;ngt an der davor. RFiDGear kann nicht wissen, welche Aufgaben schreiben: eine Aufgabe ohne diese Bedingung l&auml;uft, was auch die Pr&uuml;fung sagte.</li>
+<li>Eine UID, die in die Aufgabe getippt ist, ist etwas anderes: eine Frage (&bdquo;ist diese Karte jene Karte?&ldquo;), beantwortet mit <code>IsNotTrue</code>, auf die ein Projekt verzweigen darf. Nur eine Variable ist eine Freigabe.</li>
+<li>In der Variablen steht die UID in Gro&szlig;buchstaben, wie RFiDGear sie im Ergebnis schreibt.</li>
+</ul>
+
+<p>Die Aufgabe vergleicht die Variable mit der UID der Karte, die der <strong>Lauf selbst am Anfang gelesen hat</strong> (<code>cardUid</code> des Ergebnisses): eine Karte, die zwischen dem Scan und dem Start getauscht wurde, ist nicht die freigegebene. Eine andere Karte, eine fehlende, leere oder fremde Variable beendet die Pr&uuml;fung mit
+<code>CardNotExpected</code>; die Aufgaben, die von ihr abh&auml;ngen, werden &uuml;bersprungen, und der Lauf endet als <code>failure</code>, nie als <code>success</code> und nie als <code>completedWithIntentionalFailures</code>.</p>
+
+<h2>Der Ablauf f&uuml;r eine Karte</h2>
+
+<p>Einmal je Projekt (und nach einem Neustart von RFiDGear noch einmal, denn eine Revision gilt f&uuml;r einen Prozess): <code>hello</code> (dieser Ablauf braucht <code>project.load</code>, <code>reader.scan</code> und <code>execution.run</code> und sollte <code>project.revision</code> haben) und <code>loadProject</code> mit <code>path</code>, <code>taskCount</code> und <code>revision</code> als freigegebenem Zustand.</p>
+
+<ol>
+<li><strong><code>scanReader</code></strong>. Machen Sie nur weiter, wenn der Leser bereit ist und genau eine Karte zeigt. Kein Leser, besetzt, keine Karte oder mehr als eine Karte ist ein Halt, und nichts wurde gestartet.</li>
+<li><strong>Entscheiden</strong>, in Ihrem eigenen Programm: der Auftrag, das Profil, die Seriennummer, die Liste der schon beschriebenen Karten. Das ist die Freigabe. Die UID des Scans ist, was Sie freigeben; sie kennzeichnet die Karte f&uuml;r den Auftrag, sie beweist nicht, dass die Karte echt ist.</li>
+<li><strong><code>startRun</code></strong> mit der Request-ID dieses Auftrags und dieser Karte (vorher aufgeschrieben, nie f&uuml;r eine andere Karte verwendet), der Variablen <code>$EXPECTEDUID</code> (oder dem Namen Ihres Projekts) auf der freigegebenen UID und <code>expectProjectPath</code>, <code>expectTaskCount</code> und <code>expectProjectRevision</code> des Ladens. Senden Sie nie noch einmal: fragen Sie nach der Request-ID.</li>
+<li><strong>Auf das Ergebnis warten</strong>. Vermerken Sie die Karte nur dann als geschrieben, wenn <em>alles</em> gilt: der Status ist <code>success</code> (oder <code>completedWithIntentionalFailures</code>, wenn das in Ihrem Projekt &bdquo;fertig&ldquo; hei&szlig;t) <em>und</em> <code>cardUid</code> ist die freigegebene UID. Schreiben Sie die <code>projectRevision</code> des Ergebnisses in die Aufzeichnung des Auftrags: sie ist der Zustand, mit dem der Lauf begann. Nach einem fr&uuml;heren Lauf von Ihnen kann sie von der freigegebenen abweichen, weil die Aufgaben einiges selbst in ihre Einstellungen schreiben;
+RFiDGear hat den Lauf vor dem Start abgelehnt, wenn das Projekt weder im freigegebenen Zustand noch in einem war, den ein Lauf von Ihnen hinterlassen hat.</li>
+<li><strong>Nach einem Zweifel</strong> fragen Sie mit <code>getRunResult</code> nach der Request-ID und starten den Auftrag nie neu, bevor Sie die Karte angesehen haben.</li>
+<li><strong>Zur&uuml;cklesen</strong>: laden Sie ein eigenes Projekt, das nur liest (ein neues <code>loadProject</code> mit neuer Revision), und f&uuml;hren Sie es auf dieselbe Weise aus. Lesen Sie nicht mit dem Projekt zur&uuml;ck, das schreibt.</li>
+</ol>
+
+<h2>Der automatische Modus mit Freigabe (<code>autoMode.approval</code>)</h2>
+
+<p>Eine Station, die eine Karte nach der anderen bearbeitet, nimmt diesen Modus: RFiDGear zeigt jede Karte, die auf den Leser gelegt wird, dem Client, der den Modus gestartet hat, und f&uuml;hrt das Projekt nur aus, wenn dieser Client sie freigibt, einmal, f&uuml;r diese Karte. Der gew&ouml;hnliche automatische Modus f&uuml;hrt jede Karte aus und
+ist nichts f&uuml;r das Schreiben.</p>
+
+<p><code>startAutoMode</code> mit <code>requireApproval: true</code>. Es braucht <code>stopOnDisconnect</code> (die Voreinstellung), weil sonst niemand &uuml;brig w&auml;re, der antwortet. <code>approvalTimeoutMs</code> (2000 bis 120000, Voreinstellung 15000) ist, wie lange auf eine Karte gewartet wird. Pr&uuml;fen Sie zuerst die F&auml;higkeit <code>autoMode.approval</code>
+und verlangen Sie in <code>hello</code> die Ereignisse <code>cardPresented</code>, <code>cardPresentationEnded</code> und <code>autoModeChanged</code>. Ein Start mit Freigabe wird nie zugestimmt, wenn der Modus schon an ist (<code>autoModeActive</code>). Lassen Sie einen abgelehnten Start in Ruhe: der Modus, der l&auml;uft, geh&ouml;rt nicht Ihnen. Halten Sie nur einen Modus an, den Ihr eigener Client gestartet hat, nachdem <code>getStatus</code> ihn als den Modus eines Clients zeigt (<code>enabled</code> und <code>startedBy</code> <code>bridge</code>), oder lassen Sie den Bediener ihn ersetzen.</p>
+
+<p>F&uuml;r jede Karte:</p>
+
+<ol>
+<li><code>cardPresented</code> nennt <code>presenceId</code>, <code>uid</code>, <code>projectRevision</code> (der Zustand des Projekts, gelesen, als die Karte gezeigt wurde) und <code>expiresAt</code>. Dieselbe Karte, weggenommen und wieder aufgelegt, ist eine neue Anwesenheit mit neuer ID. Ob diese UID schon geschrieben wurde, wissen Sie: RFiDGear merkt sich nicht, was Sie freigaben.</li>
+<li>Entscheiden Sie. Die Ereignisse gehen weiter, und das Warten kann unter Ihnen enden: verwerfen Sie die Entscheidung dann und senden Sie nichts.</li>
+<li><code>approveCard</code> mit der <code>presenceId</code>, den <code>variables</code> dieses einen Laufs (<code>$EXPECTEDUID</code> auf der freigegebenen UID) und <code>expectProjectRevision</code> (der, die mit der Karte kam: der Lauf beginnt nur in genau diesem Zustand), oder <code>declineCard</code>. Antworten Sie einmal, auf der Verbindung, die den Modus gestartet hat. Eine Variable, die nicht verwendbar ist, ist <code>invalidRequest</code>, und die Karte wartet weiter (zum Beispiel ein Berichtsziel, das kein vollst&auml;ndiger Pfad zu einer Datei in einem vorhandenen Ordner ist).</li>
+<li><code>cardPresentationEnded</code> sagt, wie das Warten endete.</li>
+</ol>
+
+<table>
+<tr><th>Grund</th><th>Folge</th></tr>
+<tr><td><code>approved</code> (mit der <code>runId</code>)</td><td>der Lauf wurde zugelassen</td></tr>
+<tr><td><code>declined</code>, <code>expired</code>, <code>stopped</code>, <code>clientLost</code></td><td>nichts lief; die Karte bleibt vermerkt und wird erst wieder gezeigt, wenn sie weggenommen wurde</td></tr>
+<tr><td><code>projectChanged</code>, <code>notAdmitted</code>, <code>cardChanged</code></td><td>nichts lief; eine Karte, die auf dem Leser liegt und nicht bearbeitet wurde, wird als neue Anwesenheit wieder gezeigt</td></tr>
+</table>
+
+<h3>Woran sich der Modus h&auml;lt, und was bei Ihnen bleibt</h3>
+
+<ul>
+<li>Ohne Ihre Freigabe l&auml;uft nichts. Eine Freigabe gilt f&uuml;r eine Karte und einen Lauf und ist mit dem ersten Lauf verbraucht, mit welchem Ergebnis er auch endet.</li>
+<li>Der Lauf liest die Karte selbst, und dieses Lesen wird an die freigegebene UID gehalten, bevor etwas anderes an die Karte geht: eine andere Karte oder keine beendet den Lauf vor der ersten Aufgabe und h&auml;lt den Modus an.</li>
+<li>Eine sp&auml;te, wiederholte oder fremde Antwort ist <code>approvalNotPending</code> (1018): deuten Sie sie als &bdquo;diese Anwesenheit ist vorbei&ldquo; und machen Sie weiter. Nur die Verbindung, die den Modus gestartet hat, kann antworten.</li>
+<li>Eine verlorene Verbindung beendet den Modus und f&uuml;hrt nichts mehr aus. <strong>Starten Sie einen schreibenden Auftrag nie von selbst neu, nachdem Sie sich wieder verbunden haben</strong>: starten Sie den Modus mit Absicht neu. RFiDGear merkt sich eine Karte, die es gezeigt oder ausgef&uuml;hrt hat, und zeigt sie erst wieder, nachdem es den Leser leer gesehen hat: nehmen Sie die Karte weg und legen Sie sie wieder auf, dann wird sie als neue Anwesenheit gezeigt und braucht eine neue Freigabe (auch ein Neustart des Prozesses RFiDGear vergisst die Karte).</li>
+<li><code>loadProject</code> und <code>startRun</code> werden abgelehnt, solange der Modus an ist.</li>
+<li>Ein Lauf, der scheitert, h&auml;lt den Modus nicht an; ein Fehler des Programms, eine Zeit&uuml;berschreitung oder ein verlorener Leser tun es (<code>autoModeChanged</code> sagt warum). Sehen Sie sich danach die Karte an, bevor Sie neu beginnen.</li>
+<li>Der Modus pr&uuml;ft die freigegebene UID selbst, wie oben gesagt. Was er nicht wissen kann, ist, welche Aufgaben schreiben: das sagt nur Ihr Projekt. Behalten Sie also die Pr&uuml;fung der UID mit <code>$EXPECTEDUID</code> als erste Aufgabe und lassen Sie jede schreibende Aufgabe von ihr abh&auml;ngen, wie im Ablauf f&uuml;r eine Karte; bei einem einzelnen <code>startRun</code> ist sie der einzige Schutz.</li>
+<li>Ein Projekt, das schreibt, wechseln Sie nie bei laufendem Modus gegen eines, das nur liest: halten Sie den Modus an, warten Sie auf <code>autoModeChanged</code> mit <code>enabled: false</code>, laden Sie das andere Projekt, notieren Sie seine Revision, nehmen Sie die Karte weg und starten Sie den Modus neu.</li>
+</ul>
+
+<p>Der Beispielclient hat beide Abl&auml;ufe (siehe <a href="bridge_sample_client.html">Der Beispielclient</a>).</p>
+
+<div class="nav">Vorherige Seite: <a href="bridge_safe_runs.html">L&auml;ufe sicher anfordern</a> &middot; N&auml;chste Seite: <a href="bridge_keys.html">Schl&uuml;ssel &uuml;ber die externe Steuerung</a></div>
+
+</body>
+</html>

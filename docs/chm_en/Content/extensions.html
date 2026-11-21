@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Writing an extension</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>Writing an extension</h1>
+
+<p>An extension references only two assemblies, never <code>RFiDGear.exe</code>:</p>
+
+<table>
+<tr><th>Assembly</th><th>Content</th></tr>
+<tr><td><code>RFiDGear.Contracts</code></td><td>the services of the host (<code>IRFiDGearExtensionHost</code> and the services for project, execution, reader and culture). No MEF dependency.</td></tr>
+<tr><td><code>RFiDGear.ExtensionSdk</code></td><td>the MEF-facing interface: <code>[UiExtension]</code>, <code>HostPlacement</code>, <code>IUIExtension</code>, <code>IUIExtensionDetails</code>, <code>IApplicationUIExtension</code>, <code>[SecureKeyProvider]</code> and <code>ISecureKeyProviderMetadata</code></td></tr>
+</table>
+
+<p>Both keep the assembly version <code>1.0.0.0</code> (it changes only for a break, never with the version of the application), and their public surface is held by approved snapshots in the tests. A change fails the test and is accepted by regenerating the snapshot
+(<code>RFIDGEAR_UPDATE_API_SNAPSHOT=1</code>). The old locations of the SDK types in <code>RFiDGear.exe</code> forward, so that extensions that were built already keep working.</p>
+
+<h2>An extension with a window of its own</h2>
+
+<p>An extension with <code>HostPlacement.Application</code> implements <code>IApplicationUIExtension</code>. RFiDGear creates the exported class on the first click on its entry in the menu <strong>Extensions</strong>, never at start-up, and calls
+<code>CreateContent(IRFiDGearExtensionHost host)</code> on the user-interface thread each time the user opens it; the result is a new control for the window. The host disposes that content (and a different <code>IDisposable</code> data context) once when the window closes. The Card Check Assistant
+(<code>RFiDGear.Extensions.CardCheckAssistant</code>) is the first extension and the reference.</p>
+
+<h2>The rules</h2>
+
+<ul>
+<li><strong>Discovery at start-up only</strong>, from <code>%ProgramData%\RFiDGear\Extensions\RFiDGear.Extensions*.dll</code> and from the folder of the user's installed packages. There is no hot loading: a new or removed extension needs a restart.</li>
+<li><code>RFiDGear.Contracts.dll</code>, <code>RFiDGear.ExtensionSdk.dll</code> and the MEF runtime are owned by the host. An extension must not carry private copies of them.</li>
+<li><strong>Do not <code>[Import]</code> <code>IRFiDGearExtensionHost</code>.</strong> The service does not exist yet when MEF composes the extensions, so it is not exported, and MEF leaves out an extension with an import it cannot satisfy without any error. Take the service from the argument of <code>CreateContent</code>.</li>
+<li>The exported class is created on the first click and is shared afterwards: keep it stateless and put per-window state in the content. A constructor or <code>CreateContent</code> that throws is logged and shown to the user, and the next click tries again.</li>
+<li>An extension that only needs a page can name it with <code>Uri</code> and implement just <code>IUIExtension</code>: it opens in a frame and its class is never created. Do not set <code>Uri</code> on an extension that implements <code>IApplicationUIExtension</code>: the page wins and <code>CreateContent</code> is not called.</li>
+<li>A broken extension stops neither the others nor the application: <code>MefHelper</code> probes each DLL (parts, metadata, imports) before it goes into the container, logs a failure and skips that file.</li>
+</ul>
+
+<h2>A support library</h2>
+
+<p>Code that an extension needs besides the contract (services, a database driver, a PDF engine) goes in a library named <code>RFiDGear.ExtensionLibraries.&lt;Name&gt;</code>. <strong>The name must never start with <code>RFiDGear.Extensions</code>, in any letter case:</strong> the host hands every
+<code>RFiDGear.Extensions*.dll</code> to MEF, so a library called <code>RFiDGear.ExtensionsNative.*</code> would be loaded as an extension at every start-up. The library is <code>net10.0</code> (no WPF), references no other RFiDGear project, compiles against the packages of the host (Serilog, GemBox.Pdf) without shipping a copy of them, and sits
+flat next to the extension that needs it. Keep library types out of the members and the constructor of the exported class: the checks of MEF cannot see a missing library, and the failure then shows up when the class is created or used.</p>
+
+<p>What the library needs beside it besides that is the <strong>payload</strong> of the extension: for the Card Check Assistant the SQL driver (<code>System.Data.SqlClient.dll</code> and the <code>sni.dll</code> of the platform). The library names the files, the build of the extension copies them into its output folder, and from there the deploy step
+and the installers take them along.</p>
+
+<h2>Trying an extension while you develop it</h2>
+
+<p>RFiDGear reads its extensions once at start. After a build, the build can copy the extension and its libraries to <code>%ProgramData%\RFiDGear\Extensions</code>, so that you only restart RFiDGear. That is <strong>off unless you ask for it</strong>, because a build is not always your own (test runs,
+clean checkouts and tools that build modified code would otherwise put their output into a real RFiDGear):</p>
+
+<ul>
+<li><code>dotnet build RFiDGear.Extensions/CardCheckAssistant -c Debug -p:DeployExtensionsToRFiDGear=true</code>, or</li>
+<li>the file <code>RFiDGear.Extensions/deploy.local.props</code> (not in the repository; a second clone needs its own) with <code>&lt;DeployExtensionsToRFiDGear&gt;true&lt;/DeployExtensionsToRFiDGear&gt;</code>, or</li>
+<li>the environment variable <code>RFIDGEAR_DEPLOY_EXTENSIONS=true</code>.</li>
+</ul>
+
+<p>Only the extension, its libraries, their symbols and its payload are copied, never the contract, the SDK or the host. If the extension cannot be replaced (RFiDGear is running and holds it), that is a warning and nothing else is copied: close RFiDGear and build again. The copy has the platform of the build: an x64 build does not load into an x86 RFiDGear.</p>
+
+<div class="nav">Previous page: <a href="key_providers.html">Writing a key provider</a> &middot; Next page: <a href="extension_packages.html">Extension packages (.rfext)</a></div>
+
+</body>
+</html>

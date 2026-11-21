@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>One card, one approval, one run</title>
+<link rel="stylesheet" type="text/css" href="help.css">
+</head>
+<body>
+
+<h1>One card, one approval, one run</h1>
+
+<p>A card should be written only after the program that owns the job has looked at it (its UID, the order, a duplicate check) and approved it. The project has a place for that: the task <strong>Check UID</strong> can name a <strong>variable</strong> instead of a UID, written as a dollar sign and a
+name, for example <code>$EXPECTEDUID</code>. The caller supplies the UID that it has approved as that variable (with <code>startRun</code> as one of the <code>variables</code>: <code>{ "name": "$EXPECTEDUID", "value": "04A1B2C3D4E5F6" }</code>).
+The project does not change from card to card, so its revision does not either.</p>
+
+<h2>What the project has to look like</h2>
+
+<ul>
+<li>The <strong>first task</strong> is Check UID with the variable <code>$EXPECTEDUID</code>.</li>
+<li><strong>Every task that touches the card</strong> depends on it: its execute condition is the check with the result <code>NoError</code>; a task behind that one depends on the one before it. RFiDGear cannot tell which tasks write: a task without that condition runs whatever the check said.</li>
+<li>A UID typed into the task is another thing: a question ("is this card that card?"), answered <code>IsNotTrue</code>, which a project may branch on. Only a variable is an approval.</li>
+<li>The variable holds the UID in capital letters, as RFiDGear writes it in the result.</li>
+</ul>
+
+<p>The task compares the variable with the UID of the card that <strong>the run itself read at its start</strong> (the <code>cardUid</code> of the result): a card that was swapped between the scan and the start is not the approved one. Another card, or a variable that is missing, empty or foreign, ends the check with
+<code>CardNotExpected</code>; the tasks that depend on it are skipped, and the run ends as <code>failure</code>, never as <code>success</code> and never as <code>completedWithIntentionalFailures</code>.</p>
+
+<h2>The flow for one card</h2>
+
+<p>Once per project (and again after RFiDGear was restarted, because a revision is valid for one process): <code>hello</code> (this flow needs <code>project.load</code>, <code>reader.scan</code> and <code>execution.run</code> and should have <code>project.revision</code>) and <code>loadProject</code>, with <code>path</code>, <code>taskCount</code> and <code>revision</code> as the approved state.</p>
+
+<ol>
+<li><strong><code>scanReader</code></strong>. Go on only when the reader is ready and shows exactly one card. No reader, busy, no card or more than one card is a stop, and nothing has been started.</li>
+<li><strong>Decide</strong>, in your own program: the job, the profile, the serial number, the list of cards that were written already. That is the approval. The UID of the scan is what you approve; it identifies the card for the job, it does not prove that the card is genuine.</li>
+<li><strong><code>startRun</code></strong> with the request id of this job and this card (written down before the call, never reused for another card), the variable <code>$EXPECTEDUID</code> (or the name your project uses) set to the approved UID, and <code>expectProjectPath</code>, <code>expectTaskCount</code> and <code>expectProjectRevision</code> of the load. Never send it again: ask by the request id.</li>
+<li><strong>Wait for the result</strong>. Record the card as written only when <em>all</em> of this holds: the status is <code>success</code> (or <code>completedWithIntentionalFailures</code>, if that is what your project means by done) <em>and</em> <code>cardUid</code> is the approved UID. Put the <code>projectRevision</code> of the result into the record of the job: it is the state the run started with. After an earlier run of yours it can be another than the one you approved, because the tasks write some of their own settings;
+RFiDGear refused the run before it started if the project was in a state that is neither the approved one nor one that a run of yours left behind.</li>
+<li><strong>After a doubt</strong> ask <code>getRunResult</code> by the request id and never start the job again before you have looked at the card.</li>
+<li><strong>Read back</strong>: load a separate project that only reads (a new <code>loadProject</code> and a new revision) and run it the same way. Do not read back with the project that writes.</li>
+</ol>
+
+<h2>Automatic mode with approval (<code>autoMode.approval</code>)</h2>
+
+<p>A station that handles one card after the other uses this mode: RFiDGear shows every card that is put on the reader to the client that started the mode, and runs the project for it only when that client approves it, once, for that card. The plain automatic mode runs every card and is not for writing.</p>
+
+<p><code>startAutoMode</code> with <code>requireApproval: true</code>. It needs <code>stopOnDisconnect</code> (the default), because nobody would be left to answer otherwise. <code>approvalTimeoutMs</code> (2000 to 120000, default 15000) is how long a card is waited for. Check the capability <code>autoMode.approval</code> first
+and ask <code>hello</code> for the events <code>cardPresented</code>, <code>cardPresentationEnded</code> and <code>autoModeChanged</code>. A start with approval is never agreed on when the mode is on already (<code>autoModeActive</code>). Leave a refused start alone: the mode that is on is not yours. Stop only a mode that your own client started, after <code>getStatus</code> shows it as the mode of a client (<code>enabled</code> and <code>startedBy</code> <code>bridge</code>), or let the operator replace it.</p>
+
+<p>For every card:</p>
+
+<ol>
+<li><code>cardPresented</code> says the <code>presenceId</code>, the <code>uid</code>, the <code>projectRevision</code> (the state of the project, read when the card was shown) and <code>expiresAt</code>. The same card taken away and put back is another presence with another id. Whether this UID was written already is yours to know: RFiDGear does not remember what you approved.</li>
+<li>Decide. The events go on while you decide, and the wait can end under you: drop the decision then and send nothing.</li>
+<li><code>approveCard</code> with the <code>presenceId</code>, the <code>variables</code> of this one run (<code>$EXPECTEDUID</code> set to the approved UID) and <code>expectProjectRevision</code> (the one that came with the card: the run then starts only in exactly that state), or <code>declineCard</code>. Answer once, on the connection that started the mode. A variable that cannot be used is <code>invalidRequest</code> and the card still waits (for example a report target that is not a full path to a file in a folder that exists).</li>
+<li><code>cardPresentationEnded</code> says how the wait ended.</li>
+</ol>
+
+<table>
+<tr><th>Reason</th><th>Consequence</th></tr>
+<tr><td><code>approved</code> (with the <code>runId</code>)</td><td>the run was admitted</td></tr>
+<tr><td><code>declined</code>, <code>expired</code>, <code>stopped</code>, <code>clientLost</code></td><td>nothing ran; the card stays remembered and is shown again only after it was taken away</td></tr>
+<tr><td><code>projectChanged</code>, <code>notAdmitted</code>, <code>cardChanged</code></td><td>nothing ran; a card that is on the reader and was not processed is shown again as a new presence</td></tr>
+</table>
+
+<h3>What the mode holds to, and what stays with you</h3>
+
+<ul>
+<li>Without your approval nothing runs. An approval is for one card and one run and is used up by the first run, whatever it ends with.</li>
+<li>The run reads the card itself, and that read is held to the approved UID before anything else is sent to the card: another card, or none, ends the run before its first task and stops the mode.</li>
+<li>A late, repeated or foreign answer is <code>approvalNotPending</code> (1018): treat it as "this presence is over" and go on. Only the connection that started the mode can answer.</li>
+<li>A lost connection ends the mode and runs nothing more. <strong>Never start a writing job again by yourself after you reconnected</strong>: start the mode again on purpose. RFiDGear remembers a card that it has shown or run and shows it again only after the reader was seen empty: take the card away and put it back, and it is shown as a new presence that needs a new approval (restarting the RFiDGear process forgets the card too).</li>
+<li><code>loadProject</code> and <code>startRun</code> are refused while the mode is on.</li>
+<li>A run that fails does not stop the mode; a fault, a timeout or a lost reader does (<code>autoModeChanged</code> says why). After one of them look at the card before you start again.</li>
+<li>The mode checks the approved UID itself, as said above. What it cannot know is which tasks write: only your project says that. So keep the Check UID with <code>$EXPECTEDUID</code> as the first task and let every writing task depend on it, as in the flow for one card; for a single <code>startRun</code> it is the only protection.</li>
+<li>Never swap a project that writes for one that only reads while the mode is on: stop the mode, wait for <code>autoModeChanged</code> with <code>enabled: false</code>, load the other project, note its revision, take the card away and start the mode again.</li>
+</ul>
+
+<p>The sample client has both flows (see <a href="bridge_sample_client.html">The sample client</a>).</p>
+
+<div class="nav">Previous page: <a href="bridge_safe_runs.html">Requesting runs safely</a> &middot; Next page: <a href="bridge_keys.html">Keys through external control</a></div>
+
+</body>
+</html>
