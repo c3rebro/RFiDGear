@@ -1,33 +1,23 @@
 [OPTIONS]
+Binary Index=Yes
+Binary TOC=Yes
 Compatibility=1.1 or later
-Compiled file=rfidgear_de.chm
+Compiled file=RFiDGear_de.chm
 Contents file=Table of Contents.hhc
+Default Window=Main
 Default topic=Content\welcome.html
 Display compile progress=No
+Full-text search=Yes
 Index file=rfidgear_de.hhk
 Language=0x407 Deutsch (Deutschland)
-Title=RFiDGear
+Title=RFiDGear Hilfe
 
+[WINDOWS]
+Main="RFiDGear Hilfe","Table of Contents.hhc","rfidgear_de.hhk","Content\welcome.html","Content\welcome.html",,,,,0x23520,200,0x387E,[100,100,980,720],0xB0000,,,,,,0
 
 [FILES]
-Content\CreateEvents_DoorMonitoringEvents.html
-Content\CreateEvents_InputEvents.html
-Content\CreateEvents_MainWindow.html
-Content\CreateEvents_UnlockingEvents.html
-Content\CreateEvents_Welcome.html
-Content\CreateResponse_MainWindow_Welcome.html
-Content\CreateResponses_AddSchedule.html
-Content\CreateResponses_EMailResponse.html
-Content\CreateResponses_KMTronicResponse.html
-Content\CreateResponses_MainWindow.html
-Content\CreateResponses_TelegramResponse.html
-Content\CreateResponses_TelegramResponseAddBot.html
-Content\CreateResponses_TelegramResponseCreateBot.html
-Content\mainWindow_DebugConsole.html
-Content\mainWindow_Help.html
-Content\mainWindow_OpenAndSave.html
-Content\mainWindow_Options.html
+Content\help.css
 Content\welcome.html
+Content\about_this_help.html
 
 [INFOTYPES]
-

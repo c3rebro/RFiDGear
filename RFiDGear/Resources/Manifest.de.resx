@@ -555,6 +555,12 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
   <data name="messageBoxNoUpdateAvailableMessage" xml:space="preserve">
     <value>Sie verwenden bereits die neueste Version von RFiDGear.</value>
   </data>
+  <data name="messageBoxHelpNotFoundCaption" xml:space="preserve">
+    <value>Hilfe</value>
+  </data>
+  <data name="messageBoxHelpNotFoundMessage" xml:space="preserve">
+    <value>Die Hilfedatei '{0}' konnte nicht ge&#246;ffnet werden. Sie geh&#246;rt in den Programmordner neben RFiDGear.exe. Bitte reparieren oder installieren Sie RFiDGear neu.</value>
+  </data>
   <data name="menuItemProgrammingHeader" xml:space="preserve">
     <value>_Programmierung</value>
   </data>

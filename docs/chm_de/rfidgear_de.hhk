@@ -4,9 +4,26 @@
 <meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
 <!-- Sitemap 1.0 -->
 </HEAD><BODY>
-<OBJECT type="text/site properties">
-	<param name="FrameName" value="1">
-</OBJECT>
 <UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="F1">
+		<param name="Local" value="Content\about_this_help.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Hilfe &ouml;ffnen">
+		<param name="Local" value="Content\about_this_help.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Sprache der Hilfe">
+		<param name="Local" value="Content\about_this_help.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Systemvoraussetzungen">
+		<param name="Local" value="Content\welcome.html">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Kartenleser">
+		<param name="Local" value="Content\welcome.html">
+		</OBJECT>
 </UL>
 </BODY></HTML>
