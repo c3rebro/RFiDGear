@@ -25,9 +25,9 @@ namespace RFiDGear.Tests
         };
 
         // A checkpoint without a target task: a field with a text that is always written.
-        private static Checkpoint Field(string field, string content) => new Checkpoint
+        private static Checkpoint Field(string templateField, string content) => new Checkpoint
         {
-            TemplateField = field,
+            TemplateField = templateField,
             Content = content,
             TaskIndex = string.Empty,
             ErrorLevel = ERROR.NoError
