@@ -408,7 +408,10 @@ rejects the fields, and ask `hello` for `cardPresented`,
 `cardPresentationEnded` and `autoModeChanged`. A start with approval is never
 agreed on again (`autoModeActive`): stop the mode and start the one you mean.
 A refused start leaves nothing to clean up: the mode that is on is not yours,
-so do not stop it (the sample's loop stops only a mode it switched on itself).
+so do not stop it. `stopAutoMode` switches the mode off whoever switched it on,
+so ask `getStatus` first (the mode has to be `enabled`, `startedBy` `bridge` and
+`requireApproval`), as the sample's loop does, or close your connection, which
+ends the mode that it started and no other.
 
 For every card:
 

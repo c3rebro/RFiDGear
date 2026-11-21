@@ -24,25 +24,25 @@ namespace RFiDGear.Bridge.SampleClient
     public static class ApprovalPolicy
     {
         /// <summary>The option that approves every card with a variable set to its UID.</summary>
-        public const string ApproveWithOption = "--approve-with=";
+        private const string ApproveWithOption = "--approve-with=";
 
         /// <summary>The option that declines every card.</summary>
-        public const string DeclineOption = "--decline";
+        private const string DeclineOption = "--decline";
 
         /// <summary>The option that never answers.</summary>
-        public const string NoAnswerOption = "--no-answer";
+        private const string NoAnswerOption = "--no-answer";
 
         /// <summary>The option that leaves out the state of the project from an approval.</summary>
-        public const string NoPinOption = "--no-pin";
+        private const string NoPinOption = "--no-pin";
 
         /// <summary>The option that adds a variable to every approval.</summary>
-        public const string SetOption = "--set=";
+        private const string SetOption = "--set=";
 
         /// <summary>The option that thinks for some seconds before it approves.</summary>
-        public const string WaitOption = "--wait=";
+        private const string WaitOption = "--wait=";
 
         /// <summary>The longest <c>--wait</c> that is taken, in seconds.</summary>
-        public const int LongestWaitSeconds = 600;
+        private const int LongestWaitSeconds = 600;
 
         /// <summary>
         /// Tells whether <c>auto</c> is the plain mode, which runs every card: only a bare <c>auto</c> is. Any argument after it, a
@@ -158,7 +158,7 @@ namespace RFiDGear.Bridge.SampleClient
 
             foreach (var option in options.Where(option => option.StartsWith(WaitOption, StringComparison.Ordinal)))
             {
-                if (!double.TryParse(option.Substring(WaitOption.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || seconds < 0 || seconds > LongestWaitSeconds)
+                if (!double.TryParse(option.Substring(WaitOption.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || !double.IsFinite(seconds) || seconds < 0 || seconds > LongestWaitSeconds)
                 {
                     error = "--wait takes a number of seconds from 0 to " + LongestWaitSeconds.ToString(CultureInfo.InvariantCulture) + ".";
 

@@ -40,6 +40,9 @@ namespace RFiDGear.Tests.ExternalControl
         [InlineData("--approve-with=$X --wait=abc")]
         [InlineData("--approve-with=$X --wait=601")]
         [InlineData("--approve-with=$X --wait=-1")]
+        [InlineData("--approve-with=$X --wait=NaN")]
+        [InlineData("--approve-with=$X --wait=Infinity")]
+        [InlineData("--approve-with=$X --wait=-Infinity")]
         [InlineData("--approve-with=$X --set=novalue")]
         [InlineData("--approve-with=$X --set==x")]
         public void Options_ThatDoNotMakeExactlyOneRule_AreRefused_AndNeverBecomeAnyModeAtAll(string line)

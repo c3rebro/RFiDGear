@@ -32,7 +32,7 @@ namespace RFiDGear.Bridge.SampleClient
     /// <summary>How a card that was shown ended: what this client answered, and what RFiDGear said about the end.</summary>
     /// <param name="PresenceId">The presence of the card (a card that is taken away and put back is another one).</param>
     /// <param name="Uid">The UID that was shown.</param>
-    /// <param name="Answer">What this client sent: <c>approved</c>, <c>declined</c>, <c>late</c> (RFiDGear no longer waited for the card when the answer came), or <c>none</c> (the wait ended, or the loop was cancelled, before the program had decided: nothing was sent).</param>
+    /// <param name="Answer">What this client sent: <c>approved</c>, <c>declined</c>, <c>late</c> (RFiDGear no longer waited for the card when the answer came), <c>pending</c> (the answer was sent and RFiDGear had not replied to it when the wait ended; its reply is not waited for any longer), or <c>none</c> (the wait ended, or the loop was cancelled, before the program had decided: nothing was sent).</param>
     /// <param name="Reason">How RFiDGear ended the wait (<see cref="PresentationEndReasons"/>): the truth about what happened to the card.</param>
     /// <param name="RunId">The run that was admitted for an approved card.</param>
     public sealed record CardOutcome(string PresenceId, string Uid, string Answer, string Reason, string? RunId);
@@ -44,10 +44,15 @@ namespace RFiDGear.Bridge.SampleClient
     /// <item>Whatever is not an approval ends as a refusal: a decision that throws (a time limit of its own included), a project whose
     /// state cannot be told, a variable the project does not accept.</item>
     /// <item>The decision about a card never holds up the events: it runs on its own, and it is dropped, with nothing answered, when
-    /// RFiDGear ends the wait for that card or the loop ends.</item>
+    /// RFiDGear ends the wait for that card or the loop ends. An answer that RFiDGear has not replied to yet is not waited for
+    /// longer than <see cref="Grace"/>, and is never sent twice.</item>
     /// <item>A late answer (<c>approvalNotPending</c>) is not an error: the card was given up already, and the loop goes on with the next.</item>
-    /// <item>The mode ends with the connection (<c>stopOnDisconnect</c>), and it is stopped when the loop ends, but only a mode that this
-    /// loop started: a mode that was on already (<c>autoModeActive</c>) is never touched.</item>
+    /// <item>The mode ends with the connection (<c>stopOnDisconnect</c>). When the loop ends it stops the mode, but only a mode that it
+    /// started and that RFiDGear still reports as the approval mode of a client: a mode that was on already (<c>autoModeActive</c>), one
+    /// that ended, and one that a user switched on since are never touched. A program that owns its connection ends its mode without
+    /// any such question by closing it.</item>
+    /// <item>Every card that was shown is reported when RFiDGear says how its wait ended, also when the loop is cancelled or the mode
+    /// stops meanwhile (for as long as <see cref="Grace"/>; what RFiDGear does not say is not made up).</item>
     /// <item>It never decides for a card it was not shown: the decision gets the event, and the answer carries its presence id.</item>
     /// </list>
     /// </summary>
@@ -55,13 +60,24 @@ namespace RFiDGear.Bridge.SampleClient
     public sealed class ApprovalModeLoop
     {
         private readonly BridgeSampleClient _client;
+        private readonly IBridgeService _service;
 
         /// <summary>Creates the loop for a connected client.</summary>
         /// <param name="client">The client; it has to offer <see cref="BridgeCapabilities.AutoMode"/> and <see cref="BridgeCapabilities.AutoModeApproval"/>.</param>
         public ApprovalModeLoop(BridgeSampleClient client)
+            : this(client, (client ?? throw new ArgumentNullException(nameof(client))).Service)
+        {
+        }
+
+        // The service is a parameter for the tests, which put a stand-in between the loop and RFiDGear to make a request slow.
+        internal ApprovalModeLoop(BridgeSampleClient client, IBridgeService service)
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
+            _service = service ?? throw new ArgumentNullException(nameof(service));
         }
+
+        /// <summary>Gets how long the loop waits, at the most, for an answer that RFiDGear has not replied to yet and for the end of the waits that were still going on when the loop ended.</summary>
+        public TimeSpan Grace { get; init; } = TimeSpan.FromSeconds(2);
 
         /// <summary>Switches automatic mode on for approval and decides about every card until the loop is cancelled, the mode stops or the connection ends.</summary>
         /// <param name="decide">The program's own decision about a card: the job, the profile, the list of cards that were written already. It is called once per card and nothing was started when it is called. Its token is cancelled when the wait for the card ends or the loop ends; a decision that ignores it is abandoned.</param>
@@ -85,257 +101,348 @@ namespace RFiDGear.Bridge.SampleClient
                 throw new NotSupportedException("This RFiDGear does not offer the capabilities " + BridgeCapabilities.AutoMode + " and " + BridgeCapabilities.AutoModeApproval + ".");
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
+            return await new Run(this, decide, onOutcome).RunAsync(approvalTimeout, cancellationToken).ConfigureAwait(false);
+        }
 
-            var queue = Channel.CreateUnbounded<object>();
-            var pending = new Dictionary<string, PendingCard>(StringComparer.Ordinal);
-            var outcomes = new List<CardOutcome>();
-            var weStartedTheMode = false;
+        // One run of the loop: what is shown and not ended yet, and what has ended.
+        private sealed class Run
+        {
+            private readonly ApprovalModeLoop _owner;
+            private readonly Func<CardPresentedEvent, CancellationToken, Task<CardDecision>> _decide;
+            private readonly Action<CardOutcome>? _onOutcome;
+            private readonly Channel<object> _queue = Channel.CreateUnbounded<object>();
+            private readonly Dictionary<string, PendingCard> _pending = new Dictionary<string, PendingCard>(StringComparer.Ordinal);
+            private readonly List<CardOutcome> _outcomes = new List<CardOutcome>();
+            private bool _weStartedTheMode;
 
-            // The handler only queues: it must be short and never call RFiDGear (that is what the loop below is for).
-            void Queue(BridgeEvent e) => queue.Writer.TryWrite(e);
+            internal Run(ApprovalModeLoop owner, Func<CardPresentedEvent, CancellationToken, Task<CardDecision>> decide, Action<CardOutcome>? onOutcome)
+            {
+                _owner = owner;
+                _decide = decide;
+                _onOutcome = onOutcome;
+            }
 
-            _client.EventReceived += Queue;
+            internal async Task<IReadOnlyList<CardOutcome>> RunAsync(TimeSpan? approvalTimeout, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-            try
+                // The handler only queues: it must be short and never call RFiDGear (that is what the loop below is for).
+                void Queue(BridgeEvent e) => _queue.Writer.TryWrite(e);
+
+                _owner._client.EventReceived += Queue;
+
+                try
+                {
+                    await StartAsync(approvalTimeout).ConfigureAwait(false);
+
+                    while (await NextAsync(_queue.Reader, cancellationToken).ConfigureAwait(false) is { } item)
+                    {
+                        if (item is AutoModeChangedEvent { Enabled: false })
+                        {
+                            // The mode is off already: a stop now could stop a mode that somebody else switched on since.
+                            _weStartedTheMode = false;
+
+                            break;
+                        }
+
+                        await HandleAsync(item, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // The caller ended the loop: what was shown and answered is in the list; the mode is stopped below.
+                }
+                finally
+                {
+                    await ShutDownAsync().ConfigureAwait(false);
+                    _owner._client.EventReceived -= Queue;
+                }
+
+                return _outcomes;
+            }
+
+            private async Task StartAsync(TimeSpan? approvalTimeout)
             {
                 // The answer to the start is never abandoned: a start that was given up on could still have switched the mode on, and
-                // whether this loop owns the mode is what decides below if it may stop it.
-                var started = await _client.Service.StartAutoMode(new StartAutoModeRequest
+                // whether this loop owns the mode is what decides if it may stop it.
+                var started = await _owner._service.StartAutoMode(new StartAutoModeRequest
                 {
                     StopOnDisconnect = true,
                     RequireApproval = true,
                     ApprovalTimeoutMs = approvalTimeout == null ? null : (int)approvalTimeout.Value.TotalMilliseconds,
                 }).ConfigureAwait(false);
 
-                weStartedTheMode = true;
+                _weStartedTheMode = true;
 
                 if (!started.RequireApproval)
                 {
                     // A mode that runs every card is the one thing this loop must never leave switched on.
                     throw new InvalidOperationException("RFiDGear started automatic mode without waiting for approval; the mode is stopped.");
                 }
+            }
 
-                while (await NextAsync(queue.Reader, cancellationToken).ConfigureAwait(false) is { } item)
+            // The next item, or null when the connection ended. Cancelling throws.
+            private async Task<object?> NextAsync(ChannelReader<object> reader, CancellationToken cancellationToken)
+            {
+                var read = reader.ReadAsync(cancellationToken).AsTask();
+                var finished = await Task.WhenAny(read, _owner._client.Completion).ConfigureAwait(false);
+
+                return finished == read ? await read.ConfigureAwait(false) : null;
+            }
+
+            private async Task HandleAsync(object item, CancellationToken cancellationToken)
+            {
+                switch (item)
                 {
-                    if (item is AutoModeChangedEvent { Enabled: false })
-                    {
-                        // The mode is off already: a stop now could stop a mode that somebody else switched on since.
-                        weStartedTheMode = false;
+                    case AnswerFailed failed:
+                        // An answer that failed for a card that is over already is of no interest any more.
+                        if (_pending.ContainsKey(failed.PresenceId))
+                        {
+                            ExceptionDispatchInfo.Capture(failed.Error).Throw();
+                        }
 
                         break;
-                    }
-
-                    if (item is AnswerFailed failed)
-                    {
-                        ExceptionDispatchInfo.Capture(failed.Error).Throw();
-                    }
-                    else if (item is CardPresentedEvent shown)
-                    {
-                        pending[shown.PresenceId] = Decide(shown, decide, queue.Writer, cancellationToken);
-                    }
-                    else if (item is CardPresentationEndedEvent ended)
-                    {
-                        var outcome = await EndAsync(ended, pending).ConfigureAwait(false);
-                        outcomes.Add(outcome);
-                        onOutcome?.Invoke(outcome);
-                    }
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                // The caller ended the loop: what was shown and answered is in the list; the mode is stopped below.
-            }
-            finally
-            {
-                _client.EventReceived -= Queue;
-
-                // Whatever is still being decided is dropped first, so that nothing is answered for a mode that is being stopped.
-                foreach (var card in pending.Values)
-                {
-                    card.Cancel.Cancel();
-                }
-
-                if (weStartedTheMode)
-                {
-                    await StopQuietlyAsync().ConfigureAwait(false);
-                }
-
-                await ObserveAsync(pending.Values).ConfigureAwait(false);
-            }
-
-            return outcomes;
-        }
-
-        // The next event, or null when the connection ended. Cancelling throws.
-        private async Task<object?> NextAsync(ChannelReader<object> reader, CancellationToken cancellationToken)
-        {
-            var read = reader.ReadAsync(cancellationToken).AsTask();
-            var finished = await Task.WhenAny(read, _client.Completion).ConfigureAwait(false);
-
-            return finished == read ? await read.ConfigureAwait(false) : null;
-        }
-
-        // Starts the decision about a card on its own, so that the events go on while the program thinks. A failure of the answer is
-        // handed to the loop as soon as it happens.
-        private PendingCard Decide(CardPresentedEvent shown, Func<CardPresentedEvent, CancellationToken, Task<CardDecision>> decide, ChannelWriter<object> queue, CancellationToken cancellationToken)
-        {
-            var cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            var answer = Task.Run(() => AnswerAsync(shown, decide, cancel.Token), CancellationToken.None);
-
-            _ = answer.ContinueWith(
-                task => queue.TryWrite(new AnswerFailed(task.Exception!.GetBaseException())),
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-
-            return new PendingCard(shown.Uid, cancel, answer);
-        }
-
-        // The wait for a card ended: a decision that is still under way is dropped, and nothing is answered for the card.
-        private static async Task<CardOutcome> EndAsync(CardPresentationEndedEvent ended, Dictionary<string, PendingCard> pending)
-        {
-            var uid = string.Empty;
-            var answered = "none";
-
-            if (pending.Remove(ended.PresenceId, out var card))
-            {
-                uid = card.Uid;
-
-                try
-                {
-                    card.Cancel.Cancel();
-                    answered = await card.Answer.ConfigureAwait(false);
-                }
-                finally
-                {
-                    card.Cancel.Dispose();
+                    case CardPresentedEvent shown:
+                        _pending[shown.PresenceId] = StartDeciding(shown, cancellationToken);
+                        break;
+                    case CardPresentationEndedEvent ended:
+                        Report(await EndAsync(ended).ConfigureAwait(false));
+                        break;
                 }
             }
 
-            return new CardOutcome(ended.PresenceId, uid, answered, ended.Reason, ended.RunId);
-        }
-
-        // Waits for the decisions that were dropped to be over; their failures are of no interest any more.
-        private static async Task ObserveAsync(IEnumerable<PendingCard> cards)
-        {
-            foreach (var card in cards)
+            // Starts the decision about a card on its own, so that the events go on while the program thinks. A failure of the answer
+            // is handed to the loop as soon as it happens.
+            private PendingCard StartDeciding(CardPresentedEvent shown, CancellationToken cancellationToken)
             {
-                try
-                {
-                    await card.Answer.ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // The loop ended, and so did this card.
-                }
-                finally
-                {
-                    card.Cancel.Dispose();
-                }
-            }
-        }
+                var cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var answer = Task.Run(() => AnswerAsync(shown, cancel.Token), CancellationToken.None);
 
-        // Decides, and sends the answer. Returns what was sent (none when the card was given up before the program had decided).
-        private async Task<string> AnswerAsync(CardPresentedEvent shown, Func<CardPresentedEvent, CancellationToken, Task<CardDecision>> decide, CancellationToken cardToken)
-        {
-            CardDecision decision;
-
-            try
-            {
-                // A decision that ignores its token is abandoned, not waited for: the loop would never end otherwise.
-                var deciding = Task.Run(() => decide(shown, cardToken), CancellationToken.None);
-
-                _ = deciding.ContinueWith(
-                    task => _ = task.Exception,
+                _ = answer.ContinueWith(
+                    task => _queue.Writer.TryWrite(new AnswerFailed(shown.PresenceId, task.Exception!.GetBaseException())),
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
 
-                decision = await deciding.WaitAsync(cardToken).ConfigureAwait(false) ?? CardDecision.Decline;
-            }
-            catch (OperationCanceledException) when (cardToken.IsCancellationRequested)
-            {
-                // The wait for the card ended or the loop did: there is nobody to answer.
-                return "none";
-            }
-            catch (Exception)
-            {
-                // The program could not decide (a time limit of its own is that too): that is no approval.
-                decision = CardDecision.Decline;
+                return new PendingCard(shown.Uid, cancel, answer);
             }
 
-            // An approval that holds the project to the state the card was shown with needs that state. Without it there is nothing to hold.
-            if (decision.Approve && decision.PinRevision && string.IsNullOrEmpty(shown.ProjectRevision))
+            // The wait for a card ended: a decision that is still under way is dropped, and nothing is answered for the card. An answer
+            // that RFiDGear has not replied to is waited for a moment and then left alone (it is never sent again).
+            private async Task<CardOutcome> EndAsync(CardPresentationEndedEvent ended)
             {
-                decision = CardDecision.Decline;
-            }
+                var uid = string.Empty;
+                var answered = "none";
 
-            if (cardToken.IsCancellationRequested)
-            {
-                return "none";
-            }
-
-            try
-            {
-                if (!decision.Approve)
+                if (_pending.Remove(ended.PresenceId, out var card))
                 {
-                    await _client.Service.DeclineCard(new DeclineCardRequest { PresenceId = shown.PresenceId }).ConfigureAwait(false);
+                    uid = card.Uid;
+
+                    try
+                    {
+                        card.Cancel.Cancel();
+                        answered = await card.Answer.WaitAsync(_owner.Grace).ConfigureAwait(false);
+                    }
+                    catch (TimeoutException)
+                    {
+                        answered = "pending";
+                    }
+                    finally
+                    {
+                        card.Cancel.Dispose();
+                    }
+                }
+
+                return new CardOutcome(ended.PresenceId, uid, answered, ended.Reason, ended.RunId);
+            }
+
+            private void Report(CardOutcome outcome)
+            {
+                _outcomes.Add(outcome);
+                _onOutcome?.Invoke(outcome);
+            }
+
+            // The loop is over, for whatever reason: nothing more is decided, the mode is stopped when it is this loop's, and the
+            // cards whose wait RFiDGear has not ended yet get their end (it follows the stop).
+            private async Task ShutDownAsync()
+            {
+                foreach (var card in _pending.Values)
+                {
+                    card.Cancel.Cancel();
+                }
+
+                if (_weStartedTheMode)
+                {
+                    await StopOwnModeAsync().ConfigureAwait(false);
+                }
+
+                await CollectEndsAsync().ConfigureAwait(false);
+                await LetGoAsync().ConfigureAwait(false);
+            }
+
+            // Stopping the mode switches it off whoever switched it on, and the notice that this loop's own mode ended may be on its way
+            // while somebody else's mode is already on. So the mode is asked about first, and stopped only when RFiDGear says that it is the
+            // approval mode of a client (a mode of a user is never that, and RFiDGear serves one client at a time). What is left is the
+            // time between the question and the stop: a program that owns its connection closes it instead, which ends its mode and no
+            // other.
+            private async Task StopOwnModeAsync()
+            {
+                try
+                {
+                    var status = (await _owner._service.GetStatus(new GetStatusRequest()).ConfigureAwait(false)).AutoMode;
+
+                    if (status is { Enabled: true, RequireApproval: true } && status.StartedBy == RunSources.Bridge)
+                    {
+                        await _owner._service.StopAutoMode(new StopAutoModeRequest()).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception failure) when (failure is RemoteInvocationException || failure is ConnectionLostException || failure is ObjectDisposedException)
+                {
+                    // The connection is gone, and the mode ends with it.
+                }
+            }
+
+            // After the stop RFiDGear ends the wait for the card that was shown last; it is reported when that notice comes, for a moment.
+            private async Task CollectEndsAsync()
+            {
+                if (_pending.Count == 0)
+                {
+                    return;
+                }
+
+                using var grace = new CancellationTokenSource(_owner.Grace);
+
+                try
+                {
+                    while (_pending.Count > 0 && await NextAsync(_queue.Reader, grace.Token).ConfigureAwait(false) is { } item)
+                    {
+                        if (item is CardPresentationEndedEvent ended)
+                        {
+                            Report(await EndAsync(ended).ConfigureAwait(false));
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // The time is up: what RFiDGear did not say is not made up.
+                }
+                catch (Exception)
+                {
+                    // An answer that failed while the loop ended: there is nobody left to tell.
+                }
+            }
+
+            // What is still not over is dropped: the answers are not waited for longer than the grace, and what they say later is of no use.
+            private async Task LetGoAsync()
+            {
+                var answers = _pending.Values.Select(card => card.Answer).ToArray();
+
+                try
+                {
+                    await Task.WhenAll(answers).WaitAsync(_owner.Grace).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // Dropped: a failure, or the time that is up.
+                }
+
+                foreach (var card in _pending.Values)
+                {
+                    card.Cancel.Dispose();
+                }
+
+                _pending.Clear();
+            }
+
+            // Decides, and sends the answer. Returns what was sent (none when the card was given up before the program had decided).
+            private async Task<string> AnswerAsync(CardPresentedEvent shown, CancellationToken cardToken)
+            {
+                CardDecision decision;
+
+                try
+                {
+                    // A decision that ignores its token is abandoned, not waited for: the loop would never end otherwise.
+                    var deciding = Task.Run(() => _decide(shown, cardToken), CancellationToken.None);
+
+                    _ = deciding.ContinueWith(
+                        task => _ = task.Exception,
+                        CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+
+                    decision = await deciding.WaitAsync(cardToken).ConfigureAwait(false) ?? CardDecision.Decline;
+                }
+                catch (OperationCanceledException) when (cardToken.IsCancellationRequested)
+                {
+                    // The wait for the card ended or the loop did: there is nobody to answer.
+                    return "none";
+                }
+                catch (Exception)
+                {
+                    // The program could not decide (a time limit of its own is that too): that is no approval.
+                    decision = CardDecision.Decline;
+                }
+
+                // An approval that holds the project to the state the card was shown with needs that state. Without it there is nothing to hold.
+                if (decision.Approve && decision.PinRevision && string.IsNullOrEmpty(shown.ProjectRevision))
+                {
+                    decision = CardDecision.Decline;
+                }
+
+                return cardToken.IsCancellationRequested ? "none" : await SendAsync(shown, decision).ConfigureAwait(false);
+            }
+
+            private async Task<string> SendAsync(CardPresentedEvent shown, CardDecision decision)
+            {
+                try
+                {
+                    if (!decision.Approve)
+                    {
+                        await _owner._service.DeclineCard(new DeclineCardRequest { PresenceId = shown.PresenceId }).ConfigureAwait(false);
+
+                        return "declined";
+                    }
+
+                    await _owner._service.ApproveCard(new ApproveCardRequest
+                    {
+                        PresenceId = shown.PresenceId,
+                        ExpectProjectRevision = decision.PinRevision ? shown.ProjectRevision : null,
+                        Variables = (decision.Variables ?? new Dictionary<string, string>()).Select(pair => new VariablePair { Name = pair.Key, Value = pair.Value }).ToList(),
+                    }).ConfigureAwait(false);
+
+                    return "approved";
+                }
+                catch (RemoteInvocationException failure) when (BridgeSampleClient.ErrorDataOf(failure)?.Kind == BridgeErrorKinds.ApprovalNotPending)
+                {
+                    // The card was given up already (the time was up, it was taken away, the mode stopped): nothing to do but go on.
+                    return "late";
+                }
+                catch (RemoteInvocationException failure) when (decision.Approve && BridgeSampleClient.ErrorDataOf(failure)?.Kind == BridgeErrorKinds.InvalidRequest)
+                {
+                    // The approval was refused for what it said (a variable, a revision) and the card still waits: decline it, do not leave it to expire.
+                    await DeclineQuietlyAsync(shown.PresenceId).ConfigureAwait(false);
 
                     return "declined";
                 }
+            }
 
-                await _client.Service.ApproveCard(new ApproveCardRequest
+            private async Task DeclineQuietlyAsync(string presenceId)
+            {
+                try
                 {
-                    PresenceId = shown.PresenceId,
-                    ExpectProjectRevision = decision.PinRevision ? shown.ProjectRevision : null,
-                    Variables = (decision.Variables ?? new Dictionary<string, string>()).Select(pair => new VariablePair { Name = pair.Key, Value = pair.Value }).ToList(),
-                }).ConfigureAwait(false);
+                    await _owner._service.DeclineCard(new DeclineCardRequest { PresenceId = presenceId }).ConfigureAwait(false);
+                }
+                catch (Exception failure) when (failure is RemoteInvocationException || failure is ConnectionLostException || failure is ObjectDisposedException)
+                {
+                    // It ended meanwhile, or the connection is gone (which ends the mode): nothing is left to decline.
+                }
+            }
 
-                return "approved";
-            }
-            catch (RemoteInvocationException failure) when (BridgeSampleClient.ErrorDataOf(failure)?.Kind == BridgeErrorKinds.ApprovalNotPending)
-            {
-                // The card was given up already (the time was up, it was taken away, the mode stopped): nothing to do but go on.
-                return "late";
-            }
-            catch (RemoteInvocationException failure) when (decision.Approve && BridgeSampleClient.ErrorDataOf(failure)?.Kind == BridgeErrorKinds.InvalidRequest)
-            {
-                // The approval was refused for what it said (a variable, a revision) and the card still waits: decline it, do not leave it to expire.
-                await DeclineQuietlyAsync(shown.PresenceId).ConfigureAwait(false);
+            // A card whose decision is under way: what was shown, how to drop the decision, and what it will have answered.
+            private sealed record PendingCard(string Uid, CancellationTokenSource Cancel, Task<string> Answer);
 
-                return "declined";
-            }
+            // What the loop is told when the answer for a card failed (the connection, RFiDGear): it ends the loop with that failure.
+            private sealed record AnswerFailed(string PresenceId, Exception Error);
         }
-
-        private async Task DeclineQuietlyAsync(string presenceId)
-        {
-            try
-            {
-                await _client.Service.DeclineCard(new DeclineCardRequest { PresenceId = presenceId }).ConfigureAwait(false);
-            }
-            catch (Exception failure) when (failure is RemoteInvocationException || failure is ConnectionLostException || failure is ObjectDisposedException)
-            {
-                // It ended meanwhile, or the connection is gone (which ends the mode): nothing is left to decline.
-            }
-        }
-
-        private async Task StopQuietlyAsync()
-        {
-            try
-            {
-                await _client.Service.StopAutoMode(new StopAutoModeRequest()).ConfigureAwait(false);
-            }
-            catch (Exception failure) when (failure is RemoteInvocationException || failure is ConnectionLostException || failure is ObjectDisposedException)
-            {
-                // The connection is gone, and the mode ends with it.
-            }
-        }
-
-        // A card whose decision is under way: what was shown, how to drop the decision, and what it will have answered.
-        private sealed record PendingCard(string Uid, CancellationTokenSource Cancel, Task<string> Answer);
-
-        // What the loop is told when the answer for a card failed (the connection, RFiDGear): it ends the loop with that failure.
-        private sealed record AnswerFailed(Exception Error);
     }
 }

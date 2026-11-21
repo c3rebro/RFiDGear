@@ -618,8 +618,14 @@ passed with a real reader; until then a snapshot may be re-baselined.
   of its own too), or a pin on a state that RFiDGear did not tell, is a
   decline; a late answer (`approvalNotPending`) is tolerated; the loop ends
   with the mode or the connection. It stops only a mode that it switched on
-  itself: a refused start (`autoModeActive`) and a mode that has ended leave
-  the mode alone. It decides nothing itself: `ApprovalPolicy` makes the fixed
+  itself and that `getStatus` still shows as the approval mode of a client
+  (`stopAutoMode` stops any mode, and the notice that its own mode ended may
+  be on its way while a user's mode is already on): a refused start
+  (`autoModeActive`) and a mode that has ended leave the mode alone. After the
+  stop it still collects the ends of the waits that RFiDGear tells (for
+  `Grace`, 2 s; what is not told is not made up), and an answer that RFiDGear
+  has not replied to is not waited for longer (outcome `pending`, never sent
+  again). It decides nothing itself: `ApprovalPolicy` makes the fixed
   rules of `auto --approve-with=$NAME`, `--decline` and `--no-answer` to try
   the flow by hand, and refuses an option it does not know (only a bare `auto`
   is the plain mode that runs every card; cases 52 to 65 of
