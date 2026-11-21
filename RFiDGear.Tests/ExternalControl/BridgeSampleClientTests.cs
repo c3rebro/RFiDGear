@@ -1604,7 +1604,7 @@ namespace RFiDGear.Tests.ExternalControl
                 Assert.Null(await Present(host, "p-2", "04BB").WaitAsync(TimeSpan.FromSeconds(5)));
                 var outcomes = await EndTheLoopAsync(loop, stop, seen, 2);
 
-                // Nothing was sent for the first card: its decision never finished, held up by the callback, and the answer says so.
+                // Nothing was sent for the first card, and the answer says so, whether or not its decision had given up when the wait ended.
                 Assert.Equal(("p-1", "none", PresentationEndReasons.Declined), (outcomes[0].PresenceId, outcomes[0].Answer, outcomes[0].Reason));
                 Assert.Equal(("p-2", "declined", PresentationEndReasons.Declined), (outcomes[1].PresenceId, outcomes[1].Answer, outcomes[1].Reason));
             }
@@ -1612,6 +1612,40 @@ namespace RFiDGear.Tests.ExternalControl
             {
                 gate.Set();
             }
+        }
+
+        [Fact]
+        public async Task TheLoop_SaysNone_ForACardWhoseDecisionSentNothingBeforeItsWaitEnded_NotPending()
+        {
+            // A grace of nothing: the end of the wait does not wait for the decision to have given up. What the answer says then depends
+            // on whether a request went out, and none did.
+            var asked = 0;
+            var (client, host, loop, stop, seen) = await StartLoopAsync(
+                async (_, _) =>
+                {
+                    Interlocked.Increment(ref asked);
+                    await Task.Delay(Timeout.Infinite);
+
+                    return CardDecision.Decline;
+                },
+                grace: TimeSpan.Zero);
+
+            for (var card = 1; card <= 10; card++)
+            {
+                var presence = "p-" + card;
+                var shown = Present(host, presence, "04AA");
+                var expected = card;
+                await WaitUntilAsync(() => Volatile.Read(ref asked) == expected);
+                await client.Service.DeclineCard(new DeclineCardRequest { PresenceId = presence });
+                Assert.Null(await shown.WaitAsync(TimeSpan.FromSeconds(5)));
+                await WaitUntilAsync(() => { lock (seen) { return seen.Count == expected; } });
+            }
+
+            stop.Cancel();
+            var outcomes = await loop.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(10, outcomes.Count);
+            Assert.All(outcomes, outcome => Assert.Equal("none", outcome.Answer));
         }
 
         [Fact]
