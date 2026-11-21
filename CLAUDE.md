@@ -526,12 +526,16 @@ passed with a real reader; until then a snapshot may be re-baselined.
   program does not wait for the end of the presence, and the mode stops; a run
   that was admitted is never told as refused. The revision is checked in
   `RunAllOnceCoreAsync` after the window holds the execution slot, so nothing
-  can change the project between the check and the run. The result of the run
-  carries the `presenceId`. The revision in a result is the one the run started
-  with, so in a series of cards it is not the revision that was approved (the
-  run of card N leaves a state for card N+1): do not compare them. A start with
-  approval is never agreed on again (`AutoModeActive`), and the mode of a user
-  is never taken over for approval.
+  can change the project between the check and the run. The check is exact (no
+  lineage as for `startRun`): when the approval names a revision, the run
+  starts only in that very state, and its result carries that same revision (it
+  is the one the run started with). A run changes the project (the tasks write
+  some of their own settings), so the revision differs from card to card: the
+  one in `cardPresented` is read when the card is shown, after the run of the
+  card before it, and a client names that one, not one it read earlier. The
+  result of the run carries the `presenceId`. A start with approval is never
+  agreed on again (`AutoModeActive`), and the mode of a user is never taken
+  over for approval.
 - **The card is held to the approval.** While the program decides, the ticks
   that come meanwhile still look at the reader (`WatchPendingCardAsync`; the
   tick that waits holds the machine, and a look takes the scan slot): a card

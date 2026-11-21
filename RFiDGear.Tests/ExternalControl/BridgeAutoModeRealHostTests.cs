@@ -197,6 +197,9 @@ namespace RFiDGear.Tests.ExternalControl
                 var completed = Assert.IsType<AutoRunCompletedEvent>(events[2]);
                 Assert.Equal((firstShown.PresenceId, PresentationEndReasons.Approved, exec.Requests[0].RunId), (ended.PresenceId, ended.Reason, ended.RunId));
                 Assert.Equal((exec.Requests[0].RunId, firstShown.PresenceId), (completed.Result.RunId, completed.Result.PresenceId));
+
+                // The check of the revision is exact, so the run started in the very state the approval named, and says so.
+                Assert.Equal(revision, completed.Result.ProjectRevision);
                 Assert.Equal(secondShown.PresenceId, Assert.IsType<AutoRunCompletedEvent>(events[5]).Result.PresenceId);
             });
         }
