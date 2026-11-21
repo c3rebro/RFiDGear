@@ -35,7 +35,7 @@ sondern mit dem Grund <code>bridgeFault</code>.</p>
 <table>
 <tr><th><code>status</code></th><th>Wann</th></tr>
 <tr><td><code>success</code></td><td>jede Aufgabe, die lief, endete ohne Fehler, und alle Aufgaben wurden erreicht</td></tr>
-<tr><td><code>completedWithIntentionalFailures</code></td><td>eine Pr&uuml;fung hat &bdquo;nein&ldquo; gesagt, oder eine Aufgabe ist fehlgeschlagen und eine sp&auml;tere hat das mit einer Ausf&uuml;hrungsbedingung aufgefangen.. <code>CardNotExpected</code> kann so nie enden</td></tr>
+<tr><td><code>completedWithIntentionalFailures</code></td><td>eine Pr&uuml;fung hat &bdquo;nein&ldquo; gesagt, oder eine Aufgabe ist fehlgeschlagen und eine sp&auml;tere hat das mit einer Ausf&uuml;hrungsbedingung aufgefangen. <code>CardNotExpected</code> kann so nie enden</td></tr>
 <tr><td><code>failure</code></td><td>eine Aufgabe ist fehlgeschlagen und keine sp&auml;tere hat darauf reagiert; <code>CardNotExpected</code> trat auf; oder der Lauf endete, bevor alle Aufgaben erreicht waren</td></tr>
 <tr><td><code>cancelled</code>, <code>timedOut</code></td><td>der Lauf wurde angehalten oder gab zu viel Zeit aus</td></tr>
 </table>
@@ -70,7 +70,7 @@ sondern mit dem Grund <code>bridgeFault</code>.</p>
 
 <h2>Warum eine Pr&uuml;fung scheiterte: <code>verificationDetails</code></h2>
 
-<p>Eine Aufgabe, die Werte vergleicht, kann sagen, was sie verglichen hat, damit die Aufzeichnung einer gescheiterten Pr&uuml;fung mehr enth&auml;lt als &bdquo;gescheitert&ldquo;. Heute haben nur die DESFire-Aufgabe &bdquo;Pr&uuml;fung: Dateieinstellungen&ldquo; solche Angaben (Art <code>desfire.fileSettings</code>).
+<p>Eine Aufgabe, die Werte vergleicht, kann sagen, was sie verglichen hat, damit die Aufzeichnung einer gescheiterten Pr&uuml;fung mehr enth&auml;lt als &bdquo;gescheitert&ldquo;. Heute hat nur die DESFire-Aufgabe &bdquo;Pr&uuml;fung: Dateieinstellungen&ldquo; solche Angaben (Art <code>desfire.fileSettings</code>).
 Sie enthalten <code>schemaVersion</code> (1), <code>kind</code>, <code>overallMatch</code>, <code>compareMode</code> (<code>all</code> oder <code>any</code>), <code>applicationId</code>, <code>fileNumber</code>, <code>errorCode</code> (<code>notRead</code>) und <code>checks</code>: einen Eintrag je Einstellung in
 fester Reihenfolge (<code>fileType</code>, <code>fileSize</code>, <code>communicationMode</code>, <code>accessRead</code>, <code>accessWrite</code>, <code>accessReadWrite</code>, <code>accessChange</code>) mit <code>compared</code> und <code>result</code>
 (<code>match</code>, <code>mismatch</code>, <code>notRead</code> oder <code>notCompared</code>); eine verglichene Einstellung hat <code>expected</code> und, wenn sie lesbar war, <code>actual</code>, beide als Zahlen (bei der Gr&ouml;&szlig;e auch <code>rule</code>: <code>exact</code>,
