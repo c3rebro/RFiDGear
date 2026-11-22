@@ -179,7 +179,7 @@ namespace RFiDGear.Services.Licensing
                 return;
             }
 
-            _nextRead = _clock() + RereadInterval;
+            _nextRead = _clock() + NextReadAfter(read);
             ApplySafely(read);
         }
 
@@ -193,8 +193,15 @@ namespace RFiDGear.Services.Licensing
             // A read that is under way now carries an older answer; it is dropped when it ends.
             _generation++;
             _readInFlight = 0;
-            _nextRead = _clock() + RereadInterval;
+            _nextRead = _clock() + NextReadAfter(pushed);
             ApplySafely(pushed);
+        }
+
+        // An answer of "unknown" is applied when nothing was known before (the program goes on as licensed), but it learns
+        // nothing: the license is asked for again after the short interval, not after the long one.
+        private static TimeSpan NextReadAfter(LicenseSnapshot answer)
+        {
+            return answer.Kind == LicenseKind.Unknown ? RetryInterval : RereadInterval;
         }
 
         // "Unknown" says that the Store could not tell: it never replaces a license that is known, and a null is no answer.

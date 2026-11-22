@@ -3081,6 +3081,13 @@ namespace RFiDGear.ViewModel
         // program closes.
         private void ShowLicenseDialog(bool trialHasEnded)
         {
+            // One at a time: Help > Buy after the trial has ended, and the timer that finds the end a moment later, would otherwise
+            // open two, and a purchase in the second would leave the first one offering to close a program that is bought.
+            if (_openLicenseDialog != null)
+            {
+                return;
+            }
+
             var gate = _licenseGate;
 
             var dialog = new LicenseDialogViewModel(trialHasEnded)

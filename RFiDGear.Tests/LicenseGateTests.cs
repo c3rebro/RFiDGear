@@ -235,6 +235,21 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task AnUnknownAnswerWhenNothingIsKnown_IsAskedAgainAfterTheShortInterval()
+        {
+            var rig = new Rig(LicenseSnapshot.Unknown);
+
+            await rig.Gate.StartAsync();
+            Assert.Equal(1, rig.Service.Reads);
+            Assert.False(rig.Host.Blocked);
+
+            rig.Now = rig.Now.Add(LicenseGate.RetryInterval);
+            await rig.Gate.TickAsync();
+
+            Assert.Equal(2, rig.Service.Reads);
+        }
+
+        [Fact]
         public async Task AReadThatWasOvertakenByAPushedLicense_IsDropped()
         {
             var rig = new Rig(LicenseSnapshot.Unknown);

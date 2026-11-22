@@ -149,6 +149,20 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task BuyingAfterTheEndOfTheTrial_OpensNoSecondDialog()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var window = await InitializedWindowAsync(new FakeLicenseService(LicenseSnapshot.Expired));
+                Assert.Single(window.Dialogs);
+
+                window.BuyCommand.Execute(null);
+
+                Assert.Single(window.Dialogs);
+            });
+        }
+
+        [Fact]
         public async Task TheDialogOfAnEndedTrial_IsClosedWhenTheProgramIsBoughtSomewhereElse()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
