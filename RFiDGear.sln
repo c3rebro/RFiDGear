@@ -36,6 +36,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Extensions.CardChe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.HIL.Tests", "RFiDGear.HIL.Tests\RFiDGear.HIL.Tests.csproj", "{84CCA31C-5E88-4EA7-B662-DF56A0D028B6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Store", "RFiDGear.Store\RFiDGear.Store.csproj", "{0D4CEE76-14D9-4903-A703-D12449F15519}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug(without args)|Any CPU = Debug(without args)|Any CPU
@@ -283,6 +285,24 @@ Global
 		{84CCA31C-5E88-4EA7-B662-DF56A0D028B6}.Release|x64.Build.0 = Release|x64
 		{84CCA31C-5E88-4EA7-B662-DF56A0D028B6}.Release|x86.ActiveCfg = Release|x86
 		{84CCA31C-5E88-4EA7-B662-DF56A0D028B6}.Release|x86.Build.0 = Release|x86
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug(without args)|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug(without args)|Any CPU.Build.0 = Debug|Any CPU
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug(without args)|x64.ActiveCfg = Debug|x64
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug(without args)|x64.Build.0 = Debug|x64
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug(without args)|x86.ActiveCfg = Debug|x86
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug(without args)|x86.Build.0 = Debug|x86
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug|x64.ActiveCfg = Debug|x64
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug|x64.Build.0 = Debug|x64
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug|x86.ActiveCfg = Debug|x86
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Debug|x86.Build.0 = Debug|x86
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Release|x64.ActiveCfg = Release|x64
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Release|x64.Build.0 = Release|x64
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Release|x86.ActiveCfg = Release|x86
+		{0D4CEE76-14D9-4903-A703-D12449F15519}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

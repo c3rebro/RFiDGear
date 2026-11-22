@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The part of the Store edition that talks to the Microsoft Store (Windows.Services.Store). It needs a target framework that
+    names a Windows version, and a project cannot reference one that is higher than itself, so the program does not reference
+    this assembly (that would move the program, its tests and its extensions to this framework): the package carries
+    RFiDGear.Store.dll next to RFiDGear.exe and the program loads it by name (StoreLicenseServiceLoader).
+
+    The name must not start with RFiDGear.Extensions: the program scans for that and would load this as an extension.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Configurations>Debug;Release</Configurations>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <Nullable>enable</Nullable>
+    <RootNamespace>RFiDGear.Store</RootNamespace>
+    <AssemblyName>RFiDGear.Store</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RFiDGear\RFiDGear.csproj" />
+  </ItemGroup>
+  <!--
+    The program references these two packages (the old Windows Runtime shims for .NET Framework), and they flow into this
+    project. Their AsTask and awaiters are written for the legacy Windows.winmd types and clash with the projection of the Windows
+    SDK that this target framework brings, so they are switched off here (the nearest reference wins). The program is not touched.
+  -->
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.WindowsRuntime" Version="4.7.0" ExcludeAssets="all" />
+    <PackageReference Include="System.Runtime.WindowsRuntime.UI.Xaml" Version="4.7.0" ExcludeAssets="all" />
+  </ItemGroup>
+  <!--
+    What the Store edition's package needs of this project: this assembly, and the two assemblies of the Windows SDK projection
+    (Microsoft.Windows.SDK.NET.dll is about 24 MB) that it calls through. The SDK copies the projection next to an application
+    but not next to a library, and the program (which is not on a Windows-versioned framework) does not bring it either. The
+    names are returned as StorePayloadFile, and the build copies them into the output folder, so the packaging step takes them
+    from there.
+  -->
+  <Target Name="GetStorePayload" DependsOnTargets="ResolveAssemblyReferences" Returns="@(StorePayloadFile)">
+    <ItemGroup>
+      <StorePayloadFile Include="$(TargetPath)" />
+      <StorePayloadFile Include="@(ReferencePath)" Condition=" '%(Filename)' == 'Microsoft.Windows.SDK.NET' Or '%(Filename)' == 'WinRT.Runtime' " />
+    </ItemGroup>
+  </Target>
+  <Target Name="CopyStorePayloadToOutput" AfterTargets="Build" DependsOnTargets="GetStorePayload">
+    <Copy SourceFiles="@(StorePayloadFile)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>
