@@ -163,6 +163,25 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task BuyingWhileARunHoldsTheEndBack_DoesNotGetRoundTheRun()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var service = new FakeLicenseService(LicenseSnapshot.Trial(DateTimeOffset.UtcNow.AddDays(3)));
+                var window = await InitializedWindowAsync(service);
+
+                // A run is under way when the Store says that the trial has ended: nothing is asked while it goes on ...
+                Assert.True(await window.TryBeginExecutionAfterAScanAsync());
+                service.Change(LicenseSnapshot.Expired);
+                Assert.Empty(window.Dialogs);
+
+                // ... and the Buy entry of the menu does not open the dialog (whose button would close the program) either.
+                window.BuyCommand.Execute(null);
+                Assert.Empty(window.Dialogs);
+            });
+        }
+
+        [Fact]
         public async Task TheDialogOfAnEndedTrial_IsClosedWhenTheProgramIsBoughtSomewhereElse()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>

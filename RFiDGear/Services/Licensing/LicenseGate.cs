@@ -187,6 +187,13 @@ namespace RFiDGear.Services.Licensing
         {
             if (!LearnsSomething(pushed))
             {
+                // Nothing was learned (the Store pushed "unknown"): the license is asked for again soon, not at the old deadline.
+                var retryAt = _clock() + RetryInterval;
+                if (retryAt < _nextRead)
+                {
+                    _nextRead = retryAt;
+                }
+
                 return;
             }
 

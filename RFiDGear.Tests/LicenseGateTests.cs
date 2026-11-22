@@ -235,6 +235,24 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task AnUnknownPushedAfterAKnownLicense_BringsTheNextReadForward()
+        {
+            var rig = new Rig(LicenseSnapshot.Expired);
+            await rig.Gate.StartAsync();
+            Assert.Equal(1, rig.Service.Reads);
+
+            // The Store pushes "unknown": it changes nothing that is known, but the next read is not six hours away any more.
+            rig.Service.Change(LicenseSnapshot.Unknown);
+            Assert.True(rig.Host.Blocked);
+
+            rig.Now = rig.Now.Add(LicenseGate.RetryInterval);
+            await rig.Gate.TickAsync();
+
+            Assert.Equal(2, rig.Service.Reads);
+            Assert.True(rig.Host.Blocked);
+        }
+
+        [Fact]
         public async Task AnUnknownAnswerWhenNothingIsKnown_IsAskedAgainAfterTheShortInterval()
         {
             var rig = new Rig(LicenseSnapshot.Unknown);

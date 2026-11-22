@@ -3038,10 +3038,23 @@ namespace RFiDGear.ViewModel
 
         private void OnBuy()
         {
-            if (_licenseGate != null)
+            var gate = _licenseGate;
+
+            if (gate == null)
             {
-                ShowLicenseDialog(_licenseGate.IsExpired);
+                return;
             }
+
+            if (gate.IsExpired)
+            {
+                // The trial has ended, but the gate has not told yet: a run holds the dialog back, or the minute has not passed.
+                // The gate is asked, so new runs are refused at once and the dialog waits for the run (a button of this menu must not
+                // get round that: its "close the program" would cut a run off).
+                _ = gate.TickAsync();
+                return;
+            }
+
+            ShowLicenseDialog(trialHasEnded: false);
         }
 
         // The Store edition only: reads the license, shows the days of the trial, and lets a trial that has ended refuse new
@@ -3130,8 +3143,14 @@ namespace RFiDGear.ViewModel
             }
         }
 
-        private IntPtr OwnerWindowHandle() =>
-            mw == null ? IntPtr.Zero : new System.Windows.Interop.WindowInteropHelper(mw).Handle;
+        // The license can be read, and the dialog of an ended trial shown, before the start-up has assigned mw (the window that
+        // the application has made is there earlier). EnsureHandle makes the handle if the window has none yet.
+        private IntPtr OwnerWindowHandle()
+        {
+            Window window = mw ?? Application.Current?.MainWindow;
+
+            return window == null ? IntPtr.Zero : new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+        }
 
         /// <summary>
         ///
