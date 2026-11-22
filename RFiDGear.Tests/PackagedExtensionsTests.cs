@@ -27,6 +27,13 @@ namespace RFiDGear.Tests
         private static string UserFolderOf(MefHelper helper) =>
             (string)typeof(MefHelper).GetField("_userExtensionsPath", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(helper)!;
 
+        // MefHelper implements IDisposable explicitly; an implicit conversion to the interface needs no cast.
+        private static void Release(MefHelper helper)
+        {
+            IDisposable disposable = helper;
+            disposable.Dispose();
+        }
+
         [Fact]
         public void TheStandardEdition_ScansTheMachineWideFolder_CreatesIt_AndTheUsersFolder()
         {
@@ -40,7 +47,7 @@ namespace RFiDGear.Tests
             }
             finally
             {
-                ((IDisposable)helper).Dispose();
+                Release(helper);
             }
         }
 
@@ -58,7 +65,7 @@ namespace RFiDGear.Tests
             }
             finally
             {
-                ((IDisposable)helper).Dispose();
+                Release(helper);
             }
         }
 
@@ -80,7 +87,7 @@ namespace RFiDGear.Tests
             }
             finally
             {
-                ((IDisposable)helper).Dispose();
+                Release(helper);
             }
         }
     }
