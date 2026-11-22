@@ -48,14 +48,21 @@ namespace RFiDGear.Tests
         public void ABlockedCoordinator_RefusesNewExecutions_ButNeverARunThatIsInProgress()
         {
             var coordinator = new ExtensionOperationCoordinator();
+            var announced = 0;
+            coordinator.IsExecutingChanged += (_, _) => announced++;
 
             Assert.True(coordinator.TryBeginExecution());
             coordinator.ExecutionBlocked = true;
             Assert.True(coordinator.IsExecuting);
 
             coordinator.EndExecution();
+            Assert.Equal(2, announced);
+
             Assert.False(coordinator.TryBeginExecution());
             Assert.True(coordinator.IsIdle);
+
+            // A refused attempt takes the slot for a moment (see TryBeginExecution) and never announces it.
+            Assert.Equal(2, announced);
 
             coordinator.ExecutionBlocked = false;
             Assert.True(coordinator.TryBeginExecution());
@@ -138,6 +145,25 @@ namespace RFiDGear.Tests
 
                 Assert.False(plainWindow.IsLicenseStatusVisible);
                 Assert.Equal(string.Empty, plainWindow.LicenseStatusText);
+            });
+        }
+
+        [Fact]
+        public async Task TheDialogOfAnEndedTrial_IsClosedWhenTheProgramIsBoughtSomewhereElse()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var service = new FakeLicenseService(LicenseSnapshot.Expired);
+                var window = await InitializedWindowAsync(service);
+                var dialog = Assert.IsType<LicenseDialogViewModel>(Assert.Single(window.Dialogs));
+                var closed = 0;
+                dialog.DialogClosing += (_, _) => closed++;
+
+                // Bought on the Store's own page: the dialog never saw it, the Store tells the program.
+                service.Change(LicenseSnapshot.Full);
+
+                Assert.Equal(1, closed);
+                Assert.False(window.IsLicenseStatusVisible);
             });
         }
 

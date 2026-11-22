@@ -68,13 +68,18 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// </summary>
         public bool TryBeginExecution()
         {
-            if (ExecutionBlocked)
+            if (Interlocked.CompareExchange(ref _state, Executing, Idle) != Idle)
             {
                 return false;
             }
 
-            if (Interlocked.CompareExchange(ref _state, Executing, Idle) != Idle)
+            // Checked after the slot is taken, not before: the license gate sets the block and then looks whether a run is in
+            // progress, so either this attempt sees the block, or the gate sees this run. (A check before the slot would leave a
+            // gap in which a run is admitted behind the dialog of the ended trial.) The slot is given back without an event: a
+            // refused attempt is never announced.
+            if (ExecutionBlocked)
             {
+                Interlocked.CompareExchange(ref _state, Idle, Executing);
                 return false;
             }
 

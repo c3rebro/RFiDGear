@@ -73,6 +73,7 @@ namespace RFiDGear.ViewModel
         private readonly ILicenseService licenseService;
         private LicenseGate _licenseGate;
         private DispatcherTimer _licenseTimer;
+        private LicenseDialogViewModel _openLicenseDialog;
         private TaskDialogFactory taskDialogFactory;
         private ITaskListEditGate taskListEditGate;
         private ITaskExecutionService taskExecutionService;
@@ -3064,6 +3065,7 @@ namespace RFiDGear.ViewModel
             {
                 OnPropertyChanged(nameof(LicenseStatusText));
                 OnPropertyChanged(nameof(IsLicenseStatusVisible));
+                CloseLicenseDialogThatNoLongerApplies();
             };
 
             // Once a minute: a trial may end while the window is open, and a run that held the dialog back may be over.
@@ -3094,7 +3096,31 @@ namespace RFiDGear.ViewModel
                 OnExit = OnCloseRequest,
             };
 
+            _openLicenseDialog = dialog;
+            dialog.DialogClosing += (_, _) =>
+            {
+                if (ReferenceEquals(_openLicenseDialog, dialog))
+                {
+                    _openLicenseDialog = null;
+                }
+            };
+
             Dialogs.Add(dialog);
+        }
+
+        // The license can change under an open dialog: the program was bought somewhere else (the Store's own page, another
+        // window), or a trial ended while the dialog about a running one was open. A dialog that says something that is no longer
+        // true is closed. For a trial that has ended this is what lets a purchase made outside the dialog carry on without a
+        // restart, instead of leaving a Close that would still end the program.
+        private void CloseLicenseDialogThatNoLongerApplies()
+        {
+            var dialog = _openLicenseDialog;
+            var gate = _licenseGate;
+
+            if (dialog != null && gate != null && (gate.Current.Kind == LicenseKind.Full || dialog.TrialHasEnded != gate.IsExpired))
+            {
+                dialog.Close();
+            }
         }
 
         private IntPtr OwnerWindowHandle() =>

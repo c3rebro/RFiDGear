@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace RFiDGear.Services.Licensing
     /// </summary>
     internal sealed class FakeLicenseService : ILicenseService
     {
+        private readonly Queue<TaskCompletionSource<LicenseSnapshot>> _held = new Queue<TaskCompletionSource<LicenseSnapshot>>();
         private EventHandler<LicenseSnapshot> _changed;
         private LicenseSnapshot _snapshot;
 
@@ -39,8 +41,26 @@ namespace RFiDGear.Services.Licensing
         /// <summary>Gets the number of times a purchase was asked for.</summary>
         public int Purchases { get; private set; }
 
-        /// <summary>Gets or sets what the next read does instead of answering: a service that cannot be reached.</summary>
+        /// <summary>Gets or sets what a read does instead of answering: a service that cannot be reached.</summary>
         public Exception FailWith { get; set; }
+
+        /// <summary>Gets or sets what a purchase does instead of going through: the person closed the Store.</summary>
+        public Exception PurchaseFailWith { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether a read stays open until <see cref="CompleteHeldRead"/> answers it, as a slow
+        /// Store does.
+        /// </summary>
+        public bool HoldReads { get; set; }
+
+        /// <summary>
+        /// Answers the oldest read that is held open.
+        /// </summary>
+        /// <param name="snapshot">The answer.</param>
+        public void CompleteHeldRead(LicenseSnapshot snapshot)
+        {
+            _held.Dequeue().SetResult(snapshot);
+        }
 
         /// <summary>
         /// Gives the service another license, as the Store does when the trial ends, and tells the listeners.
@@ -63,6 +83,13 @@ namespace RFiDGear.Services.Licensing
                 return Task.FromException<LicenseSnapshot>(FailWith);
             }
 
+            if (HoldReads)
+            {
+                var held = new TaskCompletionSource<LicenseSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _held.Enqueue(held);
+                return held.Task;
+            }
+
             return Task.FromResult(_snapshot);
         }
 
@@ -71,6 +98,12 @@ namespace RFiDGear.Services.Licensing
         {
             cancellationToken.ThrowIfCancellationRequested();
             Purchases++;
+
+            if (PurchaseFailWith != null)
+            {
+                return Task.FromException<bool>(PurchaseFailWith);
+            }
+
             Change(LicenseSnapshot.Full);
             return Task.FromResult(true);
         }

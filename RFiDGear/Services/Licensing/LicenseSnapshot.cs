@@ -7,7 +7,9 @@ namespace RFiDGear.Services.Licensing
     /// </summary>
     public sealed class LicenseSnapshot
     {
-        private LicenseSnapshot(LicenseKind kind, DateTimeOffset? trialEnds)
+        // Internal, not private: the snapshots are made through the static members (a license is Full, Expired, Unknown or a Trial
+        // with an end), and no other assembly needs to build one by hand.
+        internal LicenseSnapshot(LicenseKind kind, DateTimeOffset? trialEnds)
         {
             Kind = kind;
             TrialEnds = trialEnds;

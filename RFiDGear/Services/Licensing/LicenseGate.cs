@@ -11,11 +11,13 @@ namespace RFiDGear.Services.Licensing
     /// trial are left, and when the trial has ended it refuses new runs, stops automatic mode and asks the person to buy or
     /// close the program.
     /// <para>
-    /// Three rules shape it. It <b>fails open</b>: a license that cannot be read counts as licensed (the Store itself refuses to
-    /// start an expired trial, so this only matters while the program is already running), but an answer that was read is kept
-    /// when a later read fails, so a hiccup of the Store does not lift an expiry. It <b>never interrupts a run</b>: a card
-    /// operation is one attempt, and the dialog waits until the run is over. And it <b>takes no window</b>: everything it does to
-    /// the program goes through <see cref="ILicenseEnforcement"/>.
+    /// Four rules shape it. It <b>fails open</b>: a license that was never read counts as licensed (the Store itself refuses to
+    /// start an expired trial, so this only matters while the program is already running). But what was <b>learned is kept</b>:
+    /// a read that fails, or an answer of "unknown", never replaces a known license, so a hiccup of the Store does not lift an
+    /// expiry. It <b>never interrupts a run</b>: a card operation is one attempt, and the dialog waits until the run is over.
+    /// And it <b>goes by the newest answer</b>: a read that was started before the Store pushed a license is out of date when it
+    /// ends and is dropped. It <b>takes no window</b>: everything it does to the program goes through
+    /// <see cref="ILicenseEnforcement"/>.
     /// </para>
     /// </summary>
     /// <remarks>
@@ -27,7 +29,7 @@ namespace RFiDGear.Services.Licensing
         /// <summary>How long a license that was read is trusted before it is read again.</summary>
         internal static readonly TimeSpan RereadInterval = TimeSpan.FromHours(6);
 
-        /// <summary>When a read has failed, how long to wait before the next try.</summary>
+        /// <summary>When nothing was learned (the read failed, or the answer was "unknown"), how long to wait before the next try.</summary>
         internal static readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(15);
 
         private readonly ILicenseService _service;
@@ -39,6 +41,13 @@ namespace RFiDGear.Services.Licensing
         private string _statusKey = string.Empty;
         private bool _endedShown;
         private bool _attached;
+
+        // Grows when a read starts and when the Store pushes a license. A read whose number is not the current one when it ends
+        // was overtaken by something newer, and its answer is dropped.
+        private int _generation;
+
+        // The number of the read that is under way, 0 for none: the timer does not start a second one on top of it.
+        private int _readInFlight;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LicenseGate"/> class.
@@ -56,7 +65,7 @@ namespace RFiDGear.Services.Licensing
         /// <summary>Raised when what the person sees changes: the days left, the end of the trial, a purchase.</summary>
         public event EventHandler StatusChanged;
 
-        /// <summary>Gets the license as it was last read.</summary>
+        /// <summary>Gets the license as it was last learned.</summary>
         public LicenseSnapshot Current => _snapshot;
 
         /// <summary>Gets a value indicating whether the trial is over now.</summary>
@@ -77,36 +86,18 @@ namespace RFiDGear.Services.Licensing
         {
             if (!_attached)
             {
-                _service.Changed += OnServiceChanged;
+                _service.Changed += (_, pushed) => OnLicensePushed(pushed);
                 _attached = true;
             }
 
-            await RefreshAsync();
+            await ReadAsync(force: false);
         }
 
         /// <summary>
-        /// Reads the license again and applies it. It never throws.
+        /// Reads the license again and applies it, unless a read is under way already. It never throws.
         /// </summary>
         /// <returns>A task that ends when the answer is applied.</returns>
-        public async Task RefreshAsync()
-        {
-            LicenseSnapshot read;
-
-            try
-            {
-                read = await _service.GetAsync(CancellationToken.None) ?? LicenseSnapshot.Unknown;
-                _nextRead = _clock() + RereadInterval;
-            }
-            catch (Exception ex)
-            {
-                // Only the type is logged: the text of an exception from the Store may hold names or ids.
-                Log.ForContext<LicenseGate>().Warning("The license could not be read ({ExceptionType}); the last answer stays in force", ex.GetType().Name);
-                _nextRead = _clock() + RetryInterval;
-                read = _snapshot;
-            }
-
-            ApplySafely(read);
-        }
+        public Task RefreshAsync() => ReadAsync(force: false);
 
         /// <summary>
         /// Looks at the clock: the trial may have ended since the last look, a run may have ended that held the dialog back,
@@ -115,13 +106,13 @@ namespace RFiDGear.Services.Licensing
         /// <returns>A task that ends when the look is done.</returns>
         public async Task TickAsync()
         {
+            // What is known is enforced first: a trial with a known end ends on time even while a read of the Store is slow.
+            ApplySafely(_snapshot);
+
             if (_clock() >= _nextRead)
             {
-                await RefreshAsync();
-                return;
+                await ReadAsync(force: false);
             }
-
-            ApplySafely(_snapshot);
         }
 
         /// <summary>
@@ -141,14 +132,75 @@ namespace RFiDGear.Services.Licensing
                 return false;
             }
 
-            await RefreshAsync();
+            // A read that is under way started before the purchase: this one replaces it.
+            await ReadAsync(force: true);
             return _snapshot.Kind == LicenseKind.Full;
         }
 
-        private void OnServiceChanged(object sender, LicenseSnapshot snapshot)
+        private async Task ReadAsync(bool force)
         {
+            if (_readInFlight != 0 && !force)
+            {
+                return;
+            }
+
+            var generation = ++_generation;
+            _readInFlight = generation;
+
+            LicenseSnapshot read = null;
+            var failed = false;
+
+            try
+            {
+                read = await _service.GetAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                // Only the type is logged: the text of an exception from the Store may hold names or ids.
+                Log.ForContext<LicenseGate>().Warning("The license could not be read ({ExceptionType}); the last answer stays in force", ex.GetType().Name);
+                failed = true;
+            }
+
+            if (_readInFlight == generation)
+            {
+                _readInFlight = 0;
+            }
+
+            if (generation != _generation)
+            {
+                // Overtaken: the Store pushed a license, or a purchase started a newer read, while this one was under way.
+                return;
+            }
+
+            if (failed || !LearnsSomething(read))
+            {
+                _nextRead = _clock() + RetryInterval;
+                ApplySafely(_snapshot);
+                return;
+            }
+
             _nextRead = _clock() + RereadInterval;
-            ApplySafely(snapshot ?? LicenseSnapshot.Unknown);
+            ApplySafely(read);
+        }
+
+        private void OnLicensePushed(LicenseSnapshot pushed)
+        {
+            if (!LearnsSomething(pushed))
+            {
+                return;
+            }
+
+            // A read that is under way now carries an older answer; it is dropped when it ends.
+            _generation++;
+            _readInFlight = 0;
+            _nextRead = _clock() + RereadInterval;
+            ApplySafely(pushed);
+        }
+
+        // "Unknown" says that the Store could not tell: it never replaces a license that is known, and a null is no answer.
+        private bool LearnsSomething(LicenseSnapshot answer)
+        {
+            return answer != null && (answer.Kind != LicenseKind.Unknown || _snapshot.Kind == LicenseKind.Unknown);
         }
 
         private void ApplySafely(LicenseSnapshot snapshot)
