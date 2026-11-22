@@ -599,6 +599,12 @@ namespace RFiDGear.ViewModel
         private bool checkOnStart;
 
         /// <summary>
+        /// Gets a value indicating whether this edition updates itself. The Store edition is updated by the Store, so the option
+        /// to check for updates is not offered there.
+        /// </summary>
+        public bool IsSelfUpdateAllowed => Infrastructure.Editions.EditionPolicy.Current.AllowSelfUpdate;
+
+        /// <summary>
         /// Gets or sets whether RFiDGear opens the pipe for the external control bridge. The main window writes it to the
         /// settings and asks for a restart when it changed.
         /// </summary>

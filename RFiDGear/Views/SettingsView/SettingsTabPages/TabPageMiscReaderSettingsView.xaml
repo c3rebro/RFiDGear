@@ -7,6 +7,7 @@
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure">
     <UserControl.Resources>
         <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
     </UserControl.Resources>
     <Grid>
         <Grid
@@ -29,7 +30,8 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Stretch"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelCheckForUpdatesOnStart, Converter={StaticResource Localization}}"
-                IsChecked="{Binding CheckOnStart, Mode=TwoWay}"/>
+                IsChecked="{Binding CheckOnStart, Mode=TwoWay}"
+                Visibility="{Binding IsSelfUpdateAllowed, Converter={StaticResource BoolToVisConv}}"/>
             <CheckBox
                 Grid.Row="2"
                 Grid.ColumnSpan="2"

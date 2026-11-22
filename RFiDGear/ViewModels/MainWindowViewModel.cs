@@ -39,6 +39,7 @@ using RFiDGear.ViewModel.TaskSetupViewModels;
 using RFiDGear.Services.Interfaces;
 using RFiDGear.Services.Factories;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Editions;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.Ultralight;
@@ -67,6 +68,7 @@ namespace RFiDGear.ViewModel
         private readonly string[] args;
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private readonly Updater updater;
+        private readonly IEditionPolicy editionPolicy;
         private TaskDialogFactory taskDialogFactory;
         private ITaskListEditGate taskListEditGate;
         private ITaskExecutionService taskExecutionService;
@@ -140,19 +142,37 @@ namespace RFiDGear.ViewModel
         #region Constructors
 
         public MainWindowViewModel()
+            : this(EditionPolicy.Current)
+        {
+        }
+
+        // The edition decides which update services the window gets: the Store edition is updated by the Store and creates no
+        // updater at all (each of them would ask GitHub for a manifest as soon as it exists).
+        private MainWindowViewModel(IEditionPolicy editionPolicy)
             : this(
                   new SettingsBootstrapper(),
-                  new UpdateNotifier(),
+                  CreateUpdateNotifier(editionPolicy),
                   new ContextMenuBuilder(),
                   new AppStartupInitializer(),
                   new MainWindowTimerFactory(),
                   new TaskServiceInitializer(),
                   new MenuInitializer(),
                   new StartupArgumentProcessor(),
-                  new UpdateScheduler(),
+                  CreateUpdateScheduler(editionPolicy),
                   new ReaderMonitor(),
-                  new ProjectBootstrapper())
+                  new ProjectBootstrapper(),
+                  editionPolicy: editionPolicy)
         {
+        }
+
+        private static IUpdateNotifier CreateUpdateNotifier(IEditionPolicy policy)
+        {
+            return policy.AllowSelfUpdate ? new UpdateNotifier() : new NoUpdateNotifier();
+        }
+
+        private static IUpdateScheduler CreateUpdateScheduler(IEditionPolicy policy)
+        {
+            return policy.AllowSelfUpdate ? new UpdateScheduler() : new NoUpdateScheduler();
         }
 
         public MainWindowViewModel(
@@ -171,12 +191,14 @@ namespace RFiDGear.ViewModel
             Func<DatabaseReaderWriter> databaseReaderWriterFactory = null,
             IApplicationExtensionLauncher applicationExtensionLauncher = null,
             string externalControlPipeName = null,
-            string externalControlJournalDirectory = null)
+            string externalControlJournalDirectory = null,
+            IEditionPolicy editionPolicy = null)
         {
             // Tests that switch the bridge on give it a pipe and a journal folder of their own; the application uses the pipe of
             // the user and the folder below %LocalAppData%.
             this.externalControlPipeName = externalControlPipeName;
             this.externalControlJournalDirectory = externalControlJournalDirectory;
+            this.editionPolicy = editionPolicy ?? EditionPolicy.Current;
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
             this.contextMenuBuilder = contextMenuBuilder ?? throw new ArgumentNullException(nameof(contextMenuBuilder));
@@ -202,7 +224,8 @@ namespace RFiDGear.ViewModel
             mutex = startupContext.Mutex;
             args = startupContext.Arguments;
 
-            updater = new Updater();
+            // The Store edition has no updater: creating one starts a check against GitHub.
+            updater = this.editionPolicy.AllowSelfUpdate ? new Updater() : null;
         }
 
         /// <summary>
@@ -2671,6 +2694,11 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand CheckUpdateCommand => new AsyncRelayCommand(OnNewCheckUpdateCommand);
         private async Task OnNewCheckUpdateCommand()
         {
+            if (updater == null)
+            {
+                return;
+            }
+
             userIsNotifiedForAvailableUpdate = false;
 
             await updateNotifier.TriggerUpdateCheckAsync(() => AskForUpdateNow());
@@ -2939,6 +2967,12 @@ namespace RFiDGear.ViewModel
         private bool isReaderInitializing = true;
 
         /// <summary>
+        /// Gets a value indicating whether this edition updates itself. The menu entries for updates and the changelog are
+        /// shown only then: the Store edition is updated by the Store.
+        /// </summary>
+        public bool IsSelfUpdateAllowed => editionPolicy.AllowSelfUpdate;
+
+        /// <summary>
         ///
         /// </summary>
         public bool IsCheckForUpdatesChecked
@@ -2956,11 +2990,11 @@ namespace RFiDGear.ViewModel
                 {
                     if (value)
                     {
-                        updater.StartMonitoring().GetAwaiter().GetResult();
+                        updater?.StartMonitoring().GetAwaiter().GetResult();
                     }
                     else
                     {
-                        updater.StopMonitoring().GetAwaiter().GetResult();
+                        updater?.StopMonitoring().GetAwaiter().GetResult();
                     }
 
                     settings.DefaultSpecification.AutoCheckForUpdates = value;
@@ -3068,6 +3102,11 @@ namespace RFiDGear.ViewModel
         /// <returns></returns>
         private async Task AskForUpdateNow(bool updateDisabled)
         {
+            if (updater == null)
+            {
+                return;
+            }
+
             // The update notifier has an updater of its own, and this window has another one; both ask the server for the manifest
             // in the background, so the notifier's may be through first. The dialog shows the notes of this window's updater and
             // the download uses its manifest: it waits (without blocking anyone) until that updater has its answer. If that

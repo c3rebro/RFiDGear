@@ -26,7 +26,7 @@ namespace RFiDGear.Infrastructure
     public static class Constants
     {
         public static readonly uint MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
-        public static readonly string TITLE_SUFFIX = ""; //turns out special app versions
+        public static readonly string TITLE_SUFFIX = Editions.EditionPolicy.Current.TitleSuffix; //turns out special app versions ("(Store)" for the Store edition)
                                                          //public const string TITLE_SUFFIX = "DEVELOPER PREVIEW"; //turns out special app versions
     }
 

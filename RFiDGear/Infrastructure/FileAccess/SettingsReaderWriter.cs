@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
+using RFiDGear.Infrastructure.Editions;
 using RFiDGear.Models;
 using Serilog;
 
@@ -61,8 +62,22 @@ namespace RFiDGear.Infrastructure.FileAccess
             set => defaultSpecification = value ?? new DefaultSpecification();
         }
 
+        /// <summary>
+        /// Gets or sets the edition this instance writes for. It is the edition of the process; a test sets another.
+        /// </summary>
+        internal IEditionPolicy Edition { get; set; } = EditionPolicy.Current;
+
+        /// <summary>
+        /// Writes <c>update.xml</c>, the local manifest of the self-updater, into the application data folder. An edition that
+        /// does not update itself (the Store edition) writes nothing: no updater reads the file.
+        /// </summary>
         public void InitUpdateFile()
         {
+            if (!Edition.AllowSelfUpdate)
+            {
+                return;
+            }
+
             XmlWriter xmlWriter;
             var xmlSettings = new XmlWriterSettings
             {
