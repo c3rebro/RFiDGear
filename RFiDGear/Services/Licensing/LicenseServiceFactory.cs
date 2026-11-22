@@ -1,5 +1,7 @@
 using System;
 
+using RFiDGear.Infrastructure.Editions;
+
 namespace RFiDGear.Services.Licensing
 {
     /// <summary>
@@ -12,8 +14,9 @@ namespace RFiDGear.Services.Licensing
 
         /// <summary>
         /// Makes the license service. A Debug build with the switch set gets a fake license, so the trial can be looked at
-        /// without a Store listing; every other process gets the service of an edition that needs no license. (The service
-        /// of the Store edition comes with the Store assembly, in a later step.)
+        /// without a Store listing. A process that runs from a package gets the service of the Store assembly. Every other
+        /// process (the MSI edition), and a package whose Store assembly is missing or broken, gets the service of an edition
+        /// that needs no license.
         /// </summary>
         /// <returns>The service.</returns>
         public static ILicenseService Create()
@@ -25,6 +28,15 @@ namespace RFiDGear.Services.Licensing
                 return new FakeLicenseService(fake);
             }
 #endif
+            if (AppEdition.IsPackaged)
+            {
+                var store = StoreLicenseServiceLoader.TryLoad(AppContext.BaseDirectory);
+                if (store != null)
+                {
+                    return store;
+                }
+            }
+
             return new NullLicenseService();
         }
     }

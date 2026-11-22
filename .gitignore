@@ -30,6 +30,8 @@
 /RFiDGear.Extensions/deploy.local.props
 /RFiDGear.ExtensionLibraries/CardCheck/obj
 /RFiDGear.ExtensionLibraries/CardCheck/bin
+/RFiDGear.Store/obj
+/RFiDGear.Store/bin
 /RFiDGearSetup/RFiDGear_Setup_x64/bin
 /RFiDGearSetup/RFiDGear_Setup_x86/bin
 /RFiDGear.Extensions/VCNEditor
