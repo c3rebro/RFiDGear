@@ -124,6 +124,20 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void TheBuildScript_ClearsTheOutputOfTheExtension_AndNeverDeploysIntoARealInstallation()
+        {
+            var script = File.ReadAllText(PackagingFile("Build-StorePackage.ps1"));
+
+            // The package takes every library of the output folder, so nothing of an earlier build may be in it ...
+            Assert.Contains("Remove-Item -LiteralPath $extensionOutput", script, StringComparison.Ordinal);
+            Assert.Contains("--no-incremental", script, StringComparison.Ordinal);
+
+            // ... and the deploy step of the extension build (deploy.local.props, RFIDGEAR_DEPLOY_EXTENSIONS) copies into the
+            // ProgramData folder of a real RFiDGear: it is off whatever the machine says.
+            Assert.Contains("-p:DeployExtensionsToRFiDGear=false", script, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void TheStoreAssembly_IsNotNamedLikeAnExtension_WhichTheProgramScansFor()
         {
             var csproj = XDocument.Load(Path.Combine(DotNetTool.RepositoryRoot(), "RFiDGear.Store", "RFiDGear.Store.csproj"));

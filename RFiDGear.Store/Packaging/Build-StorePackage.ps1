@@ -216,8 +216,15 @@ Invoke-Step 'build the Store assembly' {
 # build would then succeed and leave an old package of an earlier build in the folder where this script looks.
 $extensionPackages = Join-Path $work 'extension'
 
+# The package takes every library of the output folder of the extension (PackExtension.targets): nothing of an earlier build may be
+# left in it (a library that is not built any more, one that was copied in by hand), so the folder is cleared and the build is not
+# incremental, as Build-Release.ps1 does. The deploy step of the extension build copies into a real RFiDGear when the machine says
+# so (deploy.local.props, RFIDGEAR_DEPLOY_EXTENSIONS): it is off here, whatever the machine says.
+$extensionOutput = Join-Path (Split-Path -Parent $extensionProject) "bin\$Platform\Release"
+Remove-Item -LiteralPath $extensionOutput -Recurse -Force -ErrorAction SilentlyContinue
+
 Invoke-Step 'build the Card Check Assistant' {
-    dotnet build $extensionProject -c Release -p:Platform=$Platform -p:PackExtension=true "-p:ExtensionPackageFolder=$extensionPackages" --nologo -v:minimal
+    dotnet build $extensionProject -c Release -p:Platform=$Platform -p:PackExtension=true "-p:ExtensionPackageFolder=$extensionPackages" -p:DeployExtensionsToRFiDGear=false --no-incremental --nologo -v:minimal
 }
 
 Write-Output '== collect the files'
