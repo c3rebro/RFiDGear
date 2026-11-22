@@ -33,6 +33,9 @@ function Test-StoreSigningCertificate {
         }
     }
 
+    # Windows installs a package whose signer it trusts: the certificate itself is in Trusted People or Trusted Root of the local
+    # machine, or its chain ends in a root of the Trusted Root store of the local machine (a certificate that a certificate authority
+    # issued is in neither store itself). Revocation is not looked at: it needs the network and says nothing about trust here.
     $trusted = $false
     foreach ($store in 'Cert:\LocalMachine\TrustedPeople', 'Cert:\LocalMachine\Root') {
         if (Test-Path -LiteralPath (Join-Path $store $Certificate.Thumbprint)) {
@@ -41,7 +44,20 @@ function Test-StoreSigningCertificate {
     }
 
     if (-not $trusted) {
-        $warnings += 'This PC does not trust the certificate (it is in neither the Trusted People nor the Trusted Root store of the local machine): the package is made, but Windows will not install it until the public certificate (the .cer, not the .pfx) is imported into Trusted People, which needs administrator rights.'
+        $chain = [System.Security.Cryptography.X509Certificates.X509Chain]::new()
+        try {
+            $chain.ChainPolicy.RevocationMode = [System.Security.Cryptography.X509Certificates.X509RevocationMode]::NoCheck
+            [void]$chain.Build($Certificate)
+            $root = $chain.ChainElements[$chain.ChainElements.Count - 1].Certificate
+            $trusted = Test-Path -LiteralPath (Join-Path 'Cert:\LocalMachine\Root' $root.Thumbprint)
+        }
+        finally {
+            $chain.Dispose()
+        }
+    }
+
+    if (-not $trusted) {
+        $warnings += 'This PC does not trust the certificate (it is not in the Trusted People store of the local machine, and it does not chain to a root in the Trusted Root store of the local machine): the package is made, but Windows will not install it until the public certificate (the .cer, not the .pfx) is imported into Trusted People, which needs administrator rights.'
     }
 
     return [pscustomobject]@{

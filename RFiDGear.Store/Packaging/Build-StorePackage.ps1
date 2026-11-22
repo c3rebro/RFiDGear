@@ -25,6 +25,10 @@ Where the package is written. Default: RFiDGear.Store\bin\package.
 Signs the package with the certificate of RFIDGEAR_SIGN_PFX (password in RFIDGEAR_SIGN_PASSWORD), so that it can be installed on a
 PC that trusts the certificate. The Store does not need a signature.
 
+.PARAMETER PassThru
+Hands back the file of the package (a FileInfo) as the last thing it writes, so that a caller uses the package that this run made
+and not the newest file of the folder.
+
 .PARAMETER MakeAppx
 makeappx.exe. Default: the newest of the Windows SDK.
 
@@ -38,6 +42,7 @@ The time stamp server for -Sign.
 param(
     [string]$OutputFolder,
     [switch]$Sign,
+    [switch]$PassThru,
     [string]$MakeAppx,
     [string]$SignTool,
     [string]$TimestampUrl = 'http://timestamp.digicert.com'
@@ -353,4 +358,8 @@ Write-Output ("Size: {0:N1} MB, version {1}, SHA-256 {2}" -f ($info.Length / 1MB
 
 if ($isPlaceholder) {
     Write-Warning 'store-identity.json still has the placeholders: this package is for a test on this machine and cannot be uploaded to the Store.'
+}
+
+if ($PassThru) {
+    $info
 }

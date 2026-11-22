@@ -176,6 +176,36 @@ namespace RFiDGear.Tests
             // It signs through the build script and installs nothing without being told to.
             Assert.Contains("Build-StorePackage.ps1", script, StringComparison.Ordinal);
             Assert.Matches(@"Install the package for your user now\?[^\r\n]*\[y/N\]", script);
+
+            // What it offers to install is the file that this build reported, never the newest .msix of the folder (the folder may
+            // hold the package of another build) ...
+            Assert.Contains("-Sign -PassThru", script, StringComparison.Ordinal);
+            Assert.DoesNotMatch(@"Sort-Object\s+LastWriteTime", script);
+
+            // ... and an install that failed is a failed run, so that the batch file (and any caller) can tell.
+            Assert.Matches(@"(?s)if \(\$installed\)\s*\{[^}]*\}\s*else\s*\{[^}]*\bthrow\b", script);
+        }
+
+        [Fact]
+        public void TheBuildScript_HandsBackThePackageItMade_WhenAsked()
+        {
+            var script = File.ReadAllText(PackagingFile("Build-StorePackage.ps1"));
+
+            Assert.Matches(@"\[switch\]\$PassThru\b", script);
+            Assert.Matches(@"(?s)if \(\$PassThru\)\s*\{\s*\$info\s*\}", script);
+        }
+
+        [Fact]
+        public void TheTrustCheck_FollowsTheChainToARootOfTheMachine_NotOnlyTheStoresForTheCertificateItself()
+        {
+            var script = File.ReadAllText(PackagingFile("StoreCertificate.ps1"));
+
+            // A certificate that a certificate authority issued is in neither store itself: it is trusted when its chain ends in a root
+            // of the machine. Without the chain a good certificate would get a warning that says Windows will not install the package.
+            Assert.Contains(@"Cert:\LocalMachine\TrustedPeople", script, StringComparison.Ordinal);
+            Assert.Contains("X509Chain", script, StringComparison.Ordinal);
+            Assert.Contains("ChainElements", script, StringComparison.Ordinal);
+            Assert.Contains(@"Join-Path 'Cert:\LocalMachine\Root' $root.Thumbprint", script, StringComparison.Ordinal);
         }
 
         [Fact]

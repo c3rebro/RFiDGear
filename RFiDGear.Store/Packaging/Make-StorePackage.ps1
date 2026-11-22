@@ -136,13 +136,22 @@ finally {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
 }
 
-$started = Get-Date
+$built = $null
 $savedPfx = $env:RFIDGEAR_SIGN_PFX
 $savedPassword = $env:RFIDGEAR_SIGN_PASSWORD
 $env:RFIDGEAR_SIGN_PFX = $pfx
 $env:RFIDGEAR_SIGN_PASSWORD = $plain
 try {
-    & (Join-Path $PSScriptRoot 'Build-StorePackage.ps1') -OutputFolder $OutputFolder -Sign
+    # -PassThru hands back the file of the package that this run made: what is offered for installation is that file, never the
+    # newest .msix of the folder (a package of another build may be there).
+    & (Join-Path $PSScriptRoot 'Build-StorePackage.ps1') -OutputFolder $OutputFolder -Sign -PassThru | ForEach-Object {
+        if ($_ -is [System.IO.FileInfo]) {
+            $built = $_
+        }
+        else {
+            $_
+        }
+    }
 }
 finally {
     $env:RFIDGEAR_SIGN_PFX = $savedPfx
@@ -151,9 +160,6 @@ finally {
 }
 
 # ---- install
-$built = Get-ChildItem -LiteralPath $OutputFolder -Filter '*.msix' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.LastWriteTime -ge $started } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-
 if (-not $built) {
     throw 'No package was made.'
 }
@@ -177,4 +183,8 @@ finally {
 
 if ($installed) {
     Write-Output "To remove it again: Get-AppxPackage -Name $($identity.name) | Remove-AppxPackage"
+}
+else {
+    # A caller (the batch file, a script) has to be able to tell a failed install from a good run.
+    throw "The package was built and signed, but it was not installed (see above). It is here: '$($built.FullName)'."
 }
