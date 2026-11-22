@@ -583,8 +583,8 @@
                     VerticalContentAlignment="Center"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}">
                     <MenuItem Command="{Binding ShowHelpCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}" />
-                    <MenuItem Command="{Binding CheckUpdateCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCheckUpdatesHeader'}" />
-                    <MenuItem Command="{Binding ShowChangeLogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShowChangeLogHeader'}" />
+                    <MenuItem Command="{Binding CheckUpdateCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCheckUpdatesHeader'}" Visibility="{Binding IsSelfUpdateAllowed, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <MenuItem Command="{Binding ShowChangeLogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShowChangeLogHeader'}" Visibility="{Binding IsSelfUpdateAllowed, Converter={StaticResource BoolToVisibilityConverter}}" />
                     <MenuItem Command="{Binding NewAboutDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemAboutHeader'}" />
                 </MenuItem>
                 <!--  Help  -->
