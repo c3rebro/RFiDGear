@@ -52,7 +52,9 @@ sample plugin, the extension contract (`RFiDGear.Contracts`,
 and the `CardCheck` library as plain `net10.0`. The contract assemblies keep
 their assembly version `1.0.0.0`, so an extension that was built earlier against
 `net8.0` keeps binding to them: `RFiDGear.Tests/Fixtures/LegacyExtensions`
-holds prebuilt `net8.0` extensions, and the tests load them in the host.
+holds prebuilt `net8.0` extensions, and the tests load them in the host. The one
+exception is `RFiDGear.Store` (the Store edition, below), on
+`net10.0-windows10.0.19041.0`; the host does not reference it.
 `global.json` pins the SDK to
 10.0.x, because a newer preview SDK on the machine would otherwise be picked
 up. Visual Studio 2022 cannot target `net10.0`; use Visual Studio 2026 or the
@@ -687,6 +689,73 @@ passed with a real reader; until then a snapshot may be re-baselined.
   regenerated with `RFIDGEAR_UPDATE_API_SNAPSHOT=1` and the filter
   `BridgeContractsApiSurface`). A test through the main window view model must
   pass a temporary journal folder.
+
+### Store Edition (Microsoft Store)
+
+The same binaries are also delivered as a self-contained MSIX from the
+Microsoft Store: paid, with a trial that the Store manages. There is no build
+flavor and no `#if`: the edition is found out at run time.
+`AppEdition.IsPackaged` asks `GetCurrentPackageFullName`; `EditionPolicy`
+(`Standard`, `Store`, `Current`) says what the edition may do
+(`AllowSelfUpdate`, `AllowExternalExtensions`, the title suffix "(Store)"). A
+test passes the policy to the constructor of `MainWindowViewModel` or sets
+`Edition` of a `SettingsReaderWriter`; nothing sets it globally.
+
+- Updates and extensions: the Store edition makes no `Updater` (the update
+  services are `NoUpdateNotifier` and `NoUpdateScheduler`, `InitUpdateFile`
+  writes no `update.xml`), hides the update entries, and loads extensions only
+  from `Extensions` next to the executable (`MefHelper` chooses its folders by
+  edition: no `%ProgramData%` folder, no `InstalledExtensions`; File > "Install
+  extension update..." is hidden and its command returns at once). It loads no
+  code that was added after the Store signed the package.
+- **License** (`Services/Licensing`): `ILicenseService` reads the license
+  (`GetAsync`), asks to buy (`PurchaseAsync`) and raises `Changed` on the
+  window's thread. `RequiresLicenseCheck` is false for an edition without a
+  license (`NullLicenseService`): the MSI edition gets no gate and no timer.
+  `LicenseGate` decides. It **fails open** (a license that was never read
+  counts as licensed), **keeps what it learned** (a failed read or an answer of
+  "unknown" never replaces a known license, and the next try is after 15
+  minutes), **never interrupts a run** (the dialog of an ended trial waits
+  until no run is in progress) and **goes by the newest answer** (every read
+  has a number that a pushed license also bumps; an overtaken read is dropped,
+  and the timer starts no second one). When the trial has ended it sets
+  `ExtensionOperationCoordinator.ExecutionBlocked` (checked after the slot is
+  taken, so no run slips in behind the dialog), stops automatic mode with
+  `AutoModeStopReason.RunAborted` (a new value would change the frozen API
+  snapshot) and shows the modal `LicenseDialogViewModel`: buy, or close the
+  program. Help > Buy goes through the gate, so it cannot get round a run. The
+  dialogs of single tasks and the quick check call the reader directly and are
+  not gated one by one; the modal dialog covers the window. A Debug build reads
+  `RFIDGEAR_FAKE_LICENSE` (`full`, `expired`, `trial:N`) to look at all of it.
+- **The Store assembly** `RFiDGear.Store`: `Windows.Services.Store` needs a
+  Windows-versioned framework (`net10.0-windows10.0.19041.0`), and a project
+  cannot reference one that is higher than itself, so the host, its tests and
+  its extensions stay on `net10.0-windows`. The host does not reference it:
+  `StoreLicenseServiceLoader` loads `RFiDGear.Store.dll` by name from the
+  folder of the executable when packaged, and a missing or broken assembly
+  gives no license service (the program runs as an edition without a check).
+  `StoreLicenseMapper` (in the host, tested) holds the rules that turn the
+  Store's answer into a license; a copy that was not installed from the Store
+  (`Package.Current.SignatureKind`) is not gated. Its name must not start with
+  `RFiDGear.Extensions`. The target `GetStorePayload` names what the package
+  needs of it (the assembly, `Microsoft.Windows.SDK.NET.dll` with 24 MB, and
+  `WinRT.Runtime.dll`). The Store API has no simulator: it answers only for a
+  package that was installed from the Store.
+- **The package** (`RFiDGear.Store/Packaging`): `Build-StorePackage.ps1`
+  publishes the program self-contained with `-r win10-x64 -p:UseRidGraph=true`
+  (a publish for `win-x64` leaves out the 46 natives of LibLogicalAccess),
+  adds the Store assembly and, in `Extensions`, the files of the Card Check
+  Assistant (from its `.rfext`, which the script asks for by name and takes
+  from a folder of its own run, after clearing the extension's output and
+  building it non-incrementally; it passes `DeployExtensionsToRFiDGear=false`,
+  so building a package never overwrites a real installation), checks the
+  folder (no driver, installer, file of the self-update or native of another
+  platform), writes the manifest
+  (`runFullTrust` is the only capability) and packs it with `makeappx`.
+  `store-identity.json` holds the identity of Partner Center; with the
+  placeholders in it the package is named `-test.msix` and cannot be uploaded.
+  No driver is part of the package, and a package cannot install one.
+  `DEVELOPER_NOTES.md` has the checklist and what has not been verified.
 
 ### Key Design Rule
 
