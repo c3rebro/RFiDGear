@@ -2336,6 +2336,12 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand InstallExtensionCommand => new AsyncRelayCommand(OnInstallExtension);
         private async Task OnInstallExtension()
         {
+            // The Store edition runs only what its package carries; the menu entry is hidden there, and this is the second lock.
+            if (!editionPolicy.AllowExternalExtensions)
+            {
+                return;
+            }
+
             var userRoot = ExtensionPackageLayout.DefaultUserRoot();
             if (string.IsNullOrEmpty(userRoot))
             {
@@ -2971,6 +2977,12 @@ namespace RFiDGear.ViewModel
         /// shown only then: the Store edition is updated by the Store.
         /// </summary>
         public bool IsSelfUpdateAllowed => editionPolicy.AllowSelfUpdate;
+
+        /// <summary>
+        /// Gets a value indicating whether the person may install an extension from a package. The menu entry is shown only then:
+        /// the Store edition loads the extensions of its own package and nothing else.
+        /// </summary>
+        public bool IsExtensionInstallAllowed => editionPolicy.AllowExternalExtensions;
 
         /// <summary>
         ///

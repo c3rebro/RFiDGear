@@ -98,23 +98,33 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void TheStandardEdition_LoadsExtensionsFromOutside_AndTheStoreEditionOnlyFromItsPackage()
+        {
+            Assert.True(EditionPolicy.Standard.AllowExternalExtensions);
+            Assert.False(EditionPolicy.Store.AllowExternalExtensions);
+        }
+
+        // The main window as the Store edition builds it: the services are stand-ins, the edition is the Store policy.
+        private static MainWindowViewModel NewStoreWindow() => new MainWindowViewModel(
+            new DeferredSettingsBootstrapper(),
+            new NoopUpdateNotifier(),
+            new FakeContextMenuBuilder(),
+            new FakeAppStartupInitializer(),
+            new FakeTimerFactory(),
+            new FakeTaskServiceInitializer(),
+            new FakeMenuInitializer(),
+            new FakeStartupArgumentProcessor(),
+            new NoopUpdateScheduler(),
+            new FakeReaderMonitor(),
+            new FakeProjectBootstrapper(),
+            editionPolicy: EditionPolicy.Store);
+
+        [Fact]
         public async Task TheWindowOfTheStoreEdition_HasNoUpdater_AndCheckingForUpdatesDoesNothing()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                var viewModel = new MainWindowViewModel(
-                    new DeferredSettingsBootstrapper(),
-                    new NoopUpdateNotifier(),
-                    new FakeContextMenuBuilder(),
-                    new FakeAppStartupInitializer(),
-                    new FakeTimerFactory(),
-                    new FakeTaskServiceInitializer(),
-                    new FakeMenuInitializer(),
-                    new FakeStartupArgumentProcessor(),
-                    new NoopUpdateScheduler(),
-                    new FakeReaderMonitor(),
-                    new FakeProjectBootstrapper(),
-                    editionPolicy: EditionPolicy.Store);
+                var viewModel = NewStoreWindow();
 
                 var updater = typeof(MainWindowViewModel).GetField("updater", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(viewModel);
 
@@ -122,6 +132,22 @@ namespace RFiDGear.Tests
                 Assert.False(viewModel.IsSelfUpdateAllowed);
 
                 await viewModel.CheckUpdateCommand.ExecuteAsync(null);
+
+                Assert.Empty(viewModel.Dialogs);
+            });
+        }
+
+        [Fact]
+        public async Task TheWindowOfTheStoreEdition_OffersNoExtensionInstall_AndTheCommandDoesNothing()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = NewStoreWindow();
+
+                Assert.False(viewModel.IsExtensionInstallAllowed);
+
+                // Without the guard the command opens a file dialog and waits for a person: the limit turns that into a failure.
+                await viewModel.InstallExtensionCommand.ExecuteAsync(null).WaitAsync(TimeSpan.FromSeconds(10));
 
                 Assert.Empty(viewModel.Dialogs);
             });
