@@ -31,6 +31,7 @@ using RFiDGear.Services;
 using RFiDGear.Services.AutoMode;
 using RFiDGear.Bridge;
 using RFiDGear.Services.ExternalControl;
+using RFiDGear.Services.Licensing;
 using RFiDGear.Services.Sam;
 using RFiDGear.Services.SecureKeys;
 using RFiDGear.Services.TaskExecution;
@@ -69,6 +70,10 @@ namespace RFiDGear.ViewModel
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private readonly Updater updater;
         private readonly IEditionPolicy editionPolicy;
+        private readonly ILicenseService licenseService;
+        private LicenseGate _licenseGate;
+        private DispatcherTimer _licenseTimer;
+        private LicenseDialogViewModel _openLicenseDialog;
         private TaskDialogFactory taskDialogFactory;
         private ITaskListEditGate taskListEditGate;
         private ITaskExecutionService taskExecutionService;
@@ -192,13 +197,15 @@ namespace RFiDGear.ViewModel
             IApplicationExtensionLauncher applicationExtensionLauncher = null,
             string externalControlPipeName = null,
             string externalControlJournalDirectory = null,
-            IEditionPolicy editionPolicy = null)
+            IEditionPolicy editionPolicy = null,
+            ILicenseService licenseService = null)
         {
             // Tests that switch the bridge on give it a pipe and a journal folder of their own; the application uses the pipe of
             // the user and the folder below %LocalAppData%.
             this.externalControlPipeName = externalControlPipeName;
             this.externalControlJournalDirectory = externalControlJournalDirectory;
             this.editionPolicy = editionPolicy ?? EditionPolicy.Current;
+            this.licenseService = licenseService ?? LicenseServiceFactory.Create();
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
             this.contextMenuBuilder = contextMenuBuilder ?? throw new ArgumentNullException(nameof(contextMenuBuilder));
@@ -359,6 +366,8 @@ namespace RFiDGear.ViewModel
 
             // As soon as the host exists: a program that waits for RFiDGear can connect and ask how far start-up is.
             StartExternalControl(bootstrapResult);
+
+            StartLicenseGate();
 
             var deleteSelectedCommand = new RelayCommand(() => TryDeleteSelectedTask());
 
@@ -2983,6 +2992,165 @@ namespace RFiDGear.ViewModel
         /// the Store edition loads the extensions of its own package and nothing else.
         /// </summary>
         public bool IsExtensionInstallAllowed => editionPolicy.AllowExternalExtensions;
+
+        /// <summary>
+        /// Gets the text of the status bar about the trial of the Store edition: the days that are left, or that the trial has
+        /// ended. Empty when there is no trial (the MSI edition, or a bought program).
+        /// </summary>
+        public string LicenseStatusText
+        {
+            get
+            {
+                var gate = _licenseGate;
+
+                if (gate == null)
+                {
+                    return string.Empty;
+                }
+
+                if (gate.IsExpired)
+                {
+                    return ResourceLoader.GetResource("statusBarTrialEnded");
+                }
+
+                if (!gate.IsTrialRunning)
+                {
+                    return string.Empty;
+                }
+
+                var days = gate.DaysLeft;
+                return days == 1
+                    ? ResourceLoader.GetResource("statusBarTrialOneDayLeft")
+                    : string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("statusBarTrialDaysLeft"), days);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether a trial is running or has ended, so the status bar item and the Buy entry of the Help
+        /// menu are shown. It is never true in the MSI edition.
+        /// </summary>
+        public bool IsLicenseStatusVisible => _licenseGate != null && (_licenseGate.IsTrialRunning || _licenseGate.IsExpired);
+
+        /// <summary>
+        /// Opens the dialog about the trial, where the program can be bought.
+        /// </summary>
+        public ICommand BuyCommand => new RelayCommand(OnBuy);
+
+        private void OnBuy()
+        {
+            var gate = _licenseGate;
+
+            if (gate == null)
+            {
+                return;
+            }
+
+            if (gate.IsExpired)
+            {
+                // The trial has ended, but the gate has not told yet: a run holds the dialog back, or the minute has not passed.
+                // The gate is asked, so new runs are refused at once and the dialog waits for the run (a button of this menu must not
+                // get round that: its "close the program" would cut a run off).
+                _ = gate.TickAsync();
+                return;
+            }
+
+            ShowLicenseDialog(trialHasEnded: false);
+        }
+
+        // The Store edition only: reads the license, shows the days of the trial, and lets a trial that has ended refuse new
+        // runs (see LicenseGate). The MSI edition has a service that needs no check, and gets neither a gate nor a timer.
+        private void StartLicenseGate()
+        {
+            if (!licenseService.RequiresLicenseCheck)
+            {
+                return;
+            }
+
+            _licenseGate = new LicenseGate(
+                licenseService,
+                new DelegateLicenseEnforcement(
+                    isRunInProgress: () => _coordinator.IsExecuting,
+                    setNewRunsBlocked: blocked => _coordinator.ExecutionBlocked = blocked,
+                    stopAutomaticMode: () => _autoMode.Stop(AutoModeStopReason.RunAborted),
+                    showTrialEnded: () => ShowLicenseDialog(trialHasEnded: true)));
+
+            _licenseGate.StatusChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(LicenseStatusText));
+                OnPropertyChanged(nameof(IsLicenseStatusVisible));
+                CloseLicenseDialogThatNoLongerApplies();
+            };
+
+            // Once a minute: a trial may end while the window is open, and a run that held the dialog back may be over.
+            _licenseTimer = new DispatcherTimer(DispatcherPriority.Background, uiDispatcher) { Interval = TimeSpan.FromMinutes(1) };
+            _licenseTimer.Tick += async (_, _) => await _licenseGate.TickAsync();
+            _licenseTimer.Start();
+
+            // The gate never throws, so nothing is lost by not waiting for the first read.
+            _ = _licenseGate.StartAsync();
+        }
+
+        // Modal: Dialogs.Add returns when the dialog is closed. For a trial that has ended it is closed by a purchase, or the
+        // program closes.
+        private void ShowLicenseDialog(bool trialHasEnded)
+        {
+            // One at a time: Help > Buy after the trial has ended, and the timer that finds the end a moment later, would otherwise
+            // open two, and a purchase in the second would leave the first one offering to close a program that is bought.
+            if (_openLicenseDialog != null)
+            {
+                return;
+            }
+
+            var gate = _licenseGate;
+
+            var dialog = new LicenseDialogViewModel(trialHasEnded)
+            {
+                Caption = ResourceLoader.GetResource(trialHasEnded ? "licenseDialogExpiredCaption" : "licenseDialogTrialCaption"),
+                Message = trialHasEnded
+                    ? ResourceLoader.GetResource("licenseDialogExpiredMessage")
+                    : string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource("licenseDialogTrialMessage"), gate.DaysLeft),
+                BuyText = ResourceLoader.GetResource("licenseDialogBuyButton"),
+                CloseText = ResourceLoader.GetResource(trialHasEnded ? "licenseDialogExitButton" : "licenseDialogCloseButton"),
+                PurchaseFailedText = ResourceLoader.GetResource("licenseDialogPurchaseFailed"),
+                BuyAsync = () => gate.PurchaseAsync(OwnerWindowHandle()),
+                OnExit = OnCloseRequest,
+            };
+
+            _openLicenseDialog = dialog;
+            dialog.DialogClosing += (_, _) =>
+            {
+                if (ReferenceEquals(_openLicenseDialog, dialog))
+                {
+                    _openLicenseDialog = null;
+                }
+            };
+
+            Dialogs.Add(dialog);
+        }
+
+        // The license can change under an open dialog: the program was bought somewhere else (the Store's own page, another
+        // window), or a trial ended while the dialog about a running one was open. A dialog that says something that is no longer
+        // true is closed. For a trial that has ended this is what lets a purchase made outside the dialog carry on without a
+        // restart, instead of leaving a Close that would still end the program.
+        private void CloseLicenseDialogThatNoLongerApplies()
+        {
+            var dialog = _openLicenseDialog;
+            var gate = _licenseGate;
+
+            if (dialog != null && gate != null && (gate.Current.Kind == LicenseKind.Full || dialog.TrialHasEnded != gate.IsExpired))
+            {
+                dialog.Close();
+            }
+        }
+
+        // The license can be read, and the dialog of an ended trial shown, before the start-up has assigned mw (the window that
+        // the application has made is there earlier). EnsureHandle makes the handle if the window has none yet.
+        private IntPtr OwnerWindowHandle()
+        {
+            Window window = mw ?? Application.Current?.MainWindow;
+
+            return window == null ? IntPtr.Zero : new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+        }
 
         /// <summary>
         ///
