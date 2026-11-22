@@ -115,5 +115,22 @@ namespace RFiDGear.Tests
             Assert.False(reads.IsLatest(first));
             Assert.True(reads.IsLatest(second));
         }
+
+        [Fact]
+        public void ANoticeThatWaitsInTheQueue_IsNotPublishedWhenANewerReadStartedMeanwhile()
+        {
+            var reads = new ReadSequence();
+            var published = 0;
+
+            // The notice passed its check and was handed over to the thread of the window, where it waits ...
+            var stale = reads.Guard(reads.Begin(), () => published++);
+            var current = reads.Guard(reads.Begin(), () => published += 10);
+
+            // ... a read started meanwhile (a purchase), and the queue runs the notices in the order in which they were posted.
+            stale();
+            current();
+
+            Assert.Equal(10, published);
+        }
     }
 }

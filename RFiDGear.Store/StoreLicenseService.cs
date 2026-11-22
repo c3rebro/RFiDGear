@@ -108,21 +108,17 @@ namespace RFiDGear.Store
                 snapshot = LicenseSnapshot.Unknown;
             }
 
-            if (_reads.IsLatest(ticket))
-            {
-                Raise(snapshot);
-            }
-        }
+            // The check is made again where the notice is published, on the thread of the window: a read can start while the notice
+            // waits in the queue of that thread, and a notice that is stale by then must not be published.
+            var publish = _reads.Guard(ticket, () => _changed?.Invoke(this, snapshot));
 
-        private void Raise(LicenseSnapshot snapshot)
-        {
             if (_window != null)
             {
-                _window.Post(_ => _changed?.Invoke(this, snapshot), null);
+                _window.Post(_ => publish(), null);
             }
             else
             {
-                _changed?.Invoke(this, snapshot);
+                publish();
             }
         }
     }
