@@ -10,6 +10,7 @@
 *.xml
 !update.xml
 !**/update.xml
+!/RFiDGear.Store/Packaging/AppxManifest.template.xml
 *.zip
 *.htm
 *.txt

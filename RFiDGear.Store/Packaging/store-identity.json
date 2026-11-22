@@ -1,0 +1,6 @@
+{
+  "name": "Placeholder.RFiDGear",
+  "publisher": "CN=Placeholder",
+  "publisherDisplayName": "Placeholder",
+  "note": "Replace the three values with the ones of Partner Center (Product management > Product identity: Package/Identity/Name, Package/Identity/Publisher, Package/Properties/PublisherDisplayName). A package that is built with the placeholders is named -test.msix and cannot be uploaded."
+}
