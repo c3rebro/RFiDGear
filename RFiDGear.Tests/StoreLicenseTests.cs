@@ -100,5 +100,20 @@ namespace RFiDGear.Tests
 
             Assert.Null(StoreLicenseServiceLoader.TryLoad(_folder));
         }
+
+        [Fact]
+        public void OfSeveralReadsThatAreUnderWay_OnlyTheNewestIsTheLatest()
+        {
+            var reads = new ReadSequence();
+
+            var first = reads.Begin();
+            Assert.True(reads.IsLatest(first));
+
+            // A second read starts while the first is still waiting for the Store: the first one is out of date, whenever it ends.
+            var second = reads.Begin();
+
+            Assert.False(reads.IsLatest(first));
+            Assert.True(reads.IsLatest(second));
+        }
     }
 }
