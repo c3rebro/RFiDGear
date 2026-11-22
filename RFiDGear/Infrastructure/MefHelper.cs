@@ -9,6 +9,7 @@ using RFiDGear.Contracts;
 using RFiDGear.ExtensionSdk;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.DI.Interfaces;
+using RFiDGear.Infrastructure.Editions;
 using RFiDGear.Infrastructure.ExtensionPackages;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using Serilog;
@@ -30,6 +31,9 @@ public sealed class MefHelper : IDisposable
 {
     private const int SolutionRootDepth = 5;
     private const string ExtensionAssemblySearchPattern = "RFiDGear.Extensions*.dll";
+
+    // The folder of the extensions that the Store package carries, next to the executable.
+    private const string PackagedExtensionsFolderName = "Extensions";
 
     // Null means "the entry assembly", resolved when composing (the singleton is created before it is needed).
     private readonly Assembly _hostAssembly;
@@ -63,14 +67,44 @@ public sealed class MefHelper : IDisposable
     /// </summary>
     /// <remarks></remarks>
     private MefHelper()
+        : this(
+            EditionPolicy.Current,
+            AppContext.BaseDirectory,
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            ExtensionPackageLayout.DefaultUserRoot())
     {
-        var programDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-        var applicationName = HostAssembly.GetName().Name;
+    }
 
-        _ExtensionsPath = BuildExtensionsPath(programDataPath, applicationName);
-        _userExtensionsPath = ExtensionPackageLayout.DefaultUserRoot();
+    /// <summary>
+    /// Chooses where the extensions come from for an edition. The standard edition scans the machine-wide folder under
+    /// <c>%ProgramData%</c> (which it creates) and the user's folder of installed packages. The Store edition scans only the
+    /// <c>Extensions</c> folder inside its package, which is read-only and is not created, and has no folder of installed
+    /// packages: nothing that was added after the Store signed the package is loaded.
+    /// </summary>
+    /// <param name="edition">The edition the process runs as.</param>
+    /// <param name="baseDirectory">The folder of the executable.</param>
+    /// <param name="programDataPath">The <c>%ProgramData%</c> folder.</param>
+    /// <param name="userExtensionsRoot">The user's folder of installed extension packages.</param>
+    internal MefHelper(IEditionPolicy edition, string baseDirectory, string programDataPath, string userExtensionsRoot)
+    {
+        if (edition == null)
+        {
+            throw new ArgumentNullException(nameof(edition));
+        }
+
         _catalogFactory = CreateAssemblyCatalog;
-        EnsureExtensionsDirectoryExists(_ExtensionsPath);
+
+        if (edition.AllowExternalExtensions)
+        {
+            _ExtensionsPath = BuildExtensionsPath(programDataPath, HostAssembly.GetName().Name);
+            _userExtensionsPath = userExtensionsRoot;
+            EnsureExtensionsDirectoryExists(_ExtensionsPath);
+        }
+        else
+        {
+            _ExtensionsPath = BuildPackagedExtensionsPath(baseDirectory);
+            _userExtensionsPath = string.Empty;
+        }
     }
 
     /// <summary>
@@ -307,6 +341,18 @@ public sealed class MefHelper : IDisposable
         }
 
         return Path.Combine(programDataPath, applicationName, "Extensions");
+    }
+
+    /// <summary>
+    /// Builds the path of the extensions that a Store package carries.
+    /// </summary>
+    /// <param name="baseDirectory">The folder of the executable inside the package.</param>
+    /// <returns>The full path to the <c>Extensions</c> folder next to it; empty when there is no base directory.</returns>
+    internal static string BuildPackagedExtensionsPath(string baseDirectory)
+    {
+        return string.IsNullOrWhiteSpace(baseDirectory)
+            ? string.Empty
+            : Path.Combine(baseDirectory, PackagedExtensionsFolderName);
     }
 
     private static string GetSolutionRoot(string baseDirectory, int depth)

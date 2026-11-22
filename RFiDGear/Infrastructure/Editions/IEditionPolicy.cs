@@ -12,6 +12,13 @@ namespace RFiDGear.Infrastructure.Editions
         bool AllowSelfUpdate { get; }
 
         /// <summary>
+        /// Gets a value indicating whether extension code may come from outside the installation: the machine-wide folder
+        /// under <c>%ProgramData%</c> and the packages that a user installs from the File menu. The Store edition loads only
+        /// what is inside its own package, which cannot be changed after the Store has signed it.
+        /// </summary>
+        bool AllowExternalExtensions { get; }
+
+        /// <summary>
         /// Gets the text that marks a special edition after the version number (empty for the MSI edition).
         /// </summary>
         string TitleSuffix { get; }
