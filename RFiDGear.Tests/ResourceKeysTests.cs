@@ -290,6 +290,18 @@ namespace RFiDGear.Tests
             "textBoxStatusSamNotSupported",
             "textBoxStatusSamNotFound",
             "textBoxStatusSamAmbiguous",
+            "menuItemBuyHeader",
+            "statusBarTrialDaysLeft",
+            "statusBarTrialOneDayLeft",
+            "statusBarTrialEnded",
+            "licenseDialogTrialCaption",
+            "licenseDialogTrialMessage",
+            "licenseDialogExpiredCaption",
+            "licenseDialogExpiredMessage",
+            "licenseDialogBuyButton",
+            "licenseDialogCloseButton",
+            "licenseDialogExitButton",
+            "licenseDialogPurchaseFailed",
         };
 
         // The unit of a size, the INIT of the status bar, and the names of chips and of a protocol term read the same in both languages.

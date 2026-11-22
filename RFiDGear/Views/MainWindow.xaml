@@ -585,6 +585,7 @@
                     <MenuItem Command="{Binding ShowHelpCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}" />
                     <MenuItem Command="{Binding CheckUpdateCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCheckUpdatesHeader'}" Visibility="{Binding IsSelfUpdateAllowed, Converter={StaticResource BoolToVisibilityConverter}}" />
                     <MenuItem Command="{Binding ShowChangeLogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShowChangeLogHeader'}" Visibility="{Binding IsSelfUpdateAllowed, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <MenuItem Command="{Binding BuyCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemBuyHeader'}" Visibility="{Binding IsLicenseStatusVisible, Converter={StaticResource BoolToVisibilityConverter}}" />
                     <MenuItem Command="{Binding NewAboutDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemAboutHeader'}" />
                 </MenuItem>
                 <!--  Help  -->
@@ -715,6 +716,9 @@
                     <TextBlock
                         Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelExternalControlStatusBar'}"
                         FontWeight="Bold" />
+                </StatusBarItem>
+                <StatusBarItem Margin="4,0,0,0" Visibility="{Binding IsLicenseStatusVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <TextBlock Text="{Binding LicenseStatusText}" FontWeight="Bold" />
                 </StatusBarItem>
                 <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
                     <TextBlock Text="{Binding DateTimeStatusBar, UpdateSourceTrigger=PropertyChanged}" Height="auto" FontWeight="Bold" HorizontalAlignment="Left"/>

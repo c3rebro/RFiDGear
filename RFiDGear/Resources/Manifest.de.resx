@@ -1435,6 +1435,42 @@ Needed by:
   <data name="menuItemAboutHeader" xml:space="preserve">
     <value>Über RFiDGear</value>
   </data>
+  <data name="menuItemBuyHeader" xml:space="preserve">
+    <value>RFiDGear kaufen...</value>
+  </data>
+  <data name="statusBarTrialDaysLeft" xml:space="preserve">
+    <value>Testversion: noch {0} Tage</value>
+  </data>
+  <data name="statusBarTrialOneDayLeft" xml:space="preserve">
+    <value>Testversion: noch 1 Tag</value>
+  </data>
+  <data name="statusBarTrialEnded" xml:space="preserve">
+    <value>Testzeitraum beendet</value>
+  </data>
+  <data name="licenseDialogTrialCaption" xml:space="preserve">
+    <value>RFiDGear Testversion</value>
+  </data>
+  <data name="licenseDialogTrialMessage" xml:space="preserve">
+    <value>Sie nutzen die kostenlose Testversion von RFiDGear. Es sind noch {0} Tag(e) übrig. Kaufen Sie die Vollversion, um RFiDGear nach dem Testzeitraum weiter zu nutzen.</value>
+  </data>
+  <data name="licenseDialogExpiredCaption" xml:space="preserve">
+    <value>Testzeitraum beendet</value>
+  </data>
+  <data name="licenseDialogExpiredMessage" xml:space="preserve">
+    <value>Der kostenlose Testzeitraum von RFiDGear ist beendet. Kaufen Sie die Vollversion, um fortzufahren, oder beenden Sie das Programm.</value>
+  </data>
+  <data name="licenseDialogBuyButton" xml:space="preserve">
+    <value>Kaufen</value>
+  </data>
+  <data name="licenseDialogCloseButton" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="licenseDialogExitButton" xml:space="preserve">
+    <value>Programm beenden</value>
+  </data>
+  <data name="licenseDialogPurchaseFailed" xml:space="preserve">
+    <value>Der Kauf wurde nicht abgeschlossen.</value>
+  </data>
   <data name="buttonContentAboutCloseCommand" xml:space="preserve">
     <value>Schliessen</value>
   </data>

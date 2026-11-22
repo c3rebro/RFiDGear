@@ -1416,6 +1416,42 @@ Needed by:
   <data name="menuItemAboutHeader" xml:space="preserve">
     <value>About RFiDGear</value>
   </data>
+  <data name="menuItemBuyHeader" xml:space="preserve">
+    <value>Buy RFiDGear...</value>
+  </data>
+  <data name="statusBarTrialDaysLeft" xml:space="preserve">
+    <value>Trial: {0} days left</value>
+  </data>
+  <data name="statusBarTrialOneDayLeft" xml:space="preserve">
+    <value>Trial: 1 day left</value>
+  </data>
+  <data name="statusBarTrialEnded" xml:space="preserve">
+    <value>Trial ended</value>
+  </data>
+  <data name="licenseDialogTrialCaption" xml:space="preserve">
+    <value>RFiDGear trial</value>
+  </data>
+  <data name="licenseDialogTrialMessage" xml:space="preserve">
+    <value>You are using the free trial of RFiDGear. {0} day(s) are left. Buy the full version to keep using RFiDGear after the trial.</value>
+  </data>
+  <data name="licenseDialogExpiredCaption" xml:space="preserve">
+    <value>Trial ended</value>
+  </data>
+  <data name="licenseDialogExpiredMessage" xml:space="preserve">
+    <value>The free trial of RFiDGear has ended. Buy the full version to go on, or close the program.</value>
+  </data>
+  <data name="licenseDialogBuyButton" xml:space="preserve">
+    <value>Buy</value>
+  </data>
+  <data name="licenseDialogCloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="licenseDialogExitButton" xml:space="preserve">
+    <value>Close program</value>
+  </data>
+  <data name="licenseDialogPurchaseFailed" xml:space="preserve">
+    <value>The purchase was not completed.</value>
+  </data>
   <data name="buttonContentAboutCloseCommand" xml:space="preserve">
     <value>Close</value>
   </data>

@@ -22,6 +22,19 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private const int Scanning = 4;
 
         private int _state;
+        private int _executionBlocked;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether new executions are refused. The license gate sets it when the trial of the
+        /// Store edition has ended. An execution that is already admitted is not touched: a card operation is never cut off.
+        /// It is not a state of the coordinator: a refusal looks like any other one (<see cref="TryBeginExecution"/> returns
+        /// <c>false</c>), which every caller already handles.
+        /// </summary>
+        internal bool ExecutionBlocked
+        {
+            get => Volatile.Read(ref _executionBlocked) != 0;
+            set => Volatile.Write(ref _executionBlocked, value ? 1 : 0);
+        }
 
         /// <summary>
         /// Raised each time the coordinator enters or leaves the executing state: once after a successful
@@ -49,11 +62,17 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         /// <summary>
         /// Attempts to begin a task execution. Returns <c>true</c> if execution was admitted;
-        /// returns <c>false</c> if a load, a project edit, a reader scan, or another execution is already in progress.
+        /// returns <c>false</c> if a load, a project edit, a reader scan, or another execution is already in progress, or if
+        /// new executions are blocked (<see cref="ExecutionBlocked"/>).
         /// Callers must pair each <c>true</c> return with a call to <see cref="EndExecution"/>.
         /// </summary>
         public bool TryBeginExecution()
         {
+            if (ExecutionBlocked)
+            {
+                return false;
+            }
+
             if (Interlocked.CompareExchange(ref _state, Executing, Idle) != Idle)
             {
                 return false;
