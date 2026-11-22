@@ -138,6 +138,87 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void TheBuildScript_LooksAtTheCertificateBeforeItBuildsAnything_AndTakesThePublisherFromIt()
+        {
+            var script = File.ReadAllText(PackagingFile("Build-StorePackage.ps1"));
+
+            // A wrong password or a certificate that is not valid would otherwise show only after minutes of building.
+            var checkedAt = script.IndexOf("Test-StoreSigningCertificate -Certificate", StringComparison.Ordinal);
+            var builtAt = script.IndexOf("Invoke-Step 'publish the program", StringComparison.Ordinal);
+            Assert.True(checkedAt > 0, "The script does not look at the certificate.");
+            Assert.True(builtAt > checkedAt, "The certificate has to be looked at before the first build step.");
+
+            // Windows refuses a package whose publisher is not the subject of the certificate: the manifest gets the publisher that
+            // the script worked out (the certificate's for a placeholder identity), never the one of the file unchecked.
+            Assert.Matches(@"(?m)^\s*Publisher\s*=\s*\$publisher\s*$", script);
+            Assert.DoesNotMatch(@"(?m)^\s*Publisher\s*=\s*\$identity\.publisher", script);
+            Assert.Contains("$certificate.Subject", script, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void TheInteractiveScript_KeepsThePasswordOutOfFilesAndOutOfTheEnvironmentAfterTheRun()
+        {
+            var script = File.ReadAllText(PackagingFile("Make-StorePackage.ps1"));
+
+            // Typed hidden, never a parameter of a string type ...
+            Assert.Contains("-AsSecureString", script, StringComparison.Ordinal);
+            Assert.Contains("[securestring]$Password", script, StringComparison.Ordinal);
+
+            // ... written nowhere ...
+            Assert.DoesNotMatch(@"Out-File|Set-Content|Add-Content|WriteAllText|Export-Clixml|Start-Transcript|\s>\s", script);
+
+            // ... and in the environment only while the build runs: the two variables are put back in a finally block.
+            var started = script.IndexOf("$env:RFIDGEAR_SIGN_PASSWORD = $plain", StringComparison.Ordinal);
+            var restored = script.IndexOf("$env:RFIDGEAR_SIGN_PASSWORD = $savedPassword", StringComparison.Ordinal);
+            Assert.True(started > 0 && restored > started, "The script sets the password for the run and puts the old value back afterwards.");
+            Assert.Matches(@"finally\s*\{[^}]*RFIDGEAR_SIGN_PASSWORD = \$savedPassword", script);
+
+            // It signs through the build script and installs nothing without being told to.
+            Assert.Contains("Build-StorePackage.ps1", script, StringComparison.Ordinal);
+            Assert.Matches(@"Install the package for your user now\?[^\r\n]*\[y/N\]", script);
+
+            // What it offers to install is the file that this build reported, never the newest .msix of the folder (the folder may
+            // hold the package of another build) ...
+            Assert.Contains("-Sign -PassThru", script, StringComparison.Ordinal);
+            Assert.DoesNotMatch(@"Sort-Object\s+LastWriteTime", script);
+
+            // ... and an install that failed is a failed run, so that the batch file (and any caller) can tell.
+            Assert.Matches(@"(?s)if \(\$installed\)\s*\{[^}]*\}\s*else\s*\{[^}]*\bthrow\b", script);
+        }
+
+        [Fact]
+        public void TheBuildScript_HandsBackThePackageItMade_WhenAsked()
+        {
+            var script = File.ReadAllText(PackagingFile("Build-StorePackage.ps1"));
+
+            Assert.Matches(@"\[switch\]\$PassThru\b", script);
+            Assert.Matches(@"(?s)if \(\$PassThru\)\s*\{\s*\$info\s*\}", script);
+        }
+
+        [Fact]
+        public void TheTrustCheck_FollowsTheChainToARootOfTheMachine_NotOnlyTheStoresForTheCertificateItself()
+        {
+            var script = File.ReadAllText(PackagingFile("StoreCertificate.ps1"));
+
+            // A certificate that a certificate authority issued is in neither store itself: it is trusted when its chain ends in a root
+            // of the machine. Without the chain a good certificate would get a warning that says Windows will not install the package.
+            Assert.Contains(@"Cert:\LocalMachine\TrustedPeople", script, StringComparison.Ordinal);
+            Assert.Contains("X509Chain", script, StringComparison.Ordinal);
+            Assert.Contains("ChainElements", script, StringComparison.Ordinal);
+            Assert.Contains(@"Join-Path 'Cert:\LocalMachine\Root' $root.Thumbprint", script, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void TheBatchFile_RunsTheInteractiveScript_WithPowerShell7IfThereIsOne()
+        {
+            var batch = File.ReadAllText(PackagingFile("Make-StorePackage.bat"));
+
+            Assert.Contains("Make-StorePackage.ps1", batch, StringComparison.Ordinal);
+            Assert.Contains("pwsh.exe", batch, StringComparison.Ordinal);
+            Assert.Contains("powershell.exe", batch, StringComparison.Ordinal);
+            Assert.True(File.Exists(PackagingFile("Make-StorePackage.ps1")));
+        }
+        [Fact]
         public void TheStoreAssembly_IsNotNamedLikeAnExtension_WhichTheProgramScansFor()
         {
             var csproj = XDocument.Load(Path.Combine(DotNetTool.RepositoryRoot(), "RFiDGear.Store", "RFiDGear.Store.csproj"));

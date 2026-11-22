@@ -754,6 +754,14 @@ test passes the policy to the constructor of `MainWindowViewModel` or sets
   (`runFullTrust` is the only capability) and packs it with `makeappx`.
   `store-identity.json` holds the identity of Partner Center; with the
   placeholders in it the package is named `-test.msix` and cannot be uploaded.
+  `Make-StorePackage.bat` makes a package for a test on this PC: it asks for a
+  test certificate (.pfx) and its password (hidden), checks the certificate
+  before the build, runs `Build-StorePackage.ps1 -Sign` and offers to install
+  the package. Windows refuses a signature whose certificate has another
+  subject than the publisher of the manifest, so with the placeholder identity
+  the publisher is taken from the certificate, and with a real one another
+  subject stops the script before anything is built. The password is in the
+  environment only for that run and is written nowhere.
   No driver is part of the package, and a package cannot install one.
   `DEVELOPER_NOTES.md` has the checklist and what has not been verified.
 

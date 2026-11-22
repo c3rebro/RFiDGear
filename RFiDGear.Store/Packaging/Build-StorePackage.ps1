@@ -11,16 +11,23 @@ not offer to.
 The steps: publish the program, build the Store assembly, build the Card Check Assistant and unpack its package, collect all of
 it in one folder, check that nothing is in it that must not be, write the manifest and the logos, and pack the folder with
 makeappx. The Store signs the package it receives, so an upload needs no signature. A package for a test on this machine does:
-set RFIDGEAR_SIGN_PFX and RFIDGEAR_SIGN_PASSWORD (a certificate whose subject is the publisher of the manifest) and pass -Sign.
+set RFIDGEAR_SIGN_PFX and RFIDGEAR_SIGN_PASSWORD and pass -Sign (Make-StorePackage.bat asks for the two and does all of this).
 
 The identity (name, publisher) is in store-identity.json. With the placeholders in it, the package is named -test.msix and the
-script says that it cannot be uploaded.
+script says that it cannot be uploaded. Windows refuses a signed package whose publisher is not the subject of the certificate: a
+test package takes the publisher from the certificate that signs it, and a package with a real identity has to match it (the
+certificate is looked at, and refused if it does not match, before anything is built).
 
 .PARAMETER OutputFolder
 Where the package is written. Default: RFiDGear.Store\bin\package.
 
 .PARAMETER Sign
-Signs the package with the certificate of RFIDGEAR_SIGN_PFX (a test certificate; the Store does not need a signature).
+Signs the package with the certificate of RFIDGEAR_SIGN_PFX (password in RFIDGEAR_SIGN_PASSWORD), so that it can be installed on a
+PC that trusts the certificate. The Store does not need a signature.
+
+.PARAMETER PassThru
+Hands back the file of the package (a FileInfo) as the last thing it writes, so that a caller uses the package that this run made
+and not the newest file of the folder.
 
 .PARAMETER MakeAppx
 makeappx.exe. Default: the newest of the Windows SDK.
@@ -35,6 +42,7 @@ The time stamp server for -Sign.
 param(
     [string]$OutputFolder,
     [switch]$Sign,
+    [switch]$PassThru,
     [string]$MakeAppx,
     [string]$SignTool,
     [string]$TimestampUrl = 'http://timestamp.digicert.com'
@@ -42,6 +50,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\..\RFiDGearBundleSetup\Release.Common.ps1')
+. (Join-Path $PSScriptRoot 'StoreCertificate.ps1')
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 Add-Type -AssemblyName System.Drawing
@@ -176,6 +185,49 @@ $identity = Get-StoreIdentity
 $version = Get-StoreVersion
 $isPlaceholder = $identity.name -like 'Placeholder.*'
 
+# With -Sign the certificate is looked at before anything is built: a wrong password or a certificate that is not valid would
+# otherwise show after minutes. The manifest names the publisher, and Windows refuses a package whose signature has a certificate
+# with another subject. So a package for a test, whose identity is only a placeholder, takes the publisher from the certificate; a
+# package with a real identity has to match it (the Store signs what is uploaded, so only a package for a test is signed).
+$publisher = $identity.publisher
+$publisherDisplayName = $identity.publisherDisplayName
+
+if ($Sign) {
+    if (-not $env:RFIDGEAR_SIGN_PFX -or -not (Test-Path -LiteralPath $env:RFIDGEAR_SIGN_PFX)) {
+        throw 'Set RFIDGEAR_SIGN_PFX to the path of a .pfx file (a test certificate), and RFIDGEAR_SIGN_PASSWORD to its password.'
+    }
+
+    try {
+        $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($env:RFIDGEAR_SIGN_PFX, [string]$env:RFIDGEAR_SIGN_PASSWORD)
+    }
+    catch {
+        throw 'The certificate could not be opened: the password is wrong, or the file is not a .pfx.'
+    }
+
+    try {
+        $check = Test-StoreSigningCertificate -Certificate $certificate
+
+        if ($check.Problems.Count -gt 0) {
+            throw ($check.Problems -join ' ')
+        }
+
+        foreach ($warning in $check.Warnings) {
+            Write-Warning $warning
+        }
+
+        if ($isPlaceholder) {
+            $publisher = $certificate.Subject
+            $publisherDisplayName = $certificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+        }
+        elseif ($identity.publisher -ne $certificate.Subject) {
+            throw "The publisher of the package ('$($identity.publisher)', from store-identity.json) is not the subject of the certificate ('$($certificate.Subject)'): Windows refuses a package whose signature has another subject. The Store signs a package that is uploaded, so sign only a package for a test, with a certificate whose subject is the publisher of Partner Center."
+        }
+    }
+    finally {
+        $certificate.Dispose()
+    }
+}
+
 if (-not $OutputFolder) {
     $OutputFolder = Join-Path $script:RepositoryRoot 'RFiDGear.Store\bin\package'
 }
@@ -258,8 +310,8 @@ Export-StoreAsset -Icon $icon -Path (Join-Path $assets 'StoreLogo.png') -Size 50
 $manifest = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'AppxManifest.template.xml')
 $values = @{
     IdentityName         = $identity.name
-    Publisher            = $identity.publisher
-    PublisherDisplayName = $identity.publisherDisplayName
+    Publisher            = $publisher
+    PublisherDisplayName = $publisherDisplayName
     Version              = $version
 }
 
@@ -294,6 +346,8 @@ if ($Sign) {
     Invoke-Step 'sign the package' {
         & $SignTool sign /f $env:RFIDGEAR_SIGN_PFX /p $env:RFIDGEAR_SIGN_PASSWORD /fd SHA256 /tr $timestampServer /td SHA256 $package
     }
+
+    Write-Output "Signed for the publisher: $publisher"
 }
 
 Remove-Item -LiteralPath $work -Recurse -Force
@@ -304,4 +358,8 @@ Write-Output ("Size: {0:N1} MB, version {1}, SHA-256 {2}" -f ($info.Length / 1MB
 
 if ($isPlaceholder) {
     Write-Warning 'store-identity.json still has the placeholders: this package is for a test on this machine and cannot be uploaded to the Store.'
+}
+
+if ($PassThru) {
+    $info
 }
