@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The manifest of the Microsoft Store edition. Build-StorePackage.ps1 fills in the four values that stand in double curly braces
+  (the identity from store-identity.json, the version of the program) and writes it as AppxManifest.xml into the folder that
+  is packed.
+
+  The program is a desktop application that runs with the full rights of the user (runFullTrust): it opens COM ports and the
+  smart card service, reads the registry key of a USB device, and uses the Windows Credential Manager. That is the only
+  capability, and the Store asks for a reason for it. No driver is part of the package and none can be installed by it.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 desktop rescap">
+
+  <Identity
+    Name="{{IdentityName}}"
+    Publisher="{{Publisher}}"
+    Version="{{Version}}"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>RFiDGear</DisplayName>
+    <PublisherDisplayName>{{PublisherDisplayName}}</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+    <!-- The native libraries of LibLogicalAccess need the Visual C++ runtime of 2015 and later. -->
+    <PackageDependency
+      Name="Microsoft.VCLibs.140.00.UWPDesktop"
+      MinVersion="14.0.30035.0"
+      Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+    <Resource Language="de-de" />
+  </Resources>
+
+  <Applications>
+    <Application Id="RFiDGear" Executable="RFiDGear.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="RFiDGear"
+        Description="MIFARE chip encoding and batch processing"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png" />
+      <Extensions>
+        <!-- A program that starts RFiDGear (the external control bridge) cannot know the folder of a package; it uses the alias. -->
+        <uap3:Extension Category="windows.appExecutionAlias" Executable="RFiDGear.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="RFiDGear.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
