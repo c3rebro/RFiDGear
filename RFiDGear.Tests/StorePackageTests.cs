@@ -113,6 +113,17 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void TheBuildScript_AsksForThePackageOfTheExtensionByName_AndTakesItFromAFolderOfItsOwn()
+        {
+            var script = File.ReadAllText(PackagingFile("Build-StorePackage.ps1"));
+
+            // Without the request a failed package step is only a warning, and the script would take an old package of an earlier build.
+            Assert.Contains("-p:PackExtension=true", script, StringComparison.Ordinal);
+            Assert.Contains("ExtensionPackageFolder=$extensionPackages", script, StringComparison.Ordinal);
+            Assert.Contains("Get-ChildItem -LiteralPath $extensionPackages", script, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void TheStoreAssembly_IsNotNamedLikeAnExtension_WhichTheProgramScansFor()
         {
             var csproj = XDocument.Load(Path.Combine(DotNetTool.RepositoryRoot(), "RFiDGear.Store", "RFiDGear.Store.csproj"));

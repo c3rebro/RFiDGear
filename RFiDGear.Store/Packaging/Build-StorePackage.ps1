@@ -93,7 +93,7 @@ function Find-WindowsKitTool {
 }
 
 # A logo of the package, made from the icon of the program.
-function New-StoreAsset {
+function Export-StoreAsset {
     param([string]$Icon, [string]$Path, [int]$Size)
 
     $source = New-Object System.Drawing.Icon($Icon, 256, 256)
@@ -211,8 +211,13 @@ Invoke-Step 'build the Store assembly' {
     dotnet build $storeProject -c Release -p:Platform=$Platform --nologo -v:minimal
 }
 
+# The package (.rfext) of the Card Check Assistant is written into a folder of this run, and asked for by name: the build of an
+# extension makes its package by default, but a failure of that step is only a warning unless the package is asked for, and the
+# build would then succeed and leave an old package of an earlier build in the folder where this script looks.
+$extensionPackages = Join-Path $work 'extension'
+
 Invoke-Step 'build the Card Check Assistant' {
-    dotnet build $extensionProject -c Release -p:Platform=$Platform --nologo -v:minimal
+    dotnet build $extensionProject -c Release -p:Platform=$Platform -p:PackExtension=true "-p:ExtensionPackageFolder=$extensionPackages" --nologo -v:minimal
 }
 
 Write-Output '== collect the files'
@@ -227,22 +232,21 @@ foreach ($item in ($payloadJson | ConvertFrom-Json).Items.StorePayloadFile) {
     Copy-Item -LiteralPath $item.FullPath -Destination $stage -Force
 }
 
-$extensionPackage = Get-ChildItem -LiteralPath (Join-Path (Split-Path -Parent $extensionProject) 'bin\package') -Filter "*-$Platform.rfext" |
-    Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$extensionPackage = @(Get-ChildItem -LiteralPath $extensionPackages -Filter "*-$Platform.rfext")
 
-if (-not $extensionPackage) {
-    throw 'The build of the Card Check Assistant made no package (.rfext) for Release.'
+if ($extensionPackage.Count -ne 1) {
+    throw "The build of the Card Check Assistant made $($extensionPackage.Count) packages (.rfext) for Release in its own folder; exactly one was expected."
 }
 
-Copy-ExtensionFromPackage -Package $extensionPackage.FullName -Destination (Join-Path $stage 'Extensions')
+Copy-ExtensionFromPackage -Package $extensionPackage[0].FullName -Destination (Join-Path $stage 'Extensions')
 
 Write-Output '== logos and manifest'
 $assets = Join-Path $stage 'Assets'
 New-Item -ItemType Directory -Force -Path $assets | Out-Null
 $icon = Join-Path $script:RepositoryRoot 'RFiDGear\Resources\logo.ico'
-New-StoreAsset -Icon $icon -Path (Join-Path $assets 'Square44x44Logo.png') -Size 44
-New-StoreAsset -Icon $icon -Path (Join-Path $assets 'Square150x150Logo.png') -Size 150
-New-StoreAsset -Icon $icon -Path (Join-Path $assets 'StoreLogo.png') -Size 50
+Export-StoreAsset -Icon $icon -Path (Join-Path $assets 'Square44x44Logo.png') -Size 44
+Export-StoreAsset -Icon $icon -Path (Join-Path $assets 'Square150x150Logo.png') -Size 150
+Export-StoreAsset -Icon $icon -Path (Join-Path $assets 'StoreLogo.png') -Size 50
 
 $manifest = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'AppxManifest.template.xml')
 $values = @{
